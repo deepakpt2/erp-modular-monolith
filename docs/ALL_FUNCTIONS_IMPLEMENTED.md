@@ -1,10 +1,10 @@
-# All Implemented T-Codes – 90 total – For Search Alias Mapping
+# All Implemented Functions – 90 total – For Search Alias Mapping
 
-**Instruction:** You will give what to use for its search – e.g., for ME21N you might want search terms "create po, new po, po create" – Provide mapping per T-Code
+**Instruction:** You will give what to use for its search – e.g., for ME21N you might want search terms "create po, new po, po create" – Provide mapping per Function
 **Current search:** Already supports partial match via token scoring, word boundary for short tokens PO/PR/GR, action synonyms CREATE/EDIT/DISPLAY, doc synonyms
 **Next build:** Should work for partial match too (not exact match) – e.g., "crea po" should match "create po", "pur ord" should match purchase order etc – will implement fuzzy/partial
 
-| T-Code | Description | Route | Module | Type | SubModule | Suggested Search Terms (you to define) |
+| Function | Description | Route | Module | Type | SubModule | Suggested Search Terms (you to define) |
 |--------|-------------|-------|--------|------|-----------|----------------------------------------|
 | ALB | Document Flow | /1000/audit/document-flow | AUDIT | DISPLAY | AUDIT-FLOW | |
 | CA01 | Create Routing - Sequence of Manufacturing Steps | /1000/pp/routings | PP | CREATE | PP-RTG | |
@@ -114,7 +114,7 @@
 
 ## Your Task
 
-Fill last column "Suggested Search Terms" – for each T-Code, what terms should trigger it? Examples:
+Fill last column "Suggested Search Terms" – for each Function, what terms should trigger it? Examples:
 - ME21N: create po, new po, add po, po create, purchase order create, create purchase order
 - ME22N: edit po, change po, update po, po change
 - MIGO: create gr, goods receipt, gr posting, migo, 101, we, goods movement
