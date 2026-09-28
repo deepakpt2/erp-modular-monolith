@@ -1,0 +1,127 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-erp}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-erp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # Auto Migrate - runs automatically on docker compose up, reads .env for preferences
+  # No manual steps needed: does db:push + init-prod + optional FMCG seed based on env
+  auto-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required in .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@er.deepakpt.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123456}
+      ADMIN_NAME: ${ADMIN_NAME:-System Admin}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
+      DOMAIN: ${DOMAIN:-er.deepakpt.com}
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      FMCG_SAMPLE_DATA_ENABLED: ${FMCG_SAMPLE_DATA_ENABLED:-false}
+      MVP_NO_AUTH: ${MVP_NO_AUTH:-false}
+      POS_WEBHOOK_API_KEY: ${POS_WEBHOOK_API_KEY:-enterprise-pos-key-kspl-2024}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    command: ["sh", "-c", "npx drizzle-kit push --force || true && npm run db:auto-migrate"]
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auto-migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required in .env}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?NEXTAUTH_SECRET required in .env}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      AUTH_TRUST_HOST: "true"
+      MVP_NO_AUTH: ${MVP_NO_AUTH:-false}
+      POS_WEBHOOK_API_KEY: ${POS_WEBHOOK_API_KEY:-enterprise-pos-key-kspl-2024}
+      ENTERPRISE_MODE: "true"
+      DMS_STORAGE_PATH: ${DMS_STORAGE_PATH:-/data/dms}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@er.deepakpt.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123456}
+      ADMIN_NAME: ${ADMIN_NAME:-System Admin}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
+      DOMAIN: ${DOMAIN:-er.deepakpt.com}
+      FMCG_SAMPLE_DATA_ENABLED: ${FMCG_SAMPLE_DATA_ENABLED:-false}
+    volumes:
+      - dms_data:/data/dms
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.erp.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.erp.entrypoints=web"
+      - "traefik.http.services.erp.loadbalancer.server.port=3000"
+      - "traefik.docker.network=proxy"
+    networks:
+      - internal
+      - proxy
+
+  # Migrator - manual tool, for debugging
+  # Use: docker compose run --rm migrator npm run db:push
+  #      docker compose run --rm migrator npm run db:create-admin
+  #      docker compose run --rm migrator npm run db:init-prod
+  #      docker compose run --rm migrator npm run db:seed
+  #      docker compose run --rm migrator npm run db:seed:fmcg
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required in .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@er.deepakpt.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123456}
+      ADMIN_NAME: ${ADMIN_NAME:-System Admin}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
+      DOMAIN: ${DOMAIN:-er.deepakpt.com}
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
+      FMCG_SAMPLE_DATA_ENABLED: ${FMCG_SAMPLE_DATA_ENABLED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  dms_data:
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: bridge
