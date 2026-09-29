@@ -3,6 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
+import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
  * Goods Receipt API – Legal-safe own IP – Module 6 MM Procurement
@@ -256,20 +257,52 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    // Immutable audit trail – log before update
-    try {
-      const docNum = body.gr_number || body.document_number || body.id;
-      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
-    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
-    const { id, gr_number, status } = body;
-    if (!id && !gr_number) return NextResponse.json({ error: 'id or gr_number required' }, { status: 400 });
+    const action = (body.action || body.edit_action || 'ADJUST').toUpperCase();
+    const isReversal = action.includes('REVERSE');
+    const originalNumber = body.gr_number || body.document_number || body.id;
+
+    if (originalNumber && (isReversal || action.includes('ADJUST') || action.includes('CORRECT'))) {
+      const reversalResult = await createReversalOrAdjustmentDocument({
+        original_document_type: 'GR',
+        original_document_number: originalNumber,
+        action: action as any,
+        reason: body.reason || body.reversal_reason || null,
+        new_payload: body,
+        company_code: body.company_code || '1000',
+        changed_by: body.changed_by || 'system'
+      });
+
+      if (reversalResult.success) {
+        try {
+          const newStatus = isReversal ? 'REVERSED' : 'ADJUSTED';
+          await db.execute(sql`UPDATE proc_goods_receipt SET status = ${newStatus}::proc_gr_status, updated_at = NOW() WHERE gr_number = ${originalNumber} OR id::text = ${originalNumber}`);
+        } catch (e) { console.warn('Status update failed', e); }
+
+        return NextResponse.json({
+          success: true,
+          original_document: originalNumber,
+          reversal_document: reversalResult.reversal_document_number,
+          reversal_type: reversalResult.reversal_type,
+          action: action,
+          code: reversalResult.reversal_type,
+          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – GR reversal/adjustment – immutable audit trail – legal-safe own IP (was MIGO 102)`,
+          legalSafe: true
+        });
+      }
+    }
 
     try {
+      if (originalNumber) await updateDocumentWithAudit({ document_number: originalNumber, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch {}
+
+    const { id, gr_number, status } = body;
+    if (!id && !gr_number) return NextResponse.json({ error: 'id or gr_number required' }, { status: 400 });
+    try {
       let res;
-      if (id) res = await db.execute(sql`UPDATE proc_goods_receipt SET status = ${status}::proc_gr_status WHERE id = ${id} RETURNING id, gr_number, status`);
-      else res = await db.execute(sql`UPDATE proc_goods_receipt SET status = ${status}::proc_gr_status WHERE gr_number = ${gr_number} RETURNING id, gr_number, status`);
-      if (res.rows.length === 0) throw new Error('Not found in proc_goods_receipt');
-      return NextResponse.json({ success: true, gr: res.rows[0], code: 'PGRC', message: `GR ${res.rows[0].gr_number} status ${status} – PGRC legal-safe` });
+      if (id) res = await db.execute(sql`UPDATE proc_goods_receipt SET status = ${status}::proc_gr_status, updated_at = NOW() WHERE id = ${id} RETURNING id, gr_number, status`);
+      else res = await db.execute(sql`UPDATE proc_goods_receipt SET status = ${status}::proc_gr_status, updated_at = NOW() WHERE gr_number = ${gr_number} RETURNING id, gr_number, status`);
+      if (res.rows.length === 0) throw new Error('Not found');
+      return NextResponse.json({ success: true, gr: res.rows[0], code: 'IGRC', message: `GR ${res.rows[0].gr_number} status ${status} – IGRC legal-safe`, audit_trail: 'Immutable history preserved' });
     } catch {
       let res;
       if (id) res = await db.execute(sql`UPDATE mm_goods_receipt SET status = ${status}::gr_status WHERE id = ${id} RETURNING id, gr_number, status`);

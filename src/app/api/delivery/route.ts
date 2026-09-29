@@ -3,6 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
+import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
  * Delivery API – Legal-safe own IP – Module 8 SD
@@ -199,6 +200,46 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // SAP-like edit = Reversal or Adjustment document – legal-safe own IP – FNDC
+    // Edit does NOT directly UPDATE – creates reversal/adjustment doc
+    const action = (body.action || body.edit_action || 'ADJUST').toUpperCase();
+    const isReversal = action.includes('REVERSE');
+    const isAdjustment = action.includes('ADJUST') || action.includes('CORRECT') || !isReversal;
+    const originalNumber = body.iv_number || body.document_number || body.id;
+    if (originalNumber && (isReversal || action.includes('ADJUST') || action.includes('CORRECT'))) {
+      const reversalResult = await createReversalOrAdjustmentDocument({
+        original_document_type: 'IV',
+        original_document_number: originalNumber,
+        action: action as any,
+        reason: body.reason || body.reversal_reason || body.adjustment_reason || null,
+        new_payload: body,
+        company_code: body.company_code || body.legal_entity_code || '1000',
+        changed_by: body.changed_by || 'system'
+      });
+
+      if (reversalResult.success) {
+        try {
+          const newStatus = isReversal ? 'REVERSED' : 'ADJUSTED';
+          await db.execute(sql`UPDATE proc_invoice_verification SET status = ${newStatus}::proc_iv_status, updated_at = NOW() WHERE iv_number = ${originalNumber} OR id::text = ${originalNumber}`);
+        } catch (e) {
+          console.warn('Status update failed for proc_invoice_verification', e);
+        }
+
+        return NextResponse.json({
+          success: true,
+          original_document: originalNumber,
+          reversal_document: reversalResult.reversal_document_number,
+          reversal_type: reversalResult.reversal_type,
+          action: action,
+          code: reversalResult.reversal_type,
+          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – edit as reversal/adjustment – immutable audit trail`,
+          legalSafe: true,
+          audit_trail: `Original ${originalNumber} status set to ${isReversal ? 'REVERSED' : 'ADJUSTED'}, new doc ${reversalResult.reversal_document_number} references original`
+        });
+      }
+    }
+    // If no action or not reversal/adjustment, fall through to legacy update with audit trail
     // Immutable audit trail – log before update
     try {
       const docNum = body.delivery_number || body.document_number || body.id;

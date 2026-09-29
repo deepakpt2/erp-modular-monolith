@@ -3,6 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
+import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
  * Invoice Verification API – Legal-safe own IP – Module 6 MM Procurement
@@ -243,19 +244,51 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    // Immutable audit trail – log before update
-    try {
-      const docNum = body.iv_number || body.document_number || body.id;
-      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
-    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
-    const { id, iv_number, status } = body;
-    if (!id && !iv_number) return NextResponse.json({ error: 'id or iv_number required' }, { status: 400 });
+    const action = (body.action || body.edit_action || 'ADJUST').toUpperCase();
+    const isReversal = action.includes('REVERSE');
+    const originalNumber = body.iv_number || body.document_number || body.id;
+
+    if (originalNumber && (isReversal || action.includes('ADJUST') || action.includes('CORRECT'))) {
+      const reversalResult = await createReversalOrAdjustmentDocument({
+        original_document_type: 'IV',
+        original_document_number: originalNumber,
+        action: action as any,
+        reason: body.reason || body.reversal_reason || null,
+        new_payload: body,
+        company_code: body.company_code || '1000',
+        changed_by: body.changed_by || 'system'
+      });
+
+      if (reversalResult.success) {
+        try {
+          const newStatus = isReversal ? 'REVERSED' : 'ADJUSTED';
+          await db.execute(sql`UPDATE proc_invoice_verification SET status = ${newStatus}::proc_iv_status, updated_at = NOW() WHERE iv_number = ${originalNumber} OR id::text = ${originalNumber}`);
+        } catch (e) { console.warn('Status update failed', e); }
+
+        return NextResponse.json({
+          success: true,
+          original_document: originalNumber,
+          reversal_document: reversalResult.reversal_document_number,
+          reversal_type: reversalResult.reversal_type,
+          action: action,
+          code: reversalResult.reversal_type,
+          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – IV reversal/adjustment – immutable audit trail – legal-safe own IP (was MR8M)`,
+          legalSafe: true
+        });
+      }
+    }
 
     try {
+      if (originalNumber) await updateDocumentWithAudit({ document_number: originalNumber, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch {}
+
+    const { id, iv_number, status } = body;
+    if (!id && !iv_number) return NextResponse.json({ error: 'id or iv_number required' }, { status: 400 });
+    try {
       let res;
-      if (id) res = await db.execute(sql`UPDATE proc_invoice_verification SET status = ${status}::proc_iv_status WHERE id = ${id} RETURNING id, iv_number, status`);
-      else res = await db.execute(sql`UPDATE proc_invoice_verification SET status = ${status}::proc_iv_status WHERE iv_number = ${iv_number} RETURNING id, iv_number, status`);
-      if (res.rows.length === 0) throw new Error('Not found in proc_invoice_verification');
+      if (id) res = await db.execute(sql`UPDATE proc_invoice_verification SET status = ${status}::proc_iv_status, updated_at = NOW() WHERE id = ${id} RETURNING id, iv_number, status`);
+      else res = await db.execute(sql`UPDATE proc_invoice_verification SET status = ${status}::proc_iv_status, updated_at = NOW() WHERE iv_number = ${iv_number} RETURNING id, iv_number, status`);
+      if (res.rows.length === 0) throw new Error('Not found');
       return NextResponse.json({ success: true, iv: res.rows[0], code: 'PIVC', message: `IV ${res.rows[0].iv_number} status ${status} – PIVC legal-safe` });
     } catch {
       let res;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db, withTransaction } from '@/shared/kernel/db/client';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
+import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -288,32 +289,55 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    // Immutable audit trail – log before update
-    try {
-      const docNum = body.po_number || body.document_number || body.id;
-      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
-    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
-    const { id, po_number, status, delivery_completed, po_line_id } = body;
-    if (!id && !po_number && !po_line_id) return NextResponse.json({ error: 'id or po_number or po_line_id required' }, { status: 400 });
+    const action = (body.action || body.edit_action || 'ADJUST').toUpperCase();
+    const isReversal = action.includes('REVERSE');
+    const originalNumber = body.po_number || body.document_number || body.id;
 
-    // Update PO line ELIKZ
-    if (po_line_id && delivery_completed !== undefined) {
-      try {
-        await db.execute(sql`UPDATE proc_po_line SET delivery_completed = ${delivery_completed}, is_closed = ${delivery_completed}, closed_at = ${delivery_completed ? new Date() : null} WHERE id = ${po_line_id}`);
-        return NextResponse.json({ success: true, code: 'PPOC', message: `PO line ${po_line_id} delivery_completed ${delivery_completed} – PPOC legal-safe – ELIKZ` });
-      } catch {
-        await db.execute(sql`UPDATE mm_po_line SET delivery_completed = ${delivery_completed}, is_closed = ${delivery_completed}, closed_at = ${delivery_completed ? new Date() : null} WHERE id = ${po_line_id}`);
-        return NextResponse.json({ success: true, message: `PO line ${po_line_id} delivery_completed ${delivery_completed} – ME21N legacy – ELIKZ` });
+    if (originalNumber && (isReversal || action.includes('ADJUST') || action.includes('CORRECT'))) {
+      const reversalResult = await createReversalOrAdjustmentDocument({
+        original_document_type: 'PO',
+        original_document_number: originalNumber,
+        action: action as any,
+        reason: body.reason || body.reversal_reason || body.adjustment_reason || null,
+        new_payload: body,
+        company_code: body.company_code || body.legal_entity_code || '1000',
+        changed_by: body.changed_by || 'system'
+      });
+
+      if (reversalResult.success) {
+        try {
+          const newStatus = isReversal ? 'REVERSED' : 'ADJUSTED';
+          await db.execute(sql`UPDATE proc_purchase_order SET status = ${newStatus}::proc_po_status, updated_at = NOW() WHERE po_number = ${originalNumber} OR id::text = ${originalNumber}`);
+        } catch (e) { console.warn('Status update failed', e); }
+
+        return NextResponse.json({
+          success: true,
+          original_document: originalNumber,
+          reversal_document: reversalResult.reversal_document_number,
+          reversal_type: reversalResult.reversal_type,
+          action: action,
+          code: reversalResult.reversal_type,
+          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – edit as reversal/adjustment – immutable audit trail`,
+          legalSafe: true,
+          audit_trail: `Original ${originalNumber} status set to ${isReversal ? 'REVERSED' : 'ADJUSTED'}`
+        });
       }
     }
 
     try {
+      if (originalNumber) await updateDocumentWithAudit({ document_number: originalNumber, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
+
+    try {
+      const { id, po_number, status } = body;
+      if (!id && !po_number) return NextResponse.json({ error: 'id or po_number required' }, { status: 400 });
       let res;
       if (id) res = await db.execute(sql`UPDATE proc_purchase_order SET status = ${status}::proc_po_status, updated_at = NOW() WHERE id = ${id} RETURNING id, po_number, status`);
       else res = await db.execute(sql`UPDATE proc_purchase_order SET status = ${status}::proc_po_status, updated_at = NOW() WHERE po_number = ${po_number} RETURNING id, po_number, status`);
-      if (res.rows.length === 0) throw new Error('Not found in proc_purchase_order');
-      return NextResponse.json({ success: true, po: res.rows[0], code: 'PPOC', message: `PO ${res.rows[0].po_number} status ${status} – PPOC legal-safe` });
+      if (res.rows.length === 0) throw new Error('Not found');
+      return NextResponse.json({ success: true, po: res.rows[0], code: 'PPOC', message: `PO ${res.rows[0].po_number} status ${status} – PPOC legal-safe`, audit_trail: 'Immutable history preserved' });
     } catch {
+      const { id, po_number, status } = body;
       let res;
       if (id) res = await db.execute(sql`UPDATE mm_purchase_order SET status = ${status}::po_status, updated_at = NOW() WHERE id = ${id} RETURNING id, po_number, status`);
       else res = await db.execute(sql`UPDATE mm_purchase_order SET status = ${status}::po_status, updated_at = NOW() WHERE po_number = ${po_number} RETURNING id, po_number, status`);

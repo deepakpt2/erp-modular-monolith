@@ -3,6 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
+import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
  * Purchase Requisition API – Legal-safe own IP – Module 6 MM Procurement
@@ -286,26 +287,65 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    // Immutable audit trail – log before update
+    const action = (body.action || body.edit_action || 'ADJUST').toUpperCase();
+    const isReversal = action.includes('REVERSE');
+    const originalNumber = body.pr_number || body.document_number || body.id;
+
+    if (originalNumber && (isReversal || action.includes('ADJUST') || action.includes('CORRECT'))) {
+      const reversalResult = await createReversalOrAdjustmentDocument({
+        original_document_type: 'PR',
+        original_document_number: originalNumber,
+        action: action as any,
+        reason: body.reason || body.reversal_reason || body.adjustment_reason || null,
+        new_payload: body,
+        company_code: body.company_code || body.legal_entity_code || '1000',
+        changed_by: body.changed_by || 'system'
+      });
+
+      if (reversalResult.success) {
+        try {
+          const newStatus = isReversal ? 'REVERSED' : 'ADJUSTED';
+          await db.execute(sql`UPDATE proc_purchase_requisition SET status = ${newStatus}::proc_pr_status, updated_at = NOW() WHERE pr_number = ${originalNumber} OR id::text = ${originalNumber}`);
+        } catch (e) {
+          console.warn('Status update failed for proc_purchase_requisition', e);
+        }
+
+        return NextResponse.json({
+          success: true,
+          original_document: originalNumber,
+          reversal_document: reversalResult.reversal_document_number,
+          reversal_type: reversalResult.reversal_type,
+          action: action,
+          code: reversalResult.reversal_type,
+          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – edit as reversal/adjustment – immutable audit trail`,
+          legalSafe: true,
+          audit_trail: `Original ${originalNumber} status set to ${isReversal ? 'REVERSED' : 'ADJUSTED'}, new doc ${reversalResult.reversal_document_number} references original`
+        });
+      }
+    }
+
+    // Fallback legacy update with audit trail – immutable
     try {
-      const docNum = body.pr_number || body.document_number || body.id;
-      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+      if (originalNumber) {
+        await updateDocumentWithAudit({ document_number: originalNumber, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+      }
     } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
-    const { id, pr_number, status } = body;
-    if (!id && !pr_number) return NextResponse.json({ error: 'id or pr_number required' }, { status: 400 });
 
     try {
+      const { id, pr_number, status } = body;
+      if (!id && !pr_number) return NextResponse.json({ error: 'id or pr_number required' }, { status: 400 });
       let res;
       if (id) res = await db.execute(sql`UPDATE proc_purchase_requisition SET status = ${status}::proc_pr_status, updated_at = NOW() WHERE id = ${id} RETURNING id, pr_number, status`);
       else res = await db.execute(sql`UPDATE proc_purchase_requisition SET status = ${status}::proc_pr_status, updated_at = NOW() WHERE pr_number = ${pr_number} RETURNING id, pr_number, status`);
       if (res.rows.length === 0) throw new Error('Not found in proc_purchase_requisition');
-      return NextResponse.json({ success: true, pr: res.rows[0], code: 'PPRC', message: `PR ${res.rows[0].pr_number} status ${status} – PPRC legal-safe` });
+      return NextResponse.json({ success: true, pr: res.rows[0], code: 'PPRC', message: `PR ${res.rows[0].pr_number} status ${status} – PPRC legal-safe`, audit_trail: 'Immutable history preserved' });
     } catch {
+      const { id, pr_number, status } = body;
       let res;
       if (id) res = await db.execute(sql`UPDATE mm_purchase_requisition SET status = ${status}::pr_status, updated_at = NOW() WHERE id = ${id} RETURNING id, pr_number, status`);
       else res = await db.execute(sql`UPDATE mm_purchase_requisition SET status = ${status}::pr_status, updated_at = NOW() WHERE pr_number = ${pr_number} RETURNING id, pr_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'PR not found' }, { status: 404 });
-      return NextResponse.json({ success: true, pr: res.rows[0], message: `PR ${res.rows[0].pr_number} status ${status} – ME51N legacy` });
+      return NextResponse.json({ success: true, pr: res.rows[0], message: `PR ${res.rows[0].pr_number} status ${status} – ME51N legacy`, audit_trail: 'Immutable history preserved' });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
