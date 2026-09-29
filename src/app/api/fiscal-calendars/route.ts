@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
   if (authCheck) return authCheck;
   try {
     const body = await req.json();
-    const { code, name, description, tenant_id, periods, from_date, to_date, start_month, end_month, year_shift } = body;
+    const { code, name, description, tenant_id, periods, from_date, to_date, start_month, end_month, year_shift, year_dependent, calendar_year, number_of_periods } = body;
     if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
     // from_date/to_date now OPTIONAL per user question – fixed date with year should work for any year via start_month/end_month/year_shift – variant is year-independent
     // If provided, validate from < to, but not required – allows K4 April-March template without fixed year
@@ -90,6 +90,22 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'from_date must be before to_date – e.g., K4 2026-04-01 to 2027-03-31' }, { status: 400 });
       }
     }
+
+    // Ensure new columns per guide – year_dependent, calendar_year, number_of_periods were missing in form per user report
+    try {
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS year_dependent BOOLEAN DEFAULT false`);
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS calendar_year BOOLEAN DEFAULT false`);
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS number_of_periods INTEGER DEFAULT 12`);
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS from_date TIMESTAMP`);
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS to_date TIMESTAMP`);
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS start_month INTEGER`);
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS end_month INTEGER`);
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS year_shift INTEGER DEFAULT 0`);
+    } catch {}
+
+    const finalYearDep = year_dependent === true || year_dependent === 'true' ? true : false;
+    const finalCalYear = calendar_year === true || calendar_year === 'true' ? true : false;
+    const finalNumPeriods = number_of_periods ? parseInt(number_of_periods) : 12;
 
     let tenantId = tenant_id;
     if (!tenantId) {
@@ -114,43 +130,59 @@ export async function POST(req: NextRequest) {
       const existing = await db.execute(sql`SELECT id FROM fin_fiscal_calendar WHERE code = ${code.toUpperCase()} LIMIT 1`);
       let res;
       if (existing.rows.length > 0) {
-        // Try update with from_date/to_date if columns exist
+        // Try update with all new fields per guide – year_dependent, calendar_year, number_of_periods were missing per report
         try {
           res = await db.execute(sql`
-            UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, from_date = ${from_date ? new Date(from_date) : null}, to_date = ${to_date ? new Date(to_date) : null}, start_month = ${start_month ? parseInt(start_month) : null}, end_month = ${end_month ? parseInt(end_month) : null}, year_shift = ${year_shift ? parseInt(year_shift) : 0}, updated_at = NOW()
+            UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, from_date = ${from_date ? new Date(from_date) : null}, to_date = ${to_date ? new Date(to_date) : null}, start_month = ${start_month ? parseInt(start_month) : 4}, end_month = ${end_month ? parseInt(end_month) : 3}, year_shift = ${year_shift ? parseInt(year_shift) : 0}, year_dependent = ${finalYearDep}, calendar_year = ${finalCalYear}, number_of_periods = ${finalNumPeriods}, updated_at = NOW()
             WHERE code = ${code.toUpperCase()}
             RETURNING id, code, name
           `);
-        } catch {
-          res = await db.execute(sql`
-            UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, updated_at = NOW()
-            WHERE code = ${code.toUpperCase()}
-            RETURNING id, code, name
-          `);
+        } catch (e1: any) {
+          try {
+            res = await db.execute(sql`
+              UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, from_date = ${from_date ? new Date(from_date) : null}, to_date = ${to_date ? new Date(to_date) : null}, start_month = ${start_month ? parseInt(start_month) : null}, end_month = ${end_month ? parseInt(end_month) : null}, year_shift = ${year_shift ? parseInt(year_shift) : 0}, updated_at = NOW()
+              WHERE code = ${code.toUpperCase()}
+              RETURNING id, code, name
+            `);
+          } catch {
+            res = await db.execute(sql`
+              UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, updated_at = NOW()
+              WHERE code = ${code.toUpperCase()}
+              RETURNING id, code, name
+            `);
+          }
         }
       } else {
         try {
           res = await db.execute(sql`
-            INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description, from_date, to_date, start_month, end_month, year_shift)
-            VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null}, ${from_date ? new Date(from_date) : null}, ${to_date ? new Date(to_date) : null}, ${start_month ? parseInt(start_month) : 4}, ${end_month ? parseInt(end_month) : 3}, ${year_shift ? parseInt(year_shift) : 0})
+            INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description, from_date, to_date, start_month, end_month, year_shift, year_dependent, calendar_year, number_of_periods)
+            VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null}, ${from_date ? new Date(from_date) : null}, ${to_date ? new Date(to_date) : null}, ${start_month ? parseInt(start_month) : 4}, ${end_month ? parseInt(end_month) : 3}, ${year_shift ? parseInt(year_shift) : 0}, ${finalYearDep}, ${finalCalYear}, ${finalNumPeriods})
             RETURNING id, code, name
           `);
         } catch (insErr: any) {
-          // If columns missing, try without from_date/to_date
+          // If columns missing, try without new columns
           try {
             res = await db.execute(sql`
-              INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description)
-              VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
+              INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description, from_date, to_date, start_month, end_month, year_shift)
+              VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null}, ${from_date ? new Date(from_date) : null}, ${to_date ? new Date(to_date) : null}, ${start_month ? parseInt(start_month) : 4}, ${end_month ? parseInt(end_month) : 3}, ${year_shift ? parseInt(year_shift) : 0})
               RETURNING id, code, name
             `);
           } catch (insErr2: any) {
-            if (insErr2.message?.includes('tenant_id') || insErr2.message?.includes('column')) {
+            try {
               res = await db.execute(sql`
-                INSERT INTO fin_fiscal_calendar (code, name, description)
-                VALUES (${code.toUpperCase()}, ${name}, ${description || null})
+                INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description)
+                VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
                 RETURNING id, code, name
               `);
-            } else throw insErr2;
+            } catch (insErr3: any) {
+              if (insErr3.message?.includes('tenant_id') || insErr3.message?.includes('column')) {
+                res = await db.execute(sql`
+                  INSERT INTO fin_fiscal_calendar (code, name, description)
+                  VALUES (${code.toUpperCase()}, ${name}, ${description || null})
+                  RETURNING id, code, name
+                `);
+              } else throw insErr3;
+            }
           }
         }
       }
