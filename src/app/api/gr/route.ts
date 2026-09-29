@@ -24,24 +24,26 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get('status');
 
   try {
+    // Legal-safe: partner_account (new) + ent_business_partner (legacy) – Module3
     let query = sql`
       SELECT 
         gr.id, gr.gr_number, gr.status, gr.posting_date, gr.total_amount, gr.total_landed_cost, gr.fi_document_id,
         po.po_number, po.vendor_id,
         p.code as plant_code, p.name as plant_name,
         sloc.code as sloc_code,
-        bp.name1 as vendor_name,
+        COALESCE(pa.display_name, bp.name1) as vendor_name,
         (SELECT COUNT(*) FROM mm_gr_line WHERE gr_id = gr.id) as line_count,
         (SELECT SUM(quantity) FROM mm_gr_line WHERE gr_id = gr.id) as total_qty
       FROM mm_goods_receipt gr
       LEFT JOIN mm_purchase_order po ON gr.po_id = po.id
       LEFT JOIN ent_plant p ON gr.plant_id = p.id
       LEFT JOIN ent_storage_location sloc ON sloc.plant_id = p.id
+      LEFT JOIN partner_account pa ON po.vendor_id = pa.id
       LEFT JOIN ent_business_partner bp ON po.vendor_id = bp.id
       WHERE 1=1
     `;
 
-    if (search) query = sql`${query} AND (gr.gr_number ILIKE ${`%${search}%`} OR po.po_number ILIKE ${`%${search}%`})`;
+    if (search) query = sql`${query} AND (gr.gr_number ILIKE ${`%${search}%`} OR po.po_number ILIKE ${`%${search}%`} OR COALESCE(pa.display_name, bp.name1) ILIKE ${`%${search}%`})`;
     if (plantId) query = sql`${query} AND gr.plant_id = ${plantId}`;
     if (slocId) query = sql`${query} AND EXISTS (SELECT 1 FROM mm_gr_line WHERE gr_id = gr.id AND sloc_id = ${slocId})`;
     if (poId) query = sql`${query} AND gr.po_id = ${poId}`;

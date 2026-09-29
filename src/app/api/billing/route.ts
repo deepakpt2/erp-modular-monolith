@@ -21,34 +21,50 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '100');
 
   try {
+    // Legal-safe: partner_account (new) + ent_business_partner (legacy) – Module3
     let query = sql`
       SELECT 
         b.id, b.billing_number, b.type, b.status, b.sales_order_id, b.delivery_id, b.company_code_id, b.customer_id, b.billing_date, b.total_amount, b.tax_amount, b.net_amount, b.currency, b.is_paid, b.created_at,
         so.sales_number, so.customer_name,
         d.delivery_number,
-        bp.name1 as customer_name1, bp.bp_number as customer_bp_number
+        COALESCE(pa.display_name, bp.name1) as customer_name1, COALESCE(pa.account_number, bp.bp_number) as customer_bp_number
       FROM sd_billing b
       JOIN sd_sales_order so ON b.sales_order_id = so.id
       LEFT JOIN sd_delivery d ON b.delivery_id = d.id
+      LEFT JOIN partner_account pa ON b.customer_id = pa.id
       LEFT JOIN ent_business_partner bp ON b.customer_id = bp.id
       WHERE 1=1
     `;
     if (status) query = sql`${query} AND b.status = ${status}`;
-    if (search) query = sql`${query} AND (b.billing_number ILIKE ${`%${search}%`} OR so.sales_number ILIKE ${`%${search}%`} OR d.delivery_number ILIKE ${`%${search}%`})`;
+    if (search) query = sql`${query} AND (b.billing_number ILIKE ${`%${search}%`} OR so.sales_number ILIKE ${`%${search}%`} OR d.delivery_number ILIKE ${`%${search}%`} OR COALESCE(pa.display_name, bp.name1) ILIKE ${`%${search}%`})`;
     query = sql`${query} ORDER BY b.billing_number DESC LIMIT ${limit}`;
 
     const result = await db.execute(query);
 
     const billings = [];
     for (const row of result.rows as any[]) {
-      const linesRes = await db.execute(sql`
-        SELECT bl.id, bl.line_number, bl.material_id, bl.quantity, bl.unit_price, bl.line_total, bl.tax_amount,
-               m.material_number, m.description
-        FROM sd_billing_line bl
-        JOIN ent_material_master m ON bl.material_id = m.id
-        WHERE bl.billing_id = ${row.id}
-        ORDER BY bl.line_number
-      `);
+      // Try new prod_item first, fallback ent_material_master – Module2
+      let linesRes;
+      try {
+        linesRes = await db.execute(sql`
+          SELECT bl.id, bl.line_number, bl.material_id as item_id, bl.material_id, bl.quantity, bl.unit_price, bl.line_total, bl.tax_amount,
+                 COALESCE(pi.item_number, m.material_number) as material_number, COALESCE(pi.description, m.description) as description
+          FROM sd_billing_line bl
+          LEFT JOIN prod_item pi ON bl.material_id = pi.id
+          LEFT JOIN ent_material_master m ON bl.material_id = m.id
+          WHERE bl.billing_id = ${row.id}
+          ORDER BY bl.line_number
+        `);
+      } catch {
+        linesRes = await db.execute(sql`
+          SELECT bl.id, bl.line_number, bl.material_id, bl.quantity, bl.unit_price, bl.line_total, bl.tax_amount,
+                 m.material_number, m.description
+          FROM sd_billing_line bl
+          JOIN ent_material_master m ON bl.material_id = m.id
+          WHERE bl.billing_id = ${row.id}
+          ORDER BY bl.line_number
+        `);
+      }
       billings.push({ ...row, lines: linesRes.rows });
     }
 

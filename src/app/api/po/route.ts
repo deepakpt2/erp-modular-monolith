@@ -25,12 +25,13 @@ export async function GET(req: NextRequest) {
   const elikz = searchParams.get('elikz');
 
   try {
+    // Legal-safe: try partner_account (new) + ent_business_partner (legacy) – COALESCE for backward compat – Module3
     let query = sql`
       SELECT 
         po.id, po.po_number, po.status, po.total_amount, po.total_landed_cost, po.currency,
         po.delivery_date, po.freight_amount, po.customs_amount, po.created_at,
         p.code as plant_code, p.name as plant_name,
-        bp.bp_number as vendor_number, bp.name1 as vendor_name,
+        COALESCE(pa.account_number, bp.bp_number) as vendor_number, COALESCE(pa.display_name, bp.name1) as vendor_name,
         cc.code as company_code,
         (SELECT COUNT(*) FROM mm_po_line WHERE po_id = po.id) as line_count,
         (SELECT SUM(quantity) FROM mm_po_line WHERE po_id = po.id) as total_ordered_qty,
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
         pr.pr_number as pr_ref
       FROM mm_purchase_order po
       LEFT JOIN ent_plant p ON po.plant_id = p.id
+      LEFT JOIN partner_account pa ON po.vendor_id = pa.id
       LEFT JOIN ent_business_partner bp ON po.vendor_id = bp.id
       LEFT JOIN ent_company_code cc ON po.company_code_id = cc.id
       LEFT JOIN mm_purchase_requisition pr ON po.pr_id = pr.id
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest) {
     `;
 
     if (search) {
-      query = sql`${query} AND (po.po_number ILIKE ${`%${search}%`} OR bp.name1 ILIKE ${`%${search}%`} OR pr.pr_number ILIKE ${`%${search}%`})`;
+      query = sql`${query} AND (po.po_number ILIKE ${`%${search}%`} OR COALESCE(pa.display_name, bp.name1) ILIKE ${`%${search}%`} OR pr.pr_number ILIKE ${`%${search}%`})`;
     }
     if (plantId) query = sql`${query} AND po.plant_id = ${plantId}`;
     if (status) query = sql`${query} AND po.status = ${status}`;

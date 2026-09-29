@@ -22,22 +22,24 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get('status');
 
   try {
+    // Legal-safe: partner_account (new) + ent_business_partner (legacy) – Module3
     let query = sql`
       SELECT 
         iv.id, iv.iv_number, iv.status, iv.invoice_date, iv.posting_date, iv.vendor_invoice_number,
         iv.total_amount, iv.total_landed_cost, iv.price_variance, iv.is_landed_cost_posted,
         po.po_number, gr.gr_number,
-        bp.name as vendor_name,
+        COALESCE(pa.display_name, bp.name1, bp.name) as vendor_name,
         p.code as plant_code
       FROM mm_invoice_verification iv
       LEFT JOIN mm_purchase_order po ON iv.po_id = po.id
       LEFT JOIN mm_goods_receipt gr ON iv.gr_id = gr.id
+      LEFT JOIN partner_account pa ON iv.vendor_id = pa.id
       LEFT JOIN ent_business_partner bp ON iv.vendor_id = bp.id
       LEFT JOIN ent_plant p ON po.plant_id = p.id
       WHERE 1=1
     `;
 
-    if (search) query = sql`${query} AND (iv.iv_number ILIKE ${`%${search}%`} OR iv.vendor_invoice_number ILIKE ${`%${search}%`} OR po.po_number ILIKE ${`%${search}%`})`;
+    if (search) query = sql`${query} AND (iv.iv_number ILIKE ${`%${search}%`} OR iv.vendor_invoice_number ILIKE ${`%${search}%`} OR po.po_number ILIKE ${`%${search}%`} OR COALESCE(pa.display_name, bp.name1, bp.name) ILIKE ${`%${search}%`})`;
     if (plantId) query = sql`${query} AND po.plant_id = ${plantId}`;
     if (status) query = sql`${query} AND iv.status = ${status}`;
 

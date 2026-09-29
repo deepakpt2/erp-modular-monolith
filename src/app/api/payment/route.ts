@@ -38,11 +38,13 @@ export async function GET(req: NextRequest) {
     // AP Open Items
     let apOpen: any[] = [];
     try {
+      // Legal-safe: partner_account (new) + ent_business_partner (legacy) – Module3
       let apQuery = sql`
-        SELECT ap.id, ap.invoice_number, ap.vendor_id, bp.bp_number as vendor_number, bp.name1 as vendor_name,
+        SELECT ap.id, ap.invoice_number, ap.vendor_id, COALESCE(pa.account_number, bp.bp_number) as vendor_number, COALESCE(pa.display_name, bp.name1) as vendor_name,
                ap.gross_amount, ap.net_amount, ap.currency, ap.status, ap.due_date, ap.posting_date,
                cc.code as company_code
         FROM fi_ap_invoice ap
+        LEFT JOIN partner_account pa ON ap.vendor_id = pa.id
         JOIN ent_business_partner bp ON ap.vendor_id = bp.id
         JOIN ent_company_code cc ON ap.company_code_id = cc.id
         WHERE ap.status = 'OPEN'
@@ -51,7 +53,23 @@ export async function GET(req: NextRequest) {
       apQuery = sql`${apQuery} ORDER BY ap.due_date LIMIT ${limit}`;
       const apRes = await db.execute(apQuery);
       apOpen = apRes.rows;
-    } catch {}
+    } catch {
+      try {
+        let apQuery = sql`
+          SELECT ap.id, ap.invoice_number, ap.vendor_id, bp.bp_number as vendor_number, bp.name1 as vendor_name,
+                 ap.gross_amount, ap.net_amount, ap.currency, ap.status, ap.due_date, ap.posting_date,
+                 cc.code as company_code
+          FROM fi_ap_invoice ap
+          JOIN ent_business_partner bp ON ap.vendor_id = bp.id
+          JOIN ent_company_code cc ON ap.company_code_id = cc.id
+          WHERE ap.status = 'OPEN'
+        `;
+        if (companyCode && companyCode !== 'ALL') apQuery = sql`${apQuery} AND cc.code = ${companyCode}`;
+        apQuery = sql`${apQuery} ORDER BY ap.due_date LIMIT ${limit}`;
+        const apRes = await db.execute(apQuery);
+        apOpen = apRes.rows;
+      } catch {}
+    }
 
     return NextResponse.json({
       payments: result.rows,

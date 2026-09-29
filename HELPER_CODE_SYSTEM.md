@@ -67,6 +67,13 @@
 | **MBMC** | BMC | MFG-BOM-CR | CS01 | BOM Create | M=Manufacturing | 4 = CS01 | ⏳ Module7 |
 | **MWCC** | WCC | MFG-WC-CR | CR01 | Work Center Create | M=Manufacturing | 4 = CR01 | ⏳ Module7 |
 | **MRTC** | RTC | MFG-RTG-CR | CA01 | Routing Create | M=Manufacturing | 4 = CA01 | ⏳ Module7 |
+| **EPAC** | PAC | FND-BP-CR | BP01 | **Partner Account Create – Legal-safe (was Business Partner)** – partner_account | E=Enterprise | 4 = BP01 | ✅ Module3 – central master role VENDOR/CUSTOMER/BOTH |
+| **EPAE** | PAE | FND-BP-CH | BP02 | Partner Account Edit | E=Enterprise | 4 = BP02 | ✅ Module3 |
+| **EPAV** | PAV | FND-BP-DP | BP03 | Partner Account View | E=Enterprise | 4 = BP03 | ✅ Module3 |
+| **EPAL** | PAL | FND-BP-LS | - | Partner Account List | E=Enterprise | 4 | ✅ Module3 |
+| **PSUC** | SUC | FND-SU-CR | XK01/ME01 | **Supplier Create – Legal-safe (was Vendor Master XK01/ME01)** – partner_account VENDOR + partner_vendor_profile | P=Procurement | 4 = XK01 | ✅ Module3 – procurement_division (was purchasing_org), buyer_team (was purchasing_group), is_quality_relevant (was is_qm_relevant) |
+| **SCUC** | CUC | FND-CU-CR | XD01 | **Customer Create – Legal-safe (was Customer Master XD01)** – partner_account CUSTOMER + partner_customer_profile | S=Sales | 4 = XD01 | ✅ Module3 – commercial_org (was sales_org), sales_channel (was distribution_channel), product_line (was division), credit_policy_area (was credit_control_area) |
+| **EPCC** | PCC | FND-PC-CR | - | Partner Contact Create – Legal-safe new – partner_contact | E=Enterprise | 4 | ✅ Module3 – PRIMARY/BILLING/SHIPPING/PURCHASING/SALES |
 | **FCYC** | CYC | FIN-CUR-CR | OY03 | Currency Create | F=Financials | 4 = OY03 | ✅ Module1 |
 | **FTXC** | TXC | FIN-TX-CR | FTXP | Tax Create | F=Financials | 4 = FTXP | ✅ Module1 |
 | **FCOA** | COA | FIN-COA-CR | OB13 | Chart of Accounts Create | F=Financials | 4 = OB13 | ✅ Module1 |
@@ -111,6 +118,32 @@
 | ent_batch | inv_lot | ELTC | lot_number (was batch_number) |
 | batch_number | lot_number | ELTC | inv_lot.lot_number |
 | Fresh empty for items, sample UoM/Category kept | - | - | INR default, CoA INT, GL 100000-500000, Tax GST0/5/12/18/28, Currencies INR, UoM KG/L/PC/BOX – as per requirement fresh empty but common sample data kept for user convenience |
+
+### Module 3 – Partner – Legal-Safe Mapping Details – 2026-09-29
+
+| Old SAP-like Table/Field/Enum | New Legal-Safe Own IP | Helper Code | Notes |
+|---|---|---|---|
+| ent_business_partner | partner_account | EPAC | central master – account_number (was bp_number) |
+| bp_number BP-V-10*, BP-C-20* | account_number SUP-1001/CUST-2001 | EPAC | neutral account_number |
+| name1 | display_name | EPAC | display_name – e.g., Malabar Spice Farms |
+| name2 | legal_name | EPAC | legal_name – Pvt Ltd |
+| address | address_line1 + city + region + postal_code + country | EPAC | structured address |
+| bp_role VENDOR/CUSTOMER/BOTH | partner_role VENDOR/CUSTOMER/BOTH | EPAC | neutral but kept |
+| ent_bp_vendor_ext | partner_vendor_profile | PSUC | procurement view |
+| bp_id | partner_id | PSUC | FK to partner_account |
+| is_qm_relevant | is_quality_relevant | PSUC | legal-safe – was is_qm_relevant |
+| purchasing_org 1000/KPO1 | procurement_division_id org_procurement_division PD-1000 | PSUC | legal-safe |
+| purchasing_group 001/K01 | buyer_team_id org_buyer_team BUY-001 | PSUC | legal-safe |
+| ent_bp_customer_ext | partner_customer_profile | SCUC | sales view |
+| sales_org KSO1/1000 | commercial_org_id org_commercial_org CO-1000 | SCUC | legal-safe |
+| distribution_channel K1/10 | sales_channel_id org_sales_channel CH-10 | SCUC | legal-safe |
+| division K1/00 | product_line_id org_product_line PL-00 | SCUC | legal-safe |
+| credit_control_area OB45 | credit_policy_area_id fin_credit_policy_area CP-1000 | SCUC | legal-safe |
+| partner_contact – NEW | partner_contact | EPCC | multiple contacts per partner – PRIMARY/BILLING/SHIPPING/PURCHASING/SALES/TECHNICAL/FINANCE – new own IP |
+| partner_facility_assign – NEW | partner_facility_assign | EPAC | facility assignment – which facilities partner can supply to / deliver from – org_facility FAC-1000 (was Plant 1000) |
+| tax_id, gst_number, pan_number – new | partner_account.gst_number, pan_number | EPAC | India GST – GSTIN 32AABCK1234M1Z5, PAN AABCK1234M – new |
+| Fresh empty for partners | - | - | No hardcoded KS-V-001 etc – fresh empty per requirement – common sample data like CoA/GL/Tax/Currencies/UoM kept for convenience – INR default |
+| Helper codes | EPAC/PSUC/SCUC | - | EPAC Enterprise Partner Account Create alias PTNC/BPAC/BP01/FND-BP-CR – 4-char MOOA E=Enterprise, PA=Partner Account, C=Create – PSUC Procurement Supplier Create alias SUPC/XK01/ME01 – P=Procurement, SU=Supplier, C=Create – SCUC Sales Customer Create alias CUCC/XD01 – S=Sales, CU=Customer, C=Create – same length as BP01/XK01/XD01 but own IP, module grouped, intuitive |
 
 
 ## Why 4-Char Module-Grouped Works
