@@ -22,9 +22,9 @@ export default function CostCentersPage(){
   useEffect(()=>{load();},[companyCode]);
 
   async function create(){
-    if(!form.code || !form.name){ setMsg('CODE and NAME required'); return; }
+    if(!(form as any).code || !form.name){ setMsg('CODE and NAME required'); return; }
     const res = await fetch('/api/cost-centers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)}).then(r=>r.json());
-    if(res.success){ setMsg(`✅ ${form.code} CREATED`); load(); setForm({code:'',name:'',company_code:companyCode, description:'', cost_unit_code:'', control_area_code:'', parent_code:''}); }
+    if(res.success){ setMsg(`✅ ${(form as any).code} CREATED`); load(); setForm({code:'',name:'',company_code:companyCode, description:'', cost_unit_code:'', control_area_code:'', parent_code:''}); }
     else setMsg(`❌ ${res.error}`);
   }
 
@@ -37,7 +37,7 @@ export default function CostCentersPage(){
       <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
         <h3 className="font-semibold mb-4">Create Cost Center <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">KS01 {costCenters.length}</span></h3>
         <div className="grid grid-cols-3 gap-4">
-          <div><label className="text-xs font-medium text-zinc-600">CODE</label><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
+          <div><label className="text-xs font-medium text-zinc-600">CODE</label><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
           <div><label className="text-xs font-medium text-zinc-600">NAME</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
           <div><label className="text-xs font-medium text-zinc-600">COMPANY_CODE</label><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase" /></div>
           <div><label className="text-xs font-medium text-zinc-600">COST_UNIT_CODE</label><input value={form.cost_unit_code} onChange={e=>setForm({...form,cost_unit_code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase" /></div>
@@ -62,7 +62,7 @@ export default function CostCentersPage(){
     <div className="font-mono text-[11px] space-y-2">
       <div className="font-bold border-b border-black pb-1">KS01 COST_CENTER_CREATE {costCenters.length} API: POST /api/cost-centers {`{code, name, company_code}`}</div>
       <div className="grid grid-cols-3 gap-2">
-        <div><div className="text-[10px] text-zinc-500">CODE</div><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">CODE</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">COMPANY_CODE</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
       </div>

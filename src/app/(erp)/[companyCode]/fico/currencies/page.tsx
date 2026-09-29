@@ -23,7 +23,7 @@ export default function CurrenciesPage(){
   useEffect(()=>{load();},[]);
 
   const handleCreate = async () => {
-    if(!form.code||!form.name){ setMsg('CODE and NAME required'); return; }
+    if(!(form as any).code||!form.name){ setMsg('CODE and NAME required'); return; }
     const res = await fetch('/api/currencies',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form, decimal_places: parseInt(form.decimal_places)})}).then(r=>r.json());
     if(res.success){ setMsg(`✅ ${res.currency.code} CREATED`); setShowForm(false); setForm({code:'',name:'',decimal_places:'2',symbol:''}); load(); }
     else setMsg(`❌ ${res.error}`);
@@ -46,7 +46,7 @@ export default function CurrenciesPage(){
       {showForm && (
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 space-y-4">
           <div className="grid md:grid-cols-4 gap-4">
-            <div><label className="text-xs font-medium text-zinc-600">CODE</label><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
+            <div><label className="text-xs font-medium text-zinc-600">CODE</label><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
             <div><label className="text-xs font-medium text-zinc-600">NAME</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
             <div><label className="text-xs font-medium text-zinc-600">DECIMAL_PLACES</label><input value={form.decimal_places} onChange={e=>setForm({...form,decimal_places:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
             <div><label className="text-xs font-medium text-zinc-600">SYMBOL</label><input value={form.symbol} onChange={e=>setForm({...form,symbol:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
@@ -71,7 +71,7 @@ export default function CurrenciesPage(){
     <div className="font-mono text-[11px] space-y-2">
       <div className="font-bold border-b border-black pb-1">FCYC CURRENCY_CREATE {currencies.length} API: POST /api/currencies {`{code, name, decimal_places, symbol}`}</div>
       <div className="grid grid-cols-4 gap-2">
-        <div><div className="text-[10px] text-zinc-500">CODE</div><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">CODE</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">DECIMAL_PLACES</div><input value={form.decimal_places} onChange={e=>setForm({...form,decimal_places:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">SYMBOL</div><input value={form.symbol} onChange={e=>setForm({...form,symbol:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>

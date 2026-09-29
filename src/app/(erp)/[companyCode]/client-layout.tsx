@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
-// Helper code flag – code is just helper to identify function, function itself is destination
 const SHOW_FUNCTION_CODE = process.env.NEXT_PUBLIC_SHOW_FUNCTION_CODE !== 'false';
 
 const NAV_GROUPS = [
@@ -118,18 +117,26 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
 
   return (
     <div className="flex min-h-screen bg-[#fafaf9]">
-      <aside className={`${collapsed ? 'w-[60px]' : 'w-[280px]'} bg-white border-r border-zinc-200 flex flex-col transition-all duration-200 shrink-0`}>
-        <div className="h-[64px] border-b border-zinc-200 flex items-center px-4 gap-3">
+      <aside className={`${collapsed ? 'w-[64px]' : 'w-[280px]'} bg-white border-r border-zinc-200 flex flex-col transition-all duration-200 shrink-0 relative`}>
+        {/* Header - fixed toggle visibility */}
+        <div className={`h-[64px] border-b border-zinc-200 flex items-center ${collapsed ? 'justify-center px-2' : 'px-4 gap-3'}`}>
           <div className="w-8 h-8 rounded-xl bg-black text-white flex items-center justify-center font-black shrink-0">E</div>
           {!collapsed && (
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="font-semibold text-sm truncate">{companyCode} • ERP</div>
               <div className="text-[11px] text-zinc-500">Function is destination</div>
             </div>
           )}
-          <button onClick={() => setCollapsed(!collapsed)} className="ml-auto text-zinc-400 hover:text-black text-xs">
-            {collapsed ? '→' : '←'}
-          </button>
+          {/* Always visible toggle - when collapsed, positioned absolutely outside to stay clickable */}
+          {!collapsed ? (
+            <button onClick={() => setCollapsed(!collapsed)} className="ml-auto w-7 h-7 bg-zinc-100 hover:bg-black hover:text-white rounded-full flex items-center justify-center text-xs transition-colors" title="Collapse sidebar">
+              <span>&lt;</span>
+            </button>
+          ) : (
+            <button onClick={() => setCollapsed(!collapsed)} className="absolute -right-3 top-5 w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-[10px] border-2 border-white shadow-lg hover:bg-zinc-800 hover:scale-110 transition-all z-50" title="Expand sidebar">
+              <span>&gt;</span>
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto p-2 space-y-4">
@@ -170,7 +177,6 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
                       title={`Function: ${item.label} – ${item.desc} – Helper code ${item.code} identifies function, function is destination`}
                       className={`flex items-center gap-2 px-2 py-2 rounded-xl text-xs ${isActive ? 'bg-zinc-900 text-white hover:bg-black' : 'hover:bg-zinc-50 hover:text-black bg-white text-zinc-700'} ${collapsed ? 'justify-center' : ''}`}
                     >
-                      {/* Function is destination, helper code is secondary */}
                       {!collapsed && (
                         <div className="min-w-0 flex-1">
                           <div className="font-medium truncate flex items-center gap-1.5">
@@ -194,22 +200,49 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
           )})}
         </div>
 
-        <div className="p-2 border-t border-zinc-200">
+        <div className="p-2 border-t border-zinc-200 space-y-2">
           {!collapsed ? (
-            <div className="text-[11px] text-zinc-500 space-y-1">
-              <div>Company: <b>{companyCode}</b></div>
-              <div className="text-[10px]">Function is destination • Code is helper</div>
-              <div>Search: Press <kbd className="border rounded px-1">Ctrl+K</kbd> – search function name</div>
-              <div>Helper OX02 → Company Master</div>
-            </div>
+            <>
+              <div className="text-[11px] text-zinc-500 space-y-1">
+                <div>Company: <b>{companyCode}</b></div>
+                <div className="text-[10px]">Function is destination • Code is helper</div>
+                <div>Search: Press <kbd className="border rounded px-1">Ctrl+K</kbd> – search function name</div>
+                <div>Helper OX02 → Company Master</div>
+              </div>
+              <div className="pt-2 border-t border-zinc-100 text-[10px] text-zinc-400 space-y-1">
+                <div className="flex gap-2">
+                  <Link href="/docs" className="hover:text-black underline">Documentation</Link>
+                  <span>•</span>
+                  <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" rel="noopener" className="hover:text-black underline">GitHub</a>
+                </div>
+                <div>© 2026 Deepak • ERP Modular Monolith • MIT</div>
+              </div>
+            </>
           ) : (
-            <div className="text-center text-[10px] text-zinc-400">Func</div>
+            <div className="text-center space-y-1">
+              <div className="text-[10px] text-zinc-400">Func</div>
+              <button onClick={() => setCollapsed(false)} className="w-8 h-8 mx-auto bg-black text-white rounded-full flex items-center justify-center text-xs hover:bg-zinc-800" title="Expand">↔</button>
+            </div>
           )}
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0">
-        {children}
+      <main className="flex-1 min-w-0 flex flex-col">
+        <div className="flex-1">{children}</div>
+        {/* ERP footer */}
+        <footer className="border-t border-zinc-200 bg-white px-6 py-3 flex flex-col sm:flex-row gap-2 justify-between items-center text-[11px] text-zinc-500">
+          <div className="flex gap-3 items-center">
+            <Link href="/docs" className="hover:text-black font-medium">Documentation</Link>
+            <span className="text-zinc-300">|</span>
+            <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" rel="noopener noreferrer" className="hover:text-black flex items-center gap-1">
+              <span>GitHub</span>
+              <span className="text-[10px]">↗</span>
+            </a>
+            <span className="text-zinc-300">|</span>
+            <Link href="/" className="hover:text-black">Home</Link>
+          </div>
+          <div className="text-[10px]">© 2026 Deepak Patil • ERP Modular Monolith • MIT License • Company: {companyCode}</div>
+        </footer>
       </main>
     </div>
   );

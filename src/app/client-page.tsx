@@ -147,6 +147,13 @@ export default function Home() {
           <div className="mt-2 bg-[#c0c0c0] border border-black p-1">
             Status: Ready • {kpis[3]?.value}
           </div>
+          <div className="mt-4 border-t-2 border-black pt-2 flex justify-between text-[10px]">
+            <div className="flex gap-2">
+              <Link href="/docs" className="underline hover:bg-black hover:text-white px-1">Documentation</Link>
+              <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" className="underline hover:bg-black hover:text-white px-1">GitHub ↗</a>
+            </div>
+            <div>© 2026 Deepak Patil • ERP Modular Monolith • MIT</div>
+          </div>
         </div>
       </main>
     );
@@ -277,6 +284,19 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <footer className="border-t border-zinc-200 bg-white mt-12">
+        <div className="max-w-[1600px] mx-auto px-6 py-6 flex flex-col sm:flex-row gap-3 justify-between items-center text-[11px] text-zinc-500">
+          <div className="flex gap-4 items-center">
+            <Link href="/docs" className="hover:text-black font-medium flex items-center gap-1.5"><span className="w-5 h-5 rounded-full bg-zinc-900 text-white flex items-center justify-center text-[9px]">📄</span> Documentation</Link>
+            <span className="text-zinc-300">|</span>
+            <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" rel="noopener noreferrer" className="hover:text-black flex items-center gap-1 font-medium">GitHub <span className="text-[10px]">↗</span></a>
+            <span className="text-zinc-300">|</span>
+            <Link href="/" className="hover:text-black">Home</Link>
+          </div>
+          <div className="text-[10px] text-zinc-400">© 2026 Deepak Patil • ERP Modular Monolith • MIT License • Function is destination • Code is helper</div>
+        </div>
+      </footer>
     </main>
   );
 }

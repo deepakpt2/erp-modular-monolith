@@ -29,10 +29,10 @@ export default function PartnersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(!form.account_number || !form.display_name){ setMsg('ACCOUNT_NUMBER and DISPLAY_NAME required'); return; }
-    const payload = { ...form, bp_number: form.account_number, name1: form.display_name, name2: form.legal_name, address: form.address_line1 };
+    if(!(form as any).account_number || !form.display_name){ setMsg('ACCOUNT_NUMBER and DISPLAY_NAME required'); return; }
+    const payload = { ...form, bp_number: (form as any).account_number, name1: form.display_name, name2: form.legal_name, address: form.address_line1 };
     const res = await fetch('/api/business-partners',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
-    if(res.success){ setMsg(`✅ ${form.account_number} CREATED`); setShowAdd(false); load(); }
+    if(res.success){ setMsg(`✅ ${(form as any).account_number} CREATED`); setShowAdd(false); load(); }
     else setMsg(`❌ ${res.error}`);
   };
 
@@ -52,7 +52,7 @@ export default function PartnersPage() {
       {showAdd && (
         <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <div><label className="text-xs font-medium text-zinc-600">ACCOUNT_NUMBER</label><input required value={form.account_number} onChange={e=>setForm({...form, account_number:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
+            <div><label className="text-xs font-medium text-zinc-600">ACCOUNT_NUMBER</label><input required value={(form as any).account_number} onChange={e=>setForm({...form, account_number:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
             <div><label className="text-xs font-medium text-zinc-600">DISPLAY_NAME</label><input required value={form.display_name} onChange={e=>setForm({...form, display_name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
             <div><label className="text-xs font-medium text-zinc-600">LEGAL_NAME</label><input value={form.legal_name} onChange={e=>setForm({...form, legal_name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
             <div><label className="text-xs font-medium text-zinc-600">ROLE</label><select value={form.role} onChange={e=>setForm({...form, role:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm"><option>VENDOR</option><option>CUSTOMER</option><option>BOTH</option></select></div>
@@ -81,7 +81,7 @@ export default function PartnersPage() {
     <div className="font-mono text-[11px] space-y-2">
       <div className="font-bold border-b border-black pb-1">EPAC PARTNER_CREATE {partners.length} API: POST /api/business-partners {`{account_number, display_name, role}`}</div>
       <div className="grid grid-cols-3 gap-2">
-        <div><div className="text-[10px] text-zinc-500">ACCOUNT_NUMBER</div><input value={form.account_number} onChange={e=>setForm({...form,account_number:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">ACCOUNT_NUMBER</div><input value={(form as any).account_number} onChange={e=>setForm({...form,account_number:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">DISPLAY_NAME</div><input value={form.display_name} onChange={e=>setForm({...form,display_name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">ROLE</div><select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="w-full border border-black px-1 py-1 text-xs"><option>VENDOR</option><option>CUSTOMER</option><option>BOTH</option></select></div>
       </div>

@@ -27,9 +27,9 @@ export default function MaterialsPage() {
 
   const handleCreate = async (e: React.FormEvent)=>{
     e.preventDefault();
-    if(!form.item_number || !form.description){ setMsg('ITEM_NUMBER and DESCRIPTION required'); return; }
+    if(!(form as any).item_number || !form.description){ setMsg('ITEM_NUMBER and DESCRIPTION required'); return; }
     const res = await fetch('/api/materials',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)}).then(r=>r.json());
-    if(res.success){ setMsg(`✅ ${form.item_number} CREATED`); setShowAdd(false); load(); }
+    if(res.success){ setMsg(`✅ ${(form as any).item_number} CREATED`); setShowAdd(false); load(); }
     else setMsg(`❌ ${res.error}`);
   };
 
@@ -49,7 +49,7 @@ export default function MaterialsPage() {
       {showAdd && (
         <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <div><label className="text-xs font-medium text-zinc-600">ITEM_NUMBER</label><input required value={form.item_number} onChange={e=>setForm({...form, item_number:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
+            <div><label className="text-xs font-medium text-zinc-600">ITEM_NUMBER</label><input required value={(form as any).item_number} onChange={e=>setForm({...form, item_number:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
             <div><label className="text-xs font-medium text-zinc-600">DESCRIPTION</label><input required value={form.description} onChange={e=>setForm({...form, description:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
             <div><label className="text-xs font-medium text-zinc-600">TYPE</label><select value={form.type} onChange={e=>setForm({...form, type:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm"><option>RAW</option><option>SEMI</option><option>FINISHED</option><option>TRADING</option><option>PACKAGING</option></select></div>
             <div><label className="text-xs font-medium text-zinc-600">BASE_UOM</label><input value={form.base_uom} onChange={e=>setForm({...form, base_uom:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase" /></div>
@@ -78,7 +78,7 @@ export default function MaterialsPage() {
     <div className="font-mono text-[11px] space-y-2">
       <div className="font-bold border-b border-black pb-1">EMTC PRODUCT_CREATE {materials.length} API: POST /api/materials {`{item_number, description, type, base_uom}`}</div>
       <div className="grid grid-cols-3 gap-2">
-        <div><div className="text-[10px] text-zinc-500">ITEM_NUMBER</div><input value={form.item_number} onChange={e=>setForm({...form,item_number:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">ITEM_NUMBER</div><input value={(form as any).item_number} onChange={e=>setForm({...form,item_number:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">TYPE</div><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full border border-black px-1 py-1 text-xs"><option>RAW</option><option>SEMI</option><option>FINISHED</option></select></div>
       </div>

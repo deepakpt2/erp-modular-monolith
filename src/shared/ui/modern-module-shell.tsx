@@ -115,9 +115,17 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
         </div>
 
         {/* Footer – minimal, exact only */}
-        <div className="h-4 bg-black text-white flex items-center px-2 justify-between text-[10px] shrink-0">
-          <span>{code} | READY</span>
-          <span className="text-zinc-400">{new Date().toLocaleTimeString()} {isLoggedIn ? (session?.user as any)?.email : ''}</span>
+        <div className="h-6 bg-black text-white flex items-center px-2 justify-between text-[10px] shrink-0 gap-2">
+          <div className="flex gap-2 items-center">
+            <span>{code} | READY</span>
+            <span className="text-zinc-600">|</span>
+            <Link href="/docs" className="hover:text-white underline">DOCS</Link>
+            <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" className="hover:text-white underline">GITHUB</a>
+          </div>
+          <div className="flex gap-2 items-center">
+            <span className="text-zinc-500">© 2026 Deepak • MIT</span>
+            <span className="text-zinc-400">{new Date().toLocaleTimeString()} {isLoggedIn ? (session?.user as any)?.email : ''}</span>
+          </div>
         </div>
 
         <style>{`
@@ -237,6 +245,21 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
           {children}
         </div>
       </div>
+
+      <footer className="border-t border-zinc-200 bg-white mt-12">
+        <div className="max-w-[1600px] mx-auto px-6 py-4 flex flex-col sm:flex-row gap-2 justify-between items-center text-[11px] text-zinc-500">
+          <div className="flex gap-3 items-center">
+            <Link href="/docs" className="hover:text-black font-medium">Documentation</Link>
+            <span className="text-zinc-300">|</span>
+            <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" rel="noopener noreferrer" className="hover:text-black flex items-center gap-1">GitHub <span className="text-[10px]">↗</span></a>
+            <span className="text-zinc-300">|</span>
+            <Link href="/" className="hover:text-black">Home</Link>
+            <span className="text-zinc-300">|</span>
+            <span className="text-[10px]">{code} • Function is destination</span>
+          </div>
+          <div className="text-[10px]">© 2026 Deepak Patil • ERP Modular Monolith • MIT License • {title}</div>
+        </div>
+      </footer>
     </div>
   );
 }
