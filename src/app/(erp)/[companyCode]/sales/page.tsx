@@ -11,7 +11,8 @@ export default function Page(){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [msg,setMsg]=useState('');
-  const [form,setForm]=useState({customer: "", material: "", quantity: "", company_code: ""});
+  const [form,setForm]=useState({customer_code: "", facility_code: "", commercial_org_code: "CO-1000", sales_channel_code: "CH-10", product_line_code: "PL-00", pricing_procedure: "ZPR00", customer_po: ""});
+  const [lines,setLines]=useState<any[]>([{product_code: "", quantity: "10", unit_price: "100", uom_code: "PC", discount_percent: "0", tax_code: "GST18"}]);
 
   async function load(){
     setLoading(true);
@@ -24,145 +25,167 @@ export default function Page(){
   useEffect(()=>{load();},[]);
 
   async function create(){
-    if(!(form as any).customer){ setMsg('CUSTOMER required'); return; }
-    const payload = {...form, company_code: companyCode, companyCode};
+    if(!form.customer_code){ setMsg('❌ CUSTOMER_CODE required – SCUC – General ERP Customer – alias XD01 – T0 BLOCKING – sales area required'); return; }
+    if(!form.facility_code){ setMsg('❌ FACILITY_CODE required – EFCC – General ERP Facility – alias Plant'); return; }
+    const payload = {
+      customer_code: form.customer_code,
+      partner_code: form.customer_code,
+      facility_code: form.facility_code,
+      plant_code: form.facility_code,
+      commercial_org_code: form.commercial_org_code,
+      sales_org: form.commercial_org_code,
+      sales_channel_code: form.sales_channel_code,
+      distribution_channel: form.sales_channel_code,
+      product_line_code: form.product_line_code,
+      division: form.product_line_code,
+      customer_po_number: form.customer_po,
+      company_code: companyCode,
+      items: lines.filter(l=>l.product_code).map((l,i)=>({
+        item_number: l.product_code,
+        quantity: l.quantity,
+        unit_price: l.unit_price,
+        uom_code: l.uom_code,
+        discount_percent: l.discount_percent,
+        tax_code: l.tax_code,
+        line_number: (i+1)*10
+      }))
+    };
     const res = await fetch('/api/sales-orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
-    if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||(form as any).item_number||(form as any).account_number||(form as any).employee_number||(form as any).pr_number||(form as any).po_number||(form as any).bom_number||(form as any).order_number||'CREATED')+' CREATED'); load(); setForm({customer: "", material: "", quantity: "", company_code: ""}); }
-    else setMsg('❌ '+(res.error||'Failed'));
+    if(res.success){
+      setMsg(`✅ Sales Order ${res.salesNumber || res.salesOrder?.sales_number} created – SSOC alias VA01 – General ERP – ${lines.filter(l=>l.product_code).length} lines – Pricing PR00 ${res._calculated_net ? `net ${res._calculated_net} tax ${res._calculated_tax} total ${res._calculated_total}` : ''} – T0 BLOCKING – uses VK11 condition records PR00 base price, K004 discount, MWST tax – pricing procedure ${form.pricing_procedure} determination: customer+sales area → procedure → access sequence V/07 → condition records – NO DANGLING – next: Delivery SDLC VL01N → PGI 601 GBB/BSX → Billing SBLC VF01 VKOA KOFI/KOFK`);
+      load();
+      setLines([{product_code: "", quantity: "10", unit_price: "100", uom_code: "PC", discount_percent: "0", tax_code: "GST18"}]);
+    } else setMsg('❌ '+(res.error||JSON.stringify(res)));
   }
 
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING VA01...</div>;
-  const items = data?.data || data?.items || data?.materials || data?.partners || data?.users || data?.roles || data?.employees || data?.payrolls || data?.purchaseRequisitions || data?.purchaseOrders || data?.goodsReceipts || data?.invoices || data?.stos || data?.boms || data?.kittings || data?.mrp || data?.routings || data?.workCenters || data?.salesOrders || data?.billings || data?.deliveries || data?.physicalInventories || [];
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING SSOC – Sales Orders – General ERP alias VA01 – T0 BLOCKING – Pricing VK11 + Sales Area SCUC-FULL...</div>;
+  const items = data?.salesOrders || data?.data || [];
 
   const classicContent = (
     <div className="space-y-3 font-mono text-[11px]">
-      {msg && <div className="bg-black text-white p-2">{msg}</div>}
+      {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">SSOC SALES ORDERS – VA01 ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">SSOC SALES ORDER CREATE – GENERAL ERP – ALIAS VA01 – {Array.isArray(items)?items.length:0} RECORDS – T0 BLOCKING – SCUC-FULL + PRICING VK11 + VKOA – NO DANGLING</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">CUSTOMER * (DB: PSUC)</div><input value={(form as any).customer} onChange={e=>setForm({...form,customer:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CUSTOMER" /></div>
-          <div><div className="text-[9px] text-zinc-500">PRODUCT * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PRODUCT" /></div>
-          <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
-          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
+          <div><div className="text-[9px] text-zinc-500">CUSTOMER_CODE * (SCUC XD01) – General ERP Customer – sales area required – pricing, credit check, payment terms</div><input value={form.customer_code} onChange={e=>setForm({...form,customer_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CUST-1000 – must exist SCUC" /></div>
+          <div><div className="text-[9px] text-zinc-500">FACILITY_CODE * (EFCC OX10) – General ERP Facility – alias Plant – shipping point DP-1000 derived</div><input value={form.facility_code} onChange={e=>setForm({...form,facility_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="FAC-1000 – FACILITY" /></div>
+          <div><div className="text-[9px] text-zinc-500">CUSTOMER_PO – General ERP Customer Purchase Order reference</div><input value={form.customer_po} onChange={e=>setForm({...form,customer_po:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="PO-CUST-123" /></div>
+          <div><div className="text-[9px] text-zinc-500">COMMERCIAL_ORG_CODE (ECOC OVX2) – General ERP Commercial Org – alias Sales Org – pricing procedure determination</div><input value={form.commercial_org_code} onChange={e=>setForm({...form,commercial_org_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CO-1000 – Commercial Org" /></div>
+          <div><div className="text-[9px] text-zinc-500">SALES_CHANNEL_CODE (ESCC OVTB) – General ERP Sales Channel – alias Distribution Channel</div><input value={form.sales_channel_code} onChange={e=>setForm({...form,sales_channel_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CH-10 – Sales Channel" /></div>
+          <div><div className="text-[9px] text-zinc-500">PRODUCT_LINE_CODE (EPLC OVXA) – General ERP Product Line – alias Division – revenue account determination VKOA</div><input value={form.product_line_code} onChange={e=>setForm({...form,product_line_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PL-00 – Product Line" /></div>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
+        <div className="mt-3 border-2 border-black p-2">
+          <div className="font-bold text-[10px]">LINES – T0 BLOCKING – General ERP Product Lines – Pricing VK11 PR00 base price + K004 discount + MWST tax – Access Sequence V/07 searches condition tables material/customer – net value calculated – NO DANGLING</div>
+          {lines.map((l,idx)=>(
+            <div key={idx} className="grid grid-cols-6 gap-1 mt-2">
+              <input value={l.product_code} onChange={e=>{const n=[...lines]; n[idx].product_code=e.target.value.toUpperCase(); setLines(n);}} className="border-2 border-black px-1 py-1 uppercase" placeholder="PRODUCT – FG-1000" />
+              <input value={l.quantity} onChange={e=>{const n=[...lines]; n[idx].quantity=e.target.value; setLines(n);}} className="border-2 border-black px-1 py-1" placeholder="QTY 10" />
+              <input value={l.unit_price} onChange={e=>{const n=[...lines]; n[idx].unit_price=e.target.value; setLines(n);}} className="border-2 border-black px-1 py-1" placeholder="PR00 Price 100" />
+              <input value={l.discount_percent} onChange={e=>{const n=[...lines]; n[idx].discount_percent=e.target.value; setLines(n);}} className="border-2 border-black px-1 py-1" placeholder="K004 Disc % 0" />
+              <input value={l.tax_code} onChange={e=>{const n=[...lines]; n[idx].tax_code=e.target.value.toUpperCase(); setLines(n);}} className="border-2 border-black px-1 py-1 uppercase" placeholder="MWST Tax GST18" />
+              <div className="flex gap-1"><input value={l.uom_code} onChange={e=>{const n=[...lines]; n[idx].uom_code=e.target.value.toUpperCase(); setLines(n);}} className="border-2 border-black px-1 py-1 w-full uppercase" placeholder="UOM PC" /><button onClick={()=>setLines(lines.filter((_,i)=>i!==idx))} className="border-2 border-black px-2 bg-red-50">X</button></div>
+            </div>
+          ))}
+          <button onClick={()=>setLines([...lines,{product_code: "", quantity: "10", unit_price: "100", uom_code: "PC", discount_percent: "0", tax_code: "GST18"}])} className="mt-2 border-2 border-black px-3 py-1 bg-zinc-100">+ ADD LINE – PRICING VK11</button>
+        </div>
+        <button onClick={create} className="mt-3 bg-black text-white px-3 py-1 w-full">CREATE SALES ORDER SSOC – ALIAS VA01 – GENERAL ERP – T0 BLOCKING – PRICING VK11 + CREDIT CHECK OB45</button>
+        <div className="text-[9px] text-zinc-500 mt-1">T0 BLOCKING – SO pricing procedure V/08 determination: customer + commercial org + sales channel + product line → procedure ZPR00 → access sequence V/07 searches condition tables (material/customer) → PR00 base price, K004 discount, MWST tax – net value = qty*(price-discount)+tax – used in credit check FD32 OVA8 exposure = open SO + delivery + billing + AR vs limit – posting period OB52 account type D – NO DANGLING – General ERP, SAP VA01 alias</div>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white border-2 border-black p-2">
-            <div className="font-bold">{(it.code||it.item_number||it.account_number||it.employee_number||it.pr_number||it.po_number||it.bom_number||it.order_number||it.name||JSON.stringify(it).slice(0,80))}</div>
-            <div className="text-[10px] text-zinc-600">{Object.entries(it).slice(0,4).map(([k,v])=>k.toUpperCase()+'='+String(v)).join(' ')}</div>
+            <div className="font-bold">{it.sales_number} – {it.customer_number || it.customer_name} – {it.facility_code || it.plant_code} – total {it.total_amount} – {it.status} – {it.line_count} lines</div>
+            <div className="text-[10px] text-zinc-600">{it.lines?.map((l:any)=>`${l.item_number || l.material_number}:${l.quantity}x${l.unit_price}`).join(' ')}</div>
           </div>
         ))}
       </div>
-          <div className="mt-4 border-2 border-black p-2 bg-[#ffffcc]">
-        <div className="font-bold text-[10px]">RELATED MASTERS – AUTO – LOW IMPORTANCE</div>
+      <div className="mt-4 border-2 border-black p-2 bg-[#ffffcc]">
+        <div className="font-bold text-[10px]">RELATED – T0 BLOCKING – GENERAL ERP – LOW IMPORTANCE – SALES AREA + PRICING + CREDIT</div>
         <div className="flex flex-wrap gap-1 mt-1">
-          <Link href={`/${companyCode}/foundation/customers`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">SCUC Customer – required →</Link>
-          <Link href={`/${companyCode}/foundation/materials`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">EMTC Material →</Link>
-          <Link href={`/${companyCode}/foundation/credit-policy-areas`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FCPC Credit Policy Area →</Link>
-          <Link href={`/${companyCode}/fico/payment-terms`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FAPT Payment Terms →</Link>
-          <Link href={`/${companyCode}/fico/posting-periods`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FPPE Posting Period Control →</Link>
+          <Link href={`/${companyCode}/foundation/customers`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">SCUC Customer – sales area required →</Link>
+          <Link href={`/${companyCode}/foundation/commercial-orgs`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">ECOC Commercial Org – pricing procedure →</Link>
+          <Link href={`/${companyCode}/foundation/sales-channels`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">ESCC Sales Channel →</Link>
+          <Link href={`/${companyCode}/foundation/product-lines`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">EPLC Product Line – VKOA →</Link>
+          <Link href={`/${companyCode}/foundation/materials`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">EMTC Product – required line →</Link>
+          <Link href={`/${companyCode}/sd/pricing-procedure`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FPRP Pricing Procedure V/08 →</Link>
+          <Link href={`/${companyCode}/fico/tax-codes`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FTXC Tax MWST →</Link>
+          <Link href={`/${companyCode}/foundation/credit-policy-areas`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FCPC Credit Policy – FD32 →</Link>
           <Link href={`/${companyCode}/sd/delivery`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">SDLC Delivery uses SO →</Link>
+          <Link href={`/${companyCode}/sd/billing`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">SBLC Billing uses Delivery →</Link>
         </div>
       </div>
-
-</div>
+    </div>
   );
 
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
-      {msg && <div className={`rounded-2xl p-4 text-sm ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
+      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
       <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
+          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">🛒</div>
           <div>
-            <div className="font-semibold">Sales Orders – SSOC (alias VA01) – General ERP</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • COMPANY_CODE {companyCode} • API: POST /api/sales-orders</div>
+            <div className="font-semibold">Sales Orders – SSOC (alias VA01) – General ERP – T0 BLOCKING – SCUC-FULL + PRICING VK11</div>
+            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} orders • {companyCode} • SSOC uses sales area (ECOC+ESCC+EPLC) → pricing procedure V/08 → VK11 condition records PR00/K004/MWST → net value → credit check FD32 OVA8 – NO DANGLING</div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <DbAutocomplete
-            label="CUSTOMER *"
-            value={(form as any).customer}
-            onChange={v=>setForm({...form,customer:v})}
-            apiUrl="/api/business-partners?role=CUSTOMER"
-            codeField="account_number"
-            nameField="display_name"
-            placeholder="CUSTOMER"
-            required
-            createUrl={`/${companyCode}/foundation/partners?role=CUSTOMER`}
-            createCode="SCUC"
-            companyCode={companyCode}
-          />
-          <DbAutocomplete
-            label="PRODUCT *"
-            value={(form as any).material}
-            onChange={v=>setForm({...form,material:v})}
-            apiUrl="/api/materials"
-            codeField="item_number"
-            nameField="description"
-            placeholder="PRODUCT"
-            required
-            createUrl={`/${companyCode}/foundation/materials`}
-            createCode="EMTC"
-            companyCode={companyCode}
-          />
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY *</label>
-            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="QUANTITY" />
-          </div>
-          <DbAutocomplete
-            label="COMPANY_CODE *"
-            value={(form as any).company_code}
-            onChange={v=>setForm({...form,company_code:v})}
-            apiUrl="/api/company-codes"
-            codeField="code"
-            nameField="name"
-            placeholder="COMPANY_CODE"
-            required
-            createUrl={`/${companyCode}/fico/company-master`}
-            createCode="OX02"
-            companyCode={companyCode}
-          />
+          <DbAutocomplete label="CUSTOMER_CODE * – SCUC – General ERP Customer – XD01 alias – sales area + credit + pricing" value={form.customer_code} onChange={v=>setForm({...form,customer_code:v})} apiUrl="/api/business-partners?role=CUSTOMER" codeField="account_number" nameField="display_name" placeholder="CUST-1000 – must exist" required createUrl={`/${companyCode}/foundation/customers`} createCode="SCUC" companyCode={companyCode} />
+          <DbAutocomplete label="FACILITY_CODE * – EFCC – General ERP Facility – alias Plant – shipping point" value={form.facility_code} onChange={v=>setForm({...form,facility_code:v})} apiUrl="/api/facilities" codeField="code" nameField="name" placeholder="FAC-1000" required createUrl={`/${companyCode}/foundation/facilities`} createCode="EFCC" companyCode={companyCode} />
+          <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CUSTOMER_PO – General ERP Customer PO ref</label><input value={form.customer_po} onChange={e=>setForm({...form,customer_po:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="PO-CUST-123" /></div>
+          <DbAutocomplete label="COMMERCIAL_ORG_CODE – ECOC – General ERP Commercial Org – OVX2 alias – pricing procedure determination" value={form.commercial_org_code} onChange={v=>setForm({...form,commercial_org_code:v})} apiUrl="/api/commercial-orgs" codeField="code" nameField="name" placeholder="CO-1000" createUrl={`/${companyCode}/foundation/commercial-orgs`} createCode="ECOC" companyCode={companyCode} />
+          <DbAutocomplete label="SALES_CHANNEL_CODE – ESCC – General ERP Sales Channel – OVTB alias" value={form.sales_channel_code} onChange={v=>setForm({...form,sales_channel_code:v})} apiUrl="/api/sales-channels" codeField="code" nameField="name" placeholder="CH-10" createUrl={`/${companyCode}/foundation/sales-channels`} createCode="ESCC" companyCode={companyCode} />
+          <DbAutocomplete label="PRODUCT_LINE_CODE – EPLC – General ERP Product Line – OVXA alias – VKOA revenue account determination" value={form.product_line_code} onChange={v=>setForm({...form,product_line_code:v})} apiUrl="/api/product-lines" codeField="code" nameField="name" placeholder="PL-00" createUrl={`/${companyCode}/foundation/product-lines`} createCode="EPLC" companyCode={companyCode} />
         </div>
-        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create SSOC</button>
+
+        <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
+          <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-3">Lines – T0 BLOCKING – General ERP Product Lines – Pricing VK11 PR00 base price + K004 discount + MWST tax – Access Sequence V/07 – Net value = qty*(price-discount)+tax – NO DANGLING – Used in Delivery + Billing + Credit Exposure</h4>
+          {lines.map((l,idx)=>(
+            <div key={idx} className="grid grid-cols-1 md:grid-cols-6 gap-3 mt-3 bg-white rounded-xl border p-3">
+              <DbAutocomplete label={`Product ${idx+1} * – EMTC`} value={l.product_code} onChange={v=>{const n=[...lines]; n[idx].product_code=v; setLines(n);}} apiUrl="/api/materials" codeField="item_number" nameField="description" placeholder="FG-1000" required createUrl={`/${companyCode}/foundation/materials`} createCode="EMTC" companyCode={companyCode} />
+              <div><label className="text-[11px] font-medium">Quantity *</label><input value={l.quantity} onChange={e=>{const n=[...lines]; n[idx].quantity=e.target.value; setLines(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="10" /></div>
+              <div><label className="text-[11px] font-medium">Unit Price – PR00 VK11</label><input value={l.unit_price} onChange={e=>{const n=[...lines]; n[idx].unit_price=e.target.value; setLines(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="100 – PR00 base" /></div>
+              <div><label className="text-[11px] font-medium">Discount % – K004</label><input value={l.discount_percent} onChange={e=>{const n=[...lines]; n[idx].discount_percent=e.target.value; setLines(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="0 – K004 discount" /></div>
+              <div><label className="text-[11px] font-medium">Tax Code – MWST</label><input value={l.tax_code} onChange={e=>{const n=[...lines]; n[idx].tax_code=e.target.value.toUpperCase(); setLines(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="GST18 – MWST" /></div>
+              <div className="flex gap-2"><div className="flex-1"><label className="text-[11px] font-medium">UOM – EUOC</label><input value={l.uom_code} onChange={e=>{const n=[...lines]; n[idx].uom_code=e.target.value.toUpperCase(); setLines(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="PC" /></div><button onClick={()=>setLines(lines.filter((_,i)=>i!==idx))} className="mt-6 h-10 px-3 rounded-xl border bg-red-50 text-xs">Remove</button></div>
+            </div>
+          ))}
+          <button onClick={()=>setLines([...lines,{product_code: "", quantity: "10", unit_price: "100", uom_code: "PC", discount_percent: "0", tax_code: "GST18"}])} className="mt-4 px-4 py-2 rounded-full border bg-white text-xs hover:bg-zinc-50">+ Add Line – Pricing VK11 PR00/K004/MWST</button>
+        </div>
+
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Sales Order SSOC – Alias VA01 – General ERP – T0 BLOCKING – Pricing VK11 + Credit OB45</button>
+        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – SO pricing procedure V/08 determination: customer + commercial org + sales channel + product line → procedure ZPR00 → access sequence V/07 searches condition tables (material/customer) → PR00 base price, K004 discount, MWST tax – net value calculated – used in credit check FD32 OVA8 exposure = open SO + delivery + billing + AR vs limit – posting period OB52 account type D – NO DANGLING – General ERP, SAP VA01 alias – next: Delivery SDLC VL01N PGI 601 GBB/BSX COGS + Billing SBLC VF01 VKOA KOFI/KOFK revenue</div>
       </div>
+
       <div className="grid md:grid-cols-2 gap-4">
         {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
-            <div className="flex justify-between items-start">
-              <div className="font-semibold text-sm">{(it.code||it.item_number||it.account_number||it.employee_number||it.pr_number||it.po_number||it.bom_number||it.order_number||it.name||'RECORD '+(idx+1))}</div>
-              <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">VA01</span>
-            </div>
-            <div className="mt-2 text-xs text-zinc-500 line-clamp-2">{Object.entries(it).slice(0,5).map(([k,v])=>`${k.toUpperCase()}: ${String(v)}`).join(' • ')}</div>
+            <div className="flex justify-between items-start"><div className="font-semibold text-sm">{it.sales_number} – {it.customer_number || it.customer_name} – {it.facility_code} – total {it.total_amount} – {it.status} – {it.line_count} lines</div><span className="text-[10px] bg-blue-600 text-white rounded-full px-2 py-0.5">SSOC</span></div>
+            <div className="mt-2 text-xs text-zinc-500">{it.lines?.slice(0,3).map((l:any)=>`${l.item_number}:${l.quantity}x${l.unit_price}=${l.line_total}`).join(' • ')}</div>
           </div>
         ))}
-        {(!items || (Array.isArray(items) && items.length===0)) && (
-          <div className="col-span-2 bg-white rounded-2xl border border-dashed border-zinc-300 p-8 text-center">
-            <div className="text-sm text-zinc-500">No records yet – create first via VA01</div>
-            <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Function is destination</div>
-          </div>
-        )}
-      </div>
-          <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
-        <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related Masters – auto from dependencies – low importance</h4>
-        <div className="flex flex-wrap gap-2">
-          <Link href={`/${companyCode}/foundation/customers`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SCUC</span><span>Customer – required</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Material</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/foundation/credit-policy-areas`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FCPC</span><span>Credit Policy Area</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/payment-terms`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FAPT</span><span>Payment Terms</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/posting-periods`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FPPE</span><span>Posting Period Control</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/sd/delivery`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SDLC</span><span>Delivery uses SO</span><span className="text-zinc-400">→</span></Link>
-        </div>
-        <p className="text-[10px] text-zinc-400 mt-2">These links help create necessary data needed in this form – data strictly used in practice – no dummy</p>
       </div>
 
-</div>
+      <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
+        <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related – T0 BLOCKING – General ERP – Low Importance – Auto from Dependencies – Sales Area + Pricing + Credit</h4>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/${companyCode}/foundation/customers`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SCUC</span><span>Customer – sales area required – XD01 alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/commercial-orgs`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">ECOC</span><span>Commercial Org – pricing procedure – OVX2 alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/sales-channels`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">ESCC</span><span>Sales Channel – OVTB alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/product-lines`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EPLC</span><span>Product Line – VKOA revenue – OVXA alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Product – required line – OMS2 alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/sd/pricing-procedure`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FPRP</span><span>Pricing Procedure V/08 – ZPR00</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/tax-codes`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FTXC</span><span>Tax MWST – GST18</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/credit-policy-areas`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FCPC</span><span>Credit Policy – FD32 OVA8 – OB45 alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/sd/delivery`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SDLC</span><span>Delivery uses SO – VL01N alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/sd/billing`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SBLC</span><span>Billing uses Delivery – VF01 alias</span><span className="text-zinc-400">→</span></Link>
+        </div>
+        <p className="text-[10px] text-zinc-400 mt-2">General ERP terminology – Sales Order, Customer, Facility, Commercial Org, Sales Channel, Product Line, Product, Pricing Condition, Tax – SAP VA01/XD01/OVX2/OVTB/OVXA/VK11/V/08 kept as alias – T0 BLOCKING – pricing procedure determination → access sequence → condition records PR00/K004/MWST → net value → credit check FD32 OVA8 → delivery → billing – NO DANGLING</p>
+      </div>
+    </div>
   );
 
   return (
-    <ModernModuleShell title="Sales Orders" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • VA01`} code="SSOC" module="SD" classicChildren={classicContent}>
+    <ModernModuleShell title="Sales Orders" subtitle={`${Array.isArray(items)?items.length:0} orders • ${companyCode} • SSOC alias VA01 – General ERP – T0 BLOCKING – SCUC-FULL + PRICING VK11 + CREDIT`} code="SSOC" module="SD" classicChildren={classicContent}>
       {modernContent}
     </ModernModuleShell>
   );

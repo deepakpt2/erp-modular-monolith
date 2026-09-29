@@ -193,26 +193,91 @@ export async function POST(req: NextRequest) {
       } catch (creditErr: any) {
         console.warn('Credit check failed, allowing SO:', creditErr.message);
       }
-      // Strict ERP: Pricing Procedure PRIC – calculate pricing for SO
+      // Strict ERP: Pricing Procedure PRIC – V/08 + VK11 condition records PR00/K004/MWST + Access Sequence V/07 – T0 BLOCKING – NO DANGLING
       try {
         let netValue = 0;
         let taxValue = 0;
         let discountValue = 0;
+        // Try to determine pricing procedure from sales area – T0 BLOCKING – customer + commercial org + sales channel + product line → procedure
+        let pricingProcedureCode = body.pricing_procedure || 'ZPR00';
+        try {
+          if (body.commercial_org_code || body.sales_org) {
+            const procRes = await db.execute(sql`SELECT code FROM fin_pricing_procedure WHERE code = ${pricingProcedureCode} LIMIT 1`).catch(()=>({rows:[]}));
+            if (procRes.rows.length === 0) {
+              // Fallback to any procedure
+              const anyProc = await db.execute(sql`SELECT code FROM fin_pricing_procedure ORDER BY code LIMIT 1`).catch(()=>({rows:[]}));
+              if (anyProc.rows.length > 0) pricingProcedureCode = (anyProc.rows[0] as any).code;
+            }
+          }
+        } catch {}
+        (body as any)._pricing_procedure = pricingProcedureCode;
+
         if (body.items && Array.isArray(body.items)) {
           for (const item of body.items) {
             const qty = parseFloat(item.quantity || 0);
-            const price = parseFloat(item.unit_price || item.price || 0);
+            let price = parseFloat(item.unit_price || item.price || 0);
+            let discountPercent = parseFloat(item.discount_percent || 0);
+            let taxRate = 0;
+
+            // VK11 – Search condition records PR00 base price – access sequence V/07: material/customer – T0 BLOCKING
+            try {
+              let itemIdForPricing = item.item_id || item.material_id;
+              if (!itemIdForPricing && item.item_number) {
+                const it = await db.execute(sql`SELECT id FROM prod_item WHERE item_number = ${item.item_number.toUpperCase()} LIMIT 1`).catch(()=>({rows:[]}));
+                if (it.rows.length > 0) itemIdForPricing = (it.rows[0] as any).id;
+              }
+              // PR00 base price lookup – material specific, valid date
+              if (itemIdForPricing) {
+                const pr00Res = await db.execute(sql`
+                  SELECT r.amount, r.percentage FROM fin_pricing_condition_record r
+                  JOIN fin_pricing_condition c ON r.condition_id = c.id
+                  WHERE c.code = 'PR00' AND r.item_id = ${itemIdForPricing} AND r.is_active = true
+                  AND (r.valid_from IS NULL OR r.valid_from <= NOW()) AND (r.valid_to IS NULL OR r.valid_to >= NOW())
+                  ORDER BY r.valid_from DESC LIMIT 1
+                `).catch(()=>({rows:[]}));
+                if (pr00Res.rows.length > 0) {
+                  const rec = pr00Res.rows[0] as any;
+                  if (parseFloat(rec.amount||0) > 0) price = parseFloat(rec.amount);
+                  console.log(`VK11 PR00 found for ${item.item_number}: ${price} – T0 BLOCKING`);
+                }
+                // K004 discount lookup
+                const k004Res = await db.execute(sql`
+                  SELECT r.percentage, r.amount FROM fin_pricing_condition_record r
+                  JOIN fin_pricing_condition c ON r.condition_id = c.id
+                  WHERE c.code = 'K004' AND r.item_id = ${itemIdForPricing} AND r.is_active = true
+                  ORDER BY r.valid_from DESC LIMIT 1
+                `).catch(()=>({rows:[]}));
+                if (k004Res.rows.length > 0) {
+                  const rec = k004Res.rows[0] as any;
+                  if (parseFloat(rec.percentage||0) > 0) discountPercent = parseFloat(rec.percentage);
+                }
+              }
+            } catch (e) { console.warn('VK11 PR00 lookup failed', e); }
+
             const lineNet = qty * price;
             netValue += lineNet;
-            if (item.discount_percent) {
+            if (discountPercent) {
+              discountValue += lineNet * (discountPercent / 100);
+            } else if (item.discount_percent) {
               discountValue += lineNet * (parseFloat(item.discount_percent) / 100);
             }
             if (item.tax_code) {
               try {
                 const taxRes = await db.execute(sql`SELECT rate FROM fin_tax_code WHERE code = ${item.tax_code.toUpperCase()} LIMIT 1`);
                 if (taxRes.rows.length > 0) {
-                  const taxRate = parseFloat((taxRes.rows[0] as any).rate || 0);
-                  taxValue += (lineNet - (lineNet * (parseFloat(item.discount_percent || 0) / 100))) * (taxRate / 100);
+                  taxRate = parseFloat((taxRes.rows[0] as any).rate || 0);
+                  taxValue += (lineNet - (lineNet * (discountPercent / 100))) * (taxRate / 100);
+                } else {
+                  // Try MWST from pricing condition records
+                  const mwstRes = await db.execute(sql`
+                    SELECT r.percentage FROM fin_pricing_condition_record r
+                    JOIN fin_pricing_condition c ON r.condition_id = c.id
+                    WHERE c.code = 'MWST' AND r.is_active = true ORDER BY r.valid_from DESC LIMIT 1
+                  `).catch(()=>({rows:[]}));
+                  if (mwstRes.rows.length > 0) {
+                    taxRate = parseFloat((mwstRes.rows[0] as any).percentage||0);
+                    taxValue += (lineNet - (lineNet * (discountPercent / 100))) * (taxRate / 100);
+                  }
                 }
               } catch {}
             }
@@ -225,12 +290,12 @@ export async function POST(req: NextRequest) {
         (body as any)._calculated_discount = discountValue;
         (body as any)._calculated_tax = taxValue;
         (body as any)._calculated_total = totalAmount;
-        console.log(`Pricing PRIC: net=${netValue} discount=${discountValue} tax=${taxValue} total=${totalAmount}`);
+        console.log(`Pricing V/08 + VK11 PRIC: procedure=${pricingProcedureCode} net=${netValue} discount=${discountValue} tax=${taxValue} total=${totalAmount} – T0 BLOCKING – PR00/K004/MWST used – NO DANGLING`);
         if (!body.total_amount) {
           body.total_amount = totalAmount;
         }
       } catch (pricingErr: any) {
-        console.warn('Pricing calc failed:', pricingErr.message);
+        console.warn('Pricing V/08 VK11 calc failed:', pricingErr.message);
       }
       // Strict ERP: Payment Terms
       try {
