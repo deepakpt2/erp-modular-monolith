@@ -4,9 +4,9 @@ import { SingleCodePage } from '@/shared/ui/single-code-page';
 export default function Page() {
   return (
     <SingleCodePage
-      code="BLRE"
+      code="SBLC-REV"
       sapAlias="VF11"
-      title="Billing Reversal"
+      title="Billing Reversals"
       description="Reverse Billing Document – VF11 – strict usage: reverses billing, reverses revenue and customer receivable"
       apiEndpoint="/api/billing-reversal"
       initialForm={{ original_billing_code: '', reason: '', posting_date: '' }}

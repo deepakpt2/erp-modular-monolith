@@ -6,7 +6,7 @@ export default function Page() {
     <SingleCodePage
       code="MWCC"
       sapAlias="CR01"
-      title="Work Center"
+      title="Production Work Centers"
       description="Create Work Center – Machine/Labor Capacity – assembly line plant floor resource – strict usage: routing operation uses work center, costing run uses work center rate"
       apiEndpoint="/api/work-centers"
       initialForm={{ code: '', name: '', facility_code: '', cost_center_code: '', capacity: '100', cost_rate: '100', description: '' }}

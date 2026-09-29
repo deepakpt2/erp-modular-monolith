@@ -38,10 +38,10 @@ export default function Page(){
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">ME21N PURCHASE ORDERS CREATE – API: POST /api/purchase-orders [VENDOR, MATERIAL, QUANTITY, PRICE, COMPANY_CODE] – {Array.isArray(items)?items.length:0} RECORDS</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPOC PURCHASE ORDERS – ME21N ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
           <div><div className="text-[9px] text-zinc-500">VENDOR * (DB: PSUC)</div><input value={(form as any).vendor} onChange={e=>setForm({...form,vendor:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="VENDOR" /></div>
-          <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
+          <div><div className="text-[9px] text-zinc-500">PRODUCT * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PRODUCT" /></div>
           <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
           <div><div className="text-[9px] text-zinc-500">PRICE</div><input value={(form as any).price} onChange={e=>setForm({...form,price:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="PRICE" /></div>
           <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
@@ -77,7 +77,7 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
           <div>
-            <div className="font-semibold">Purchase Orders – ME21N</div>
+            <div className="font-semibold">Purchase Orders – PPOC (alias ME21N) – General ERP</div>
             <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • COMPANY_CODE {companyCode} • API: POST /api/purchase-orders</div>
           </div>
         </div>
@@ -96,13 +96,13 @@ export default function Page(){
             companyCode={companyCode}
           />
           <DbAutocomplete
-            label="MATERIAL *"
+            label="PRODUCT *"
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
             codeField="item_number"
             nameField="description"
-            placeholder="MATERIAL"
+            placeholder="PRODUCT"
             required
             createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
@@ -130,7 +130,7 @@ export default function Page(){
             companyCode={companyCode}
           />
         </div>
-        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create ME21N</button>
+        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create PPOC</button>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
@@ -165,7 +165,7 @@ export default function Page(){
   );
 
   return (
-    <ModernModuleShell title="Purchase Orders" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • ME21N`} code="ME21N" module="MM" classicChildren={classicContent}>
+    <ModernModuleShell title="Purchase Orders" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • ME21N`} code="PPOC" module="MM" classicChildren={classicContent}>
       {modernContent}
     </ModernModuleShell>
   );

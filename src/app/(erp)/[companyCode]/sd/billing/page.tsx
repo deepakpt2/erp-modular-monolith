@@ -38,7 +38,7 @@ export default function Page(){
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">VF01 BILLING CREATE – API: POST /api/billing [DELIVERY_NUMBER, AMOUNT, COMPANY_CODE] – {Array.isArray(items)?items.length:0} RECORDS</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">SBLC BILLING DOCUMENTS – VF01 ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
           <div><div className="text-[9px] text-zinc-500">DELIVERY_NUMBER * (DB: VL01N)</div><input value={(form as any).delivery_number} onChange={e=>setForm({...form,delivery_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="DELIVERY_NUMBER" /></div>
           <div><div className="text-[9px] text-zinc-500">AMOUNT</div><input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="AMOUNT" /></div>
@@ -76,7 +76,7 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
           <div>
-            <div className="font-semibold">Billing – VF01</div>
+            <div className="font-semibold">Billing Documents – SBLC (alias VF01) – General ERP</div>
             <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • COMPANY_CODE {companyCode} • API: POST /api/billing</div>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function Page(){
             companyCode={companyCode}
           />
         </div>
-        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create VF01</button>
+        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create SBLC</button>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
@@ -148,7 +148,7 @@ export default function Page(){
   );
 
   return (
-    <ModernModuleShell title="Billing" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • VF01`} code="VF01" module="SD" classicChildren={classicContent}>
+    <ModernModuleShell title="Billing Documents" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • VF01`} code="SBLC" module="SD" classicChildren={classicContent}>
       {modernContent}
     </ModernModuleShell>
   );

@@ -38,11 +38,11 @@ export default function Page(){
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">ME27 STOCK TRANSPORT ORDERS CREATE – API: POST /api/sto [FROM_PLANT, TO_PLANT, MATERIAL, QUANTITY] – {Array.isArray(items)?items.length:0} RECORDS</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">PSTC STOCK TRANSPORT ORDERS – ME27 ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">FROM_PLANT * (DB: EFCC)</div><input value={(form as any).from_plant} onChange={e=>setForm({...form,from_plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="FROM_PLANT" /></div>
-          <div><div className="text-[9px] text-zinc-500">TO_PLANT * (DB: EFCC)</div><input value={(form as any).to_plant} onChange={e=>setForm({...form,to_plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="TO_PLANT" /></div>
-          <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
+          <div><div className="text-[9px] text-zinc-500">FROM_FACILITY * (DB: EFCC)</div><input value={(form as any).from_plant} onChange={e=>setForm({...form,from_plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="FROM_PLANT" /></div>
+          <div><div className="text-[9px] text-zinc-500">TO_FACILITY * (DB: EFCC)</div><input value={(form as any).to_plant} onChange={e=>setForm({...form,to_plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="TO_PLANT" /></div>
+          <div><div className="text-[9px] text-zinc-500">PRODUCT * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PRODUCT" /></div>
           <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
@@ -74,13 +74,13 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
           <div>
-            <div className="font-semibold">Stock Transport Orders – ME27</div>
+            <div className="font-semibold">Stock Transport Orders – PSTC (alias ME27) – General ERP</div>
             <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • COMPANY_CODE {companyCode} • API: POST /api/sto</div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete
-            label="FROM_PLANT *"
+            label="FROM_FACILITY *"
             value={(form as any).from_plant}
             onChange={v=>setForm({...form,from_plant:v})}
             apiUrl="/api/facilities"
@@ -93,7 +93,7 @@ export default function Page(){
             companyCode={companyCode}
           />
           <DbAutocomplete
-            label="TO_PLANT *"
+            label="TO_FACILITY *"
             value={(form as any).to_plant}
             onChange={v=>setForm({...form,to_plant:v})}
             apiUrl="/api/facilities"
@@ -106,13 +106,13 @@ export default function Page(){
             companyCode={companyCode}
           />
           <DbAutocomplete
-            label="MATERIAL *"
+            label="PRODUCT *"
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
             codeField="item_number"
             nameField="description"
-            placeholder="MATERIAL"
+            placeholder="PRODUCT"
             required
             createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
@@ -156,7 +156,7 @@ export default function Page(){
   );
 
   return (
-    <ModernModuleShell title="Stock Transport Orders" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • ME27`} code="ME27" module="MM" classicChildren={classicContent}>
+    <ModernModuleShell title="Stock Transport Orders" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • ME27`} code="PSTC" module="MM" classicChildren={classicContent}>
       {modernContent}
     </ModernModuleShell>
   );

@@ -38,10 +38,10 @@ export default function Page(){
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">VA01 SALES ORDERS CREATE – API: POST /api/sales-orders [CUSTOMER, MATERIAL, QUANTITY, COMPANY_CODE] – {Array.isArray(items)?items.length:0} RECORDS</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">SSOC SALES ORDERS – VA01 ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
           <div><div className="text-[9px] text-zinc-500">CUSTOMER * (DB: PSUC)</div><input value={(form as any).customer} onChange={e=>setForm({...form,customer:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CUSTOMER" /></div>
-          <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
+          <div><div className="text-[9px] text-zinc-500">PRODUCT * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PRODUCT" /></div>
           <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
           <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
         </div>
@@ -77,7 +77,7 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
           <div>
-            <div className="font-semibold">Sales Orders – VA01</div>
+            <div className="font-semibold">Sales Orders – SSOC (alias VA01) – General ERP</div>
             <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • COMPANY_CODE {companyCode} • API: POST /api/sales-orders</div>
           </div>
         </div>
@@ -96,13 +96,13 @@ export default function Page(){
             companyCode={companyCode}
           />
           <DbAutocomplete
-            label="MATERIAL *"
+            label="PRODUCT *"
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
             codeField="item_number"
             nameField="description"
-            placeholder="MATERIAL"
+            placeholder="PRODUCT"
             required
             createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
@@ -126,7 +126,7 @@ export default function Page(){
             companyCode={companyCode}
           />
         </div>
-        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create VA01</button>
+        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create SSOC</button>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
@@ -162,7 +162,7 @@ export default function Page(){
   );
 
   return (
-    <ModernModuleShell title="Sales Orders" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • VA01`} code="VA01" module="SD" classicChildren={classicContent}>
+    <ModernModuleShell title="Sales Orders" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • VA01`} code="SSOC" module="SD" classicChildren={classicContent}>
       {modernContent}
     </ModernModuleShell>
   );

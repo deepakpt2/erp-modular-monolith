@@ -6,7 +6,7 @@ export default function Page() {
     <SingleCodePage
       code="PSTD"
       sapAlias="VL10B"
-      title="Stock Transport Order Delivery"
+      title="Stock Transport Shipments"
       description="Process STO Delivery – creates outbound delivery for STO – strict usage: STO requires delivery before GR"
       apiEndpoint="/api/sto-delivery"
       initialForm={{ sto_code: '', delivery_quantity: '', posting_date: '' }}

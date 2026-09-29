@@ -38,11 +38,11 @@ export default function Page(){
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">MI01 PHYSICAL INVENTORY CREATE – API: POST /api/physical-inventory [PLANT, STORAGE_LOCATION, MATERIAL, QUANTITY] – {Array.isArray(items)?items.length:0} RECORDS</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">IPIC PHYSICAL INVENTORY DOCUMENTS – MI01 ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">PLANT * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PLANT" /></div>
+          <div><div className="text-[9px] text-zinc-500">FACILITY * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PLANT" /></div>
           <div><div className="text-[9px] text-zinc-500">STORAGE_LOCATION * (DB: EILC)</div><input value={form.storage_location} onChange={e=>setForm({...form,storage_location:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="STORAGE_LOCATION" /></div>
-          <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
+          <div><div className="text-[9px] text-zinc-500">PRODUCT * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PRODUCT" /></div>
           <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
@@ -74,13 +74,13 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
           <div>
-            <div className="font-semibold">Physical Inventory – MI01</div>
+            <div className="font-semibold">Physical Inventory Documents – IPIC (alias MI01) – General ERP</div>
             <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • COMPANY_CODE {companyCode} • API: POST /api/physical-inventory</div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete
-            label="PLANT *"
+            label="FACILITY *"
             value={(form as any).plant}
             onChange={v=>setForm({...form,plant:v})}
             apiUrl="/api/facilities"
@@ -106,13 +106,13 @@ export default function Page(){
             companyCode={companyCode}
           />
           <DbAutocomplete
-            label="MATERIAL *"
+            label="PRODUCT *"
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
             codeField="item_number"
             nameField="description"
-            placeholder="MATERIAL"
+            placeholder="PRODUCT"
             required
             createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
@@ -156,7 +156,7 @@ export default function Page(){
   );
 
   return (
-    <ModernModuleShell title="Physical Inventory" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • MI01`} code="MI01" module="MM" classicChildren={classicContent}>
+    <ModernModuleShell title="Physical Inventory Documents" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • MI01`} code="IPIC" module="MM" classicChildren={classicContent}>
       {modernContent}
     </ModernModuleShell>
   );

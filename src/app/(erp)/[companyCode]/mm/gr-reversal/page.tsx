@@ -4,10 +4,10 @@ import { SingleCodePage } from '@/shared/ui/single-code-page';
 export default function Page() {
   return (
     <SingleCodePage
-      code="GRRE"
+      code="IGRC-REV"
       sapAlias="MIGO 102"
-      title="Goods Receipt Reversal"
-      description="Reverse Goods Receipt – 102 movement – strict usage: reverses GR 101, posts opposite BSX/WRX, requires posting period open"
+      title="Inventory Receipt Reversals"
+      description="Reverse Inventory Receipt – 102 movement – strict usage: reverses GR 101, posts opposite BSX/WRX, requires posting period open"
       apiEndpoint="/api/gr-reversal"
       initialForm={{ original_gr_code: '', reason: '', posting_date: '' }}
       fields={[
@@ -16,7 +16,7 @@ export default function Page() {
         { key: "posting_date", label: "POSTING_DATE", required: true, placeholder: "2026-05-15", description: "Posting date – must be in open period" },
       ]}
       relatedLinks={[
-        { code: "IGRC", label: "Goods Receipt – original", route: "/mm/gr", description: "GR 101" },
+        { code: "IGRC", label: "Inventory Receipt – original", route: "/mm/gr", description: "GR 101" },
         { code: "FPPE", label: "Posting Period Control", route: "/fico/posting-periods", description: "Must be open" },
       ]}
     />

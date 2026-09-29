@@ -4,9 +4,9 @@ import { SingleCodePage } from '@/shared/ui/single-code-page';
 export default function Page() {
   return (
     <SingleCodePage
-      code="IVRE"
+      code="PIVC-REV"
       sapAlias="MR8M"
-      title="Invoice Verification Reversal"
+      title="Invoice Reversals"
       description="Reverse Invoice Verification – MR8M – strict usage: reverses IV, posts opposite WRX/Vendor"
       apiEndpoint="/api/iv-reversal"
       initialForm={{ original_iv_code: '', reason: '', posting_date: '' }}
