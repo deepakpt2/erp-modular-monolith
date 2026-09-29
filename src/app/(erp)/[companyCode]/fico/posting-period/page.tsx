@@ -69,7 +69,7 @@ export default function PostingPeriodPage(){
   const handleCreateFiscal = async () => {
     if(!fiscalForm.code || !fiscalForm.name){ setMsg('FISCAL_CALENDAR_CODE and NAME required – FFYC'); return; }
     const res = await fetch('/api/fiscal-calendars',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fiscalForm)}).then(r=>r.json());
-    if(res.success){ setMsg(`✅ Fiscal Calendar ${res.fiscalCalendar.code} created – FFYC – now usable in ELEC`); setFiscalForm({code:'',name:'',description:''}); load(); }
+    if(res.success){ setMsg(`✅ Fiscal Calendar ${res.fiscalCalendar.code} created – FFYC – now usable in ELEC`); setFiscalForm({code:'',name:'',description:'', from_date:'', to_date:''}); load(); }
     else setMsg(`❌ ${res.error}`);
   };
 
@@ -266,9 +266,9 @@ export default function PostingPeriodPage(){
               <div className="text-sm text-amber-800 font-medium">No fiscal calendars – this was the bug! ELEC accepted K6 even though not in DB</div>
               <div className="text-xs text-zinc-600 mt-1">Create K4 (April-March), V3 (Calendar Year), K1 now – then ELEC autocomplete will only show valid values</div>
               <div className="mt-3 flex gap-2 justify-center">
-                <button onClick={()=>setFiscalForm({code:'K4',name:'April-March Fiscal – India',description:'India FY April-March'})} className="text-xs bg-black text-white rounded-full px-3 py-1">Use K4</button>
-                <button onClick={()=>setFiscalForm({code:'V3',name:'Calendar Year Jan-Dec',description:'Calendar Year'})} className="text-xs border rounded-full px-3 py-1 bg-white">Use V3</button>
-                <button onClick={()=>setFiscalForm({code:'K1',name:'Calendar Year Variant',description:'Variant K1'})} className="text-xs border rounded-full px-3 py-1 bg-white">Use K1</button>
+                <button onClick={()=>setFiscalForm({code:'K4',name:'April-March Fiscal – India',description:'India FY April-March', from_date:'2026-04-01', to_date:'2027-03-31'})} className="text-xs bg-black text-white rounded-full px-3 py-1">Use K4</button>
+                <button onClick={()=>setFiscalForm({code:'V3',name:'Calendar Year Jan-Dec',description:'Calendar Year', from_date:'2026-01-01', to_date:'2026-12-31'})} className="text-xs border rounded-full px-3 py-1 bg-white">Use V3</button>
+                <button onClick={()=>setFiscalForm({code:'K1',name:'Calendar Year Variant',description:'Variant K1', from_date:'2026-01-01', to_date:'2026-12-31'})} className="text-xs border rounded-full px-3 py-1 bg-white">Use K1</button>
               </div>
             </div>
           )}
