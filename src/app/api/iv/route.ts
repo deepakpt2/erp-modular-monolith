@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
                 }
               }
             }
-          } catch (e) { console.warn('MAP adjustment failed', e); }
+          } catch (e: any) { console.warn('MAP adjustment failed', e); }
         }
       }
 
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
         fiDocId = fiDoc.fiDocumentId;
         fiNumber = fiDoc.documentNumber;
         await tx.execute(sql`UPDATE mm_invoice_verification SET fi_document_id = ${fiDocId} WHERE id = ${ivId}`);
-      } catch (e) { console.warn('FI doc creation failed', e); }
+      } catch (e: any) { console.warn('FI doc creation failed', e); }
 
       await tx.execute(sql`
         INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description)

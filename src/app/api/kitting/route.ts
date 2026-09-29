@@ -202,7 +202,7 @@ export async function POST(req: NextRequest) {
         INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description)
         VALUES ('pp_kitting_order', ${kittingId}, ${kittingNumber}, 'INSERT', ${JSON.stringify({ kittingNumber, kitMaterialId, qty, minExpiry, totalCost, expiryWarning, type })}::jsonb, ${`Kitting ${type || 'STOCKED'} POSTED: ${kittingNumber} Kit ${kitMaterialId} Qty ${qty} Cost ${totalCost.toFixed(3)} MinExpiry ${minExpiry} ${expiryWarning}`})
       `);
-    } catch (e) {}
+    } catch (e: any) {}
 
     return NextResponse.json({
       success: true,

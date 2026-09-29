@@ -41,7 +41,7 @@ async function ensureTable() {
         `);
       }
     }
-  } catch (e) {
+  } catch (e: any) {
     console.warn('ensure posting period failed', e);
   }
 }

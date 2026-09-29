@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
           INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description)
           VALUES ('inv_stock', ${materialId}, ${materialId}, 'UPDATE', ${JSON.stringify({ movementType, fromPlant, fromSloc, toPlant, toSloc, qty })}::jsonb, ${`Stock Transfer 311: ${materialId} ${qty} from ${fromPlant}/${fromSloc} to ${toPlant}/${toSloc} ${reason || ''}`})
         `);
-      } catch (e) {}
+      } catch (e: any) {}
 
       return NextResponse.json({ success: true, movementType: '311', from: `${fromPlant}/${fromSloc}`, to: `${toPlant}/${toSloc}`, quantity: qty, message: `Stock transfer 311 posted: ${qty} from ${fromPlant}/${fromSloc} to ${toPlant}/${toSloc}` });
     }

@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
             VALUES (${matIdForBatch}, ${plantId}, ${l.slocId}, ${batchId}, ${l.stockStatus || 'UNRESTRICTED'}, ${qty})
             ON CONFLICT (material_id, plant_id, sloc_id, batch_id, stock_status) DO UPDATE SET quantity = inv_stock.quantity + ${qty}
           `);
-        } catch (e) { console.warn('Stock update failed', e); }
+        } catch (e: any) { console.warn('Stock update failed', e); }
       }
 
       await tx.execute(sql`UPDATE mm_goods_receipt SET total_amount = ${totalAmount} WHERE id = ${grId}`);
@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
         `);
         fiDocId = (fiRes.rows[0] as any).id;
         await tx.execute(sql`UPDATE mm_goods_receipt SET fi_document_id = ${fiDocId} WHERE id = ${grId}`);
-      } catch (e) { console.warn('FI doc creation failed', e); }
+      } catch (e: any) { console.warn('FI doc creation failed', e); }
 
       await tx.execute(sql`
         INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description)

@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
                   updated_at = NOW()
               WHERE id = ${task.document_id}
             `);
-          } catch (e) { console.warn('PR update failed', e); }
+          } catch (e: any) { console.warn('PR update failed', e); }
         } else if (task.document_type === 'PO') {
           try {
             await db.execute(sql`
@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
                   updated_at = NOW()
               WHERE id = ${task.document_id}
             `);
-          } catch (e) { console.warn('PO update failed', e); }
+          } catch (e: any) { console.warn('PO update failed', e); }
         }
       }
 
@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
             ${`Workflow ${action}: Task ${taskId} Doc ${task.document_number} ${task.document_type} by ${approverEmail || approverId || 'system'} comment: ${comment || ''}`}
           )
         `);
-      } catch (e) { console.warn('Audit log failed', e); }
+      } catch (e: any) { console.warn('Audit log failed', e); }
 
       return NextResponse.json({
         success: true,

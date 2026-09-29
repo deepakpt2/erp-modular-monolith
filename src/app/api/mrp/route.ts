@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
 
                 totalPrsGenerated++;
               }
-            } catch (e) {
+            } catch (e: any) {
               console.error('Failed to generate PR for MRP shortage', mat.material_number, e);
             }
           }

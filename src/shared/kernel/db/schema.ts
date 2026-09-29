@@ -3,6 +3,7 @@
 
 export * from '../../../modules/foundation/enterprise/infrastructure/schema';
 export * from '../../../modules/foundation/enterprise/infrastructure/enterpriseConfigSchema';
+export * from '../../../modules/foundation/enterprise/infrastructure/orgStructureSchema';
 export * from '../../../modules/foundation/enterprise/infrastructure/jobQueueSchema';
 export * from '../../../modules/foundation/enterprise/infrastructure/exchangeRateSchema';
 export * from '../../../modules/foundation/number-range/infrastructure/schema';

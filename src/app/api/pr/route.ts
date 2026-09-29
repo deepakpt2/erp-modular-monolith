@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
         INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description)
         VALUES ('mm_purchase_requisition', ${prId}, ${prNumber}, 'INSERT', ${JSON.stringify({ prNumber, totalAmount, lines })}::jsonb, ${`PR CREATE: ${prNumber} Plant ${plantId} Total ${totalAmount} KWD`})
       `);
-    } catch (e) { console.warn('Audit log failed', e); }
+    } catch (e: any) { console.warn('Audit log failed', e); }
 
     // Auto trigger workflow if amount > 0
     let workflowTriggered = false;
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         await db.execute(sql`UPDATE mm_purchase_requisition SET status = 'PENDING_APPROVAL', workflow_instance_id = ${instId} WHERE id = ${prId}`);
         workflowTriggered = true;
       }
-    } catch (e) { console.warn('Workflow trigger failed', e); }
+    } catch (e: any) { console.warn('Workflow trigger failed', e); }
 
     return NextResponse.json({
       success: true,
@@ -233,7 +233,7 @@ export async function PUT(req: NextRequest) {
         INSERT INTO audit_log (table_name, record_id, record_number, action, old_values, new_values, description)
         VALUES ('mm_purchase_requisition', ${id}, ${pr.pr_number}, 'UPDATE', ${JSON.stringify(pr)}::jsonb, ${JSON.stringify({ status: newStatus, poId })}::jsonb, ${`PR ${action}: ${pr.pr_number} ${pr.status} -> ${newStatus}`})
       `);
-    } catch (e) {}
+    } catch (e: any) {}
 
     return NextResponse.json({ success: true, prNumber: pr.pr_number, oldStatus: pr.status, newStatus, message: `PR ${pr.pr_number} ${action} ${pr.status} -> ${newStatus}` });
   } catch (e: any) {

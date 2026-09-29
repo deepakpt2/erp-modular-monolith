@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
         await tx.execute(sql`UPDATE sd_billing SET fi_document_id = ${fiId}, status = 'POSTED', updated_at = NOW() WHERE id = ${billingId}`);
         await tx.execute(sql`UPDATE sd_sales_order SET status = 'INVOICED', updated_at = NOW() WHERE id = ${salesOrderId}`);
 
-      } catch (e) {
+      } catch (e: any) {
         console.error('FI creation failed for billing', e);
         // Still mark as POSTED even if FI fails for MVP
         await tx.execute(sql`UPDATE sd_billing SET status = 'POSTED', updated_at = NOW() WHERE id = ${billingId}`);

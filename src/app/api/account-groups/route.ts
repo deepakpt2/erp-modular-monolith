@@ -36,7 +36,7 @@ async function ensureTable() {
         ON CONFLICT (code) DO NOTHING
       `);
     }
-  } catch (e) {
+  } catch (e: any) {
     console.warn('ensure fi_account_group failed', e);
   }
 }

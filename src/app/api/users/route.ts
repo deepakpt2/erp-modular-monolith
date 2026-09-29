@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
     if (employeeId) {
       try {
         await db.execute(sql`UPDATE hr_employee SET user_id = ${userId} WHERE id = ${employeeId}`);
-      } catch (e) { console.warn('Link employee failed', e); }
+      } catch (e: any) { console.warn('Link employee failed', e); }
     }
 
     // Assign roles if provided
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
             INSERT INTO ent_user_role (user_id, role_id, company_code_id, plant_id, assigned_by)
             VALUES (${userId}, ${roleId}, ${companyCodeId || null}, ${plantId || null}, ${(session?.user as any)?.id || null})
           `);
-        } catch (e) { console.warn('Assign role failed', e); }
+        } catch (e: any) { console.warn('Assign role failed', e); }
       }
     } else if (role) {
       // Auto-assign role by code
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
             VALUES (${userId}, ${roleId}, ${companyCodeId || null}, ${plantId || null}, ${(session?.user as any)?.id || null})
           `);
         }
-      } catch (e) { console.warn('Auto assign role failed', e); }
+      } catch (e: any) { console.warn('Auto assign role failed', e); }
     }
 
     // Audit log

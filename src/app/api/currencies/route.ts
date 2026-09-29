@@ -31,7 +31,7 @@ async function ensureTable() {
         ON CONFLICT (code) DO NOTHING
       `);
     }
-  } catch (e) {
+  } catch (e: any) {
     console.warn('ensure ent_currency failed', e);
   }
 }

@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
             sales_uom = ${sales_uom || base_uom || 'KG'},
             tax_classification = ${tax_classification || '1'}
         `);
-      } catch (e) {
+      } catch (e: any) {
         console.warn('Sales view insert failed', e);
       }
     }
@@ -235,7 +235,7 @@ export async function POST(req: NextRequest) {
           ${JSON.stringify(body)}::jsonb, ${`Material CREATE MM01 ERP Views: ${material_number} ${description} Type ${type} Basic+Classification+Sales+Purchasing+MRP+Plant+Quality+Accounting+Costing`}
         )
       `);
-    } catch (e) {
+    } catch (e: any) {
       console.warn('Audit log failed:', e);
     }
 
@@ -310,7 +310,7 @@ export async function PUT(req: NextRequest) {
           ${`Material CHANGE MM02: ${existing.material_number} -> ${description || existing.description} old_data->new_data JSON captured`}
         )
       `);
-    } catch (e) {
+    } catch (e: any) {
       console.warn('Audit log failed:', e);
     }
 

@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
           await tx.execute(sql`UPDATE mm_purchase_order SET status = 'PENDING_APPROVAL', workflow_instance_id = ${instId} WHERE id = ${poId}`);
           workflowTriggered = true;
         }
-      } catch (e) { console.warn('PO workflow trigger failed', e); }
+      } catch (e: any) { console.warn('PO workflow trigger failed', e); }
 
       return NextResponse.json({ success: true, poId, poNumber, totalAmount, totalLanded, workflowTriggered, message: `PO ${poNumber} created, total ${totalAmount} KWD, landed ${totalLanded} KWD, plant ${plantId}, workflow ${workflowTriggered ? 'triggered' : 'auto-approved'}, enterprise validated` });
     });

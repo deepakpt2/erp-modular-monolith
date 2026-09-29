@@ -35,7 +35,7 @@ async function ensureTable() {
     `);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_user_permission_user ON ent_user_permission(user_id);`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_user_permission_perm ON ent_user_permission(permission_id);`);
-  } catch (e) {
+  } catch (e: any) {
     console.warn('ensure ent_user_permission table failed', e);
   }
 }
