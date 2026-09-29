@@ -9,7 +9,7 @@ export default function CurrenciesPage(){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [msg,setMsg]=useState<string|null>(null);
-  const [form,setForm]=useState({code:'',name:'',decimal_places:'2',symbol:''});
+  const [form,setForm]=useState({code:'',name:'',decimal_places:'2',symbol:'', is_active:'true'});
   const [showForm,setShowForm]=useState(false);
 
   async function load(){
@@ -23,59 +23,43 @@ export default function CurrenciesPage(){
   useEffect(()=>{load();},[]);
 
   const handleCreate = async () => {
-    if(!form.code||!form.name){ setMsg('Code and name required'); return; }
+    if(!form.code||!form.name){ setMsg('CODE and NAME required'); return; }
     const res = await fetch('/api/currencies',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form, decimal_places: parseInt(form.decimal_places)})}).then(r=>r.json());
-    if(res.success){ setMsg(`✅ Currency ${res.currency.code} created – OY03 – Only INR default, ${res.currency.code} added by user`); setShowForm(false); setForm({code:'',name:'',decimal_places:'2',symbol:''}); load(); }
+    if(res.success){ setMsg(`✅ ${res.currency.code} CREATED`); setShowForm(false); setForm({code:'',name:'',decimal_places:'2',symbol:'', is_active:'true'}); load(); }
     else setMsg(`❌ ${res.error}`);
   };
 
-  const handleDelete = async (code:string) => {
-    if(!confirm(`Delete currency ${code}?`)) return;
-    const res = await fetch(`/api/currencies?code=${code}`,{method:'DELETE'}).then(r=>r.json());
-    setMsg(res.success?`✅ ${res.message}`:`❌ ${res.error}`);
-    load();
-  };
-
-  if(loading) return <div className="p-6">Loading currencies OY03...</div>;
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING...</div>;
   const currencies = data?.currencies||[];
 
   return (
-    <ModernModuleShell
-      title="Currencies – OY03"
-      subtitle={`${currencies.length} Currencies`}
-      code="OY03"
-      module="FICO"
-      tooltip={`OY03 Define Currencies – Only INR default per requirement, all other currencies like KWD must be added by user via POST /api/currencies. Configurable.`}
-    >
-      <div className="max-w-[1600px] mx-auto p-6 space-y-4">
-        {msg && <div className="bg-zinc-900 text-white rounded-xl p-3 text-sm">{msg}</div>}
-
+    <ModernModuleShell title="Currencies" subtitle={`${currencies.length} CURRENCIES`} code="FCYC" module="FICO">
+      <div className="max-w-[1600px] mx-auto p-0 space-y-3">
+        {msg && <div className="bg-black text-white font-mono text-xs p-2">{msg}</div>}
         <div className="flex justify-between items-center">
-          <h3 className="font-medium">Currencies – {currencies.length}</h3>
-          <div className="flex gap-2">
-            <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-black text-white rounded-full px-3 py-1.5">+ Create</button>
-            <button onClick={load} className="text-xs border rounded-full px-3 py-1.5 bg-white">Refresh</button>
+          <div className="font-mono text-[11px] font-bold">FCYC CURRENCY_CREATE OY03 {currencies.length} API: POST /api/currencies {`{code, name, decimal_places, symbol}`}</div>
+          <div className="flex gap-1">
+            <button onClick={()=>setShowForm(!showForm)} className="text-[11px] font-mono bg-black text-white border border-black px-3 py-1">CREATE</button>
+            <button onClick={load} className="text-[11px] font-mono border border-black px-3 py-1 bg-white">REFRESH</button>
           </div>
         </div>
 
         {showForm && (
-          <div className="bg-white border rounded-2xl p-5 space-y-3">
-            <div className="grid md:grid-cols-4 gap-3">
-              <div><label className="text-xs text-zinc-500">Code * e.g., KWD</label><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} placeholder="KWD" className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
-              <div><label className="text-xs text-zinc-500">Name *</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Kuwaiti Dinar" className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
-              <div><label className="text-xs text-zinc-500">Decimals</label><input type="number" value={form.decimal_places} onChange={e=>setForm({...form,decimal_places:e.target.value})} placeholder="2" className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
-              <div><label className="text-xs text-zinc-500">Symbol</label><input value={form.symbol} onChange={e=>setForm({...form,symbol:e.target.value})} placeholder="KD" className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
+          <div className="bg-white border border-black p-3 space-y-2">
+            <div className="grid md:grid-cols-4 gap-2 font-mono text-[11px]">
+              <div><div className="text-[10px] text-zinc-500">CODE</div><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">DECIMAL_PLACES</div><input value={form.decimal_places} onChange={e=>setForm({...form,decimal_places:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">SYMBOL</div><input value={form.symbol} onChange={e=>setForm({...form,symbol:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
             </div>
-            <button onClick={handleCreate} className="bg-black text-white rounded-full px-4 py-2 text-xs">Create</button>
+            <button onClick={handleCreate} className="bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE FCYC</button>
           </div>
         )}
 
-        <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid md:grid-cols-4 gap-2">
           {currencies.map((c:any)=>(
-            <div key={c.code} className={`border rounded-xl p-4 ${c.code==='INR'?'bg-green-50 border-green-200':'bg-white'}`}>
-              <div className="flex justify-between"><span className="font-medium">{c.code} – {c.name} {c.symbol}</span><span className={`text-xs rounded-full px-2 py-0.5 border ${c.is_active?'bg-green-50 border-green-200':'bg-red-50'}`}>{c.is_active?'Active':'Inactive'}</span></div>
-              <div className="text-xs text-zinc-500 mt-1">Decimals: {c.decimal_places} • {c.symbol||''}</div>
-              <button onClick={()=>handleDelete(c.code)} className="mt-2 text-xs border border-red-200 text-red-600 rounded-full px-2 py-1 bg-white">Delete</button>
+            <div key={c.code} className="bg-white border border-black p-2 font-mono text-[11px]">
+              <div className="font-bold">{c.code} | {c.name} | SYMBOL={c.symbol} DECIMAL_PLACES={c.decimal_places}</div>
             </div>
           ))}
         </div>

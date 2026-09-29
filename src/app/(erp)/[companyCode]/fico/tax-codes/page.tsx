@@ -8,9 +8,8 @@ export default function TaxCodesPage(){
   const companyCode = params.companyCode as string;
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
-  const [message,setMessage]=useState<string|null>(null);
-  const [form,setForm]=useState({code:'',description:'',rate:'5',type:'INPUT',gl_account_number:''});
-  const [showForm,setShowForm]=useState(false);
+  const [msg,setMsg]=useState('');
+  const [form,setForm]=useState({code:'',description:'',rate:'18',type:'INPUT',gst_type:'CGST',hsn_code:'', ledger_account_code:''});
 
   async function load(){
     setLoading(true);
@@ -22,78 +21,39 @@ export default function TaxCodesPage(){
   }
   useEffect(()=>{load();},[]);
 
-  if(loading) return <div className="p-6">Loading tax codes FTXP...</div>;
-  const taxCodes = data?.taxCodes||[];
-  const erpDefaults = data?.erpDefaults||[];
-
-  const handleCreate = async () => {
-    if (!form.code || !form.description || form.rate==='') { setMessage('Code, description, rate required'); return; }
+  async function create(){
+    if(!form.code){ setMsg('CODE required'); return; }
     const res = await fetch('/api/tax-codes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form, rate: parseFloat(form.rate)})}).then(r=>r.json());
-    if (res.success) { setMessage(`✅ Tax Code ${res.taxCode.code} ${form.rate}% created – FTXP configurable – VAT 5% etc`); setShowForm(false); setForm({code:'',description:'',rate:'5',type:'INPUT',gl_account_number:''}); load(); }
-    else setMessage(`❌ ${res.error}`);
-  };
+    if(res.success){ setMsg(`✅ ${form.code} CREATED`); load(); setForm({code:'',description:'',rate:'18',type:'INPUT',gst_type:'CGST',hsn_code:'', ledger_account_code:''}); }
+    else setMsg(`❌ ${res.error}`);
+  }
 
-  const handleDelete = async (code:string) => {
-    if (!confirm(`Delete Tax Code ${code}?`)) return;
-    const res = await fetch(`/api/tax-codes?code=${code}`,{method:'DELETE'}).then(r=>r.json());
-    setMessage(res.success ? `✅ ${res.message}` : `❌ ${res.error}`);
-    load();
-  };
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING...</div>;
+  const taxes = data?.taxCodes||[];
 
   return (
-    <ModernModuleShell
-      title="Tax Codes FTXP"
-      subtitle={`${taxCodes.length} Tax Codes`}
-      code="FTXP"
-      module="FICO"
-      tooltip={`FTXP Tax Codes – VAT 5% V5 Input 5% A5 Output 5% – Kuwait/GCC VAT 5%, KSA VAT 15%, GST India 5% spices GST5, 12%, 18%, 28%, IGST – Configurable: add new tax code via POST, edit via PUT, delete blocked if has FI postings for security (soft is_active=false). ERP defaults kept like ERP: V0/V5/A0/A5 + GST.`}
-      kpis={[
-        {label:'Total', value: taxCodes.length.toString(), icon:'🧾'},
-        {label:'VAT 5%', value: taxCodes.filter((t:any)=>t.rate==5).length.toString(), icon:'💰'},
-        {label:'GST', value: taxCodes.filter((t:any)=>t.code.startsWith('GST')||t.code.startsWith('IGST')).length.toString(), icon:'🇮🇳'},
-      ]}
-    >
-      <div className="max-w-[1600px] mx-auto p-6 space-y-4">
-        {message && <div className="bg-zinc-900 text-white rounded-xl p-3 text-sm">{message}</div>}
-
-                <div className="flex justify-between items-center">
-          <h3 className="font-medium">Tax Codes – {taxCodes.length}</h3>
-          <div className="flex gap-2">
-            <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 text-white rounded-full px-3 py-1.5">+ Create</button>
-            <button onClick={load} className="text-xs border rounded-full px-3 py-1.5 bg-white">Refresh</button>
+    <ModernModuleShell title="Tax Codes" subtitle={`${taxes.length} TAX_CODES`} code="FTXC" module="FICO">
+      <div className="max-w-[1600px] mx-auto p-0 space-y-3">
+        {msg && <div className="bg-black text-white font-mono text-xs p-2">{msg}</div>}
+        <div className="bg-white border border-black p-3">
+          <div className="font-mono text-[11px] font-bold border-b border-black pb-1 mb-2">FTXC TAX_CREATE FTXP {taxes.length} API: POST /api/tax-codes {`{code, description, rate, type, gst_type, hsn_code}`}</div>
+          <div className="grid grid-cols-4 gap-2 font-mono text-[11px]">
+            <div><div className="text-[10px] text-zinc-500">CODE</div><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
+            <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+            <div><div className="text-[10px] text-zinc-500">RATE</div><input value={form.rate} onChange={e=>setForm({...form,rate:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+            <div><div className="text-[10px] text-zinc-500">TYPE</div><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full border border-black px-1 py-1 text-xs"><option>INPUT</option><option>OUTPUT</option></select></div>
+            <div><div className="text-[10px] text-zinc-500">GST_TYPE</div><select value={form.gst_type} onChange={e=>setForm({...form,gst_type:e.target.value})} className="w-full border border-black px-1 py-1 text-xs"><option>CGST</option><option>SGST</option><option>IGST</option><option>UTGST</option><option>VAT</option></select></div>
+            <div><div className="text-[10px] text-zinc-500">HSN_CODE</div><input value={form.hsn_code} onChange={e=>setForm({...form,hsn_code:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+            <div><div className="text-[10px] text-zinc-500">LEDGER_ACCOUNT_CODE</div><input value={form.ledger_account_code} onChange={e=>setForm({...form,ledger_account_code:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
           </div>
+          <button onClick={create} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE FTXC</button>
         </div>
-
-        {showForm && (
-          <div className="bg-white border rounded-2xl p-5 space-y-3">
-            <div className="grid md:grid-cols-5 gap-3">
-              <div><label className="text-xs text-zinc-500">Code * e.g., V5</label><input value={form.code} onChange={e=>setForm({...form, code:e.target.value.toUpperCase()})} placeholder="V5" className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
-              <div><label className="text-xs text-zinc-500">Description *</label><input value={form.description} onChange={e=>setForm({...form, description:e.target.value})} placeholder="Input Tax 5% VAT 5%" className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
-              <div><label className="text-xs text-zinc-500">Rate % * e.g., 5</label><input type="number" value={form.rate} onChange={e=>setForm({...form, rate:e.target.value})} placeholder="5" className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
-              <div><label className="text-xs text-zinc-500">Type</label><select value={form.type} onChange={e=>setForm({...form, type:e.target.value})} className="w-full border rounded-xl px-3 py-2 text-sm mt-1"><option>INPUT</option><option>OUTPUT</option></select></div>
-              <div><label className="text-xs text-zinc-500">GL Account e.g., 130000</label><input value={form.gl_account_number} onChange={e=>setForm({...form, gl_account_number:e.target.value})} placeholder="130000" className="w-full border rounded-xl px-3 py-2 text-sm mt-1" /></div>
-            </div>
-            <button onClick={handleCreate} className="bg-zinc-900 text-white rounded-full px-4 py-2 text-xs">Create</button>
-          </div>
-        )}
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {taxCodes.map((t:any)=>(
-            <div key={t.code} className={`border rounded-xl p-4 ${t.rate==5?'bg-yellow-50 border-yellow-200':'bg-white'}`}>
-              <div className="flex justify-between"><span className="font-medium">{t.code} {t.description}</span><span className={`text-xs border rounded-full px-2 py-0.5 ${t.rate==5?'bg-yellow-200 border-yellow-300':'bg-white'}`}>{t.rate}% {t.type}</span></div>
-              <div className="text-xs text-zinc-500 mt-1">G/L: {t.account_number||'Not assigned'} {t.gl_name||''} • Active: {t.is_active?'Yes':'No'}</div>
-              <div className="text-[11px] text-zinc-400 mt-1">{t.code.startsWith('GST')?'INR GST – VAT 5% equivalent if 5%':t.code.startsWith('IGST')?'IGST Export':'KWD VAT – VAT 5% if V5/A5'} • Used in PO lines tax_code_id, IV tax_amount, Sales FI GST Payable</div>
-              <button onClick={()=>handleDelete(t.code)} className="mt-2 text-xs border border-red-200 text-red-600 rounded-full px-2 py-1 bg-white">Delete</button>
+        <div className="grid md:grid-cols-3 gap-2">
+          {taxes.map((t:any)=>(
+            <div key={t.code} className="bg-white border border-black p-2 font-mono text-[11px]">
+              <div className="font-bold">{t.code} | {t.description} | RATE={t.rate} TYPE={t.type} GST_TYPE={t.gst_type}</div>
             </div>
           ))}
-        </div>
-
-        <div className="bg-white border rounded-2xl p-5">
-          <h4 className="font-medium text-sm">ERP Defaults – General Tax Codes like in ERP – FTXP – VAT 5% included</h4>
-          <div className="mt-3 grid md:grid-cols-2 gap-2 text-xs">
-            {erpDefaults.map((s:any)=><div key={s.code} className="bg-zinc-50 border rounded-xl p-3"><b>{s.code}</b> {s.description} – {s.rate}% {s.type} – Code {s.code} – GL {s.gl||''} {s.note||''}</div>)}
-          </div>
-          <div className="mt-3 text-[11px] text-zinc-500">Tax codes seeded: V0 0% Input, V5 5% VAT 5% Input – Kuwait/GCC VAT 5% – configurable, V14/V15 14%/15% KSA VAT, A0 0% Output, A5 5% VAT 5% Output, GST0 0%, GST5 5% Spices VAT 5% equivalent, GST12/18/28, IGST0/5/18 – all like ERP FTXP. You can add new like V10 10% VAT, etc via + Create.</div>
         </div>
       </div>
     </ModernModuleShell>
