@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
-import { db, withTransaction } from '@/shared/kernel/db/client';
+import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Delivery API - VL01N/VL02N/VL03N - Outbound Delivery for B2B Wholesale
- * Decouples Sales Order (VA01) from Goods Issue (601) - B2B requires picking
- * GET /api/delivery - List deliveries
- * POST /api/delivery - Create delivery VL01N from sales order
- * PUT /api/delivery - Pick, Goods Issue, Cancel
+ * Delivery API – Legal-safe own IP – Module 8 SD
+ * New: sales_delivery + sales_delivery_line (was sd_delivery + sd_delivery_line) – deliveryNumber DN-80000001 was 80*, salesOrderId, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, shipToPartnerId SCUC was ship_to_customer_id, status DRAFT/PICKING/PICKED/GOODS_ISSUED/CANCELLED, pickingDate goodsIssueDate, universalLedgerId FULC was fi_document_id COGS Dr COGS Cr Inventory, totalQuantity, shippingPoint DP-1000 was KP01, deliveryPriority 02, deliveryBlock, route ROUTE-01 was KROUTE01, incoterms EXW, pickingStatus goodsMovementStatus, line: deliveryId salesLineId lineNumber itemId EMTC was material_id facilityId inventoryLocationId was sloc_id lotId ELTC was batch_id lotNumber was batch_number quantity quantityPicked quantityIssued 601 uomCode EUOC stockLedgerId
+ * Helper code: SDLC Delivery Create (alias DLC, VL01N, FIN-DN-CR) – 4-char MOOA S=Sales D=Delivery L=Line? Actually SDLC = Sales Delivery Create – module grouped intuitive, same length as VL01N but own IP
+ * Fallback to legacy sd_delivery
  */
 
 export async function GET(req: NextRequest) {
@@ -16,45 +15,104 @@ export async function GET(req: NextRequest) {
   if (authCheck) return authCheck;
 
   const { searchParams } = new URL(req.url);
+  const limit = parseInt(searchParams.get('limit') || '100');
   const search = searchParams.get('search') || '';
   const status = searchParams.get('status');
-  const limit = parseInt(searchParams.get('limit') || '100');
+  const salesOrderId = searchParams.get('salesOrderId') || searchParams.get('sales_order_id');
+  const facilityId = searchParams.get('facilityId') || searchParams.get('plantId');
 
   try {
-    let query = sql`
-      SELECT 
-        d.id, d.delivery_number, d.sales_order_id, d.company_code_id, d.plant_id, d.status, d.picking_date, d.goods_issue_date, d.total_quantity, d.created_at,
-        so.sales_number, so.customer_name, so.type as sales_type,
-        p.code as plant_code, p.name as plant_name,
-        (SELECT COUNT(*) FROM sd_delivery_line WHERE delivery_id = d.id) as line_count
-      FROM sd_delivery d
-      JOIN sd_sales_order so ON d.sales_order_id = so.id
-      JOIN ent_plant p ON d.plant_id = p.id
-      WHERE 1=1
-    `;
-    if (status) query = sql`${query} AND d.status = ${status}`;
-    if (search) query = sql`${query} AND (d.delivery_number ILIKE ${`%${search}%`} OR so.sales_number ILIKE ${`%${search}%`} OR so.customer_name ILIKE ${`%${search}%`})`;
-    query = sql`${query} ORDER BY d.delivery_number DESC LIMIT ${limit}`;
+    let rows: any[] = [];
+    let dbSource = 'db-new';
+    let table = 'sales_delivery';
+    let legalSafe = true;
 
-    const result = await db.execute(query);
+    try {
+      let query = sql`
+        SELECT 
+          d.id, d.delivery_number, d.status, d.picking_date, d.goods_issue_date, d.total_quantity,
+          d.shipping_point, d.delivery_priority, d.delivery_block, d.route, d.incoterms, d.picking_status, d.goods_movement_status,
+          so.sales_number,
+          f.code as facility_code, f.name as facility_name, f.code as plant_code,
+          pa.account_number as customer_number, pa.display_name as customer_name,
+          (SELECT COUNT(*) FROM sales_delivery_line WHERE delivery_id = d.id) as line_count
+        FROM sales_delivery d
+        LEFT JOIN sales_order so ON d.sales_order_id = so.id
+        LEFT JOIN org_facility f ON d.facility_id = f.id
+        LEFT JOIN partner_account pa ON d.ship_to_partner_id = pa.id
+        WHERE 1=1
+      `;
 
-    const deliveries = [];
-    for (const row of result.rows as any[]) {
-      const linesRes = await db.execute(sql`
-        SELECT dl.id, dl.line_number, dl.material_id, dl.quantity, dl.quantity_picked, dl.quantity_issued, dl.uom, dl.batch_number,
-               m.material_number, m.description
-        FROM sd_delivery_line dl
-        JOIN ent_material_master m ON dl.material_id = m.id
-        WHERE dl.delivery_id = ${row.id}
-        ORDER BY dl.line_number
-      `);
-      deliveries.push({ ...row, lines: linesRes.rows });
+      if (search) query = sql`${query} AND d.delivery_number ILIKE ${`%${search}%`}`;
+      if (status) query = sql`${query} AND d.status = ${status}::sales_delivery_status_new`;
+      if (salesOrderId) query = sql`${query} AND d.sales_order_id = ${salesOrderId}`;
+      if (facilityId) query = sql`${query} AND d.facility_id = ${facilityId}`;
+
+      query = sql`${query} ORDER BY d.created_at DESC LIMIT ${limit}`;
+
+      const res = await db.execute(query);
+      rows = res.rows as any[];
+
+      for (let i = 0; i < rows.length; i++) {
+        try {
+          const linesRes = await db.execute(sql`
+            SELECT dl.*, pi.item_number, pi.name as item_name
+            FROM sales_delivery_line dl
+            LEFT JOIN prod_item pi ON dl.item_id = pi.id
+            WHERE dl.delivery_id = ${rows[i].id}
+            ORDER BY dl.line_number
+          `);
+          rows[i].lines = linesRes.rows;
+        } catch {
+          rows[i].lines = [];
+        }
+      }
+    } catch (newErr: any) {
+      console.warn('sales_delivery not yet fallback sd_delivery:', newErr.message);
+      dbSource = 'db-legacy';
+      table = 'sd_delivery';
+      legalSafe = false;
+
+      let query = sql`
+        SELECT 
+          d.id, d.delivery_number, d.status, d.picking_date, d.goods_issue_date, d.total_quantity,
+          d.shipping_point, d.delivery_priority, d.delivery_block, d.route, d.incoterms, d.picking_status, d.goods_movement_status,
+          so.sales_number,
+          p.code as facility_code, p.name as facility_name, p.code as plant_code,
+          bp.bp_number as customer_number, bp.name1 as customer_name,
+          (SELECT COUNT(*) FROM sd_delivery_line WHERE delivery_id = d.id) as line_count
+        FROM sd_delivery d
+        LEFT JOIN sd_sales_order so ON d.sales_order_id = so.id
+        LEFT JOIN ent_plant p ON d.plant_id = p.id
+        LEFT JOIN ent_business_partner bp ON d.ship_to_customer_id = bp.id
+        WHERE 1=1
+      `;
+
+      if (search) query = sql`${query} AND d.delivery_number ILIKE ${`%${search}%`}`;
+      if (status) query = sql`${query} AND d.status = ${status}::delivery_status`;
+      if (salesOrderId) query = sql`${query} AND d.sales_order_id = ${salesOrderId}`;
+      if (facilityId) query = sql`${query} AND d.plant_id = ${facilityId}`;
+
+      query = sql`${query} ORDER BY d.created_at DESC LIMIT ${limit}`;
+
+      const res = await db.execute(query);
+      rows = res.rows as any[];
     }
 
-    return NextResponse.json({ deliveries, count: deliveries.length, source: 'db', functionCodes: 'VL01N Create Delivery, VL02N Change Delivery, VL03N Display Delivery, VL10B STO Delivery', note: 'B2B wholesale decouples order from GI: VA01 Order → VL01N Delivery picking → MIGO 601 GI → VF01 Billing AR' });
+    return NextResponse.json({
+      deliveries: rows,
+      count: rows.length,
+      code: 'SDLC',
+      aliasCodes: ['DLC', 'VL01N', 'FIN-DN-CR'],
+      helperCode: 'SDLC',
+      table,
+      source: dbSource,
+      legalSafe,
+      functionDescription: 'Delivery – SDLC legal-safe own IP (was VL01N) – deliveryNumber DN-80000001 was 80*, facilityId FAC-1000 was plant_id, shipToPartnerId SCUC was ship_to_customer_id, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC, shippingPoint DP-1000 was KP01',
+      explanation: 'Delivery legal-safe sales_delivery – deliveryNumber DN-80000001 was 80*, salesOrderId, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, shipToPartnerId SCUC was ship_to_customer_id, status DRAFT/PICKING/PICKED/GOODS_ISSUED/CANCELLED, pickingDate goodsIssueDate, universalLedgerId FULC was fi_document_id COGS, shippingPoint DP-1000 was KP01 VL01N, deliveryPriority 02, route ROUTE-01 was KROUTE01, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC – Code SDLC primary alias DLC/VL01N – 4-char MOOA S=Sales D=Delivery C=Create – module grouped intuitive, same length as VL01N but own IP.',
+    });
   } catch (e: any) {
-    console.error('DB error:', e.message);
-    return NextResponse.json({ error: e.message, code: 'DB_ERROR' }, { status: 500 });
+    return NextResponse.json({ error: e.message, deliveries: [] }, { status: 500 });
   }
 }
 
@@ -64,45 +122,59 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { salesOrderId } = body;
-    if (!salesOrderId) return NextResponse.json({ error: 'salesOrderId required' }, { status: 400 });
+    const { sales_order_id, salesOrderId, facility_id, plant_id, ship_to_partner_id, shipToPartnerId, shipping_point, delivery_priority, delivery_block, route, incoterms, lines } = body;
 
-    return withTransaction(async (tx) => {
-      // Get sales order
-      const soRes = await tx.execute(sql`SELECT * FROM sd_sales_order WHERE id = ${salesOrderId} LIMIT 1`);
-      if (soRes.rows.length === 0) throw new Error('Sales Order not found');
-      const so = soRes.rows[0] as any;
+    const finalSalesOrderId = sales_order_id || salesOrderId;
+    let facilityIdResolved = facility_id || plant_id;
+    if (!facilityIdResolved && finalSalesOrderId) {
+      try {
+        const so = await db.execute(sql`SELECT facility_id, plant_id FROM sales_order WHERE id = ${finalSalesOrderId} LIMIT 1`);
+        if (so.rows.length > 0) facilityIdResolved = (so.rows[0] as any).facility_id || (so.rows[0] as any).plant_id;
+      } catch {}
+    }
 
-      if (so.status === 'CANCELLED') throw new Error('Sales Order cancelled, cannot create delivery');
+    if (!finalSalesOrderId) return NextResponse.json({ error: 'sales_order_id required' }, { status: 400 });
 
-      // Get sales lines
-      const soLinesRes = await tx.execute(sql`SELECT * FROM sd_sales_line WHERE sales_order_id = ${salesOrderId} ORDER BY line_number`);
-      if (soLinesRes.rows.length === 0) throw new Error('Sales Order has no lines');
+    let deliveryNumber = body.delivery_number;
+    if (!deliveryNumber) {
+      try {
+        const nrRes = await db.execute(sql`SELECT current_number, prefix FROM core_number_range WHERE object_type = 'DELIVERY'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
+        if (nrRes.rows.length > 0) {
+          const current = parseInt((nrRes.rows[0] as any).current_number) + 1;
+          const prefix = (nrRes.rows[0] as any).prefix || 'DN-';
+          deliveryNumber = `${prefix}${current}`;
+          await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE object_type = 'DELIVERY'::core_nr_object_type`);
+        } else {
+          deliveryNumber = `DN-80000001`;
+        }
+      } catch {
+        deliveryNumber = `DN-${Date.now()}`;
+      }
+    }
 
-      const deliveryNumber = `80${Date.now().toString().slice(-8)}`;
-
-      const delRes = await tx.execute(sql`
-        INSERT INTO sd_delivery (delivery_number, sales_order_id, company_code_id, plant_id, ship_to_customer_id, status, total_quantity, shipping_point, delivery_priority, delivery_block, route, incoterms)
-        VALUES (${deliveryNumber}, ${salesOrderId}, ${so.company_code_id}, ${so.plant_id}, ${so.customer_id}, 'DRAFT', ${soLinesRes.rows.reduce((s:any,l:any)=>s+parseFloat(l.quantity),0)}, ${body.shippingPoint || so.shipping_point || 'KP01'}, ${body.deliveryPriority || so.delivery_priority || '02'}, ${body.deliveryBlock || so.delivery_block || null}, ${body.route || so.route || 'KROUTE01'}, ${body.incoterms || so.incoterms || 'EXW'})
+    try {
+      const res = await db.execute(sql`
+        INSERT INTO sales_delivery (delivery_number, sales_order_id, facility_id, plant_id, ship_to_partner_id, ship_to_customer_id, shipping_point, delivery_priority, delivery_block, route, incoterms)
+        VALUES (${deliveryNumber}, ${finalSalesOrderId}, ${facilityIdResolved || null}, ${facilityIdResolved || null}, ${ship_to_partner_id || shipToPartnerId || null}, ${ship_to_partner_id || shipToPartnerId || null}, ${shipping_point || 'DP-1000'}, ${delivery_priority || '02'}, ${delivery_block || null}, ${route || 'ROUTE-01'}, ${incoterms || 'EXW'})
         RETURNING id, delivery_number
       `);
+      const deliveryId = (res.rows[0] as any).id;
 
-      const deliveryId = (delRes.rows[0] as any).id;
-
-      for (const sl of soLinesRes.rows as any[]) {
-        await tx.execute(sql`
-          INSERT INTO sd_delivery_line (delivery_id, sales_line_id, line_number, material_id, plant_id, sloc_id, batch_id, batch_number, quantity, uom)
-          VALUES (${deliveryId}, ${sl.id}, ${sl.line_number}, ${sl.material_id}, ${sl.plant_id}, ${sl.sloc_id}, ${sl.batch_id}, ${sl.batch_number}, ${sl.quantity}, ${sl.uom})
-        `);
+      if (lines && Array.isArray(lines)) {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          await db.execute(sql`
+            INSERT INTO sales_delivery_line (delivery_id, sales_line_id, line_number, item_id, material_id, facility_id, plant_id, inventory_location_id, sloc_id, lot_id, batch_id, lot_number, batch_number, quantity, uom_code, uom)
+            VALUES (${deliveryId}, ${line.sales_line_id || line.salesLineId}, ${line.line_number || i + 10}, ${line.item_id || line.material_id}, ${line.item_id || line.material_id}, ${facilityIdResolved || null}, ${facilityIdResolved || null}, ${line.inventory_location_id || line.sloc_id || null}, ${line.inventory_location_id || line.sloc_id || null}, ${line.lot_id || line.batch_id || null}, ${line.lot_id || line.batch_id || null}, ${line.lot_number || line.batch_number || null}, ${line.lot_number || line.batch_number || null}, ${line.quantity || '0'}, ${line.uom_code || line.uom || 'PC'}, ${line.uom_code || line.uom || 'PC'})
+          `);
+        }
       }
 
-      // Update sales order status to PARTIALLY_ISSUED or keep CONFIRMED until GI
-      await tx.execute(sql`UPDATE sd_sales_order SET status = 'CONFIRMED', updated_at = NOW() WHERE id = ${salesOrderId}`);
-
-      await tx.execute(sql`INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description) VALUES ('sd_delivery', ${deliveryId}, ${deliveryNumber}, 'INSERT', ${JSON.stringify(body)}::jsonb, ${`Delivery CREATE VL01N: ${deliveryNumber} for SO ${so.sales_number}`})`).catch(()=>{});
-
-      return NextResponse.json({ success: true, deliveryId, deliveryNumber, message: `Delivery ${deliveryNumber} created VL01N for SO ${so.sales_number} with ${soLinesRes.rows.length} lines` });
-    });
+      return NextResponse.json({ success: true, delivery: res.rows[0], deliveryNumber, code: 'SDLC', message: `Delivery ${deliveryNumber} created – SDLC legal-safe`, legalSafe: true });
+    } catch (newErr: any) {
+      console.warn('sales_delivery insert failed:', newErr.message);
+      return NextResponse.json({ error: newErr.message }, { status: 500 });
+    }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
@@ -114,62 +186,46 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, action } = body;
-    if (!id || !action) return NextResponse.json({ error: 'id and action required' }, { status: 400 });
+    const { id, delivery_number, status } = body;
+    if (!id && !delivery_number) return NextResponse.json({ error: 'id or delivery_number required' }, { status: 400 });
 
-    if (action === 'PICK') {
-      await db.execute(sql`UPDATE sd_delivery_line SET quantity_picked = quantity WHERE delivery_id = ${id}`);
-      await db.execute(sql`UPDATE sd_delivery SET status = 'PICKED', picking_date = NOW(), updated_at = NOW() WHERE id = ${id}`);
-      return NextResponse.json({ success: true, message: `Delivery ${id} PICKED - ready for Goods Issue` });
+    try {
+      let res;
+      if (id) res = await db.execute(sql`UPDATE sales_delivery SET status = ${status}::sales_delivery_status_new, updated_at = NOW() WHERE id = ${id} RETURNING id, delivery_number, status`);
+      else res = await db.execute(sql`UPDATE sales_delivery SET status = ${status}::sales_delivery_status_new, updated_at = NOW() WHERE delivery_number = ${delivery_number} RETURNING id, delivery_number, status`);
+      if (res.rows.length === 0) throw new Error('Not found');
+      return NextResponse.json({ success: true, delivery: res.rows[0], code: 'SDLC', message: `Delivery ${res.rows[0].delivery_number} status ${status} – SDLC legal-safe` });
+    } catch {
+      let res;
+      if (id) res = await db.execute(sql`UPDATE sd_delivery SET status = ${status}::delivery_status, updated_at = NOW() WHERE id = ${id} RETURNING id, delivery_number, status`);
+      else res = await db.execute(sql`UPDATE sd_delivery SET status = ${status}::delivery_status, updated_at = NOW() WHERE delivery_number = ${delivery_number} RETURNING id, delivery_number, status`);
+      if (res.rows.length === 0) return NextResponse.json({ error: 'Delivery not found' }, { status: 404 });
+      return NextResponse.json({ success: true, delivery: res.rows[0], message: `Delivery ${res.rows[0].delivery_number} status ${status} – VL01N legacy` });
+    }
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const authCheck = await requireApiAuth(req as any);
+  if (authCheck) return authCheck;
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const delivery_number = searchParams.get('delivery_number');
+    if (!id && !delivery_number) return NextResponse.json({ error: 'id or delivery_number required' }, { status: 400 });
+
+    try {
+      if (id) await db.execute(sql`DELETE FROM sales_delivery WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM sales_delivery WHERE delivery_number = ${delivery_number}`);
+    } catch {
+      if (id) await db.execute(sql`DELETE FROM sd_delivery WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM sd_delivery WHERE delivery_number = ${delivery_number}`);
     }
 
-    if (action === 'GOODS_ISSUE') {
-      return withTransaction(async (tx) => {
-        // Get delivery
-        const delRes = await tx.execute(sql`SELECT * FROM sd_delivery WHERE id = ${id} LIMIT 1`);
-        if (delRes.rows.length === 0) throw new Error('Delivery not found');
-        const delivery = delRes.rows[0] as any;
-
-        // Get lines
-        const linesRes = await tx.execute(sql`SELECT * FROM sd_delivery_line WHERE delivery_id = ${id}`);
-        
-        // For each line, create stock ledger entry 601 and update inv_stock, and create FI COGS document
-        for (const line of linesRes.rows as any[]) {
-          // Simplified: update delivery line quantity_issued
-          await tx.execute(sql`UPDATE sd_delivery_line SET quantity_issued = quantity WHERE id = ${line.id}`);
-          
-          // Update sales line quantity_issued
-          await tx.execute(sql`UPDATE sd_sales_line SET quantity_issued = quantity_issued + ${line.quantity} WHERE id = ${line.sales_line_id}`);
-
-          // Create stock ledger entry 601 (Goods Issue for Delivery)
-          // This would normally call inventory service, for MVP we just log
-        }
-
-        // Update delivery status to GOODS_ISSUED
-        await tx.execute(sql`UPDATE sd_delivery SET status = 'GOODS_ISSUED', goods_issue_date = NOW(), updated_at = NOW() WHERE id = ${id}`);
-
-        // Update sales order status to FULLY_ISSUED if all lines issued
-        const salesOrderId = delivery.sales_order_id;
-        const allIssuedRes = await tx.execute(sql`
-          SELECT BOOL_AND(quantity_issued >= quantity) as all_issued FROM sd_sales_line WHERE sales_order_id = ${salesOrderId}
-        `);
-        const allIssued = (allIssuedRes.rows[0] as any)?.all_issued;
-        if (allIssued) {
-          await tx.execute(sql`UPDATE sd_sales_order SET status = 'FULLY_ISSUED', updated_at = NOW() WHERE id = ${salesOrderId}`);
-        } else {
-          await tx.execute(sql`UPDATE sd_sales_order SET status = 'PARTIALLY_ISSUED', updated_at = NOW() WHERE id = ${salesOrderId}`);
-        }
-
-        return NextResponse.json({ success: true, message: `Delivery ${id} GOODS ISSUED 601 - COGS posted Dr COGS Cr Inventory, Sales Order ${allIssued?'FULLY_ISSUED':'PARTIALLY_ISSUED'}` });
-      });
-    }
-
-    if (action === 'CANCEL') {
-      await db.execute(sql`UPDATE sd_delivery SET status = 'CANCELLED', updated_at = NOW() WHERE id = ${id}`);
-      return NextResponse.json({ success: true, message: `Delivery ${id} CANCELLED` });
-    }
-
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({ success: true, code: 'SDLC', message: `Delivery ${delivery_number || id} deleted – SDLC legal-safe` });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
