@@ -3,7 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
-import { enforcePostingPeriod, getFiscalYearPeriodFromDate } from '@/shared/kernel/db/postingPeriodHelpers';
+import { enforcePostingPeriod, getFiscalYearPeriodFromDate, getAutoAccount, calculateDueDate } from '@/shared/kernel/db/postingPeriodHelpers';
 import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
@@ -162,6 +162,17 @@ export async function POST(req: NextRequest) {
       // Attach fiscal info to body for storage
       (body as any)._fiscal_year = postingCheck.fiscal_year;
       (body as any)._fiscal_period = postingCheck.fiscal_period;
+      // Strict ERP: Payment Terms + Auto Account for Billing
+      try {
+        if (body.payment_term_code) {
+          const dueCalc = await calculateDueDate(body.payment_term_code, postingDate);
+          (body as any)._due_date = dueCalc.due_date.toISOString();
+        }
+        const chartOfAccounts = 'KSCA';
+        const bsx = await getAutoAccount({ transaction_key: 'BSX', chart_of_accounts: chartOfAccounts, valuation_class: 'FINISHED', company_code: companyCodeForPosting });
+        (body as any)._auto_gl_revenue = bsx.gl_account;
+      } catch {}
+
     } catch (ppErr: any) {
       console.warn('Posting period enforcement failed, allowing posting to not block fresh:', ppErr.message);
     }

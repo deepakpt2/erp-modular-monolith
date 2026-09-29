@@ -3,7 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
-import { enforcePostingPeriod, getFiscalYearPeriodFromDate } from '@/shared/kernel/db/postingPeriodHelpers';
+import { enforcePostingPeriod, getFiscalYearPeriodFromDate, checkCreditExposure, calculateDueDate } from '@/shared/kernel/db/postingPeriodHelpers';
 import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
@@ -171,6 +171,36 @@ export async function POST(req: NextRequest) {
       // Attach fiscal info to body for storage
       (body as any)._fiscal_year = postingCheck.fiscal_year;
       (body as any)._fiscal_period = postingCheck.fiscal_period;
+      // Strict ERP: Credit Control OB45 – check customer credit exposure
+      try {
+        if (body.customer_code || body.partner_code) {
+          const custCode = body.customer_code || body.partner_code;
+          const orderValue = parseFloat(body.total_amount || body.net_value || 0) || 0;
+          if (orderValue > 0) {
+            const creditCheck = await checkCreditExposure({ customer_code: custCode, new_order_value: orderValue, company_code: companyCodeForPosting });
+            if (!creditCheck.allowed) {
+              return NextResponse.json({
+                error: creditCheck.message,
+                exposure: creditCheck.exposure,
+                limit: creditCheck.limit,
+                customer_code: custCode,
+                help: `Credit limit exceeded – increase limit via /foundation/credit-policy-areas or reduce order value`
+              }, { status: 400 });
+            }
+            console.log(`Credit check OB45: ${creditCheck.message}`);
+          }
+        }
+      } catch (creditErr: any) {
+        console.warn('Credit check failed, allowing SO:', creditErr.message);
+      }
+      // Strict ERP: Payment Terms
+      try {
+        if (body.payment_term_code) {
+          const dueCalc = await calculateDueDate(body.payment_term_code, postingDate);
+          (body as any)._due_date = dueCalc.due_date.toISOString();
+        }
+      } catch {}
+
     } catch (ppErr: any) {
       console.warn('Posting period enforcement failed, allowing posting to not block fresh:', ppErr.message);
     }

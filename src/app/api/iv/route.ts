@@ -3,7 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
-import { enforcePostingPeriod, getFiscalYearPeriodFromDate } from '@/shared/kernel/db/postingPeriodHelpers';
+import { enforcePostingPeriod, getFiscalYearPeriodFromDate, checkTolerance, getAutoAccount } from '@/shared/kernel/db/postingPeriodHelpers';
 import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
@@ -132,6 +132,25 @@ export async function POST(req: NextRequest) {
       // Attach fiscal info to body for storage
       (body as any)._fiscal_year = postingCheck.fiscal_year;
       (body as any)._fiscal_period = postingCheck.fiscal_period;
+      // Strict ERP: Tolerance OBA4 – check invoice vs PO difference within tolerance
+      try {
+        if (body.tolerance_group_code && body.difference_amount) {
+          const tolCheck = await checkTolerance({ group_code: body.tolerance_group_code, difference_amount: parseFloat(body.difference_amount) });
+          if (!tolCheck.allowed) {
+            return NextResponse.json({ error: tolCheck.message, tolerance_group: body.tolerance_group_code }, { status: 400 });
+          }
+        }
+      } catch (tolErr: any) {
+        console.warn('Tolerance check failed:', tolErr.message);
+      }
+      // Strict ERP: Auto Account OBYC for IV – WRX clearing
+      try {
+        const chartOfAccounts = 'KSCA';
+        const valuationClass = body.material_type || 'RAW';
+        const wrx = await getAutoAccount({ transaction_key: 'WRX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+        (body as any)._auto_gl_wrx = wrx.gl_account;
+      } catch {}
+
     } catch (ppErr: any) {
       console.warn('Posting period enforcement failed, allowing posting to not block fresh:', ppErr.message);
     }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db, withTransaction } from '@/shared/kernel/db/client';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
-import { enforcePostingPeriod, getFiscalYearPeriodFromDate } from '@/shared/kernel/db/postingPeriodHelpers';
+import { enforcePostingPeriod, getFiscalYearPeriodFromDate, calculateDueDate } from '@/shared/kernel/db/postingPeriodHelpers';
 import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 import { sql } from 'drizzle-orm';
 
@@ -158,6 +158,18 @@ export async function POST(req: NextRequest) {
       // Attach fiscal info to body for storage
       (body as any)._fiscal_year = postingCheck.fiscal_year;
       (body as any)._fiscal_period = postingCheck.fiscal_period;
+      // Strict ERP: Payment Terms FAPT – calculate due date from posting date + days
+      try {
+        if (body.payment_term_code) {
+          const dueCalc = await calculateDueDate(body.payment_term_code, postingDate);
+          (body as any)._due_date = dueCalc.due_date.toISOString();
+          (body as any)._discount_date = dueCalc.discount_date?.toISOString();
+          console.log(`Payment term ${body.payment_term_code}: ${dueCalc.message}`);
+        }
+      } catch (ptErr: any) {
+        console.warn('Payment term calc failed:', ptErr.message);
+      }
+
     } catch (ppErr: any) {
       console.warn('Posting period enforcement failed, allowing posting to not block fresh:', ppErr.message);
     }

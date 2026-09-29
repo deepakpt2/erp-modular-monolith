@@ -3,7 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
-import { enforcePostingPeriod, getFiscalYearPeriodFromDate } from '@/shared/kernel/db/postingPeriodHelpers';
+import { enforcePostingPeriod, getFiscalYearPeriodFromDate, getAutoAccount } from '@/shared/kernel/db/postingPeriodHelpers';
 import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
@@ -143,6 +143,19 @@ export async function POST(req: NextRequest) {
       // Attach fiscal info to body for storage
       (body as any)._fiscal_year = postingCheck.fiscal_year;
       (body as any)._fiscal_period = postingCheck.fiscal_period;
+      // Strict ERP: Automatic Account Determination OBYC – BSX inventory, WRX GR/IR
+      try {
+        const chartOfAccounts = 'KSCA'; // default
+        const valuationClass = body.material_type || 'RAW';
+        const bsx = await getAutoAccount({ transaction_key: 'BSX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+        const wrx = await getAutoAccount({ transaction_key: 'WRX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+        (body as any)._auto_gl_bsx = bsx.gl_account;
+        (body as any)._auto_gl_wrx = wrx.gl_account;
+        console.log(`Auto account OBYC for GR: BSX=${bsx.gl_account} (${bsx.message}), WRX=${wrx.gl_account} (${wrx.message})`);
+      } catch (autoErr: any) {
+        console.warn('Auto account determination failed, allowing GR:', autoErr.message);
+      }
+
     } catch (ppErr: any) {
       console.warn('Posting period enforcement failed, allowing posting to not block fresh:', ppErr.message);
     }
