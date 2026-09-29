@@ -11,6 +11,8 @@ export * from '../../../modules/fico/infrastructure/financialsDeepDiveSchema';
 export * from '../../../modules/mm/infrastructure/procurementFoundationSchema';
 export * from '../../../modules/pp/infrastructure/manufacturingFoundationSchema';
 export * from '../../../modules/sd/infrastructure/salesFoundationSchema';
+export * from '../../../modules/foundation/inventory-state/infrastructure/inventoryFoundationSchema';
+export * from '../../../modules/hr/infrastructure/hrFoundationSchema';
 export * from '../../../modules/foundation/enterprise/infrastructure/jobQueueSchema';
 export * from '../../../modules/foundation/enterprise/infrastructure/exchangeRateSchema';
 export * from '../../../modules/foundation/number-range/infrastructure/schema';
