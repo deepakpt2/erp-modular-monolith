@@ -192,21 +192,57 @@ export async function PUT(req: NextRequest) {
 
     try {
       const calRes = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE code = ${variant_code.toUpperCase()} LIMIT 1`);
-      if (calRes.rows.length === 0) return NextResponse.json({ error: `Variant ${variant_code} not found in fin_posting_calendar` }, { status: 404 });
+      if (calRes.rows.length === 0) {
+        // Auto-create variant if not exists for OB52
+        try {
+          const newVar = await db.execute(sql`INSERT INTO fin_posting_calendar (code, name) VALUES (${variant_code.toUpperCase()}, ${variant_code.toUpperCase()}) ON CONFLICT (code) DO UPDATE SET name = ${variant_code.toUpperCase()} RETURNING id`);
+          const calIdNew = (newVar.rows[0] as any).id;
+          await db.execute(sql`
+            INSERT INTO fin_posting_calendar_period (posting_calendar_id, from_period, to_period, account_type, is_open, from_year, to_year)
+            VALUES (${calIdNew}, ${finalFrom}, ${finalTo}, ${finalAccountType}::fin_posting_account_type, ${finalOpen}, ${from_year || 2026}, ${to_year || 2026})
+            ON CONFLICT (posting_calendar_id, from_period, account_type) DO UPDATE SET to_period = ${finalTo}, is_open = ${finalOpen}, from_year = ${from_year || 2026}, to_year = ${to_year || 2026}, updated_at = NOW()
+          `);
+          return NextResponse.json({ success: true, code: 'FPPE', message: `Period ${variant_code} ${finalAccountType} ${finalFrom}/${from_year || 2026} → ${finalTo}/${to_year || 2026} ${finalOpen ? 'OPEN' : 'CLOSED'} created – FPPE legal-safe (variant auto-created)`, legalSafe: true });
+        } catch (autoErr: any) {
+          return NextResponse.json({ error: `Variant ${variant_code} not found and auto-create failed: ${autoErr.message}` }, { status: 404 });
+        }
+      }
       const calId = (calRes.rows[0] as any).id;
 
-      await db.execute(sql`
-        UPDATE fin_posting_calendar_period SET to_period = ${finalTo}, is_open = ${finalOpen}, updated_at = NOW()
+      // Try update, if no rows affected, insert
+      const updRes = await db.execute(sql`
+        UPDATE fin_posting_calendar_period SET to_period = ${finalTo}, is_open = ${finalOpen}, from_year = ${from_year || 2026}, to_year = ${to_year || 2026}, updated_at = NOW()
         WHERE posting_calendar_id = ${calId} AND from_period = ${finalFrom} AND account_type = ${finalAccountType}::fin_posting_account_type
+        RETURNING id
       `);
 
-      return NextResponse.json({ success: true, code: 'FPPE', message: `Period ${variant_code} ${finalAccountType} ${finalFrom}-${finalTo} updated to ${finalOpen ? 'open' : 'closed'} – FPPE legal-safe`, legalSafe: true });
+      if (updRes.rows.length === 0) {
+        await db.execute(sql`
+          INSERT INTO fin_posting_calendar_period (posting_calendar_id, from_period, to_period, account_type, is_open, from_year, to_year)
+          VALUES (${calId}, ${finalFrom}, ${finalTo}, ${finalAccountType}::fin_posting_account_type, ${finalOpen}, ${from_year || 2026}, ${to_year || 2026})
+          ON CONFLICT (posting_calendar_id, from_period, account_type) DO UPDATE SET to_period = ${finalTo}, is_open = ${finalOpen}, from_year = ${from_year || 2026}, to_year = ${to_year || 2026}, updated_at = NOW()
+        `);
+      }
+
+      return NextResponse.json({ success: true, code: 'FPPE', message: `Period ${variant_code} ${finalAccountType} ${finalFrom}/${from_year || 2026} → ${finalTo}/${to_year || 2026} ${finalOpen ? 'OPEN' : 'CLOSED'} – FPPE legal-safe`, legalSafe: true });
     } catch (newErr: any) {
-      await db.execute(sql`
-        UPDATE fi_posting_period SET to_period = ${finalTo}, to_year = ${to_year || 2026}
-        WHERE variant_code = ${variant_code.toUpperCase()} AND account_type = ${finalAccountType} AND from_period = ${finalFrom}
-      `);
-      return NextResponse.json({ success: true, message: `Period ${variant_code} ${finalAccountType} updated – OBBO legacy`, legalSafe: false });
+      console.warn('fin_posting_calendar_period upsert failed fallback fi_posting_period:', newErr.message);
+      try {
+        const upd = await db.execute(sql`
+          UPDATE fi_posting_period SET to_period = ${finalTo}, to_year = ${to_year || 2026}, from_year = ${from_year || 2024}
+          WHERE variant_code = ${variant_code.toUpperCase()} AND account_type = ${finalAccountType} AND from_period = ${finalFrom}
+          RETURNING id
+        `);
+        if (upd.rows.length === 0) {
+          await db.execute(sql`
+            INSERT INTO fi_posting_period (variant_code, account_type, from_period, from_year, to_period, to_year)
+            VALUES (${variant_code.toUpperCase()}, ${finalAccountType}, ${finalFrom}, ${from_year || 2024}, ${finalTo}, ${to_year || 2026})
+          `);
+        }
+        return NextResponse.json({ success: true, message: `Period ${variant_code} ${finalAccountType} ${finalFrom}/${from_year} → ${finalTo}/${to_year} ${finalOpen ? 'OPEN' : 'CLOSED'} – OBBO legacy`, legalSafe: false });
+      } catch (legacyErr: any) {
+        return NextResponse.json({ error: `Failed to create period: ${legacyErr.message}` }, { status: 500 });
+      }
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

@@ -21,8 +21,9 @@ export default function PostingPeriodPage(){
   const [loading,setLoading]=useState(true);
   const [msg,setMsg]=useState<string|null>(null);
   const [form,setForm]=useState({code:'',name:''});
-  const [fiscalForm,setFiscalForm]=useState({code:'',name:'',description:''});
+  const [fiscalForm,setFiscalForm]=useState({code:'',name:'',description:'', from_date:'', to_date:''});
   const [exchangeForm,setExchangeForm]=useState({from_currency:'INR',to_currency:'USD',rate:'',valid_from:''});
+  const [ob52Form,setOb52Form]=useState({variant_code:'1000',account_type:'+',from_period:'1',from_year:'2026',to_period:'12',to_year:'2026',is_open:true});
   const [showForm,setShowForm]=useState(false);
 
   async function load(){
@@ -76,6 +77,27 @@ export default function PostingPeriodPage(){
     if(!exchangeForm.from_currency || !exchangeForm.to_currency || !exchangeForm.rate){ setMsg('FROM_CURRENCY, TO_CURRENCY, RATE required – FEXC'); return; }
     const res = await fetch('/api/exchange-rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...exchangeForm, rate: parseFloat(exchangeForm.rate)})}).then(r=>r.json());
     if(res.success){ setMsg(`✅ Exchange Rate ${exchangeForm.from_currency}→${exchangeForm.to_currency} created – FEXC`); setExchangeForm({from_currency:'INR',to_currency:'USD',rate:'',valid_from:''}); load(); }
+    else setMsg(`❌ ${res.error}`);
+  };
+
+  const handleCreateOB52 = async () => {
+    if(!ob52Form.variant_code || !ob52Form.account_type){ setMsg('VARIANT_CODE and ACCOUNT_TYPE required – OB52'); return; }
+    if(!ob52Form.from_period || !ob52Form.from_year || !ob52Form.to_period || !ob52Form.to_year){ setMsg('FROM_PERIOD, FROM_YEAR, TO_PERIOD, TO_YEAR required – OB52'); return; }
+    const payload = {
+      variant_code: ob52Form.variant_code.toUpperCase(),
+      account_type: ob52Form.account_type,
+      from_period: parseInt(ob52Form.from_period),
+      from_year: parseInt(ob52Form.from_year),
+      to_period: parseInt(ob52Form.to_period),
+      to_year: parseInt(ob52Form.to_year),
+      is_open: ob52Form.is_open
+    };
+    const res = await fetch('/api/posting-period-variants',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json()).catch(async()=>{
+      // Try POST with periods array as fallback
+      const res2 = await fetch('/api/posting-period-variants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code: payload.variant_code, name: payload.variant_code, periods: [{account_type: payload.account_type, from_period: payload.from_period, from_year: payload.from_year, to_period: payload.to_period, to_year: payload.to_year, is_open: payload.is_open}]})}).then(r=>r.json());
+      return res2;
+    });
+    if(res.success){ setMsg(`✅ OB52 ${payload.variant_code} ${payload.account_type} ${payload.from_period}/${payload.from_year} → ${payload.to_period}/${payload.to_year} ${payload.is_open ? 'OPEN' : 'CLOSED'} – FPPE`); load(); }
     else setMsg(`❌ ${res.error}`);
   };
 
@@ -291,14 +313,57 @@ export default function PostingPeriodPage(){
           </div>
         </div>
         <div id="form-OB52" className={`bg-white rounded-2xl border-2 shadow-sm p-6 scroll-mt-24 ${highlighted==='OB52' ? 'border-black' : 'border-zinc-200'}`}>
-          <h4 className="font-semibold text-sm flex items-center gap-2">Open/Close Periods OB52/FPPE <span className="text-[10px] bg-black text-white rounded-full px-2 py-0.5">{periods.length}</span> <span className="text-[10px] bg-zinc-100 border rounded-full px-2 py-0.5">FPPE</span></h4>
-          <div className="mt-4 space-y-2 max-h-[400px] overflow-auto">
-            {periods.map((p:any)=>(
-              <div key={p.id} className="border border-zinc-200 rounded-xl p-3 bg-zinc-50/50 flex justify-between text-xs hover:border-zinc-300 transition-colors"><span>{p.variant_code} – TYPE {p.account_type} – {p.from_period}/{p.from_year} → {p.to_period}/{p.to_year}</span></div>
-            ))}
-            {periods.length===0 && <div className="text-sm text-zinc-500 border border-dashed rounded-xl p-6 text-center">No periods – Fresh deployment</div>}
+          <h4 className="font-semibold text-sm flex items-center gap-2">Open/Close Periods OB52/FPPE <span className="text-[10px] bg-black text-white rounded-full px-2 py-0.5">{periods.length}</span> <span className="text-[10px] bg-zinc-100 border rounded-full px-2 py-0.5">FPPE</span> <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 rounded-full px-2 py-0.5">Month-end critical</span></h4>
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+            <DbAutocomplete label="VARIANT_CODE *" value={ob52Form.variant_code} onChange={v=>setOb52Form({...ob52Form,variant_code:v})} apiUrl="/api/posting-period-variants" dataKey="postingPeriodVariants" codeField="code" nameField="name" placeholder="VARIANT_CODE – e.g., 1000" required createUrl={`/${companyCode}/fico/posting-period?focus=OBBO`} createCode="OBBO" companyCode={companyCode} />
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">ACCOUNT_TYPE *</label>
+              <select value={ob52Form.account_type} onChange={e=>setOb52Form({...ob52Form,account_type:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black">
+                <option value="+">+ All Account Types</option>
+                <option value="A">A Assets</option>
+                <option value="D">D Customers</option>
+                <option value="K">K Vendors</option>
+                <option value="M">M Materials</option>
+                <option value="S">S G/L Accounts</option>
+                <option value="V">V Contract Accounts</option>
+              </select>
+              <div className="text-[10px] text-zinc-400 mt-1">SAP: +/A/D/K/M/S/V – we use same but legal-safe FPPE</div>
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">STATUS</label>
+              <select value={ob52Form.is_open ? 'open' : 'closed'} onChange={e=>setOb52Form({...ob52Form,is_open:e.target.value==='open'})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black">
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">FROM_PERIOD *</label>
+              <input type="number" min="1" max="16" value={ob52Form.from_period} onChange={e=>setOb52Form({...ob52Form,from_period:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="1" />
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">FROM_YEAR *</label>
+              <input type="number" value={ob52Form.from_year} onChange={e=>setOb52Form({...ob52Form,from_year:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="2026" />
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">TO_PERIOD *</label>
+              <input type="number" min="1" max="16" value={ob52Form.to_period} onChange={e=>setOb52Form({...ob52Form,to_period:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="12" />
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">TO_YEAR *</label>
+              <input type="number" value={ob52Form.to_year} onChange={e=>setOb52Form({...ob52Form,to_year:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="2026" />
+            </div>
           </div>
-          <div className="text-[11px] text-zinc-500 mt-3 bg-zinc-50 rounded-xl p-3">OB52 Open and Close Posting Periods – Account Types + (All), A Assets, D Customers, K Vendors, M Materials, S G/L – Real DB</div>
+          <button onClick={handleCreateOB52} className="mt-4 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Open/Close – OB52</button>
+          <div className="mt-4 space-y-2 max-h-[300px] overflow-auto">
+            {periods.map((p:any)=>(
+              <div key={p.id} className="border border-zinc-200 rounded-xl p-3 bg-zinc-50/50 flex justify-between text-xs hover:border-zinc-300 transition-colors">
+                <span className="font-mono">{p.variant_code} – TYPE {p.account_type} – {p.from_period}/{p.from_year} → {p.to_period}/{p.to_year}</span>
+                <span className={`text-[10px] rounded-full px-2 py-0.5 ${p.is_open ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>{p.is_open ? 'OPEN' : 'CLOSED'}</span>
+              </div>
+            ))}
+            {periods.length===0 && <div className="text-sm text-zinc-500 border border-dashed rounded-xl p-6 text-center">No periods – Fresh deployment – Create 1000 + 1/2026 → 12/2026 OPEN for month-end</div>}
+          </div>
+          <div className="text-[11px] text-zinc-500 mt-3 bg-zinc-50 rounded-xl p-3">OB52 Open and Close Posting Periods – Account Types + (All), A Assets, D Customers, K Vendors, M Materials, S G/L, V Contract – Real DB – Critical for normal enterprise month-end closing – SAP function matches but legal-safe FPPE</div>
         </div>
       </div>
 
