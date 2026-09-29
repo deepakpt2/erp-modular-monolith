@@ -1,176 +1,30 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
-import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
+import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function Page(){
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const companyCode = params.companyCode as string;
-  const focus = searchParams.get('focus') || 'FFYC';
-  const [data,setData]=useState<any>(null);
-  const [loading,setLoading]=useState(true);
-  const [msg,setMsg]=useState('');
-  const [form,setForm]=useState({code: "", name: "", description: "", from_date: "", to_date: "", start_month: "4", end_month: "3", year_shift: "0"});
-  const [highlighted,setHighlighted]=useState(focus);
-
-  async function load(){
-    setLoading(true);
-    try{
-      const res = await fetch('/api/fiscal-calendars').then(r=>r.json());
-      setData(res);
-    }catch(e){console.error(e);}
-    setLoading(false);
-  }
-  useEffect(()=>{load();},[]);
-
-  async function create(){
-    if(!(form as any).code){ setMsg('CODE required'); return; }
-    if(!(form as any).name){ setMsg('NAME required'); return; }
-    if(!(form as any).from_date){ setMsg('FROM_DATE required – e.g., 2026-04-01 for K4'); return; }
-    if(!(form as any).to_date){ setMsg('TO_DATE required – e.g., 2027-03-31 for K4'); return; }
-    if(new Date((form as any).from_date) >= new Date((form as any).to_date)){ setMsg('❌ FROM_DATE must be before TO_DATE'); return; }
-    const payload = {
-      ...form, 
-      company_code: companyCode,
-      periods: [
-        { period_number: 1, month: parseInt((form as any).start_month) || 4, year_shift: parseInt((form as any).year_shift) || 0, description: `Period 1 start` },
-      ]
-    };
-    const res = await fetch('/api/fiscal-calendars',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
-    if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||'CREATED')+' CREATED – FFYC'); load(); setForm({code: "", name: "", description: "", from_date: "", to_date: "", start_month: "4", end_month: "3", year_shift: "0"}); }
-    else setMsg('❌ '+(res.error||'Failed'));
-  }
-
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING FFYC...</div>;
-  const items = data?.data || data?.fiscalCalendars || data?.rates || data?.ranges || data?.items || [];
-
-  const classicContent = (
-    <div className="space-y-3 font-mono text-[11px]">
-      {msg && <div className="bg-black text-white p-2">{msg}</div>}
-      <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">FFYC FISCAL CALENDARS CREATE – API: POST /api/fiscal-calendars – {Array.isArray(items)?items.length:0} RECORDS – K4 April-March India, V3 Calendar Year – FROM_DATE TO_DATE required</div>
-        <div className="grid grid-cols-5 gap-2">
-          <div><div className="text-[9px] text-zinc-500">CODE *</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="K4" /></div>
-          <div><div className="text-[9px] text-zinc-500">NAME *</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="April-March India" /></div>
-          <div><div className="text-[9px] text-zinc-500">FROM_DATE *</div><input type="date" value={(form as any).from_date} onChange={e=>setForm({...form,from_date:e.target.value})} className="w-full border-2 border-black px-1 py-1 " /></div>
-          <div><div className="text-[9px] text-zinc-500">TO_DATE *</div><input type="date" value={(form as any).to_date} onChange={e=>setForm({...form,to_date:e.target.value})} className="w-full border-2 border-black px-1 py-1 " /></div>
-          <div><div className="text-[9px] text-zinc-500">DESCRIPTION</div><input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="Apr 01 – Mar 31" /></div>
-        </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-2">
-        {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
-          <div key={idx} className="bg-white border-2 border-black p-2">
-            <div className="font-bold">{it.code||it.object_type||JSON.stringify(it).slice(0,80)}</div>
-            <div className="text-[10px]">{Object.entries(it).slice(0,4).map(([k,v])=>k.toUpperCase()+'='+String(v)).join(' ')}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const modernContent = (
-    <div className="max-w-[1600px] mx-auto space-y-6">
-      {msg && <div className={`rounded-2xl p-4 text-sm ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-
-      <div className="bg-white rounded-2xl border-2 border-zinc-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center font-mono font-bold text-xs">FFYC</div>
-          <div>
-            <div className="font-semibold flex items-center gap-2">Fiscal Calendars – FFYC <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 rounded-full px-2 py-0.5">Previously missing – now has form</span></div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • COMPANY_CODE {companyCode} • API: POST /api/fiscal-calendars • K4 April-March India, V3 Calendar Year – used by ELEC FISCAL_CALENDAR_CODE – must exist before Legal Entity</div>
-          </div>
-        </div>
-        <div className="mt-3 text-[11px] text-zinc-500 bg-zinc-50 rounded-xl p-3">
-          All codes must have a form – user must always find specific form for specific code – FFYC now has dedicated form with easy identification via code badge and highlight. Autocomplete from DB only prevents invalid data like K6.
-        </div>
-      </div>
-
-      <div id="form-FFYC" className="bg-white rounded-2xl border-2 border-black shadow-sm p-6 scroll-mt-24">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📅</div>
-          <div>
-            <div className="font-semibold">Create Fiscal Calendars – FFYC</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • K4 April-March India, V3 Calendar Year – used by ELEC FISCAL_CALENDAR_CODE – must exist before Legal Entity</div>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CODE *</label>
-            <input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="K4" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME *</label>
-            <input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" placeholder="April-March India" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION</label>
-            <input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" placeholder="Apr 01 – Mar 31 India fiscal" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">FROM_DATE *</label>
-            <input type="date" value={(form as any).from_date} onChange={e=>setForm({...form,from_date:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" />
-            <div className="text-[10px] text-zinc-400 mt-1">Start – e.g., 2026-04-01 for K4</div>
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">TO_DATE *</label>
-            <input type="date" value={(form as any).to_date} onChange={e=>setForm({...form,to_date:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" />
-            <div className="text-[10px] text-zinc-400 mt-1">End – e.g., 2027-03-31 for K4</div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">START_MONTH</label>
-              <input type="number" min="1" max="12" value={(form as any).start_month} onChange={e=>setForm({...form,start_month:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="4" />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">END_MONTH</label>
-              <input type="number" min="1" max="12" value={(form as any).end_month} onChange={e=>setForm({...form,end_month:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="3" />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">YEAR_SHIFT</label>
-              <input type="number" value={(form as any).year_shift} onChange={e=>setForm({...form,year_shift:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="0" />
-            </div>
-          </div>
-        </div>
-        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create FFYC</button>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-4">
-        {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
-          <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
-            <div className="flex justify-between items-start">
-              <div className="font-semibold text-sm">{it.code||it.object_type||'RECORD '+(idx+1)}</div>
-              <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">FFYC</span>
-            </div>
-            <div className="mt-2 text-xs text-zinc-500">{Object.entries(it).slice(0,5).map(([k,v])=>`${k.toUpperCase()}: ${String(v)}`).join(' • ')}</div>
-            <div className="mt-2 text-[10px] text-emerald-600">✓ Valid – exists in DB – autocomplete will show this</div>
-          </div>
-        ))}
-        {(!items || items.length===0) && (
-          <div className="col-span-3 bg-white rounded-2xl border border-dashed border-zinc-300 p-8 text-center">
-            <div className="text-sm text-zinc-500">No records yet – create first via FFYC</div>
-            <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Function is destination • Code is helper</div>
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-zinc-200 p-5">
-        <div className="text-xs font-medium">Related Codes – Easy navigation</div>
-        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-          <a href={`/${companyCode}/fico/posting-period?focus=FFYC`} className="border rounded-full px-3 py-1 hover:bg-black hover:text-white">Posting Period – All Financial Codes</a>
-          <a href={`/${companyCode}/foundation/enterprise-structure?focus=ELEC`} className="border rounded-full px-3 py-1 hover:bg-black hover:text-white">ELEC Legal Entity – uses FFYC if FFYC</a>
-          <a href={`/${companyCode}/fico/currencies`} className="border rounded-full px-3 py-1 hover:bg-black hover:text-white">FCYC Currencies</a>
-        </div>
-      </div>
-    </div>
-  );
-
+export default function Page() {
   return (
-    <ModernModuleShell title="Fiscal Calendars" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • FFYC • K4 April-March India, V3 Calendar Year – used by ELEC FISCAL_CALENDAR_CODE – must exist before Legal Entity`} code="FFYC" module="FICO" classicChildren={classicContent}>
-      {modernContent}
-    </ModernModuleShell>
+    <SingleCodePage
+      code="FFYC"
+      sapAlias="OB29"
+      title="Fiscal Calendar"
+      description="Define Fiscal Calendar – K4 April-March India, V3 Calendar Year Jan-Dec – FROM_DATE TO_DATE required – strict usage: calculates fiscal year/period from posting date – e.g., 2026-05-15 K4 → FY2026 P02"
+      apiEndpoint="/api/fiscal-calendars"
+      initialForm={{ code: '', name: '', from_date: '', to_date: '', start_month: '4', end_month: '3', year_shift: '0', description: '' }}
+      fields={[
+        { key: "code", label: "FISCAL_CALENDAR_CODE", required: true, placeholder: "K4", description: "Fiscal calendar code – K4 April-March, V3 Calendar Year" },
+        { key: "name", label: "FISCAL_CALENDAR_NAME", required: true, placeholder: "April-March India" },
+        { key: "from_date", label: "FROM_DATE", required: true, placeholder: "2026-04-01", description: "From date – e.g., 2026-04-01 for K4" },
+        { key: "to_date", label: "TO_DATE", required: true, placeholder: "2027-03-31", description: "To date – e.g., 2027-03-31 for K4 – must be after from_date" },
+        { key: "start_month", label: "START_MONTH", placeholder: "4", description: "Start month 1-12 – K4=4 April, V3=1 January" },
+        { key: "end_month", label: "END_MONTH", placeholder: "3", description: "End month 1-12 – K4=3 March, V3=12 December" },
+        { key: "year_shift", label: "YEAR_SHIFT", placeholder: "0", description: "Year shift – 0 for K4, 0 for V3" },
+        { key: "description", label: "DESCRIPTION", type: "textarea" },
+      ]}
+      relatedLinks={[
+        { code: "ELEC", label: "Legal Entity uses FFYC", route: "/foundation/legal-entities", description: "Legal Entity requires fiscal calendar" },
+        { code: "FPPC", label: "Posting Period Variant", route: "/fico/posting-period-variants", description: "Posting Period Variant" },
+        { code: "FPPE", label: "Posting Period Control", route: "/fico/posting-periods", description: "Posting Period Control" },
+      ]}
+    />
   );
 }
