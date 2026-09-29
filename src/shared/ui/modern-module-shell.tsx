@@ -123,7 +123,7 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
             <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" className="hover:text-white underline">GITHUB</a>
           </div>
           <div className="flex gap-2 items-center">
-            <span className="text-zinc-500">© 2026 Deepak • MIT</span>
+            <span className="text-zinc-500">© 2026 ERP Modular Monolith • MIT</span>
             <span className="text-zinc-400">{new Date().toLocaleTimeString()} {isLoggedIn ? (session?.user as any)?.email : ''}</span>
           </div>
         </div>
@@ -257,7 +257,7 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
             <span className="text-zinc-300">|</span>
             <span className="text-[10px]">{code} • Function is destination</span>
           </div>
-          <div className="text-[10px]">© 2026 Deepak Patil • ERP Modular Monolith • MIT License • {title}</div>
+          <div className="text-[10px]">© 2026 ERP Modular Monolith • MIT License</div>
         </div>
       </footer>
     </div>

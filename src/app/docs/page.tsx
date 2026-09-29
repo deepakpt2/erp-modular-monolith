@@ -38,7 +38,7 @@ export default function DocsPage() {
             ))}
             <div className="mt-4 border-t-2 border-black pt-2 text-[9px]">
               <div>GitHub: deepakpt2/erp-modular-monolith</div>
-              <div>© 2026 Deepak</div>
+              <div>© 2026 ERP Modular Monolith</div>
             </div>
           </aside>
           <div className="flex-1 p-4 bg-white">
@@ -81,7 +81,7 @@ export default function DocsPage() {
               <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" className="flex items-center gap-2 text-xs text-zinc-600 hover:text-black">
                 <span className="w-6 h-6 rounded-full bg-zinc-900 text-white flex items-center justify-center text-[10px]">GH</span> github.com/deepakpt2/erp-modular-monolith
               </a>
-              <div className="text-[10px] text-zinc-400">© 2026 Deepak Patil • MIT License</div>
+              <div className="text-[10px] text-zinc-400">© 2026 ERP Modular Monolith • MIT License</div>
             </div>
           </div>
         </aside>
@@ -359,7 +359,7 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
         <h2 className={h2Class}>GitHub & Copyright</h2>
         <div className="text-[12px] space-y-1">
           <div><b>GitHub:</b> <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" className="underline hover:text-black">https://github.com/deepakpt2/erp-modular-monolith</a></div>
-          <div><b>Copyright:</b> © 2026 Deepak Patil – ERP Modular Monolith – MIT License</div>
+          <div><b>Copyright:</b> © 2026 ERP Modular Monolith – MIT License</div>
           <div><b>Footer:</b> All pages include Documentation link + GitHub link + Copyright.</div>
           <div><b>Side Panel:</b> Fixed – collapsed w-[64px] with absolute -right-3 toggle button always visible – can enlarge again.</div>
         </div>

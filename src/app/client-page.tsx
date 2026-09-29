@@ -152,7 +152,7 @@ export default function Home() {
               <Link href="/docs" className="underline hover:bg-black hover:text-white px-1">Documentation</Link>
               <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" className="underline hover:bg-black hover:text-white px-1">GitHub ↗</a>
             </div>
-            <div>© 2026 Deepak Patil • ERP Modular Monolith • MIT</div>
+            <div>© 2026 ERP Modular Monolith • MIT</div>
           </div>
         </div>
       </main>
@@ -294,7 +294,7 @@ export default function Home() {
             <span className="text-zinc-300">|</span>
             <Link href="/" className="hover:text-black">Home</Link>
           </div>
-          <div className="text-[10px] text-zinc-400">© 2026 Deepak Patil • ERP Modular Monolith • MIT License • Function is destination • Code is helper</div>
+          <div className="text-[10px] text-zinc-400">© 2026 ERP Modular Monolith • MIT License • Function is destination • Code is helper</div>
         </div>
       </footer>
     </main>

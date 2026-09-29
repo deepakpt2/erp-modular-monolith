@@ -215,7 +215,7 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
                   <span>•</span>
                   <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" rel="noopener" className="hover:text-black underline">GitHub</a>
                 </div>
-                <div>© 2026 Deepak • ERP Modular Monolith • MIT</div>
+                <div>© 2026 ERP Modular Monolith • MIT</div>
               </div>
             </>
           ) : (
@@ -241,7 +241,7 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
             <span className="text-zinc-300">|</span>
             <Link href="/" className="hover:text-black">Home</Link>
           </div>
-          <div className="text-[10px]">© 2026 Deepak Patil • ERP Modular Monolith • MIT License • Company: {companyCode}</div>
+          <div className="text-[10px]">© 2026 ERP Modular Monolith • MIT License • Company: {companyCode}</div>
         </footer>
       </main>
     </div>
