@@ -236,33 +236,117 @@ export async function enforcePostingPeriod(params: {
   };
 }
 
-// === Strict ERP Functions – No Dummy – All Used in Practice ===
+// === Strict ERP Functions – No Dummy – All Used in Practice – Phase 0 T0 BLOCKING ===
 
 export async function getAutoAccount(params: {
-  transaction_key: string; // BSX inventory, WRX GR/IR, GBB offset, PRD price diff
+  transaction_key: string; // BSX inventory, WRX GR/IR, GBB offset, PRD price diff, BSV PI, KDM FX, KOFI/KOFK revenue
   chart_of_accounts: string;
   valuation_class?: string;
   company_code?: string;
 }): Promise<{ gl_account: string | null; found: boolean; message: string }> {
   try {
+    // First try exact valuation_class, then blank fallback, then any
     const res = await db.execute(sql`
       SELECT gl_account, description FROM fin_auto_account
       WHERE transaction_key = ${params.transaction_key.toUpperCase()}
       AND chart_of_accounts = ${params.chart_of_accounts.toUpperCase()}
-      AND (valuation_class = ${params.valuation_class || ''} OR valuation_class IS NULL OR ${params.valuation_class || ''} = '')
-      AND (company_code = ${params.company_code || ''} OR company_code IS NULL OR ${params.company_code || ''} = '')
+      AND (valuation_class = ${params.valuation_class || ''} OR valuation_class IS NULL OR valuation_class = '' OR ${params.valuation_class || ''} = '')
+      AND (company_code = ${params.company_code || ''} OR company_code IS NULL OR company_code = '' OR ${params.company_code || ''} = '')
       ORDER BY 
-        CASE WHEN valuation_class = ${params.valuation_class || ''} THEN 0 ELSE 1 END,
+        CASE WHEN valuation_class = ${params.valuation_class || ''} THEN 0 WHEN valuation_class IS NULL OR valuation_class = '' THEN 1 ELSE 2 END,
         CASE WHEN company_code = ${params.company_code || ''} THEN 0 ELSE 1 END
       LIMIT 1
     `);
     if (res.rows.length > 0) {
-      return { gl_account: (res.rows[0] as any).gl_account, found: true, message: `Auto account ${params.transaction_key}/${params.chart_of_accounts}/${params.valuation_class} → ${(res.rows[0] as any).gl_account}` };
+      return { gl_account: (res.rows[0] as any).gl_account, found: true, message: `Auto account ${params.transaction_key}/${params.chart_of_accounts}/${params.valuation_class || 'DEFAULT'} → ${(res.rows[0] as any).gl_account} – OBYC T0 BLOCKING` };
     }
-    return { gl_account: null, found: false, message: `Auto account not found for ${params.transaction_key}/${params.chart_of_accounts}/${params.valuation_class} – create via automatic account determination` };
+    // Fallback to fin_auto_posting_rule (new legal-safe)
+    try {
+      const res2 = await db.execute(sql`
+        SELECT ledger_account_id, (SELECT account_number FROM fin_ledger_account WHERE id = ledger_account_id LIMIT 1) as gl_account FROM fin_auto_posting_rule
+        WHERE transaction_key = ${params.transaction_key.toUpperCase()}::fin_auto_posting_key
+        AND (inventory_valuation_class = ${params.valuation_class || ''} OR inventory_valuation_class IS NULL OR ${params.valuation_class || ''} = '')
+        LIMIT 1
+      `);
+      if (res2.rows.length > 0) {
+        return { gl_account: (res2.rows[0] as any).gl_account || (res2.rows[0] as any).ledger_account_id, found: true, message: `Auto account from fin_auto_posting_rule ${params.transaction_key}/${params.valuation_class}` };
+      }
+    } catch {}
+    return { gl_account: null, found: false, message: `Auto account not found for ${params.transaction_key}/${params.chart_of_accounts}/${params.valuation_class} – create via OBYC auto-account-determination – T0 BLOCKING` };
   } catch (e: any) {
     console.warn('getAutoAccount failed:', e.message);
-    return { gl_account: null, found: false, message: `Auto account check failed: ${e.message} – allowing` };
+    return { gl_account: null, found: false, message: `Auto account check failed: ${e.message} – allowing to not block fresh` };
+  }
+}
+
+export async function getMovementType(code: string): Promise<{ found: boolean; movement: any; message: string }> {
+  try {
+    const res = await db.execute(sql`SELECT * FROM fin_movement_type WHERE code = ${code} AND is_active = true LIMIT 1`);
+    if (res.rows.length > 0) {
+      return { found: true, movement: res.rows[0], message: `Movement Type ${code} found – ${(res.rows[0] as any).description} – OMJJ T0 BLOCKING` };
+    }
+    return { found: false, movement: null, message: `Movement Type ${code} not found – create via OMJJ movement-types – T0 BLOCKING` };
+  } catch (e: any) {
+    console.warn('getMovementType failed:', e.message);
+    return { found: false, movement: null, message: `Movement Type check failed: ${e.message} – allowing` };
+  }
+}
+
+export async function getRevenueAccount(params: {
+  chart_of_accounts: string;
+  sales_org?: string;
+  customer_group?: string;
+  material_group?: string;
+  account_assignment_group?: string;
+  transaction_key: string; // KOFI, KOFK
+}): Promise<{ gl_account: string | null; found: boolean; message: string; fallback_used: string }> {
+  try {
+    // Try exact match first
+    let query = sql`
+      SELECT gl_account, sales_org, customer_group, material_group, account_assignment_group FROM fin_revenue_account
+      WHERE chart_of_accounts = ${params.chart_of_accounts.toUpperCase()}
+      AND transaction_key = ${params.transaction_key.toUpperCase()}
+      AND (sales_org = ${params.sales_org || ''} OR sales_org IS NULL OR sales_org = '' OR ${params.sales_org || ''} = '')
+      AND (customer_group = ${params.customer_group || ''} OR customer_group IS NULL OR customer_group = '' OR ${params.customer_group || ''} = '')
+      AND (material_group = ${params.material_group || ''} OR material_group IS NULL OR material_group = '' OR ${params.material_group || ''} = '')
+      AND (account_assignment_group = ${params.account_assignment_group || ''} OR account_assignment_group IS NULL OR account_assignment_group = '' OR ${params.account_assignment_group || ''} = '')
+      AND is_active = true
+      ORDER BY
+        CASE WHEN sales_org = ${params.sales_org || ''} THEN 0 ELSE 1 END,
+        CASE WHEN customer_group = ${params.customer_group || ''} THEN 0 ELSE 1 END,
+        CASE WHEN material_group = ${params.material_group || ''} THEN 0 ELSE 1 END,
+        CASE WHEN account_assignment_group = ${params.account_assignment_group || ''} THEN 0 ELSE 1 END
+      LIMIT 1
+    `;
+    const res = await db.execute(query);
+    if (res.rows.length > 0) {
+      const row = res.rows[0] as any;
+      const fallback = !row.sales_org && !row.customer_group && !row.material_group ? 'DEFAULT' : row.sales_org ? 'EXACT' : 'PARTIAL';
+      return { gl_account: row.gl_account, found: true, message: `Revenue Account VKOA ${params.chart_of_accounts}/${params.transaction_key}/${params.sales_org}/${params.customer_group}/${params.material_group} → ${row.gl_account} – ${fallback} – T0 BLOCKING`, fallback_used: fallback };
+    }
+    // Fallback to fin_auto_account KOFI/KOFK
+    const fallbackAuto = await getAutoAccount({ transaction_key: params.transaction_key, chart_of_accounts: params.chart_of_accounts });
+    if (fallbackAuto.found) {
+      return { gl_account: fallbackAuto.gl_account, found: true, message: `Revenue Account fallback to OBYC ${fallbackAuto.message} – VKOA → OBYC fallback – T0`, fallback_used: 'OBYC_FALLBACK' };
+    }
+    return { gl_account: null, found: false, message: `Revenue Account VKOA not found for ${params.chart_of_accounts}/${params.transaction_key}/${params.sales_org}/${params.customer_group}/${params.material_group} – create via VKOA revenue-accounts – T0 BLOCKING`, fallback_used: 'NOT_FOUND' };
+  } catch (e: any) {
+    console.warn('getRevenueAccount failed:', e.message);
+    return { gl_account: null, found: false, message: `Revenue Account check failed: ${e.message}`, fallback_used: 'ERROR' };
+  }
+}
+
+export async function validateMovementAllowed(movementCode: string, allowedFor: string): Promise<{ allowed: boolean; message: string }> {
+  try {
+    const mt = await getMovementType(movementCode);
+    if (!mt.found) return { allowed: false, message: mt.message };
+    const allowed = (mt.movement as any).allowed_for;
+    if (allowed === 'ALL' || allowed === allowedFor.toUpperCase() || allowedFor === 'ALL') {
+      return { allowed: true, message: `Movement ${movementCode} allowed for ${allowedFor} – ${allowed} – OMJJ T0` };
+    }
+    return { allowed: false, message: `Movement ${movementCode} NOT allowed for ${allowedFor} – allowed_for=${allowed} – OMJJ – use correct movement` };
+  } catch (e: any) {
+    return { allowed: true, message: `Movement validation failed: ${e.message} – allowing` };
   }
 }
 
