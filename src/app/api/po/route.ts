@@ -293,7 +293,23 @@ export async function POST(req: NextRequest) {
           }
 
           const qty = parseFloat(line.quantity || '0');
-          const unitPrice = parseFloat(line.unit_price || line.unitPrice || '0');
+          let unitPrice = parseFloat(line.unit_price || line.unitPrice || '0');
+          // T2 ME11 Info Record – if unit price not provided or 0, lookup from proc_info_record vendor-material
+          if(unitPrice === 0){
+            try{
+              const infoRes = await db.execute(sql`
+                SELECT unit_price FROM proc_info_record 
+                WHERE (partner_id = ${partnerIdResolved} OR vendor_id = ${partnerIdResolved}) 
+                AND (item_id = ${itemId} OR material_id = ${itemId})
+                AND (valid_from <= CURRENT_DATE AND (valid_to IS NULL OR valid_to >= CURRENT_DATE))
+                ORDER BY valid_from DESC LIMIT 1
+              `);
+              if(infoRes.rows.length>0){
+                unitPrice = parseFloat((infoRes.rows[0] as any).unit_price || '0');
+                console.log(`T2 ME11 Info Record auto price – vendor ${partnerIdResolved} material ${itemId} price ${unitPrice} – used in PO ${poNumber}`);
+              }
+            }catch(e){ console.warn('Info record lookup failed – T2 ME11:', e); }
+          }
           const freight = parseFloat(line.freight_per_unit || '0');
           const customs = parseFloat(line.customs_per_unit || '0');
           const tax = parseFloat(line.tax_per_unit || '0');
