@@ -195,8 +195,19 @@ export async function GET(req: NextRequest) {
       }
     }
   } catch (e: any) {
-    console.error('DB error:', e.message);
-    return NextResponse.json({ error: e.message, code: 'DB_ERROR' }, { status: 500 });
+    console.error('Stock API fatal, returning empty to avoid 500 on home:', e.message);
+    return NextResponse.json({
+      stock: [],
+      count: 0,
+      code: 'ISTC',
+      aliasCodes: ['STC', 'MMBE'],
+      helperCode: 'ISTC',
+      table: 'inventory_stock',
+      source: 'error-fallback',
+      legalSafe: true,
+      error: e.message,
+      message: 'Stock fetch failed but returned empty to avoid 500 on home – ISTC legal-safe – run db:init-prod or check inventory_stock table',
+    });
   }
 }
 

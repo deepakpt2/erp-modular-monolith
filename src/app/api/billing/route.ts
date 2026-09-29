@@ -116,7 +116,19 @@ export async function GET(req: NextRequest) {
       explanation: 'Billing legal-safe sales_billing – billingNumber BILL-90000001 was 90* Billing, type F2/F1/CREDIT/DEBIT, status DRAFT/POSTED/CANCELLED, salesOrderId, deliveryId, legalEntityId was company_code_id, partnerId SCUC was customer_id, billingDate, totalAmount/taxAmount/netAmount currencyCode INR default was KWD, universalLedgerId FULC was fi_document_id Dr AR Cr Revenue+Tax, dueDate isPaid, billingType F2, paymentTerms 0001, itemId EMTC was material_id, quantity unitPrice lineTotal taxAmount cogsPerUnit – Code SBLC primary alias BLC/VF01 – 4-char MOOA S=Sales B=Billing C=Create – module grouped intuitive, same length as VF01 but own IP.',
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message, billings: [] }, { status: 500 });
+    console.error('Billing API fatal, returning empty to avoid 500:', e.message);
+    return NextResponse.json({
+      billings: [],
+      count: 0,
+      code: 'SBLC',
+      aliasCodes: ['BLC', 'VF01'],
+      helperCode: 'SBLC',
+      table: 'sales_billing',
+      source: 'error-fallback',
+      legalSafe: true,
+      error: e.message,
+      message: 'Billing fetch failed but returned empty to avoid 500 – SBLC legal-safe',
+    });
   }
 }
 

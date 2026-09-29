@@ -125,7 +125,19 @@ export async function GET(req: NextRequest) {
       explanation: 'Sales order legal-safe sales_order + sales_order_line – salesNumber SO-10000001, type B2B/B2C_CASH/B2C_CARD/POS_WEBHOOK/ECOM, status DRAFT/CONFIRMED/PARTIALLY_ISSUED/FULLY_ISSUED/INVOICED/CANCELLED, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, partnerId SCUC was customer_id, paymentType CASH/CARD/KNET/AR/ONLINE, isCashSale, source MANUAL/POS_FOODICS/POS_SQUARE/ECOM_SHOPIFY/ECOM_WOOCOM/API, currencyCode INR default was KWD, commercialOrgId CO-1000 was sales_org, salesChannelId CH-10 was distribution_channel, productLineId PL-00 was division, shippingPoint DP-1000 was KP01, itemId EMTC was material_id FERT, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC, taxRuleId FTXC was tax_code – Code SSOC primary alias SOC/VA01 – 4-char MOOA S=Sales SO=SalesOrder C=Create – module grouped intuitive, same length as VA01 but own IP.',
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message, salesOrders: [] }, { status: 500 });
+    console.error('sales-orders API fatal, returning empty to avoid 500 on home:', e.message);
+    return NextResponse.json({
+      salesOrders: [],
+      count: 0,
+      code: 'SSOC',
+      aliasCodes: ['SOC', 'VA01'],
+      helperCode: 'SSOC',
+      table: 'sales_order',
+      source: 'error-fallback',
+      legalSafe: true,
+      error: e.message,
+      message: 'Sales orders fetch failed but returned empty to avoid 500 on home – SSOC legal-safe – run db:init-prod',
+    });
   }
 }
 
