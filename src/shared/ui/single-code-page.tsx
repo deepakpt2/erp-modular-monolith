@@ -58,7 +58,94 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     try {
       const res = await fetch(apiEndpoint);
       const j = await res.json();
-      const data = j.data || j[code.toLowerCase()] || j.companyGroups || j.legalEntities || j.facilities || j.materials || j.items || [];
+      // Robust – handle many API shapes: data, chartOfAccounts, glAccounts, companyGroups, etc.
+      const candidates = [
+        j.data,
+        j[code.toLowerCase()],
+        j[code], // exact code
+        j.companyGroups,
+        j.legalEntities,
+        j.facilities,
+        j.materials,
+        j.items,
+        j.chartOfAccounts,
+        j.glAccounts,
+        j.charts,
+        j.accounts,
+        j.costCenters,
+        j.profitCenters,
+        j.companyCodes,
+        j.plants,
+        j.storageLocations,
+        j.purchasingOrgs,
+        j.uoms,
+        j.currencies,
+        j.taxCodes,
+        j.customers,
+        j.vendors,
+        j.priceLists,
+        j.warehouses,
+        j.workCenters,
+        j.routings,
+        j.boms,
+        j.productionOrders,
+        j.salesOrders,
+        j.purchaseOrders,
+        j.inventory,
+        j.stock,
+        j.batches,
+        j.roles,
+        j.users,
+        j.tenants,
+        j.ledgers,
+        j.documents,
+        j.postingPeriods,
+        j.numberRanges,
+        j.toleranceGroups,
+        j.autoAccounts,
+        j.autoAccountDetermination,
+        j.revenueAccounts,
+        j.retainedEarnings,
+        j.accountGroups,
+        j.materialGroups,
+        j.productGroups,
+        j.salesOrgs,
+        j.distributionChannels,
+        j.divisions,
+        j.shippingPoints,
+        j.loadingPoints,
+        j.transportationZones,
+        j.routes,
+        j.creditControlAreas,
+        j.dunningAreas,
+        j.fieldStatusVariants,
+        j.postingKeys,
+        j.documentTypes,
+        j.paymentTerms,
+        j.incoterms,
+        j.outputTypes,
+        j.pricingProcedures,
+        j.conditionTypes,
+      ];
+      let data: any = null;
+      for (const c of candidates) {
+        if (Array.isArray(c) && c.length >= 0) {
+          // Prefer non-empty, but accept empty if nothing else
+          if (c.length > 0) { data = c; break; }
+          if (!data) data = c;
+        }
+      }
+      // Fallback – find first array value in response object
+      if (!data) {
+        for (const k of Object.keys(j)) {
+          if (Array.isArray(j[k]) && j[k].length > 0 && typeof j[k][0] === 'object') {
+            // Skip erpDefaults which is sample, not actual data
+            if (k === 'erpDefaults') continue;
+            data = j[k];
+            break;
+          }
+        }
+      }
       setItems(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);

@@ -16,28 +16,59 @@ export async function GET(req: NextRequest) {
 
   try {
     let coaRows: any[] = [];
-    let source = 'db-new';
-    let table = 'fin_chart';
+    let source = 'db-merged';
+    let table = 'fin_chart+fi_chart_of_accounts';
     let legalSafe = true;
 
+    // Try new fin_chart
+    let newRows: any[] = [];
     try {
       const coaRes = await db.execute(sql`
         SELECT id, code, name, description, created_at,
           (SELECT COUNT(*) FROM fin_ledger_account WHERE chart_id = fin_chart.id) as gl_count
         FROM fin_chart ORDER BY code
       `);
-      coaRows = coaRes.rows as any[];
+      newRows = coaRes.rows as any[];
     } catch (newErr: any) {
-      console.warn('fin_chart not yet, fallback fi_chart_of_accounts:', newErr.message);
-      source = 'db-legacy';
-      table = 'fi_chart_of_accounts';
-      legalSafe = false;
-      const coaRes = await db.execute(sql`
+      console.warn('fin_chart not yet:', newErr.message);
+    }
+
+    // Try legacy fi_chart_of_accounts – always try, merge
+    let legacyRows: any[] = [];
+    try {
+      const coaRes2 = await db.execute(sql`
         SELECT id, code, name, description, created_at,
           (SELECT COUNT(*) FROM fi_gl_account WHERE coa_id = fi_chart_of_accounts.id) as gl_count
         FROM fi_chart_of_accounts ORDER BY code
       `);
-      coaRows = coaRes.rows as any[];
+      legacyRows = coaRes2.rows as any[];
+      if (newRows.length === 0 && legacyRows.length > 0) {
+        source = 'db-legacy';
+        table = 'fi_chart_of_accounts';
+        legalSafe = false;
+      }
+    } catch (legacyErr: any) {
+      console.warn('fi_chart_of_accounts not yet:', legacyErr.message);
+      if (newRows.length > 0) {
+        source = 'db-new';
+        table = 'fin_chart';
+      }
+    }
+
+    // Merge unique by code – prefer newRows over legacy
+    const map = new Map<string, any>();
+    for (const r of [...legacyRows, ...newRows]) {
+      const key = (r.code || '').toUpperCase();
+      if (!key) continue;
+      // newRows overwrite legacy if same code
+      if (!map.has(key) || newRows.some(nr => (nr.code||'').toUpperCase() === key)) {
+        map.set(key, r);
+      }
+    }
+    coaRows = Array.from(map.values()).sort((a,b)=> (a.code||'').localeCompare(b.code||''));
+    // If still empty but one of the sources had rows, use that directly (fallback)
+    if (coaRows.length === 0) {
+      coaRows = newRows.length > 0 ? newRows : legacyRows;
     }
 
     // Account groups – try both
@@ -91,6 +122,11 @@ export async function POST(req: NextRequest) {
     const { code, name, description } = body;
     if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
 
+    let primaryRes: any = null;
+    let legalSafe = true;
+    let errors: string[] = [];
+
+    // Try fin_chart – new legal-safe
     try {
       const res = await db.execute(sql`
         INSERT INTO fin_chart (code, name, description)
@@ -98,17 +134,32 @@ export async function POST(req: NextRequest) {
         ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}, updated_at = NOW()
         RETURNING id, code, name
       `);
-      return NextResponse.json({ success: true, chartOfAccounts: res.rows[0], code: 'FCOA', aliasCodes: ['COA','OB13'], message: `CoA ${code.toUpperCase()} created/updated – FCOA legal-safe`, legalSafe: true });
+      primaryRes = res.rows[0];
     } catch (newErr: any) {
-      console.warn('fin_chart insert failed fallback fi_chart_of_accounts:', newErr.message);
-      const res = await db.execute(sql`
+      console.warn('fin_chart insert failed:', newErr.message);
+      errors.push(`fin_chart: ${newErr.message}`);
+      legalSafe = false;
+    }
+
+    // Try legacy fi_chart_of_accounts – keep in sync downstream safe
+    try {
+      const res2 = await db.execute(sql`
         INSERT INTO fi_chart_of_accounts (code, name, description)
         VALUES (${code.toUpperCase()}, ${name}, ${description || null})
         ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}
         RETURNING id, code, name
       `);
-      return NextResponse.json({ success: true, chartOfAccounts: res.rows[0], code: 'FCOA', aliasCodes: ['OB13'], message: `CoA ${code.toUpperCase()} created/updated – OB13 legacy (migrating to FCOA)`, legalSafe: false });
+      if (!primaryRes) primaryRes = res2.rows[0];
+    } catch (legacyErr: any) {
+      console.warn('fi_chart_of_accounts insert failed:', legacyErr.message);
+      errors.push(`fi_chart_of_accounts: ${legacyErr.message}`);
     }
+
+    if (!primaryRes) {
+      return NextResponse.json({ error: `Failed to create CoA in both tables: ${errors.join(' | ')}` }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, chartOfAccounts: primaryRes, code: 'FCOA', aliasCodes: ['COA','OB13'], message: `CoA ${code.toUpperCase()} created/updated – FCOA ${legalSafe ? 'legal-safe' : 'legacy merged'} – exists in both fin_chart and fi_chart_of_accounts for downstream safe`, legalSafe, errors: errors.length ? errors : undefined });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
