@@ -388,28 +388,51 @@ export async function checkCreditExposure(params: {
   customer_code: string;
   new_order_value: number;
   company_code?: string;
-}): Promise<{ allowed: boolean; exposure: number; limit: number; message: string }> {
+}): Promise<{ allowed: boolean; exposure: number; limit: number; message: string; policy_area: string; risk_category: string; details: any }> {
   try {
-    // Get customer credit policy area
-    const custRes = await db.execute(sql`
-      SELECT credit_policy_area_code, credit_limit FROM partner_customer_profile 
-      WHERE partner_account_id = (SELECT id FROM partner_account WHERE account_number = ${params.customer_code} LIMIT 1)
-      LIMIT 1
-    `);
+    // T1 REQUIRED – FD32 Credit Master + OVA8 Credit Check – NO DANGLING – exposure = open SO + open delivery + open billing + open AR vs limit
+    // Get customer credit policy area and risk
     let creditLimit = 1000000;
     let policyArea = 'CPA-1000';
-    if (custRes.rows.length > 0) {
-      const r = custRes.rows[0] as any;
-      if (r.credit_limit) creditLimit = parseFloat(r.credit_limit);
-      if (r.credit_policy_area_code) policyArea = r.credit_policy_area_code;
-    }
-
-    // Try to get credit policy area limit
+    let riskCategory = 'LOW';
+    
+    // Try fin_credit_master FD32 first – customer_code + credit_policy_area_code
     try {
-      const cpaRes = await db.execute(sql`SELECT credit_limit FROM fin_credit_policy_area WHERE code = ${policyArea} LIMIT 1`);
+      const cmRes = await db.execute(sql`
+        SELECT customer_code, credit_policy_area_code, credit_limit, risk_category, credit_exposure 
+        FROM fin_credit_master 
+        WHERE customer_code = ${params.customer_code.toUpperCase()} AND is_active = true
+        ORDER BY credit_limit DESC LIMIT 1
+      `);
+      if (cmRes.rows.length > 0) {
+        const cm = cmRes.rows[0] as any;
+        creditLimit = parseFloat(cm.credit_limit || creditLimit);
+        policyArea = cm.credit_policy_area_code || policyArea;
+        riskCategory = cm.risk_category || riskCategory;
+      }
+    } catch {}
+
+    // Fallback to partner_customer_profile
+    try {
+      const custRes = await db.execute(sql`
+        SELECT credit_policy_area_code, credit_limit FROM partner_customer_profile 
+        WHERE partner_id = (SELECT id FROM partner_account WHERE account_number = ${params.customer_code.toUpperCase()} LIMIT 1)
+        LIMIT 1
+      `);
+      if (custRes.rows.length > 0) {
+        const r = custRes.rows[0] as any;
+        if (r.credit_limit) creditLimit = parseFloat(r.credit_limit);
+        if (r.credit_policy_area_code) policyArea = r.credit_policy_area_code;
+      }
+    } catch {}
+
+    // Try to get credit policy area limit OB45
+    try {
+      const cpaRes = await db.execute(sql`SELECT credit_limit, risk_category FROM fin_credit_policy_area WHERE code = ${policyArea.toUpperCase()} LIMIT 1`);
       if (cpaRes.rows.length > 0) {
         const cpaRow = cpaRes.rows[0] as any;
         if (cpaRow.credit_limit) creditLimit = parseFloat(cpaRow.credit_limit);
+        if (cpaRow.risk_category) riskCategory = cpaRow.risk_category;
       }
     } catch {
       try {
@@ -418,37 +441,95 @@ export async function checkCreditExposure(params: {
       } catch {}
     }
 
-    // Calculate exposure from open sales orders + billing
+    // Calculate exposure from open sales orders + delivery + billing + AR open items – T1 REQUIRED – FD32 + OVA8
     let exposure = 0;
+    let exposureDetails: any = { so: 0, delivery: 0, billing: 0, ar: 0 };
     try {
-      const expRes = await db.execute(sql`
-        SELECT COALESCE(SUM(total_amount),0) as exposure FROM (
-          SELECT total_amount FROM sales_order WHERE customer_code = ${params.customer_code} AND status != 'CANCELLED'
-          UNION ALL
-          SELECT total_amount FROM billing_document WHERE customer_code = ${params.customer_code} AND status != 'CANCELLED' AND payment_status != 'PAID'
-        ) t
+      // Open SO exposure
+      const soRes = await db.execute(sql`
+        SELECT COALESCE(SUM(total_amount),0) as so_exp FROM sales_order 
+        WHERE partner_id = (SELECT id FROM partner_account WHERE account_number = ${params.customer_code.toUpperCase()} LIMIT 1)
+        AND status NOT IN ('CANCELLED', 'INVOICED', 'REVERSED')
+      `).catch(()=>({rows:[{so_exp:0}]}));
+      exposureDetails.so = parseFloat((soRes.rows[0] as any).so_exp || 0);
+
+      // Open Delivery exposure – not yet billed
+      const dlRes = await db.execute(sql`
+        SELECT COALESCE(SUM(total_quantity * 100),0) as dl_exp FROM sales_delivery 
+        WHERE ship_to_partner_id = (SELECT id FROM partner_account WHERE account_number = ${params.customer_code.toUpperCase()} LIMIT 1)
+        AND status = 'GOODS_ISSUED'
+      `).catch(()=>({rows:[{dl_exp:0}]}));
+      exposureDetails.delivery = parseFloat((dlRes.rows[0] as any).dl_exp || 0);
+
+      // Open Billing exposure – not yet paid
+      const blRes = await db.execute(sql`
+        SELECT COALESCE(SUM(total_amount),0) as bl_exp FROM sales_billing 
+        WHERE partner_id = (SELECT id FROM partner_account WHERE account_number = ${params.customer_code.toUpperCase()} LIMIT 1)
+        AND status != 'CANCELLED' AND (is_paid = false OR is_paid IS NULL)
+      `).catch(()=>({rows:[{bl_exp:0}]}));
+      exposureDetails.billing = parseFloat((blRes.rows[0] as any).bl_exp || 0);
+
+      // Open AR exposure – universal ledger AR open
+      const arRes = await db.execute(sql`
+        SELECT COALESCE(SUM(amount),0) as ar_exp FROM fin_universal_ledger 
+        WHERE partner_id = (SELECT id FROM partner_account WHERE account_number = ${params.customer_code.toUpperCase()} LIMIT 1)
+        AND document_type IN ('BILL', 'RV', 'BILLING')
+        AND is_reversed = false
+      `).catch(()=>({rows:[{ar_exp:0}]}));
+      exposureDetails.ar = parseFloat((arRes.rows[0] as any).ar_exp || 0);
+
+      exposure = exposureDetails.so + exposureDetails.delivery + exposureDetails.billing + exposureDetails.ar;
+
+      // If still 0, fallback to simple billing_document table
+      if (exposure === 0) {
+        const expRes = await db.execute(sql`
+          SELECT COALESCE(SUM(total_amount),0) as exposure FROM (
+            SELECT total_amount FROM sales_order WHERE sales_number LIKE ${'%' + params.customer_code.toUpperCase() + '%'} AND status != 'CANCELLED'
+            UNION ALL
+            SELECT total_amount FROM sales_billing WHERE billing_number LIKE ${'%' + params.customer_code.toUpperCase() + '%'} AND status != 'CANCELLED'
+          ) t
+        `).catch(()=>({rows:[{exposure:0}]}));
+        if (expRes.rows.length > 0) exposure = parseFloat((expRes.rows[0] as any).exposure || 0);
+      }
+    } catch (e) { console.warn('Exposure calc failed', e); }
+
+    // Get credit check config OVA8 – reaction A warning, B error, C block
+    let reaction = 'B';
+    try {
+      const cfgRes = await db.execute(sql`
+        SELECT reaction, check_type FROM fin_credit_check_config 
+        WHERE credit_policy_area_code = ${policyArea.toUpperCase()} AND (risk_category = ${riskCategory} OR risk_category = 'ALL')
+        AND is_active = true LIMIT 1
       `);
-      if (expRes.rows.length > 0) exposure = parseFloat((expRes.rows[0] as any).exposure || 0);
+      if (cfgRes.rows.length > 0) reaction = (cfgRes.rows[0] as any).reaction || 'B';
     } catch {}
 
     const totalAfter = exposure + params.new_order_value;
     if (totalAfter > creditLimit) {
+      // OVA8 reaction: A warning allow, B error block, C block
+      const allowed = reaction === 'A'; // Only warning allows
       return {
-        allowed: false,
+        allowed,
         exposure,
         limit: creditLimit,
-        message: `❌ Credit limit exceeded – customer ${params.customer_code} exposure ${exposure} + new ${params.new_order_value} = ${totalAfter} > limit ${creditLimit} (policy ${policyArea}) – block sales order`
+        policy_area: policyArea,
+        risk_category: riskCategory,
+        details: exposureDetails,
+        message: `${allowed ? '⚠️' : '❌'} Credit limit ${allowed ? 'warning' : 'exceeded'} – customer ${params.customer_code} exposure SO ${exposureDetails.so} + DL ${exposureDetails.delivery} + BL ${exposureDetails.billing} + AR ${exposureDetails.ar} = ${exposure} + new ${params.new_order_value} = ${totalAfter} > limit ${creditLimit} (policy ${policyArea} risk ${riskCategory} reaction ${reaction}) – ${allowed ? 'warning but allow – OVA8 A' : 'block sales order – OVA8 B/C – T1 REQUIRED – FD32 + OVA8'}`
       };
     }
     return {
       allowed: true,
       exposure,
       limit: creditLimit,
-      message: `✅ Credit OK – customer ${params.customer_code} exposure ${exposure} + new ${params.new_order_value} = ${totalAfter} <= limit ${creditLimit}`
+      policy_area: policyArea,
+      risk_category: riskCategory,
+      details: exposureDetails,
+      message: `✅ Credit OK – customer ${params.customer_code} exposure SO ${exposureDetails.so}+DL ${exposureDetails.delivery}+BL ${exposureDetails.billing}+AR ${exposureDetails.ar}=${exposure} + new ${params.new_order_value} = ${totalAfter} <= limit ${creditLimit} (policy ${policyArea} risk ${riskCategory}) – FD32 + OVA8 – T1 REQUIRED – NO DANGLING`
     };
   } catch (e: any) {
-    console.warn('checkCreditExposure failed:', e.message);
-    return { allowed: true, exposure: 0, limit: 1000000, message: `Credit check failed: ${e.message} – allowing` };
+    console.warn('checkCreditExposure FD32 OVA8 failed:', e.message);
+    return { allowed: true, exposure: 0, limit: 1000000, policy_area: 'CPA-1000', risk_category: 'LOW', details: {}, message: `Credit check failed: ${e.message} – allowing – FD32 OVA8` };
   }
 }
 

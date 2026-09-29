@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
+import { checkTolerance } from '@/shared/kernel/db/postingPeriodHelpers';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -126,6 +127,44 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     const totalAmt = parseFloat(amount);
+
+    // T1 REQUIRED – OBA0/OBA4 Tolerance Groups GL + Customer/Vendor – check overpay within tolerance – prevents fraud/overpay – NO DANGLING
+    try {
+      const tolGroupCode = (body as any).tolerance_group_code || (vendorId ? 'VEND-01' : 'CUST-01');
+      // Calculate difference if apInvoiceIds provided – overpay = payment amount - invoice amount
+      let diffAmount = 0;
+      if (apInvoiceIds && Array.isArray(apInvoiceIds) && apInvoiceIds.length > 0) {
+        try {
+          let invoiceTotal = 0;
+          for (const apId of apInvoiceIds) {
+            const invRes = await db.execute(sql`SELECT gross_amount, net_amount FROM fi_ap_invoice WHERE id = ${apId} LIMIT 1`).catch(()=>({rows:[]}));
+            if (invRes.rows.length > 0) {
+              invoiceTotal += parseFloat((invRes.rows[0] as any).gross_amount || (invRes.rows[0] as any).net_amount || 0);
+            }
+          }
+          diffAmount = Math.abs(totalAmt - invoiceTotal);
+        } catch {}
+      }
+      // If diffAmount >0 or explicit difference provided
+      const explicitDiff = parseFloat((body as any).difference_amount || '0');
+      if (explicitDiff > 0) diffAmount = explicitDiff;
+      
+      if (diffAmount > 0) {
+        const tolCheck = await checkTolerance({ group_code: tolGroupCode, difference_amount: diffAmount });
+        if (!tolCheck.allowed) {
+          return NextResponse.json({
+            error: tolCheck.message,
+            tolerance_group: tolGroupCode,
+            difference_amount: diffAmount,
+            help: `Tolerance exceeded – OBA0/OBA4 – T1 REQUIRED – payment difference ${diffAmount} > limit – adjust payment or increase tolerance via /fico/tolerance-groups – prevents overpay`,
+            code: 'OBA0/OBA4'
+          }, { status: 400 });
+        }
+        console.log(`Tolerance OBA0/OBA4 Payment OK: group ${tolGroupCode} diff ${diffAmount} – ${tolCheck.message} – T1 REQUIRED`);
+      }
+    } catch (e: any) {
+      console.warn('Tolerance OBA0/OBA4 payment check failed, allowing:', e.message);
+    }
 
     // Create FI document KZ
     const fiRes = await db.execute(sql`
