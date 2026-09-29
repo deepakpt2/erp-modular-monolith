@@ -48,22 +48,40 @@ symbol: ₹
 
 ---
 
-### Title: Create Fiscal Year Variant K4
+### Title: Create Fiscal Year Variant K4 – FROM_DATE TO_DATE EXPLAINED
 **Code:** `FFYC` – Fiscal Calendar – `OB29` – `POST /api/fiscal-calendars`
 
 **User:** `erp_admin`
 
-**Data to be entered – copyable – fiscal_year_variant K4 must exist before ELEC – per guide:**
+**Question:** `what is from date and to date in Create Fiscal Calendar – FFYC, how would a fixed date with year work for it`
+
+**Answer – Year-Independent Variant vs Fixed Date FY:**
+
+- **Fiscal Calendar Variant (FFYC)** is **year-independent** template – defines **start_month, end_month, year_shift** – works for **any year**
+- **K4** = April-March India: `start_month=4`, `end_month=3`, `year_shift` logic:
+  - Posting `2026-05-15` → month 5 ≥ 4 → FY2026, Period 02 (May = 2nd month of K4)
+  - Posting `2026-02-15` → month 2 < 4 → FY2025 (belongs to previous FY), Period 11 (Feb = 11th month of K4)
+  - Posting `2027-05-15` → FY2027 P02 – same variant K4 works for FY2027 without new definition – **year-independent**
+- **FROM_DATE / TO_DATE** are **optional** – fixed date for **initial FY definition** – e.g., FY2026 `2026-04-01` to `2027-03-31` – this defines one fiscal year instance, but variant K4 itself remains year-independent – you don't need to create K4 again for FY2027 – system calculates via `start_month/end_month`
+- **How fixed date with year works:** If you enter `from_date: 2026-04-01 to_date: 2027-03-31`, it creates FY2026 definition. For FY2027, you would create `2027-04-01` to `2028-03-31` OR rely on variant logic – posting date `2027-05-15` automatically maps to FY2027 P02 via `start_month=4` – so fixed date is example FY, variant is template – **both work**
+- **Implementation:** In our ERP, `from_date/to_date` optional – if not provided, system uses `start_month=4 end_month=3` to calculate FY/Period for any posting date – strict usage in ELEC fiscal calendar calculates FY/Period from posting date K4 `2026-05-15 → FY2026 P02`
+
+**Data to be entered – copyable – fiscal_year_variant K4 must exist before ELEC – per guide – FROM_DATE TO_DATE OPTIONAL:**
 ```
 code: K4
-name: April-March Fiscal – India
-description: Fiscal Year Variant K4 – April to March – 12 periods – India standard – required before ELEC
+name: April-March Fiscal – India – K4
+start_month: 4
+end_month: 3
+year_shift: 0
+from_date: 2026-04-01  // Optional – fixed date for FY2026 – defines FY2026 April to March – variant still year-independent – how fixed date with year works: this is FY2026 instance, but K4 variant works for FY2027, FY2028 via start_month logic
+to_date: 2027-03-31    // Optional – fixed date for FY2026 – if provided, must be after from_date – if not provided, system uses start_month/end_month for any year
+description: Fiscal Year Variant K4 – April to March – 12 periods – India standard – year-independent – start_month 4 end_month 3 – from_date/to_date optional for FY2026 – required before ELEC
 year_dependent: false
 calendar_year: false
 number_of_periods: 12
 ```
 
-**Why before OB13/ELEC:** ELEC needs `fiscal_year_variant: K4` – calculates FY/Period from posting date – e.g., posting 2026-05-15 → FY2026 P02
+**Why before OB13/ELEC:** ELEC needs `fiscal_year_variant: K4` – calculates FY/Period from posting date – e.g., posting 2026-05-15 → FY2026 P02 – variant year-independent, fixed date is FY instance
 
 ---
 

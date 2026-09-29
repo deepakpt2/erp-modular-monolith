@@ -83,10 +83,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { code, name, description, tenant_id, periods, from_date, to_date, start_month, end_month, year_shift } = body;
     if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
-    if (!from_date || !to_date) return NextResponse.json({ error: 'from_date and to_date required – e.g., K4 needs Apr 01 to Mar 31' }, { status: 400 });
-    // Validate from < to
-    if (new Date(from_date) >= new Date(to_date)) {
-      return NextResponse.json({ error: 'from_date must be before to_date' }, { status: 400 });
+    // from_date/to_date now OPTIONAL per user question – fixed date with year should work for any year via start_month/end_month/year_shift – variant is year-independent
+    // If provided, validate from < to, but not required – allows K4 April-March template without fixed year
+    if (from_date && to_date) {
+      if (new Date(from_date) >= new Date(to_date)) {
+        return NextResponse.json({ error: 'from_date must be before to_date – e.g., K4 2026-04-01 to 2027-03-31' }, { status: 400 });
+      }
     }
 
     let tenantId = tenant_id;
