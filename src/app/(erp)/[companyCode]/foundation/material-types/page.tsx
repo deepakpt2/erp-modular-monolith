@@ -29,56 +29,59 @@ export default function MaterialTypesPage(){
     else setMsg(`❌ ${res.error}`);
   };
 
-  const handleDelete = async (code:string) => {
-    if(!confirm(`DELETE ${code}?`)) return;
-    const res = await fetch(`/api/material-types?code=${code}`,{method:'DELETE'}).then(r=>r.json());
-    setMsg(res.success?`✅ ${res.message}`:`❌ ${res.error}`);
-    load();
-  };
-
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING...</div>;
+  if(loading) return <div className="p-6">Loading...</div>;
   const types = data?.materialTypes||data?.productTypes||[];
   const primaryCode = data?.code || 'EMTP';
 
-  return (
-    <ModernModuleShell
-      title={`Product Types`}
-      subtitle={`${types.length} PRODUCT_TYPES`}
-      code={primaryCode}
-      module="FOUNDATION"
-    >
-      <div className="max-w-[1600px] mx-auto p-0 space-y-3">
-        {msg && <div className="bg-black text-white font-mono text-xs p-2">{msg}</div>}
-
-        <div className="flex justify-between items-center">
-          <div className="font-mono text-[11px] font-bold">EMTP PRODUCT_TYPE_CREATE OMS2 {types.length}</div>
-          <div className="flex gap-1">
-            <button onClick={()=>setShowForm(!showForm)} className="text-[11px] font-mono bg-black text-white border border-black px-3 py-1">CREATE</button>
-            <button onClick={load} className="text-[11px] font-mono border border-black px-3 py-1 bg-white">REFRESH</button>
-          </div>
-        </div>
-
-        {showForm && (
-          <div className="bg-white border border-black p-3 space-y-2">
-            <div className="grid md:grid-cols-3 gap-2 font-mono text-[11px]">
-              <div><div className="text-[10px] text-zinc-500">CODE</div><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 text-xs uppercase" /></div>
-              <div><div className="text-[10px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
-              <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
-            </div>
-            <button onClick={handleCreate} className="bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EMTP</button>
-          </div>
-        )}
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
-          {types.map((t:any)=>(
-            <div key={t.code} className="bg-white border border-black p-2 font-mono text-[11px]">
-              <div className="flex justify-between"><span className="font-bold">{t.code} | {t.name}</span><span className="text-[10px] border border-black px-1">{t.is_active?'ACTIVE':'INACTIVE'}</span></div>
-              <div className="text-[10px] text-zinc-600 mt-1">DESCRIPTION={t.description}</div>
-              <button onClick={()=>handleDelete(t.code)} className="mt-1 border border-red-600 text-red-600 px-1 text-[10px]">DEL</button>
-            </div>
-          ))}
+  const modernContent = (
+    <div className="space-y-6">
+      {msg && <div className="bg-zinc-900 text-white rounded-xl p-3 text-sm">{msg}</div>}
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold">Product Types <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">{types.length} {primaryCode}</span></h3>
+        <div className="flex gap-2">
+          <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black transition-colors">+ Create {primaryCode}</button>
+          <button onClick={load} className="text-xs border border-zinc-200 rounded-full px-4 py-2 bg-white hover:bg-zinc-50">Refresh</button>
         </div>
       </div>
+
+      {showForm && (
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 space-y-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div><label className="text-xs font-medium text-zinc-600">CODE</label><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black uppercase" /></div>
+            <div><label className="text-xs font-medium text-zinc-600">NAME</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
+            <div><label className="text-xs font-medium text-zinc-600">DESCRIPTION</label><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
+          </div>
+          <button onClick={handleCreate} className="bg-zinc-900 text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-black transition-colors">Create {primaryCode}</button>
+        </div>
+      )}
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {types.map((t:any)=>(
+          <div key={t.code} className="group bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
+            <div className="flex justify-between items-start"><div className="font-medium"><span className="font-mono bg-zinc-900 text-white px-2.5 py-1 rounded-full text-xs mr-2">{t.code}</span>{t.name}</div><span className={`text-[10px] rounded-full px-2 py-1 border ${t.is_active?'bg-green-50 border-green-200 text-green-700':'bg-red-50'}`}>{t.is_active?'ACTIVE':'INACTIVE'}</span></div>
+            <div className="text-xs text-zinc-500 mt-2">{t.description}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const classicContent = (
+    <div className="font-mono text-[11px] space-y-2">
+      <div className="font-bold border-b border-black pb-1">EMTP PRODUCT_TYPE_CREATE {types.length} API: POST /api/material-types {`{code, name, description}`}</div>
+      <div className="grid grid-cols-3 gap-2">
+        <div><div className="text-[10px] text-zinc-500">CODE</div><input value={form.code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+      </div>
+      <button onClick={handleCreate} className="bg-black text-white px-3 py-1 w-full">CREATE EMTP</button>
+      <div className="space-y-1">{types.map((t:any)=><div key={t.code} className="border border-black p-1"><span className="font-bold">{t.code} | {t.name}</span> DESCRIPTION={t.description}</div>)}</div>
+    </div>
+  );
+
+  return (
+    <ModernModuleShell title="Product Types" subtitle={`${types.length} PRODUCT_TYPES`} code={primaryCode} module="FOUNDATION" classicChildren={classicContent}>
+      {modernContent}
     </ModernModuleShell>
   );
 }

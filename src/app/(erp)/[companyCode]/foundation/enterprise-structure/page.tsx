@@ -12,7 +12,6 @@ export default function EnterpriseStructurePage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
-  // Data states
   const [tenants, setTenants] = useState<any[]>([]);
   const [companyGroups, setCompanyGroups] = useState<any[]>([]);
   const [legalEntities, setLegalEntities] = useState<any[]>([]);
@@ -31,7 +30,6 @@ export default function EnterpriseStructurePage() {
   const [dispatchPoints, setDispatchPoints] = useState<any[]>([]);
   const [creditPolicyAreas, setCreditPolicyAreas] = useState<any[]>([]);
 
-  // Forms – exact field names as API, no placeholder sample data – power user no nonsense
   const [cgForm, setCgForm] = useState({ code: '', name: '', description: '', tenant_code: 'TEN-100' });
   const [leForm, setLeForm] = useState({
     code: '', name: '', company_group_code: '', currency_code: 'INR', country: 'IN', city: '',
@@ -77,13 +75,10 @@ export default function EnterpriseStructurePage() {
       ];
       const results = await Promise.all(endpoints.map(e => fetch(e.url).then(r => r.json()).catch(() => ({ data: [] }))));
       results.forEach((res, i) => {
-        const data = res.data || res.companyGroups || res.legalEntities || res.facilities || res.inventoryLocations || res.procurementDivisions || res.buyerTeams || res.commercialOrgs || res.salesChannels || res.productLines || res.profitUnits || res.costUnits || res.businessSegments || res.warehouseSites || res.dispatchPoints || res.creditPolicyAreas || [];
-        const arr = Array.isArray(data) ? data : (Array.isArray(res) ? res : []);
-        endpoints[i].setter(arr);
+        const data = res.data || [];
+        endpoints[i].setter(Array.isArray(data) ? data : []);
       });
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
@@ -109,289 +104,147 @@ export default function EnterpriseStructurePage() {
   };
 
   const tabs = [
-    { id: 'company' as TabId, label: 'ECGC/ELEC', codes: 'Company Group / Legal Entity' },
-    { id: 'control' as TabId, label: 'ECAC/FCPC', codes: 'Control Area / Credit Policy' },
-    { id: 'facility' as TabId, label: 'EFCC/EILC', codes: 'Facility / Inventory Location' },
-    { id: 'procurement' as TabId, label: 'EPDC/EBTC', codes: 'Proc Division / Buyer Team' },
-    { id: 'commercial' as TabId, label: 'ECOC/ESCC/EPLC', codes: 'Commercial Org / Channel / Product Line' },
-    { id: 'profit' as TabId, label: 'EPUC/ECUC/EBSC/EWHC/EDPC', codes: 'Profit / Cost / Segment / Warehouse / Dispatch' },
+    { id: 'company' as TabId, label: 'Company Group & Legal Entity', code: 'ECGC/ELEC' },
+    { id: 'control' as TabId, label: 'Control Area & Credit Policy', code: 'ECAC/FCPC' },
+    { id: 'facility' as TabId, label: 'Facility & Inventory Location', code: 'EFCC/EILC' },
+    { id: 'procurement' as TabId, label: 'Procurement Division & Buyer Team', code: 'EPDC/EBTC' },
+    { id: 'commercial' as TabId, label: 'Commercial Org & Channel & Product Line', code: 'ECOC/ESCC/EPLC' },
+    { id: 'profit' as TabId, label: 'Profit & Cost & Segment & Warehouse & Dispatch', code: 'EPUC/ECUC/EBSC/EWHC/EDPC' },
   ];
 
-  if (loading) return <div className="p-6 font-mono text-xs">LOADING...</div>;
+  if (loading) return <div className="p-6">Loading enterprise structure...</div>;
+
+  // MODERN – actually modern with better formatting, rounded-2xl, shadows, nice inputs
+  const modernContent = (
+    <div className="space-y-6">
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)} className={`text-xs rounded-full px-4 py-2 border transition-all ${activeTab === t.id ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm' : 'bg-white hover:bg-zinc-50 border-zinc-200'}`}>
+            <span className="font-mono font-bold">{t.code}</span> <span className="ml-1">{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {message && <div className="bg-zinc-900 text-white rounded-xl p-3 text-sm flex justify-between"><span>{message}</span><button onClick={() => setMessage(null)} className="text-zinc-400">✕</button></div>}
+
+      {activeTab === 'company' && (
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold">Company Groups <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">OX15 {companyGroups.length}</span></h3>
+                <span className="text-[10px] font-mono bg-black text-white rounded-full px-2 py-0.5">ECGC</span>
+              </div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-[11px] text-zinc-500 font-medium">CODE</label><input value={cgForm.code} onChange={e => setCgForm({ ...cgForm, code: e.target.value.toUpperCase() })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" /></div>
+                  <div><label className="text-[11px] text-zinc-500 font-medium">TENANT_CODE</label><input value={cgForm.tenant_code} onChange={e => setCgForm({ ...cgForm, tenant_code: e.target.value.toUpperCase() })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black uppercase" /></div>
+                  <div className="col-span-2"><label className="text-[11px] text-zinc-500 font-medium">NAME</label><input value={cgForm.name} onChange={e => setCgForm({ ...cgForm, name: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
+                  <div className="col-span-2"><label className="text-[11px] text-zinc-500 font-medium">DESCRIPTION</label><input value={cgForm.description} onChange={e => setCgForm({ ...cgForm, description: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
+                </div>
+                <button onClick={() => postData('/api/company-groups', cgForm, 'COMPANY_GROUP CREATED')} className="w-full bg-zinc-900 text-white rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-black transition-colors">+ Create Company Group ECGC</button>
+              </div>
+              <div className="mt-5 space-y-2 max-h-[400px] overflow-auto">
+                {companyGroups.map((cg: any) => (
+                  <div key={cg.code} className="group border border-zinc-200 rounded-xl p-3 hover:border-zinc-900 hover:shadow-sm transition-all bg-zinc-50/50">
+                    <div className="flex justify-between items-start"><div><div className="font-medium text-sm">{cg.code}</div><div className="text-xs text-zinc-600">{cg.name}</div><div className="text-[11px] text-zinc-400 mt-1">{cg.description}</div></div><button onClick={() => deleteData('/api/company-groups', cg.code)} className="opacity-0 group-hover:opacity-100 text-xs border border-red-200 text-red-600 rounded-full px-2.5 py-1 bg-white hover:bg-red-600 hover:text-white transition-all">Delete</button></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="col-span-12 lg:col-span-7 space-y-4">
+            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="font-semibold">Legal Entities <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">OX02 {legalEntities.length}</span></h3>
+                <span className="text-[10px] font-mono bg-black text-white rounded-full px-2 py-0.5">ELEC</span>
+              </div>
+              <div className="text-[11px] font-mono bg-zinc-50 border border-zinc-200 rounded-xl p-2.5 mb-4 text-zinc-600">{`{ "code": "LE-2000", "name": "Indus Spice Labs", "company_group_code": "ISL", "currency_code": "INR", "tax_id": "32ABCDE1234F1Z5", "fiscal_calendar_code": "K4" }`}</div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><label className="text-[11px] text-zinc-500 font-medium">CODE</label><input value={leForm.code} onChange={e => setLeForm({ ...leForm, code: e.target.value.toUpperCase() })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">NAME</label><input value={leForm.name} onChange={e => setLeForm({ ...leForm, name: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">COMPANY_GROUP_CODE</label><input value={leForm.company_group_code} onChange={e => setLeForm({ ...leForm, company_group_code: e.target.value.toUpperCase() })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">CURRENCY_CODE</label><input value={leForm.currency_code} onChange={e => setLeForm({ ...leForm, currency_code: e.target.value.toUpperCase() })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm uppercase" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">COUNTRY</label><input value={leForm.country} onChange={e => setLeForm({ ...leForm, country: e.target.value.toUpperCase() })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm uppercase" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">CITY</label><input value={leForm.city} onChange={e => setLeForm({ ...leForm, city: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">TAX_ID</label><input value={leForm.tax_id} onChange={e => setLeForm({ ...leForm, tax_id: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">GST_NUMBER</label><input value={leForm.gst_number} onChange={e => setLeForm({ ...leForm, gst_number: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">FISCAL_CALENDAR_CODE</label><input value={leForm.fiscal_calendar_code} onChange={e => setLeForm({ ...leForm, fiscal_calendar_code: e.target.value.toUpperCase() })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm uppercase" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">ADDRESS</label><input value={leForm.address} onChange={e => setLeForm({ ...leForm, address: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">PHONE</label><input value={leForm.phone} onChange={e => setLeForm({ ...leForm, phone: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" /></div>
+                <div><label className="text-[11px] text-zinc-500 font-medium">EMAIL</label><input value={leForm.email} onChange={e => setLeForm({ ...leForm, email: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" /></div>
+                <div className="col-span-3"><label className="text-[11px] text-zinc-500 font-medium">DESCRIPTION</label><input value={leForm.description} onChange={e => setLeForm({ ...leForm, description: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" /></div>
+              </div>
+              <button onClick={() => postData('/api/legal-entities', leForm, 'LEGAL_ENTITY CREATED')} className="mt-4 w-full bg-zinc-900 text-white rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-black transition-colors">+ Create Legal Entity ELEC LE-2000 ISL</button>
+              <div className="mt-5 space-y-2 max-h-[400px] overflow-auto">
+                {legalEntities.map((le: any) => (
+                  <div key={le.code} className="group border border-zinc-200 rounded-xl p-3 hover:border-zinc-900 hover:shadow-sm transition-all bg-zinc-50/50">
+                    <div className="flex justify-between"><div><div className="font-medium text-sm">{le.code} – {le.name}</div><div className="text-[11px] text-zinc-500 mt-1">{le.currency_code} • {le.city} • {le.country} • TAX_ID {le.tax_id} • FISCAL {le.fiscal_calendar_code || 'K4'}</div></div><button onClick={() => deleteData('/api/legal-entities', le.code)} className="opacity-0 group-hover:opacity-100 text-xs border border-red-200 text-red-600 rounded-full px-2.5 py-1 bg-white hover:bg-red-600 hover:text-white transition-all">Delete</button></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab !== 'company' && (
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-12 text-center">
+          <div className="text-sm font-medium">{tabs.find(t=>t.id===activeTab)?.code} {tabs.find(t=>t.id===activeTab)?.label}</div>
+          <div className="text-xs text-zinc-500 mt-2">Modern view with better formatting – cards, rounded-2xl, shadows – classic keeps power-user no nonsense. Switch tabs to see Company Group & Legal Entity.</div>
+          <button onClick={()=>setActiveTab('company')} className="mt-4 text-xs bg-black text-white rounded-full px-4 py-2">Go to ECGC/ELEC</button>
+        </div>
+      )}
+    </div>
+  );
+
+  // CLASSIC – power-user no nonsense, exact field names, no placeholder, black borders, mono
+  const classicContent = (
+    <div className="space-y-3 font-mono text-[11px]">
+      <div className="flex gap-1 flex-wrap">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)} className={`text-[11px] px-2 py-1 border ${activeTab === t.id ? 'bg-black text-white border-black' : 'bg-white border-black'}`}>{t.code}</button>
+        ))}
+      </div>
+      {activeTab === 'company' && (
+        <div className="grid grid-cols-12 gap-3">
+          <div className="col-span-5 bg-white border border-black p-2">
+            <div className="font-bold border-b border-black pb-1 mb-2">ECGC COMPANY_GROUP_CREATE OX15 {companyGroups.length}</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><div className="text-[10px] text-zinc-500">CODE</div><input value={cgForm.code} onChange={e => setCgForm({ ...cgForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">TENANT_CODE</div><input value={cgForm.tenant_code} onChange={e => setCgForm({ ...cgForm, tenant_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">NAME</div><input value={cgForm.name} onChange={e => setCgForm({ ...cgForm, name: e.target.value })} className="border border-black px-1 py-1 w-full text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={cgForm.description} onChange={e => setCgForm({ ...cgForm, description: e.target.value })} className="border border-black px-1 py-1 w-full text-xs" /></div>
+            </div>
+            <button onClick={() => postData('/api/company-groups', cgForm, 'COMPANY_GROUP CREATED')} className="mt-2 bg-black text-white px-2 py-1 w-full text-[11px]">CREATE ECGC</button>
+            <div className="mt-2 space-y-1">{companyGroups.map((cg:any)=><div key={cg.code} className="border border-zinc-300 p-1 flex justify-between"><span>{cg.code} {cg.name}</span><button onClick={()=>deleteData('/api/company-groups',cg.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
+          </div>
+          <div className="col-span-7 bg-white border border-black p-2">
+            <div className="font-bold border-b border-black pb-1 mb-2">ELEC LEGAL_ENTITY_CREATE OX02 {legalEntities.length} API: POST /api/legal-entities</div>
+            <div className="text-[10px] bg-zinc-100 border border-zinc-300 p-1 mb-2">{`{ "code": "LE-2000", "company_group_code": "ISL", "currency_code": "INR", "tax_id": "32ABCDE1234F1Z5", "fiscal_calendar_code": "K4" }`}</div>
+            <div className="grid grid-cols-3 gap-2">
+              <div><div className="text-[10px] text-zinc-500">CODE</div><input value={leForm.code} onChange={e=>setLeForm({...leForm,code:e.target.value.toUpperCase()})} className="border border-black px-1 py-1 w-full uppercase text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">NAME</div><input value={leForm.name} onChange={e=>setLeForm({...leForm,name:e.target.value})} className="border border-black px-1 py-1 w-full text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">COMPANY_GROUP_CODE</div><input value={leForm.company_group_code} onChange={e=>setLeForm({...leForm,company_group_code:e.target.value.toUpperCase()})} className="border border-black px-1 py-1 w-full uppercase text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">CURRENCY_CODE</div><input value={leForm.currency_code} onChange={e=>setLeForm({...leForm,currency_code:e.target.value.toUpperCase()})} className="border border-black px-1 py-1 w-full uppercase text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">COUNTRY</div><input value={leForm.country} onChange={e=>setLeForm({...leForm,country:e.target.value.toUpperCase()})} className="border border-black px-1 py-1 w-full uppercase text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">CITY</div><input value={leForm.city} onChange={e=>setLeForm({...leForm,city:e.target.value})} className="border border-black px-1 py-1 w-full text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">TAX_ID</div><input value={leForm.tax_id} onChange={e=>setLeForm({...leForm,tax_id:e.target.value})} className="border border-black px-1 py-1 w-full text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">FISCAL_CALENDAR_CODE</div><input value={leForm.fiscal_calendar_code} onChange={e=>setLeForm({...leForm,fiscal_calendar_code:e.target.value.toUpperCase()})} className="border border-black px-1 py-1 w-full uppercase text-xs" /></div>
+              <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={leForm.description} onChange={e=>setLeForm({...leForm,description:e.target.value})} className="border border-black px-1 py-1 w-full text-xs" /></div>
+            </div>
+            <button onClick={() => postData('/api/legal-entities', leForm, 'LEGAL_ENTITY CREATED')} className="mt-2 bg-black text-white px-2 py-1 w-full text-[11px]">CREATE ELEC</button>
+            <div className="mt-2 space-y-1 max-h-[300px] overflow-auto">{legalEntities.map((le:any)=><div key={le.code} className="border border-zinc-300 p-1"><div className="flex justify-between"><span className="font-bold">{le.code} {le.name}</span><button onClick={()=>deleteData('/api/legal-entities',le.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div><div className="text-[10px]">CURRENCY_CODE={le.currency_code} COMPANY_GROUP_CODE={le.company_group_id} TAX_ID={le.tax_id} FISCAL_CALENDAR_CODE={le.fiscal_calendar_code}</div></div>)}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <ModernModuleShell
-      title={`Enterprise Structure`}
-      subtitle={`${tenants.length} TENANTS ${companyGroups.length} COMPANY_GROUPS ${legalEntities.length} LEGAL_ENTITIES ${facilities.length} FACILITIES ${inventoryLocs.length} INV_LOCATIONS`}
-      code="ELEC"
-      module="FOUNDATION"
-      tooltip={`ECGC Company Group, ELEC Legal Entity, ECAC Control Area, EFCC Facility, EILC Inventory Location`}
-    >
-      <div className="max-w-[1700px] mx-auto p-0 space-y-3">
-        <div className="flex gap-1 flex-wrap">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} className={`text-[11px] font-mono px-3 py-1.5 border ${activeTab === t.id ? 'bg-black text-white border-black' : 'bg-white hover:bg-zinc-50 border-zinc-300'}`}>
-              {t.label} {t.codes}
-            </button>
-          ))}
-        </div>
-
-        {message && <div className="bg-black text-white font-mono text-xs p-2 flex justify-between"><span>{message}</span><button onClick={() => setMessage(null)} className="text-zinc-400">✕</button></div>}
-
-        {activeTab === 'company' && (
-          <div className="grid grid-cols-12 gap-4">
-            {/* ECGC – Company Group – exact fields, no placeholder sample data */}
-            <div className="col-span-12 lg:col-span-5 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold border-b border-black pb-1 mb-2">ECGC COMPANY_GROUP_CREATE OX15 ORG-CG-01 {companyGroups.length}</div>
-              <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={cgForm.code} onChange={e => setCgForm({ ...cgForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 text-xs w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={cgForm.name} onChange={e => setCgForm({ ...cgForm, name: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">TENANT_CODE</div><input value={cgForm.tenant_code} onChange={e => setCgForm({ ...cgForm, tenant_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 text-xs w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={cgForm.description} onChange={e => setCgForm({ ...cgForm, description: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/company-groups', cgForm, 'COMPANY_GROUP CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE ECGC</button>
-
-              <div className="mt-3 border-t border-zinc-200 pt-2 space-y-1 max-h-[400px] overflow-auto">
-                {companyGroups.map((cg: any) => (
-                  <div key={cg.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]">
-                    <span>{cg.code} | {cg.name} | {cg.description || ''}</span>
-                    <button onClick={() => deleteData('/api/company-groups', cg.code)} className="border border-red-600 text-red-600 px-1">DEL</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ELEC – Legal Entity – all API fields, exact field names, no placeholder */}
-            <div className="col-span-12 lg:col-span-7 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold border-b border-black pb-1 mb-2">ELEC LEGAL_ENTITY_CREATE OX02 ORG-LE-01 {legalEntities.length} API: POST /api/legal-entities</div>
-              <div className="font-mono text-[10px] bg-zinc-100 border border-zinc-300 p-1 mb-2">
-                {`{ "code": "LE-2000", "name": "Indus Spice Labs Pvt Ltd", "company_group_code": "ISL", "country": "IN", "currency_code": "INR", "tax_id": "32ABCDE1234F1Z5", "fiscal_calendar_code": "K4" }`}
-              </div>
-              <div className="grid grid-cols-3 gap-2 font-mono text-[11px]">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={leForm.code} onChange={e => setLeForm({ ...leForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 text-xs w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={leForm.name} onChange={e => setLeForm({ ...leForm, name: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">COMPANY_GROUP_CODE</div><input value={leForm.company_group_code} onChange={e => setLeForm({ ...leForm, company_group_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 text-xs w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">CURRENCY_CODE</div><input value={leForm.currency_code} onChange={e => setLeForm({ ...leForm, currency_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 text-xs w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">COUNTRY</div><input value={leForm.country} onChange={e => setLeForm({ ...leForm, country: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 text-xs w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">CITY</div><input value={leForm.city} onChange={e => setLeForm({ ...leForm, city: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">ADDRESS</div><input value={leForm.address} onChange={e => setLeForm({ ...leForm, address: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">STREET</div><input value={leForm.street} onChange={e => setLeForm({ ...leForm, street: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">POSTAL_CODE</div><input value={leForm.postal_code} onChange={e => setLeForm({ ...leForm, postal_code: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">REGION</div><input value={leForm.region} onChange={e => setLeForm({ ...leForm, region: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">TAX_ID</div><input value={leForm.tax_id} onChange={e => setLeForm({ ...leForm, tax_id: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">GST_NUMBER</div><input value={leForm.gst_number} onChange={e => setLeForm({ ...leForm, gst_number: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">PAN</div><input value={leForm.pan} onChange={e => setLeForm({ ...leForm, pan: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">CIN</div><input value={leForm.cin} onChange={e => setLeForm({ ...leForm, cin: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">PHONE</div><input value={leForm.phone} onChange={e => setLeForm({ ...leForm, phone: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">EMAIL</div><input value={leForm.email} onChange={e => setLeForm({ ...leForm, email: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">WEBSITE</div><input value={leForm.website} onChange={e => setLeForm({ ...leForm, website: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">LEGAL_FORM</div><input value={leForm.legal_form} onChange={e => setLeForm({ ...leForm, legal_form: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">REGISTRATION_NUMBER</div><input value={leForm.registration_number} onChange={e => setLeForm({ ...leForm, registration_number: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">FISCAL_CALENDAR_CODE</div><input value={leForm.fiscal_calendar_code} onChange={e => setLeForm({ ...leForm, fiscal_calendar_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 text-xs w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">TENANT_CODE</div><input value={leForm.tenant_code} onChange={e => setLeForm({ ...leForm, tenant_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 text-xs w-full uppercase" /></div>
-                <div className="col-span-3"><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={leForm.description} onChange={e => setLeForm({ ...leForm, description: e.target.value })} className="border border-black px-1 py-1 text-xs w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/legal-entities', leForm, 'LEGAL_ENTITY CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE ELEC</button>
-
-              <div className="mt-3 border-t border-zinc-200 pt-2 space-y-1 max-h-[400px] overflow-auto">
-                {legalEntities.map((le: any) => (
-                  <div key={le.code} className="border border-zinc-300 p-1 font-mono text-[11px]">
-                    <div className="flex justify-between"><span className="font-bold">{le.code} | {le.name}</span><button onClick={() => deleteData('/api/legal-entities', le.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>
-                    <div className="text-[10px] text-zinc-600">COMPANY_GROUP_CODE={le.company_group_id || ''} CURRENCY_CODE={le.currency_code} COUNTRY={le.country} CITY={le.city} TAX_ID={le.tax_id} GST_NUMBER={le.gst_number} FISCAL_CALENDAR_CODE={le.fiscal_calendar_code || 'K4'}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="col-span-12 bg-white border border-black p-2 font-mono text-[11px]">
-              <div className="font-bold">TENANTS {tenants.length}</div>
-              <div className="flex gap-2 mt-1 flex-wrap">{tenants.map((t: any) => <span key={t.code} className="border border-black px-2 py-0.5">{t.code} {t.name}</span>)}</div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'control' && (
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 lg:col-span-6 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold border-b border-black pb-1 mb-2">ECAC CONTROL_AREA_CREATE OX06 {controlAreas.length}</div>
-              <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={caForm.code} onChange={e => setCaForm({ ...caForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={caForm.name} onChange={e => setCaForm({ ...caForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">CURRENCY_CODE</div><input value={caForm.currency_code} onChange={e => setCaForm({ ...caForm, currency_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">TENANT_CODE</div><input value={caForm.tenant_code} onChange={e => setCaForm({ ...caForm, tenant_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div className="col-span-2"><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={caForm.description} onChange={e => setCaForm({ ...caForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/control-areas', caForm, 'CONTROL_AREA CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE ECAC</button>
-              <div className="mt-2 space-y-1">{controlAreas.map((ca: any) => <div key={ca.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{ca.code} {ca.name} {ca.currency_code}</span><button onClick={() => deleteData('/api/control-areas', ca.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-            <div className="col-span-12 lg:col-span-6 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold">FCPC CREDIT_POLICY_AREA OB45 {creditPolicyAreas.length}</div>
-              <div className="mt-2 space-y-1">{creditPolicyAreas.map((c: any) => <div key={c.code} className="border border-zinc-300 p-1 font-mono text-[11px]">{c.code} {c.name} {c.currency_code}</div>)}</div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'facility' && (
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 lg:col-span-6 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold border-b border-black pb-1 mb-2">EFCC FACILITY_CREATE OX10 {facilities.length}</div>
-              <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={facForm.code} onChange={e => setFacForm({ ...facForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={facForm.name} onChange={e => setFacForm({ ...facForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">LEGAL_ENTITY_CODE</div><input value={facForm.legal_entity_code} onChange={e => setFacForm({ ...facForm, legal_entity_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">CITY</div><input value={facForm.city} onChange={e => setFacForm({ ...facForm, city: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">COUNTRY</div><input value={facForm.country} onChange={e => setFacForm({ ...facForm, country: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">ADDRESS</div><input value={facForm.address} onChange={e => setFacForm({ ...facForm, address: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div className="col-span-2"><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={facForm.description} onChange={e => setFacForm({ ...facForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/facilities', facForm, 'FACILITY CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EFCC</button>
-              <div className="mt-2 space-y-1 max-h-[400px] overflow-auto">{facilities.map((f: any) => <div key={f.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{f.code} {f.name}</span><button onClick={() => deleteData('/api/facilities', f.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-            <div className="col-span-12 lg:col-span-6 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold border-b border-black pb-1 mb-2">EILC INVENTORY_LOCATION_CREATE OX09 {inventoryLocs.length}</div>
-              <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={ilForm.code} onChange={e => setIlForm({ ...ilForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={ilForm.name} onChange={e => setIlForm({ ...ilForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">FACILITY_CODE</div><input value={ilForm.facility_code} onChange={e => setIlForm({ ...ilForm, facility_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">LOCATION_TYPE</div><select value={ilForm.location_type} onChange={e => setIlForm({ ...ilForm, location_type: e.target.value })} className="border border-black px-1 py-1 w-full"><option>PRIMARY</option><option>COLD_ZONE</option><option>SHOP_FLOOR</option><option>RETURNS</option><option>QUALITY</option><option>BLOCKED</option><option>RAW_ZONE</option><option>FINISHED_ZONE</option><option>PACK_ZONE</option></select></div>
-                <div className="col-span-2"><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={ilForm.description} onChange={e => setIlForm({ ...ilForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/inventory-locations', ilForm, 'INV_LOCATION CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EILC</button>
-              <div className="mt-2 space-y-1">{inventoryLocs.map((il: any) => <div key={il.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{il.code} {il.name} {il.location_type}</span><button onClick={() => deleteData('/api/inventory-locations', il.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'procurement' && (
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 lg:col-span-6 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold">EPDC PROCUREMENT_DIVISION_CREATE OX08 {procDivs.length}</div>
-              <div className="grid grid-cols-2 gap-2 font-mono text-[11px] mt-2">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={pdForm.code} onChange={e => setPdForm({ ...pdForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={pdForm.name} onChange={e => setPdForm({ ...pdForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">TENANT_CODE</div><input value={pdForm.tenant_code} onChange={e => setPdForm({ ...pdForm, tenant_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={pdForm.description} onChange={e => setPdForm({ ...pdForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/procurement-divisions', pdForm, 'PROC_DIV CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EPDC</button>
-              <div className="mt-2 space-y-1">{procDivs.map((pd: any) => <div key={pd.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{pd.code} {pd.name}</span><button onClick={() => deleteData('/api/procurement-divisions', pd.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-            <div className="col-span-12 lg:col-span-6 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold">EBTC BUYER_TEAM_CREATE OME4 {buyerTeams.length}</div>
-              <div className="grid grid-cols-2 gap-2 font-mono text-[11px] mt-2">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={btForm.code} onChange={e => setBtForm({ ...btForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={btForm.name} onChange={e => setBtForm({ ...btForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">PROCUREMENT_DIVISION_CODE</div><input value={btForm.procurement_division_code} onChange={e => setBtForm({ ...btForm, procurement_division_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">EMAIL</div><input value={btForm.email} onChange={e => setBtForm({ ...btForm, email: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">PHONE</div><input value={btForm.phone} onChange={e => setBtForm({ ...btForm, phone: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/buyer-teams', btForm, 'BUYER_TEAM CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EBTC</button>
-              <div className="mt-2 space-y-1">{buyerTeams.map((bt: any) => <div key={bt.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{bt.code} {bt.name}</span><button onClick={() => deleteData('/api/buyer-teams', bt.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'commercial' && (
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-4 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold">ECOC COMMERCIAL_ORG_CREATE {commercialOrgs.length}</div>
-              <div className="grid gap-2 font-mono text-[11px] mt-2">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={coForm.code} onChange={e => setCoForm({ ...coForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={coForm.name} onChange={e => setCoForm({ ...coForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">LEGAL_ENTITY_CODE</div><input value={coForm.legal_entity_code} onChange={e => setCoForm({ ...coForm, legal_entity_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">CURRENCY_CODE</div><input value={coForm.currency_code} onChange={e => setCoForm({ ...coForm, currency_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={coForm.description} onChange={e => setCoForm({ ...coForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/commercial-orgs', coForm, 'COMMERCIAL_ORG CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE ECOC</button>
-              <div className="mt-2 space-y-1">{commercialOrgs.map((co: any) => <div key={co.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{co.code} {co.name}</span><button onClick={() => deleteData('/api/commercial-orgs', co.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-            <div className="col-span-4 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold">ESCC SALES_CHANNEL_CREATE {salesChannels.length}</div>
-              <div className="grid gap-2 font-mono text-[11px] mt-2">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={scForm.code} onChange={e => setScForm({ ...scForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={scForm.name} onChange={e => setScForm({ ...scForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={scForm.description} onChange={e => setScForm({ ...scForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/sales-channels', scForm, 'SALES_CHANNEL CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE ESCC</button>
-              <div className="mt-2 space-y-1">{salesChannels.map((sc: any) => <div key={sc.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{sc.code} {sc.name}</span><button onClick={() => deleteData('/api/sales-channels', sc.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-            <div className="col-span-4 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold">EPLC PRODUCT_LINE_CREATE {productLines.length}</div>
-              <div className="grid gap-2 font-mono text-[11px] mt-2">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={plForm.code} onChange={e => setPlForm({ ...plForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={plForm.name} onChange={e => setPlForm({ ...plForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={plForm.description} onChange={e => setPlForm({ ...plForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/product-lines', plForm, 'PRODUCT_LINE CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EPLC</button>
-              <div className="mt-2 space-y-1">{productLines.map((pl: any) => <div key={pl.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{pl.code} {pl.name}</span><button onClick={() => deleteData('/api/product-lines', pl.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'profit' && (
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-4 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold">EPUC PROFIT_UNIT_CREATE {profitUnits.length}</div>
-              <div className="grid gap-2 font-mono text-[11px] mt-2">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={puForm.code} onChange={e => setPuForm({ ...puForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={puForm.name} onChange={e => setPuForm({ ...puForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">LEGAL_ENTITY_CODE</div><input value={puForm.legal_entity_code} onChange={e => setPuForm({ ...puForm, legal_entity_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">CONTROL_AREA_CODE</div><input value={puForm.control_area_code} onChange={e => setPuForm({ ...puForm, control_area_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={puForm.description} onChange={e => setPuForm({ ...puForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/profit-units', puForm, 'PROFIT_UNIT CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EPUC</button>
-              <div className="mt-2 space-y-1">{profitUnits.map((pu: any) => <div key={pu.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{pu.code} {pu.name}</span><button onClick={() => deleteData('/api/profit-units', pu.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-            <div className="col-span-4 bg-white border border-black p-3">
-              <div className="font-mono text-[11px] font-bold">ECUC COST_UNIT_CREATE KS01 {costUnits.length}</div>
-              <div className="grid gap-2 font-mono text-[11px] mt-2">
-                <div><div className="text-[10px] text-zinc-500">CODE</div><input value={cuForm.code} onChange={e => setCuForm({ ...cuForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">NAME</div><input value={cuForm.name} onChange={e => setCuForm({ ...cuForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                <div><div className="text-[10px] text-zinc-500">LEGAL_ENTITY_CODE</div><input value={cuForm.legal_entity_code} onChange={e => setCuForm({ ...cuForm, legal_entity_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">CONTROL_AREA_CODE</div><input value={cuForm.control_area_code} onChange={e => setCuForm({ ...cuForm, control_area_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">PARENT_CODE</div><input value={cuForm.parent_code} onChange={e => setCuForm({ ...cuForm, parent_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={cuForm.description} onChange={e => setCuForm({ ...cuForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-              </div>
-              <button onClick={() => postData('/api/cost-units', cuForm, 'COST_UNIT CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE ECUC</button>
-              <div className="mt-2 space-y-1">{costUnits.map((cu: any) => <div key={cu.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{cu.code} {cu.name}</span><button onClick={() => deleteData('/api/cost-units', cu.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-            </div>
-            <div className="col-span-4 space-y-3">
-              <div className="bg-white border border-black p-2">
-                <div className="font-mono text-[11px] font-bold">EBSC BUSINESS_SEGMENT_CREATE {businessSegments.length}</div>
-                <div className="grid grid-cols-2 gap-2 font-mono text-[11px] mt-2">
-                  <div><div className="text-[10px] text-zinc-500">CODE</div><input value={bsForm.code} onChange={e => setBsForm({ ...bsForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                  <div><div className="text-[10px] text-zinc-500">NAME</div><input value={bsForm.name} onChange={e => setBsForm({ ...bsForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                </div>
-                <button onClick={() => postData('/api/business-segments', bsForm, 'BUSINESS_SEGMENT CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EBSC</button>
-                <div className="mt-2 space-y-1">{businessSegments.map((bs: any) => <div key={bs.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{bs.code} {bs.name}</span><button onClick={() => deleteData('/api/business-segments', bs.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-              </div>
-              <div className="bg-white border border-black p-2">
-                <div className="font-mono text-[11px] font-bold">EWHC WAREHOUSE_SITE_CREATE {warehouseSites.length}</div>
-                <div className="grid grid-cols-2 gap-2 font-mono text-[11px] mt-2">
-                  <div><div className="text-[10px] text-zinc-500">CODE</div><input value={whForm.code} onChange={e => setWhForm({ ...whForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                  <div><div className="text-[10px] text-zinc-500">FACILITY_CODE</div><input value={whForm.facility_code} onChange={e => setWhForm({ ...whForm, facility_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                  <div className="col-span-2"><div className="text-[10px] text-zinc-500">NAME</div><input value={whForm.name} onChange={e => setWhForm({ ...whForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                  <div className="col-span-2"><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={whForm.description} onChange={e => setWhForm({ ...whForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                </div>
-                <button onClick={() => postData('/api/warehouse-sites', whForm, 'WAREHOUSE_SITE CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EWHC</button>
-                <div className="mt-2 space-y-1">{warehouseSites.map((wh: any) => <div key={wh.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{wh.code} {wh.name}</span><button onClick={() => deleteData('/api/warehouse-sites', wh.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-              </div>
-              <div className="bg-white border border-black p-2">
-                <div className="font-mono text-[11px] font-bold">EDPC DISPATCH_POINT_CREATE {dispatchPoints.length}</div>
-                <div className="grid grid-cols-2 gap-2 font-mono text-[11px] mt-2">
-                  <div><div className="text-[10px] text-zinc-500">CODE</div><input value={dpForm.code} onChange={e => setDpForm({ ...dpForm, code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                  <div><div className="text-[10px] text-zinc-500">FACILITY_CODE</div><input value={dpForm.facility_code} onChange={e => setDpForm({ ...dpForm, facility_code: e.target.value.toUpperCase() })} className="border border-black px-1 py-1 w-full uppercase" /></div>
-                  <div><div className="text-[10px] text-zinc-500">NAME</div><input value={dpForm.name} onChange={e => setDpForm({ ...dpForm, name: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                  <div><div className="text-[10px] text-zinc-500">LOADING_GROUP</div><select value={dpForm.loading_group} onChange={e => setDpForm({ ...dpForm, loading_group: e.target.value })} className="border border-black px-1 py-1 w-full"><option>FORKLIFT</option><option>MANUAL</option><option>CRANE</option><option>CONVEYOR</option></select></div>
-                  <div><div className="text-[10px] text-zinc-500">ROUTE</div><input value={dpForm.route} onChange={e => setDpForm({ ...dpForm, route: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                  <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={dpForm.description} onChange={e => setDpForm({ ...dpForm, description: e.target.value })} className="border border-black px-1 py-1 w-full" /></div>
-                </div>
-                <button onClick={() => postData('/api/dispatch-points', dpForm, 'DISPATCH_POINT CREATED')} className="mt-2 bg-black text-white font-mono text-[11px] px-3 py-1 w-full">CREATE EDPC</button>
-                <div className="mt-2 space-y-1">{dispatchPoints.map((dp: any) => <div key={dp.code} className="border border-zinc-300 p-1 flex justify-between font-mono text-[11px]"><span>{dp.code} {dp.name} {dp.loading_group}</span><button onClick={() => deleteData('/api/dispatch-points', dp.code)} className="border border-red-600 text-red-600 px-1">DEL</button></div>)}</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+    <ModernModuleShell title="Enterprise Structure" subtitle={`${tenants.length} TENANTS ${companyGroups.length} COMPANY_GROUPS ${legalEntities.length} LEGAL_ENTITIES`} code="ELEC" module="FOUNDATION" classicChildren={classicContent}>
+      {modernContent}
     </ModernModuleShell>
   );
 }
