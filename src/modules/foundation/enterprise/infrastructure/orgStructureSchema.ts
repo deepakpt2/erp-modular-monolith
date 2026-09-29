@@ -25,12 +25,17 @@ export const coreTenant = pgTable('core_tenant', {
 });
 
 // Company Group – umbrella holding (NEW, was logical Company OX15)
+// Extended with currency_code, country_code, language per real implementation guide – Title/Code/Data copyable
 export const orgCompanyGroup = pgTable('org_company_group', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),
   code: varchar('code', { length: 20 }).notNull(), // e.g., CG-1000, not OX15 internal
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
+  currencyCode: varchar('currency_code', { length: 3 }).default('INR'), // Added per guide – ECGC needs currency INR
+  countryCode: varchar('country_code', { length: 2 }).default('IN'), // Added – IN
+  country: varchar('country', { length: 2 }).default('IN'), // alias for country_code
+  language: varchar('language', { length: 10 }).default('EN'), // Added – EN per OB13 language requirement
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -39,6 +44,7 @@ export const orgCompanyGroup = pgTable('org_company_group', {
 }));
 
 // Legal Entity – replaces ent_company_code (SAP T001, OX02)
+// Extended per real guide – needs chart_of_accounts_code, fiscal_year_variant, field_status_variant, posting_period_variant, credit_control_area
 export const orgLegalEntity = pgTable('org_legal_entity', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),
@@ -48,6 +54,7 @@ export const orgLegalEntity = pgTable('org_legal_entity', {
   currencyCode: varchar('currency_code', { length: 3 }).notNull().default('INR'), // FK to core_currency kept as varchar for sample data
   city: varchar('city', { length: 100 }),
   country: varchar('country', { length: 2 }).default('IN'),
+  countryCode: varchar('country_code', { length: 2 }).default('IN'), // alias per guide
   address: text('address'),
   street: varchar('street', { length: 200 }),
   postalCode: varchar('postal_code', { length: 20 }),
@@ -62,6 +69,13 @@ export const orgLegalEntity = pgTable('org_legal_entity', {
   legalForm: varchar('legal_form', { length: 50 }),
   registrationNumber: varchar('registration_number', { length: 50 }),
   fiscalCalendarCode: varchar('fiscal_calendar_code', { length: 20 }).default('K4'),
+  fiscalYearVariant: varchar('fiscal_year_variant', { length: 20 }).default('K4'), // alias per guide – K4
+  chartOfAccountsCode: varchar('chart_of_accounts_code', { length: 20 }).default('CA-IN-01'), // per guide – CA-IN-01
+  fieldStatusVariant: varchar('field_status_variant', { length: 20 }).default('FSSV-1000'), // per guide – FSSV-1000
+  postingPeriodVariant: varchar('posting_period_variant', { length: 20 }).default('PPV-1000'), // per guide – PPV-1000
+  creditControlArea: varchar('credit_control_area', { length: 20 }).default('CRED-1000'), // per guide – CRED-1000 / CPA-1000
+  creditPolicyAreaCode: varchar('credit_policy_area_code', { length: 20 }).default('CRED-1000'), // alias for credit_control_area – FCPC OB45
+  language: varchar('language', { length: 10 }).default('EN'), // EN per guide
   description: text('description'),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

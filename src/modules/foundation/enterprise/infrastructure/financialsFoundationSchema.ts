@@ -140,11 +140,13 @@ export const finPostingCalendarPeriod = pgTable('fin_posting_calendar_period', {
 }));
 
 // Chart of Accounts – replaces fi_chart_of_accounts – legal-safe fin_chart – sample INT kept
+// Extended with language EN per guide – OB13 needs language
 export const finChart = pgTable('fin_chart', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 20 }).notNull().unique(),
   name: varchar('name', { length: 150 }).notNull(),
   description: text('description'),
+  language: varchar('language', { length: 10 }).default('EN').notNull(), // Added per guide – OB13 language EN
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

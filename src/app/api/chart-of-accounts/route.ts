@@ -119,20 +119,26 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { code, name, description } = body;
+    const { code, name, description, language } = body;
     if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
 
     let primaryRes: any = null;
     let legalSafe = true;
     let errors: string[] = [];
+    const finalLang = (language || 'EN').toUpperCase();
 
-    // Try fin_chart – new legal-safe
+    // Ensure language column exists – auto-migrate safe
+    try {
+      await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'EN'`);
+    } catch {}
+
+    // Try fin_chart – new legal-safe with language EN per guide
     try {
       const res = await db.execute(sql`
-        INSERT INTO fin_chart (code, name, description)
-        VALUES (${code.toUpperCase()}, ${name}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}, updated_at = NOW()
-        RETURNING id, code, name
+        INSERT INTO fin_chart (code, name, description, language)
+        VALUES (${code.toUpperCase()}, ${name}, ${description || null}, ${finalLang})
+        ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}, language = ${finalLang}, updated_at = NOW()
+        RETURNING id, code, name, language
       `);
       primaryRes = res.rows[0];
     } catch (newErr: any) {
@@ -141,8 +147,9 @@ export async function POST(req: NextRequest) {
       legalSafe = false;
     }
 
-    // Try legacy fi_chart_of_accounts – keep in sync downstream safe
+    // Try legacy fi_chart_of_accounts – keep in sync downstream safe – add language if column exists
     try {
+      await db.execute(sql`ALTER TABLE fi_chart_of_accounts ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'EN'`).catch(()=>{});
       const res2 = await db.execute(sql`
         INSERT INTO fi_chart_of_accounts (code, name, description)
         VALUES (${code.toUpperCase()}, ${name}, ${description || null})

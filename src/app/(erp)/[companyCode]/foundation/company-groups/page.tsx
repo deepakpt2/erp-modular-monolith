@@ -7,17 +7,25 @@ export default function CompanyGroupsPage() {
       code="ECGC"
       sapAlias="OX15"
       title="Company Group"
-      description="Define Company Group – enterprise holding umbrella corporation group structure – root parent, used by Legal Entity"
+      description="Define Company Group – enterprise holding umbrella corporation group structure – root parent, used by Legal Entity – per real guide needs currency_code INR, country_code IN, language EN"
       apiEndpoint="/api/company-groups"
-      initialForm={{ code: '', name: '', description: '', tenant_code: 'TEN-100' }}
+      initialForm={{ code: '', name: '', description: '', tenant_code: 'TEN-100', currency_code: 'INR', country_code: 'IN', language: 'EN' }}
       fields={[
-        { key: 'code', label: 'COMPANY_GROUP_CODE', required: true, placeholder: 'CG-100', description: 'Unique code – e.g., CG-100, CG-200 – used as FK in Legal Entity' },
-        { key: 'name', label: 'COMPANY_GROUP_NAME', required: true, placeholder: 'Global Holdings', description: 'Name of company group' },
-        { key: 'description', label: 'DESCRIPTION', type: 'textarea', placeholder: 'Holding company for all legal entities' },
+        { key: 'code', label: 'COMPANY_GROUP_CODE', required: true, placeholder: 'CG-100', description: 'Unique code – e.g., ECGC-FMCG-01 – used as FK in Legal Entity – Title/Code/Data copyable' },
+        { key: 'name', label: 'COMPANY_GROUP_NAME', required: true, placeholder: 'FMCG Group India', description: 'Name of company group – e.g., FMCG Group India' },
+        { key: 'currency_code', label: 'CURRENCY_CODE', required: true, placeholder: 'INR', description: 'Currency – e.g., INR – required per guide – was missing' },
+        { key: 'country_code', label: 'COUNTRY_CODE', required: true, placeholder: 'IN', description: 'Country – e.g., IN – required per guide' },
+        { key: 'language', label: 'LANGUAGE', required: true, placeholder: 'EN', description: 'Language – e.g., EN – per OB13 language requirement' },
+        { key: 'description', label: 'DESCRIPTION', type: 'textarea', placeholder: 'FMCG Group for Spices and Foods' },
         { key: 'tenant_code', label: 'TENANT_CODE', required: true, placeholder: 'TEN-100', description: 'Tenant code – default TEN-100' },
       ]}
       relatedLinks={[
-        { code: 'ELEC', label: 'Legal Entity uses ECGC', route: '/foundation/legal-entities', description: 'Legal Entity requires Company Group' },
+        { code: 'ELEC', label: 'Legal Entity uses ECGC', route: '/foundation/legal-entities', description: 'Legal Entity requires Company Group – needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FSSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000' },
+        { code: 'FCOA', label: 'Chart of Accounts uses – CA-IN-01 must exist before ELEC', route: '/fico/chart-of-accounts', description: 'Create CA-IN-01 first – OB13' },
+        { code: 'FFYC', label: 'Fiscal Year Variant K4 must exist before ELEC', route: '/fico/fiscal-calendars', description: 'Create K4 first' },
+        { code: 'FSSV', label: 'Field Status Variant FSSV-1000', route: '/fico/field-status-variants', description: 'Create FSSV-1000 first' },
+        { code: 'FPPC', label: 'Posting Period Variant PPV-1000', route: '/fico/posting-period-variants', description: 'Create PPV-1000 first' },
+        { code: 'FCPC', label: 'Credit Control Area CRED-1000 – OB45', route: '/foundation/credit-policy-areas', description: 'Create CRED-1000 first – credit_control_area didnt create before OB13' },
         { code: 'ECAC', label: 'Enterprise Config', route: '/foundation/enterprise-structure', description: 'Overview hub' },
       ]}
     />

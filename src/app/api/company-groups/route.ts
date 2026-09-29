@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-      const { code, name, description, tenant_id, tenant_code } = body;
+      const { code, name, description, tenant_id, tenant_code, currency_code, country_code, country, language } = body;
       
       // VALIDATION: Check foreign keys exist in DB – prevents invalid data
 
@@ -61,16 +61,26 @@ if (!code || !name) return NextResponse.json({ error: 'code and name required' }
           }
         }
       }
-      const res = await db.execute(sql`INSERT INTO org_company_group (tenant_id, code, name, description) VALUES (${tenantId}, ${code}, ${name}, ${description || null}) ON CONFLICT DO NOTHING RETURNING id, code, name`);
+      // Ensure new columns exist – auto-migrate safe – add if not exists
+      try {
+        await db.execute(sql`ALTER TABLE org_company_group ADD COLUMN IF NOT EXISTS currency_code VARCHAR(3) DEFAULT 'INR'`);
+        await db.execute(sql`ALTER TABLE org_company_group ADD COLUMN IF NOT EXISTS country_code VARCHAR(2) DEFAULT 'IN'`);
+        await db.execute(sql`ALTER TABLE org_company_group ADD COLUMN IF NOT EXISTS country VARCHAR(2) DEFAULT 'IN'`);
+        await db.execute(sql`ALTER TABLE org_company_group ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'EN'`);
+      } catch {}
+      const finalCurrency = (currency_code || 'INR').toUpperCase();
+      const finalCountry = (country_code || country || 'IN').toUpperCase();
+      const finalLang = (language || 'EN').toUpperCase();
+      const res = await db.execute(sql`INSERT INTO org_company_group (tenant_id, code, name, description, currency_code, country_code, country, language) VALUES (${tenantId}, ${code}, ${name}, ${description || null}, ${finalCurrency}, ${finalCountry}, ${finalCountry}, ${finalLang}) ON CONFLICT DO NOTHING RETURNING id, code, name`);
       if (res.rows.length===0) {
         const ex = await db.execute(sql`SELECT id, code, name FROM org_company_group WHERE tenant_id=${tenantId} AND code=${code} LIMIT 1`);
         if (ex.rows.length) {
-          await db.execute(sql`UPDATE org_company_group SET name=${name}, description=${description || null}, updated_at=NOW() WHERE id=${ex.rows[0].id}`);
-          return NextResponse.json({ success: true, companyGroup: ex.rows[0], message: `Company Group ${code} updated` });
+          await db.execute(sql`UPDATE org_company_group SET name=${name}, description=${description || null}, currency_code=${finalCurrency}, country_code=${finalCountry}, country=${finalCountry}, language=${finalLang}, updated_at=NOW() WHERE id=${ex.rows[0].id}`);
+          return NextResponse.json({ success: true, companyGroup: ex.rows[0], message: `Company Group ${code} updated – currency ${finalCurrency} country ${finalCountry} lang ${finalLang}` });
         }
         return NextResponse.json({ error: 'Failed to create' }, { status: 500 });
       }
-      return NextResponse.json({ success: true, companyGroup: res.rows[0], message: `Company Group ${code} created (OX15)` });
+      return NextResponse.json({ success: true, companyGroup: res.rows[0], message: `Company Group ${code} created (OX15) – currency ${finalCurrency} country ${finalCountry} lang ${finalLang}` });
     
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
