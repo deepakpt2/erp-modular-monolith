@@ -51,6 +51,52 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+      // VALIDATION: Check foreign keys exist in DB – prevents invalid K6 etc
+      if (company_group_code) {
+        const cgrCheck = await db.execute(sql`SELECT id FROM org_company_group WHERE code=${company_group_code} LIMIT 1`);
+        if (cgrCheck.rows.length === 0) {
+          return NextResponse.json({ error: `COMPANY_GROUP_CODE ${company_group_code} not found in DB – create it first via ECGC. Valid: check /api/company-groups` }, { status: 400 });
+        }
+      }
+      if (fiscal_calendar_code) {
+        let fiscalExists = false;
+        try {
+          const fcr = await db.execute(sql`SELECT id FROM fin_fiscal_calendar WHERE code=${fiscal_calendar_code} LIMIT 1`);
+          if (fcr.rows.length > 0) fiscalExists = true;
+        } catch {}
+        if (!fiscalExists) {
+          try {
+            const fcr2 = await db.execute(sql`SELECT id FROM ent_fiscal_year_variant WHERE code=${fiscal_calendar_code} LIMIT 1`);
+            if (fcr2.rows.length > 0) fiscalExists = true;
+          } catch {}
+        }
+        if (!fiscalExists) {
+          // List valid
+          let validCodes: string[] = [];
+          try {
+            const list = await db.execute(sql`SELECT code FROM fin_fiscal_calendar ORDER BY code LIMIT 20`);
+            validCodes = list.rows.map((r:any)=>r.code);
+          } catch {
+            try {
+              const list = await db.execute(sql`SELECT code FROM ent_fiscal_year_variant ORDER BY code LIMIT 20`);
+              validCodes = list.rows.map((r:any)=>r.code);
+            } catch {}
+          }
+          return NextResponse.json({ error: `FISCAL_CALENDAR_CODE ${fiscal_calendar_code} not found in DB – create it first via FFYC. Valid codes: ${validCodes.join(', ') || 'K4, V3, K1 – create via POST /api/fiscal-calendars'}`, validCodes }, { status: 400 });
+        }
+      }
+      if (currency_code) {
+        try {
+          const currCheck = await db.execute(sql`SELECT id FROM core_currency WHERE code=${currency_code} LIMIT 1`);
+          if (currCheck.rows.length === 0) {
+            const currCheck2 = await db.execute(sql`SELECT id FROM ent_currency WHERE code=${currency_code} LIMIT 1`);
+            if (currCheck2.rows.length === 0) {
+              return NextResponse.json({ error: `CURRENCY_CODE ${currency_code} not found in DB – create it first via FCYC /api/currencies` }, { status: 400 });
+            }
+          }
+        } catch {}
+      }
+
       let cgId = company_group_id;
       if (!cgId && company_group_code) {
         const cgr = await db.execute(sql`SELECT id FROM org_company_group WHERE code=${company_group_code} LIMIT 1`);

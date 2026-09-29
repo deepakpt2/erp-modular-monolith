@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
+import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
 export default function Page(){
   const params = useParams();
@@ -42,7 +43,6 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">EMAIL</div><input value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="EMAIL" /></div>
           <div><div className="text-[9px] text-zinc-500">ROLE</div><input value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="ROLE" /></div>
           <div><div className="text-[9px] text-zinc-500">PASSWORD</div><input value={form.password} onChange={e=>setForm({...form,password:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="PASSWORD" /></div>
-
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE SU01</button>
       </div>
@@ -70,22 +70,21 @@ export default function Page(){
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">USERNAME</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">USERNAME </label>
             <input value={form.username} onChange={e=>setForm({...form,username:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="USERNAME" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">EMAIL</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">EMAIL </label>
             <input value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="EMAIL" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">ROLE</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">ROLE </label>
             <input value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="ROLE" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PASSWORD</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PASSWORD </label>
             <input value={form.password} onChange={e=>setForm({...form,password:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="PASSWORD" />
           </div>
-
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create SU01</button>
       </div>

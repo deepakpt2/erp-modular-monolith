@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
+import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
 export default function Page(){
   const params = useParams();
@@ -38,12 +39,11 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">CS01 BOM CREATE – API: POST /api/bom [BOM_NUMBER, MATERIAL, COMPONENT, QUANTITY, PLANT] – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">BOM_NUMBER</div><input value={(form as any).bom_number} onChange={e=>setForm({...form,bom_number:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="BOM_NUMBER" /></div>
-          <div><div className="text-[9px] text-zinc-500">MATERIAL</div><input value={form.material} onChange={e=>setForm({...form,material:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="MATERIAL" /></div>
-          <div><div className="text-[9px] text-zinc-500">COMPONENT</div><input value={form.component} onChange={e=>setForm({...form,component:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="COMPONENT" /></div>
-          <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={form.quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
-          <div><div className="text-[9px] text-zinc-500">PLANT</div><input value={form.plant} onChange={e=>setForm({...form,plant:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="PLANT" /></div>
-
+          <div><div className="text-[9px] text-zinc-500">BOM_NUMBER * (DB: CS01)</div><input value={(form as any).bom_number} onChange={e=>setForm({...form,bom_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="BOM_NUMBER" /></div>
+          <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
+          <div><div className="text-[9px] text-zinc-500">COMPONENT * (DB: EMTC)</div><input value={form.component} onChange={e=>setForm({...form,component:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPONENT" /></div>
+          <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
+          <div><div className="text-[9px] text-zinc-500">PLANT * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PLANT" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE CS01</button>
       </div>
@@ -70,27 +70,54 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <DbAutocomplete
+            label="BOM_NUMBER *"
+            value={(form as any).bom_number}
+            onChange={v=>setForm({...form,bom_number:v})}
+            apiUrl="/api/bom"
+            placeholder="BOM_NUMBER"
+            required
+            createUrl={`/${companyCode}/{companyCode}/pp/bom`}
+            createCode="CS01"
+            companyCode={companyCode}
+          />
+          <DbAutocomplete
+            label="MATERIAL *"
+            value={(form as any).material}
+            onChange={v=>setForm({...form,material:v})}
+            apiUrl="/api/materials"
+            placeholder="MATERIAL"
+            required
+            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createCode="EMTC"
+            companyCode={companyCode}
+          />
+          <DbAutocomplete
+            label="COMPONENT *"
+            value={form.component}
+            onChange={v=>setForm({...form,component:v})}
+            apiUrl="/api/materials"
+            placeholder="COMPONENT"
+            required
+            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createCode="EMTC"
+            companyCode={companyCode}
+          />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">BOM_NUMBER</label>
-            <input value={(form as any).bom_number} onChange={e=>setForm({...form,bom_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="BOM_NUMBER" />
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY *</label>
+            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="QUANTITY" />
           </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">MATERIAL</label>
-            <input value={form.material} onChange={e=>setForm({...form,material:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="MATERIAL" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">COMPONENT</label>
-            <input value={form.component} onChange={e=>setForm({...form,component:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="COMPONENT" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY</label>
-            <input value={form.quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="QUANTITY" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PLANT</label>
-            <input value={form.plant} onChange={e=>setForm({...form,plant:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="PLANT" />
-          </div>
-
+          <DbAutocomplete
+            label="PLANT *"
+            value={(form as any).plant}
+            onChange={v=>setForm({...form,plant:v})}
+            apiUrl="/api/facilities"
+            placeholder="PLANT"
+            required
+            createUrl={`/${companyCode}/{companyCode}/foundation/enterprise-structure?focus=EFCC`}
+            createCode="EFCC"
+            companyCode={companyCode}
+          />
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create CS01</button>
       </div>

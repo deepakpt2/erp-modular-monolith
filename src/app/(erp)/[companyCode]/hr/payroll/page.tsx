@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
+import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
 export default function Page(){
   const params = useParams();
@@ -38,11 +39,10 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">PC00 PAYROLL CREATE – API: POST /api/payroll [EMPLOYEE_NUMBER, PERIOD, AMOUNT, COMPANY_CODE] – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">EMPLOYEE_NUMBER</div><input value={(form as any).employee_number} onChange={e=>setForm({...form,employee_number:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="EMPLOYEE_NUMBER" /></div>
+          <div><div className="text-[9px] text-zinc-500">EMPLOYEE_NUMBER * (DB: HEMC)</div><input value={(form as any).employee_number} onChange={e=>setForm({...form,employee_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="EMPLOYEE_NUMBER" /></div>
           <div><div className="text-[9px] text-zinc-500">PERIOD</div><input value={form.period} onChange={e=>setForm({...form,period:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="PERIOD" /></div>
-          <div><div className="text-[9px] text-zinc-500">AMOUNT</div><input value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="AMOUNT" /></div>
-          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
-
+          <div><div className="text-[9px] text-zinc-500">AMOUNT</div><input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="AMOUNT" /></div>
+          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE PC00</button>
       </div>
@@ -69,23 +69,36 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <DbAutocomplete
+            label="EMPLOYEE_NUMBER *"
+            value={(form as any).employee_number}
+            onChange={v=>setForm({...form,employee_number:v})}
+            apiUrl="/api/hr/employees"
+            placeholder="EMPLOYEE_NUMBER"
+            required
+            createUrl={`/${companyCode}/{companyCode}/hr/employees`}
+            createCode="HEMC"
+            companyCode={companyCode}
+          />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">EMPLOYEE_NUMBER</label>
-            <input value={(form as any).employee_number} onChange={e=>setForm({...form,employee_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="EMPLOYEE_NUMBER" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PERIOD</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PERIOD </label>
             <input value={form.period} onChange={e=>setForm({...form,period:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="PERIOD" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">AMOUNT</label>
-            <input value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="AMOUNT" />
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">AMOUNT *</label>
+            <input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="AMOUNT" />
           </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">COMPANY_CODE</label>
-            <input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="COMPANY_CODE" />
-          </div>
-
+          <DbAutocomplete
+            label="COMPANY_CODE *"
+            value={form.company_code}
+            onChange={v=>setForm({...form,company_code:v})}
+            apiUrl="/api/company-codes"
+            placeholder="COMPANY_CODE"
+            required
+            createUrl={`/${companyCode}/{companyCode}/fico/company-master`}
+            createCode="OX02"
+            companyCode={companyCode}
+          />
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create PC00</button>
       </div>

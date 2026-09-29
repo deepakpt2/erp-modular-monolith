@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
+import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
 export default function Page(){
   const params = useParams();
@@ -22,7 +23,7 @@ export default function Page(){
   useEffect(()=>{load();},[]);
 
   async function create(){
-    if(!form.material){ setMsg('MATERIAL required'); return; }
+    if(!(form as any).material){ setMsg('MATERIAL required'); return; }
     const payload = {...form, company_code: companyCode, companyCode};
     const res = await fetch('/api/mrp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
     if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||(form as any).item_number||(form as any).account_number||(form as any).employee_number||(form as any).pr_number||(form as any).po_number||(form as any).bom_number||(form as any).order_number||'CREATED')+' CREATED'); load(); setForm({material: "", plant: "", demand: ""}); }
@@ -38,10 +39,9 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">MD01 MRP CREATE – API: POST /api/mrp [MATERIAL, PLANT, DEMAND] – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">MATERIAL</div><input value={form.material} onChange={e=>setForm({...form,material:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="MATERIAL" /></div>
-          <div><div className="text-[9px] text-zinc-500">PLANT</div><input value={form.plant} onChange={e=>setForm({...form,plant:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="PLANT" /></div>
+          <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
+          <div><div className="text-[9px] text-zinc-500">PLANT * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PLANT" /></div>
           <div><div className="text-[9px] text-zinc-500">DEMAND</div><input value={form.demand} onChange={e=>setForm({...form,demand:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="DEMAND" /></div>
-
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE MD01</button>
       </div>
@@ -68,19 +68,32 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <DbAutocomplete
+            label="MATERIAL *"
+            value={(form as any).material}
+            onChange={v=>setForm({...form,material:v})}
+            apiUrl="/api/materials"
+            placeholder="MATERIAL"
+            required
+            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createCode="EMTC"
+            companyCode={companyCode}
+          />
+          <DbAutocomplete
+            label="PLANT *"
+            value={(form as any).plant}
+            onChange={v=>setForm({...form,plant:v})}
+            apiUrl="/api/facilities"
+            placeholder="PLANT"
+            required
+            createUrl={`/${companyCode}/{companyCode}/foundation/enterprise-structure?focus=EFCC`}
+            createCode="EFCC"
+            companyCode={companyCode}
+          />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">MATERIAL</label>
-            <input value={form.material} onChange={e=>setForm({...form,material:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="MATERIAL" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PLANT</label>
-            <input value={form.plant} onChange={e=>setForm({...form,plant:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="PLANT" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DEMAND</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DEMAND </label>
             <input value={form.demand} onChange={e=>setForm({...form,demand:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="DEMAND" />
           </div>
-
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create MD01</button>
       </div>

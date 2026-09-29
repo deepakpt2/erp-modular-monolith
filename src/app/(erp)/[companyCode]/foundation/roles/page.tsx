@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
+import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
 export default function Page(){
   const params = useParams();
@@ -41,7 +42,6 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">CODE</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CODE" /></div>
           <div><div className="text-[9px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="NAME" /></div>
           <div><div className="text-[9px] text-zinc-500">DESCRIPTION</div><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="DESCRIPTION" /></div>
-
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE PFCG</button>
       </div>
@@ -69,18 +69,17 @@ export default function Page(){
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CODE</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CODE *</label>
             <input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="CODE" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME *</label>
             <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="NAME" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION </label>
             <input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="DESCRIPTION" />
           </div>
-
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create PFCG</button>
       </div>

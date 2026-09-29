@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
+import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
 export default function Page(){
   const params = useParams();
@@ -22,7 +23,7 @@ export default function Page(){
   useEffect(()=>{load();},[]);
 
   async function create(){
-    if(!form.routing_number){ setMsg('ROUTING_NUMBER required'); return; }
+    if(!(form as any).routing_number){ setMsg('ROUTING_NUMBER required'); return; }
     const payload = {...form, company_code: companyCode, companyCode};
     const res = await fetch('/api/routings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
     if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||(form as any).item_number||(form as any).account_number||(form as any).employee_number||(form as any).pr_number||(form as any).po_number||(form as any).bom_number||(form as any).order_number||'CREATED')+' CREATED'); load(); setForm({routing_number: "", material: "", operation: "", work_center: ""}); }
@@ -38,11 +39,10 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">CA01 ROUTINGS CREATE – API: POST /api/routings [ROUTING_NUMBER, MATERIAL, OPERATION, WORK_CENTER] – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">ROUTING_NUMBER</div><input value={form.routing_number} onChange={e=>setForm({...form,routing_number:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="ROUTING_NUMBER" /></div>
-          <div><div className="text-[9px] text-zinc-500">MATERIAL</div><input value={form.material} onChange={e=>setForm({...form,material:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="MATERIAL" /></div>
+          <div><div className="text-[9px] text-zinc-500">ROUTING_NUMBER * (DB: CA01)</div><input value={(form as any).routing_number} onChange={e=>setForm({...form,routing_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="ROUTING_NUMBER" /></div>
+          <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
           <div><div className="text-[9px] text-zinc-500">OPERATION</div><input value={form.operation} onChange={e=>setForm({...form,operation:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="OPERATION" /></div>
-          <div><div className="text-[9px] text-zinc-500">WORK_CENTER</div><input value={form.work_center} onChange={e=>setForm({...form,work_center:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="WORK_CENTER" /></div>
-
+          <div><div className="text-[9px] text-zinc-500">WORK_CENTER * (DB: CR01)</div><input value={form.work_center} onChange={e=>setForm({...form,work_center:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="WORK_CENTER" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE CA01</button>
       </div>
@@ -69,23 +69,43 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <DbAutocomplete
+            label="ROUTING_NUMBER *"
+            value={(form as any).routing_number}
+            onChange={v=>setForm({...form,routing_number:v})}
+            apiUrl="/api/routings"
+            placeholder="ROUTING_NUMBER"
+            required
+            createUrl={`/${companyCode}/{companyCode}/pp/routings`}
+            createCode="CA01"
+            companyCode={companyCode}
+          />
+          <DbAutocomplete
+            label="MATERIAL *"
+            value={(form as any).material}
+            onChange={v=>setForm({...form,material:v})}
+            apiUrl="/api/materials"
+            placeholder="MATERIAL"
+            required
+            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createCode="EMTC"
+            companyCode={companyCode}
+          />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">ROUTING_NUMBER</label>
-            <input value={form.routing_number} onChange={e=>setForm({...form,routing_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="ROUTING_NUMBER" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">MATERIAL</label>
-            <input value={form.material} onChange={e=>setForm({...form,material:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="MATERIAL" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">OPERATION</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">OPERATION </label>
             <input value={form.operation} onChange={e=>setForm({...form,operation:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="OPERATION" />
           </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">WORK_CENTER</label>
-            <input value={form.work_center} onChange={e=>setForm({...form,work_center:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="WORK_CENTER" />
-          </div>
-
+          <DbAutocomplete
+            label="WORK_CENTER *"
+            value={form.work_center}
+            onChange={v=>setForm({...form,work_center:v})}
+            apiUrl="/api/work-centers"
+            placeholder="WORK_CENTER"
+            required
+            createUrl={`/${companyCode}/{companyCode}/pp/work-centers`}
+            createCode="CR01"
+            companyCode={companyCode}
+          />
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create CA01</button>
       </div>

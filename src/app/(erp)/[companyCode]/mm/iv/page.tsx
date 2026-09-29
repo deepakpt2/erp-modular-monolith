@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
+import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
 export default function Page(){
   const params = useParams();
@@ -22,7 +23,7 @@ export default function Page(){
   useEffect(()=>{load();},[]);
 
   async function create(){
-    if(!form.vendor){ setMsg('VENDOR required'); return; }
+    if(!(form as any).vendor){ setMsg('VENDOR required'); return; }
     const payload = {...form, company_code: companyCode, companyCode};
     const res = await fetch('/api/invoice-verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
     if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||(form as any).item_number||(form as any).account_number||(form as any).employee_number||(form as any).pr_number||(form as any).po_number||(form as any).bom_number||(form as any).order_number||'CREATED')+' CREATED'); load(); setForm({vendor: "", invoice_number: "", amount: "", company_code: ""}); }
@@ -38,11 +39,10 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">MIRO INVOICE VERIFICATION CREATE – API: POST /api/invoice-verification [VENDOR, INVOICE_NUMBER, AMOUNT, COMPANY_CODE] – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">VENDOR</div><input value={form.vendor} onChange={e=>setForm({...form,vendor:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="VENDOR" /></div>
-          <div><div className="text-[9px] text-zinc-500">INVOICE_NUMBER</div><input value={form.invoice_number} onChange={e=>setForm({...form,invoice_number:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="INVOICE_NUMBER" /></div>
-          <div><div className="text-[9px] text-zinc-500">AMOUNT</div><input value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="AMOUNT" /></div>
-          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
-
+          <div><div className="text-[9px] text-zinc-500">VENDOR * (DB: PSUC)</div><input value={(form as any).vendor} onChange={e=>setForm({...form,vendor:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="VENDOR" /></div>
+          <div><div className="text-[9px] text-zinc-500">INVOICE_NUMBER</div><input value={(form as any).invoice_number} onChange={e=>setForm({...form,invoice_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INVOICE_NUMBER" /></div>
+          <div><div className="text-[9px] text-zinc-500">AMOUNT</div><input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="AMOUNT" /></div>
+          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE MIRO</button>
       </div>
@@ -69,23 +69,36 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <DbAutocomplete
+            label="VENDOR *"
+            value={(form as any).vendor}
+            onChange={v=>setForm({...form,vendor:v})}
+            apiUrl="/api/business-partners"
+            placeholder="VENDOR"
+            required
+            createUrl={`/${companyCode}/{companyCode}/foundation/partners`}
+            createCode="PSUC"
+            companyCode={companyCode}
+          />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">VENDOR</label>
-            <input value={form.vendor} onChange={e=>setForm({...form,vendor:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="VENDOR" />
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">INVOICE_NUMBER *</label>
+            <input value={(form as any).invoice_number} onChange={e=>setForm({...form,invoice_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="INVOICE_NUMBER" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">INVOICE_NUMBER</label>
-            <input value={form.invoice_number} onChange={e=>setForm({...form,invoice_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="INVOICE_NUMBER" />
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">AMOUNT *</label>
+            <input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="AMOUNT" />
           </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">AMOUNT</label>
-            <input value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="AMOUNT" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">COMPANY_CODE</label>
-            <input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="COMPANY_CODE" />
-          </div>
-
+          <DbAutocomplete
+            label="COMPANY_CODE *"
+            value={form.company_code}
+            onChange={v=>setForm({...form,company_code:v})}
+            apiUrl="/api/company-codes"
+            placeholder="COMPANY_CODE"
+            required
+            createUrl={`/${companyCode}/{companyCode}/fico/company-master`}
+            createCode="OX02"
+            companyCode={companyCode}
+          />
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create MIRO</button>
       </div>
