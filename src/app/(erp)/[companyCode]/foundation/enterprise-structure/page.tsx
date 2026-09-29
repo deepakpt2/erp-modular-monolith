@@ -104,23 +104,23 @@ export default function EnterpriseStructurePage() {
   };
 
   const tabs = [
-    { id: 'company' as TabId, label: 'Company Group & Legal Entity', codes: 'CGC/LEC (alias OX15/OX02, FND-CG-CR/FND-LE-CR)' },
-    { id: 'control' as TabId, label: 'Control Area & Credit Policy', codes: 'CAC/CPC (alias OX06/OB45)' },
-    { id: 'facility' as TabId, label: 'Facility & Inventory Location', codes: 'FCC/ILC (alias OX10/OX09)' },
-    { id: 'procurement' as TabId, label: 'Procurement Division & Buyer Team', codes: 'PDC/BTC (alias OX08/OME4)' },
-    { id: 'commercial' as TabId, label: 'Commercial Org, Channel, Product Line', codes: 'COC/SCC/PLC (alias OVX2/OVX1)' },
-    { id: 'profit' as TabId, label: 'Profit, Cost, Segment, Warehouse, Dispatch', codes: 'PUC/CUC/BSC/WHC/DPC (alias KS01)' },
+    { id: 'company' as TabId, label: 'Company Group & Legal Entity', codes: 'ECGC/ELEC (alias CGC/LEC, OX15/OX02)' },
+    { id: 'control' as TabId, label: 'Control Area & Credit Policy', codes: 'ECAC/FCPC (alias CAC/CPC, OX06/OB45)' },
+    { id: 'facility' as TabId, label: 'Facility & Inventory Location', codes: 'EFCC/EILC (alias FCC/ILC, OX10/OX09)' },
+    { id: 'procurement' as TabId, label: 'Procurement Division & Buyer Team', codes: 'EPDC/EBTC (alias PDC/BTC, OX08/OME4)' },
+    { id: 'commercial' as TabId, label: 'Commercial Org, Channel, Product Line', codes: 'ECOC/ESCC/EPLC (alias COC/SCC/PLC)' },
+    { id: 'profit' as TabId, label: 'Profit, Cost, Segment, Warehouse, Dispatch', codes: 'EPUC/ECUC/EBSC/EWHC/EDPC (alias PUC/CUC/BSC/WHC/DPC)' },
   ];
 
   if (loading) return <div className="p-6">Loading legal-safe enterprise structure – fresh empty Module 1...</div>;
 
   return (
     <ModernModuleShell
-      title={`Enterprise Structure • ${companyCode} – Short Codes CGC/LEC etc`}
+      title={`Enterprise Structure • ${companyCode} – Short Module Codes ELEC/EFCC etc`}
       subtitle={`Fresh empty – ${tenants.length} Tenants • ${companyGroups.length} Company Groups • ${legalEntities.length} Legal Entities • ${facilities.length} Facilities • ${inventoryLocs.length} Inventory Locations • ${procDivs.length} Proc Divs • ${commercialOrgs.length} Commercial Orgs – Sample data kept: Currencies, UoM, CoA, GL, Tax`}
-      code="LEC"
+      code="ELEC"
       module="FOUNDATION"
-      tooltip={`Module 1 Legal-Safe – New Short Intuitive Codes: CGC Company Group (alias OX15 FND-CG-CR), LEC Legal Entity (alias OX02 FND-LE-CR), CAC Control Area (alias OX06), FCC Facility (alias OX10), ILC Inventory Location (alias OX09), PDC Procurement Division (alias OX08), BTC Buyer Team (alias OME4), COC Commercial Org (alias OVX2), SCC Sales Channel (alias OVX1), PLC Product Line, PUC Profit Unit, CUC Cost Unit (alias KS01), BSC Business Segment, WHC Warehouse Site, DPC Dispatch Point – short 3-char own IP, old codes searchable aliases`}
+      tooltip={`Module 1 Legal-Safe – New Short Module-Grouped 4-char Codes: ECGC Company Group (alias CGC OX15), ELEC Legal Entity (alias LEC OX02), ECAC Control Area (alias CAC), EFCC Facility (alias FCC OX10), EILC Inventory Location (alias ILC OX09), EPDC Procurement Division (alias PDC OX08), EBTC Buyer Team (alias BTC OME4), ECOC Commercial Org (alias COC OVX2), ESCC Sales Channel (alias SCC OVX1), EPLC Product Line (alias PLC), EPUC Profit Unit (alias PUC), ECUC Cost Unit (alias CUC KS01), EBSC Business Segment (alias BSC), EWHC Warehouse Site (alias WHC), EDPC Dispatch Point (alias DPC) – 4-char = Module(1)+Object(2)+Action(1) = short + module grouped + intuitive, old codes searchable aliases`}
     >
       <div className="max-w-[1700px] mx-auto p-6 space-y-4">
         <div className="flex gap-2 mb-4 flex-wrap">
