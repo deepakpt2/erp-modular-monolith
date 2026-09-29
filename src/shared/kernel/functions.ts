@@ -32,9 +32,15 @@ export const FUNCTION_MAP: Record<string, { desc: string; module: string; api?: 
   'FCYC': { desc: 'Define Currencies – Only INR default', module: 'FICO', api: '/api/currencies', configurable: true, code: 'FCYC', helperCode: 'FCYC', aliases: ['FIN-CUR-CR', 'OY03', 'CYC'], newCode: 'CYC' },
   'FTXC': { desc: 'Define Tax Codes', module: 'FICO', api: '/api/tax-codes', configurable: true, code: 'FTXC', helperCode: 'FTXC', aliases: ['FIN-TX-CR', 'FTXP', 'TXC'], newCode: 'TXC' },
 
-  // Foundation Material – Short
-  'EMTC': { desc: 'Create Material – New Short', module: 'Foundation', api: '/api/materials', configurable: true, code: 'EMTC', helperCode: 'EMTC', aliases: ['FND-MAT-CR', 'MM01', 'MTC'], newCode: 'MTC' },
-  'EUOC': { desc: 'Define Units of Measure', module: 'Foundation', api: '/api/uom', code: 'EUOC', helperCode: 'EUOC', aliases: ['FND-UOM-CR', 'CUNI', 'UOC'], newCode: 'UOC' },
+  // Foundation Product Catalog – Legal-safe own IP – Module 2 – EMTC/EMTP/EUOC etc – 4-char MOOA E=Enterprise, MT=Material, TP=Type Profile, UO=Unit of Measure, GC=Group Category, LT=Lot
+  'EMTC': { desc: 'Create Product – Legal-safe own IP (was Create Material MM01) – prod_item – item_number (was material_number), base_unit (was base_uom), type RAW/FINISHED/SEMI (was ROH/FERT/HALB)', module: 'Foundation', api: '/api/materials', configurable: true, code: 'EMTC', helperCode: 'EMTC', aliases: ['FND-MAT-CR', 'MM01', 'MTC', 'FND-MAT-CR-LEGACY'], newCode: 'MTC' },
+  'EMTE': { desc: 'Change Product – Legal-safe (was Change Material MM02) – prod_item', module: 'Foundation', api: '/api/materials', configurable: true, code: 'EMTE', helperCode: 'EMTE', aliases: ['FND-MAT-CH', 'MM02', 'MTE'], newCode: 'MTE' },
+  'EMTV': { desc: 'Display Product – Legal-safe (was Display Material MM03)', module: 'Foundation', api: '/api/materials', configurable: true, code: 'EMTV', helperCode: 'EMTV', aliases: ['FND-MAT-DP', 'MM03', 'MTV'], newCode: 'MTV' },
+  'EMTL': { desc: 'Product Overview List – Legal-safe (was Material Overview MM60) – prod_item list', module: 'Foundation', api: '/api/materials', configurable: true, code: 'EMTL', helperCode: 'EMTL', aliases: ['FND-MAT-LS', 'MM60', 'MTL'], newCode: 'MTL' },
+  'EMTP': { desc: 'Define Product Types – Legal-safe own IP (was Define Material Types OMS2) – prod_item_type – RAW/FINISHED/SEMI/TRADING/PACKAGING/CONSUMABLE/SERVICE (was ROH/FERT/HALB/HAWA/VERP/NLAG/DIEN)', module: 'Foundation', api: '/api/material-types', configurable: true, code: 'EMTP', helperCode: 'EMTP', aliases: ['FND-MT-CR', 'OMS2', 'MTP', 'FND-MT-CR-LEGACY'], newCode: 'MTP' },
+  'EMGC': { desc: 'Define Product Categories – Legal-safe (was Define Material Groups OMSF) – prod_category', module: 'Foundation', api: '/api/material-types', configurable: true, code: 'EMGC', helperCode: 'EMGC', aliases: ['FND-MG-CR', 'OMSF', 'MGC'], newCode: 'MGC' },
+  'EUOC': { desc: 'Define Units of Measure – Legal-safe own IP (was CUNI) – core_unit_measure – KG/G/L/ML/PC/BOX/PACK/KIT/M/TON sample kept', module: 'Foundation', api: '/api/uom', code: 'EUOC', helperCode: 'EUOC', aliases: ['FND-UOM-CR', 'CUNI', 'UOC'], newCode: 'UOC' },
+  'ELTC': { desc: 'Define Lots – Legal-safe (was Batch) – inv_lot – lot_number (was batch_number), manufacturing_date, expiry_date', module: 'Foundation', api: '/api/lots', code: 'ELTC', helperCode: 'ELTC', aliases: ['FND-LOT-CR', 'MSC3N', 'LTC'], newCode: 'LTC' },
 
   // MM – Procurement – Short
   'PPRC': { desc: 'Create Purchase Requisition – New Short', module: 'MM', api: '/api/pr', code: 'PPRC', helperCode: 'PPRC', aliases: ['PUR-PR-CR', 'ME51N', 'PRC'], newCode: 'PRC' },
