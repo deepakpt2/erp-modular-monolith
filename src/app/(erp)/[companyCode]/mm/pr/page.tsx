@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
@@ -54,7 +55,18 @@ export default function Page(){
           </div>
         ))}
       </div>
-    </div>
+          <div className="mt-4 border-2 border-black p-2 bg-[#ffffcc]">
+        <div className="font-bold text-[10px]">RELATED MASTERS – AUTO – LOW IMPORTANCE</div>
+        <div className="flex flex-wrap gap-1 mt-1">
+          <Link href={`/${companyCode}/foundation/materials`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">EMTC Material – required →</Link>
+          <Link href={`/${companyCode}/foundation/facilities`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">EFCC Facility – required →</Link>
+          <Link href={`/${companyCode}/foundation/legal-entities`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">ELEC Legal Entity →</Link>
+          <Link href={`/${companyCode}/mm/po`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">PPOC PO uses PR →</Link>
+          <Link href={`/${companyCode}/fico/number-ranges`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FNRC Number Ranges →</Link>
+        </div>
+      </div>
+
+</div>
   );
 
   const modernContent = (
@@ -132,7 +144,19 @@ export default function Page(){
           </div>
         )}
       </div>
-    </div>
+          <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
+        <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related Masters – auto from dependencies – low importance</h4>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Material – required</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/facilities`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EFCC</span><span>Facility – required</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/legal-entities`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">ELEC</span><span>Legal Entity</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO uses PR</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/number-ranges`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FNRC</span><span>Number Ranges</span><span className="text-zinc-400">→</span></Link>
+        </div>
+        <p className="text-[10px] text-zinc-400 mt-2">These links help create necessary data needed in this form – data strictly used in practice – no dummy</p>
+      </div>
+
+</div>
   );
 
   return (

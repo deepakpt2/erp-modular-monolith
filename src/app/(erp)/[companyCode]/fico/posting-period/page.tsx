@@ -1,407 +1,125 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
-import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
-type FocusCode = 'OBBO' | 'OB52' | 'FFYC' | 'FEXC' | 'FNRC' | 'FTGC' | 'FCYC' | 'FCOA' | 'FGLC' | 'FTXC' | 'ALL';
-
-export default function PostingPeriodPage(){
+export default function PostingPeriodHubPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const companyCode = params.companyCode as string;
-  const focusParam = (searchParams.get('focus') || searchParams.get('code') || 'ALL').toUpperCase() as FocusCode;
-  const [activeFocus, setActiveFocus] = useState<FocusCode>(focusParam as FocusCode);
-  const [highlighted, setHighlighted] = useState<string | null>(focusParam !== 'ALL' ? focusParam : null);
-
-  const [data,setData]=useState<any>(null);
-  const [fiscalData,setFiscalData]=useState<any>(null);
-  const [exchangeData,setExchangeData]=useState<any>(null);
-  const [numberRangeData,setNumberRangeData]=useState<any>(null);
-  const [loading,setLoading]=useState(true);
-  const [msg,setMsg]=useState<string|null>(null);
-  const [form,setForm]=useState({code:'',name:''});
-  const [fiscalForm,setFiscalForm]=useState({code:'',name:'',description:'', from_date:'', to_date:''});
-  const [exchangeForm,setExchangeForm]=useState({from_currency:'INR',to_currency:'USD',rate:'',valid_from:''});
-  const [ob52Form,setOb52Form]=useState({variant_code:'1000',account_type:'+',from_period:'1',from_year:'2026',to_period:'12',to_year:'2026',is_open:true});
-  const [showForm,setShowForm]=useState(false);
-
-  async function load(){
-    setLoading(true);
-    try{
-      const [ppRes, fiscalRes, exchRes, nrRes] = await Promise.all([
-        fetch('/api/posting-period-variants').then(r=>r.json()).catch(()=>({})),
-        fetch('/api/fiscal-calendars').then(r=>r.json()).catch(()=>({})),
-        fetch('/api/exchange-rates').then(r=>r.json()).catch(()=>({})),
-        fetch('/api/number-ranges').then(r=>r.json()).catch(()=>({})),
-      ]);
-      setData(ppRes);
-      setFiscalData(fiscalRes);
-      setExchangeData(exchRes);
-      setNumberRangeData(nrRes);
-    }catch(e){console.error(e);}
-    setLoading(false);
-  }
-  useEffect(()=>{load();},[]);
+  const [uiMode, setUiMode] = useState<'modern'|'classic'>('modern');
 
   useEffect(()=>{
-    if (focusParam && focusParam !== 'ALL') {
-      setActiveFocus(focusParam as FocusCode);
-      setHighlighted(focusParam);
-      setTimeout(()=>{
-        const el = document.getElementById(`form-${focusParam}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('ring-2','ring-black','ring-offset-2');
-          setTimeout(()=>el.classList.remove('ring-2','ring-black','ring-offset-2'), 3000);
-        }
-      }, 600);
-    }
-  }, [focusParam]);
+    try {
+      const saved = localStorage.getItem('erp-ui-mode');
+      if (saved) setUiMode(saved as any);
+      const handler = (e:any)=>setUiMode(e.detail);
+      window.addEventListener('erp-ui-mode-change', handler as any);
+      return ()=>window.removeEventListener('erp-ui-mode-change', handler as any);
+    } catch {}
+  }, []);
 
-  const handleCreate = async () => {
-    if(!(form as any).code||!(form as any).name){ setMsg('CODE and NAME required'); return; }
-    const res = await fetch('/api/posting-period-variants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)}).then(r=>r.json());
-    if(res.success){ setMsg(`✅ Posting Period Variant ${res.variant.code} created – OBBO/FPPC`); setShowForm(false); setForm({code:'',name:''}); load(); }
-    else setMsg(`❌ ${res.error}`);
-  };
+  const modern = uiMode==='modern';
 
-  const handleCreateFiscal = async () => {
-    if(!fiscalForm.code || !fiscalForm.name){ setMsg('FISCAL_CALENDAR_CODE and NAME required – FFYC'); return; }
-    const res = await fetch('/api/fiscal-calendars',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fiscalForm)}).then(r=>r.json());
-    if(res.success){ setMsg(`✅ Fiscal Calendar ${res.fiscalCalendar.code} created – FFYC – now usable in ELEC`); setFiscalForm({code:'',name:'',description:'', from_date:'', to_date:''}); load(); }
-    else setMsg(`❌ ${res.error}`);
-  };
-
-  const handleCreateExchange = async () => {
-    if(!exchangeForm.from_currency || !exchangeForm.to_currency || !exchangeForm.rate){ setMsg('FROM_CURRENCY, TO_CURRENCY, RATE required – FEXC'); return; }
-    const res = await fetch('/api/exchange-rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...exchangeForm, rate: parseFloat(exchangeForm.rate)})}).then(r=>r.json());
-    if(res.success){ setMsg(`✅ Exchange Rate ${exchangeForm.from_currency}→${exchangeForm.to_currency} created – FEXC`); setExchangeForm({from_currency:'INR',to_currency:'USD',rate:'',valid_from:''}); load(); }
-    else setMsg(`❌ ${res.error}`);
-  };
-
-  const handleCreateOB52 = async () => {
-    if(!ob52Form.variant_code || !ob52Form.account_type){ setMsg('VARIANT_CODE and ACCOUNT_TYPE required – OB52'); return; }
-    if(!ob52Form.from_period || !ob52Form.from_year || !ob52Form.to_period || !ob52Form.to_year){ setMsg('FROM_PERIOD, FROM_YEAR, TO_PERIOD, TO_YEAR required – OB52'); return; }
-    const payload = {
-      variant_code: ob52Form.variant_code.toUpperCase(),
-      account_type: ob52Form.account_type,
-      from_period: parseInt(ob52Form.from_period),
-      from_year: parseInt(ob52Form.from_year),
-      to_period: parseInt(ob52Form.to_period),
-      to_year: parseInt(ob52Form.to_year),
-      is_open: ob52Form.is_open
-    };
-    const res = await fetch('/api/posting-period-variants',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json()).catch(async()=>{
-      // Try POST with periods array as fallback
-      const res2 = await fetch('/api/posting-period-variants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code: payload.variant_code, name: payload.variant_code, periods: [{account_type: payload.account_type, from_period: payload.from_period, from_year: payload.from_year, to_period: payload.to_period, to_year: payload.to_year, is_open: payload.is_open}]})}).then(r=>r.json());
-      return res2;
-    });
-    if(res.success){ setMsg(`✅ OB52 ${payload.variant_code} ${payload.account_type} ${payload.from_period}/${payload.from_year} → ${payload.to_period}/${payload.to_year} ${payload.is_open ? 'OPEN' : 'CLOSED'} – FPPE`); load(); }
-    else setMsg(`❌ ${res.error}`);
-  };
-
-  const handleDelete = async (code:string) => {
-    if(!confirm(`Delete posting period variant ${code}?`)) return;
-    const res = await fetch(`/api/posting-period-variants?code=${code}`,{method:'DELETE'}).then(r=>r.json());
-    setMsg(res.success?`✅ ${res.message}`:`❌ ${res.error}`);
-    if(res.success) load();
-  };
-
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING...</div>;
-  const variants = data?.postingPeriodVariants||[];
-  const periods = data?.postingPeriods||[];
-  const fiscalCalendars = fiscalData?.fiscalCalendars||fiscalData?.data||[];
-  const exchangeRates = exchangeData?.data||exchangeData?.rates||[];
-  const numberRanges = numberRangeData?.data||numberRangeData?.ranges||[];
-
-  const codes = [
-    { code: 'FFYC', label: 'Fiscal Calendar', desc: 'K4 April-March, V3 Calendar Year – used by ELEC – must exist before LE-2000', count: fiscalCalendars.length, api: '/api/fiscal-calendars' },
-    { code: 'OBBO', label: 'Posting Period Variant', desc: 'FPPC – Define variant', count: variants.length, api: '/api/posting-period-variants' },
-    { code: 'OB52', label: 'Posting Periods Open/Close', desc: 'FPPE – Open/close periods', count: periods.length, api: '/api/posting-period-variants' },
-    { code: 'FEXC', label: 'Exchange Rates', desc: 'Currency conversion INR→USD etc', count: exchangeRates.length, api: '/api/exchange-rates' },
-    { code: 'FNRC', label: 'Number Ranges', desc: 'FBN1 document numbers', count: numberRanges.length, api: '/api/number-ranges' },
-    { code: 'FCYC', label: 'Currencies', desc: 'OY03 – INR default', count: 0, api: '/api/currencies', link: `/${companyCode}/fico/currencies` },
-    { code: 'FCOA', label: 'Chart of Accounts', desc: 'OB13', count: 0, api: '/api/chart-of-accounts', link: `/${companyCode}/fico/chart-of-accounts` },
-    { code: 'FGLC', label: 'G/L Accounts', desc: 'FS00', count: 0, api: '/api/gl-accounts', link: `/${companyCode}/fico/gl-accounts` },
-    { code: 'FTXC', label: 'Tax Codes', desc: 'FTXP', count: 0, api: '/api/tax-codes', link: `/${companyCode}/fico/tax-codes` },
+  const sections = [
+    {
+      title: 'Fiscal & Currency Management',
+      icon: '📅',
+      items: [
+        { code: 'FFYC', label: 'Fiscal Calendar', route: '/fico/fiscal-calendars', desc: 'K4 April-March India, V3 Calendar Year Jan-Dec – FROM_DATE TO_DATE required – strict: calculates fiscal year/period from posting date 2026-05-15 K4 → FY2026 P02 – e.g., Apr-Dec same FY, Jan-Mar previous FY' },
+        { code: 'FEXC', label: 'Exchange Rates', route: '/fico/exchange-rates', desc: 'From currency to currency rate – FROM_DATE TO_DATE – strict: converts foreign currency transactions – e.g., INR to USD 0.012' },
+        { code: 'FCYC', label: 'Currencies', route: '/fico/currencies', desc: 'Code name symbol – only INR default – strict: used in legal entity, exchange rates, pricing' },
+      ]
+    },
+    {
+      title: 'Document Numbering & Tax',
+      icon: '🔢',
+      items: [
+        { code: 'FNRC', label: 'Number Ranges', route: '/fico/number-ranges', desc: 'Code object_type PR/PO/GR/IV/SO/DL/BL/STO/PI/PROD/MRP/PAY/JRNL prefix current_number fiscal_year – atomic next via /api/number-ranges/next – strict: generates unique document numbers' },
+        { code: 'FTGC', label: 'Tax Groups', route: '/fico/tax-groups', desc: 'Code name rate – GST 18% – groups tax codes for GL posting' },
+        { code: 'FTXC', label: 'Tax Codes', route: '/fico/tax-codes', desc: 'GST0/5/12/18/28 IGST VAT 5% – rate ledger_account_code – strict: calculates tax amount on PO/SO/Billing – tax calc engine' },
+      ]
+    },
+    {
+      title: 'Posting Period Control – Strict',
+      icon: '🛡️',
+      items: [
+        { code: 'FPPC', label: 'Posting Period Variant', route: '/fico/posting-period-variants', desc: 'Code name – groups company codes for posting period control – e.g., 1000 Standard – strict: OB52 open/close per variant + account type' },
+        { code: 'FPPE', label: 'Posting Period Control', route: '/fico/posting-periods', desc: 'Variant_code account_type +/A/D/K/M/S/V from_period from_year to_period to_year is_open – strict: rejects posting if period closed – e.g., close 03/2026 open 04/2026 prevents back-posting – enforced in PR/PO/GR/IV/SO/DL/BL/Documents' },
+      ]
+    },
+    {
+      title: 'Financial Masters',
+      icon: '💰',
+      items: [
+        { code: 'FCOA', label: 'Chart of Accounts', route: '/fico/chart-of-accounts', desc: 'Code name – KSCA – general CoA – groups GL accounts' },
+        { code: 'FGLC', label: 'GL Accounts', route: '/fico/gl-accounts', desc: 'Account_number name coa_code account_type ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE – strict: auto account BSX/WRX uses GL, posting to GL, field status' },
+        { code: 'FCCA', label: 'Cost Centers', route: '/fico/cost-centers', desc: 'Code name company_code – KS-CC-01..05 – strict: cost center required for expense GL via field status OBC5, actuals via CCA report' },
+      ]
+    },
+    {
+      title: 'Strict Controls – New',
+      icon: '⚙️',
+      items: [
+        { code: 'OBC4', label: 'Field Status Variant', route: '/fico/field-status-variants', desc: 'Code name – groups field status groups – e.g., 1000 Standard – strict: assigned to company code controls required/suppressed fields per GL' },
+        { code: 'OBC5', label: 'Field Status Groups', route: '/fico/field-status-groups', desc: 'Variant_code group_code field_name cost_center/profit_center/tax_code status R/S/O/D – strict: cost center required for expense G001 suppressed for cash G002' },
+        { code: 'OBA0', label: 'Tolerance Groups – GL', route: '/fico/tolerance-groups-gl', desc: 'Code name type GL lower_limit upper_limit – strict: allows small differences within tolerance' },
+        { code: 'OBA4', label: 'Tolerance Groups – CV', route: '/fico/tolerance-groups-cv', desc: 'Code name type CUSTOMER/VENDOR – strict: if invoice 100 payment 99.90 within 100 allowed clearing' },
+        { code: 'OBA7', label: 'Document Types', route: '/fico/document-types', desc: 'Code SA/KA/KG/RV/RE name number_range_code FK FNRC – strict: assigns number range per doc type' },
+        { code: 'OBYC', label: 'Automatic Account Determination', route: '/fico/auto-account-determination', desc: 'Transaction_key BSX/WRX/GBB/PRD chart_of_accounts valuation_class gl_account FK FGLC – strict: GR 101 auto posts BSX inventory debit WRX GR/IR credit – no dummy' },
+        { code: 'FAPT', label: 'Payment Terms', route: '/fico/payment-terms', desc: 'Code NT30 name days discount_percent discount_days – strict: calculates due date posting date + days – used in PO/SO/IV/Billing' },
+      ]
+    },
   ];
 
-  const classicContent = (
-    <div className="space-y-3 font-mono text-[11px]">
-      {msg && <div className="bg-black text-white p-2">{msg}</div>}
-      <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">FINANCIAL CONFIG – FFYC FEXC OBBO OB52 FNRC – ALL CODES MUST HAVE FORM</div>
-        <div className="flex flex-wrap gap-1 mb-2">
-          {codes.map(c=><button key={c.code} onClick={()=>{setActiveFocus(c.code as FocusCode); setHighlighted(c.code); document.getElementById(`form-${c.code}`)?.scrollIntoView({behavior:'smooth'});}} className={`border-2 border-black px-2 py-0.5 ${highlighted===c.code?'bg-black text-white':'bg-white'}`}>{c.code} {c.count}</button>)}
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div><div className="text-[9px]">FFYC CODE *</div><input value={fiscalForm.code} onChange={e=>setFiscalForm({...fiscalForm,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="FISCAL_CALENDAR_CODE" /></div>
-          <div><div className="text-[9px]">FFYC NAME *</div><input value={fiscalForm.name} onChange={e=>setFiscalForm({...fiscalForm,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
-        </div>
-        <button onClick={handleCreateFiscal} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <div><div className="text-[9px]">CODE *</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CODE" /></div>
-          <div><div className="text-[9px]">NAME *</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
-        </div>
-        <button onClick={handleCreate} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE OBBO/FPPC</button>
-      </div>
-      <div className="bg-white border-2 border-black p-2">
-        <div className="font-bold">FISCAL CALENDARS FFYC {fiscalCalendars.length} – API POST /api/fiscal-calendars</div>
-        {fiscalCalendars.map((fc:any)=><div key={fc.code} className="border border-black p-1 mt-1">{fc.code} – {fc.name}</div>)}
-      </div>
-      <div className="bg-white border-2 border-black p-2">
-        <div className="font-bold">VARIANTS OBBO {variants.length}</div>
-        {variants.map((v:any)=>(<div key={v.code} className="border border-black p-1 mt-1 flex justify-between"><span>{v.code} – {v.name}</span><button onClick={()=>handleDelete(v.code)} className="border border-black px-1 text-red-600">DEL</button></div>))}
-      </div>
-    </div>
-  );
-
-  const modernContent = (
-    <div className="max-w-[1600px] mx-auto space-y-6">
-      {msg && <div className={`rounded-2xl p-4 text-sm ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-
-      {/* Quick code navigation – easy identification */}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[11px] uppercase tracking-widest text-zinc-500 font-semibold">Financial Codes – Click to jump to form – Easy identification</div>
-          <div className="text-[10px] text-zinc-400">All codes must have a form – user must find specific form for specific code</div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {codes.map(c => (
-            <button
-              key={c.code}
-              onClick={() => {
-                setActiveFocus(c.code as FocusCode);
-                setHighlighted(c.code);
-                const el = document.getElementById(`form-${c.code}`);
-                if (el) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  el.classList.add('ring-2','ring-black','ring-offset-2');
-                  setTimeout(()=>el.classList.remove('ring-2','ring-black','ring-offset-2'), 3000);
-                }
-              }}
-              className={`group flex items-center gap-2 rounded-full px-4 py-2 border text-xs transition-all ${highlighted===c.code || activeFocus===c.code ? 'bg-zinc-900 text-white border-zinc-900 shadow-sm' : 'bg-white border-zinc-200 hover:border-zinc-900 hover:bg-zinc-50'}`}
-            >
-              <span className="font-mono font-bold">{c.code}</span>
-              <span className="hidden sm:inline text-[11px] opacity-70">{c.label}</span>
-              <span className={`text-[9px] rounded-full px-1.5 py-0.5 ${highlighted===c.code ? 'bg-white text-black' : 'bg-zinc-100 text-zinc-600'}`}>{c.count}</span>
-            </button>
-          ))}
-        </div>
-        {highlighted && (
-          <div className="mt-3 flex items-center gap-2 text-xs">
-            <span className="bg-black text-white rounded-full px-3 py-1">Focused: {highlighted} – {codes.find(c=>c.code===highlighted)?.label}</span>
-            <span className="text-zinc-500">{codes.find(c=>c.code===highlighted)?.desc}</span>
-            <button onClick={()=>{setHighlighted(null); setActiveFocus('ALL');}} className="ml-auto text-zinc-400 hover:text-black">Clear ✕</button>
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Financial Configuration – OBBO/OB52/FFYC/FEXC/FNRC – {variants.length + fiscalCalendars.length + exchangeRates.length} total</h3>
-        <div className="flex gap-2">
-          <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 hover:bg-black text-white rounded-full px-4 py-2 transition-colors">Create Variant</button>
-          <button onClick={load} className="text-xs border border-zinc-200 bg-white hover:bg-zinc-50 rounded-full px-4 py-2 transition-colors">Refresh</button>
-        </div>
-      </div>
-
-      {showForm && (
-        <div id="form-OBBO" className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 space-y-4 scroll-mt-24">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📅</div>
-            <div><div className="font-semibold">Create Variant – OBBO / FPPC</div><div className="text-xs text-zinc-500">CODE, NAME – Posting Period Variant</div></div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CODE *</label><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} placeholder="CODE" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black uppercase" /></div>
-            <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME *</label><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="NAME" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
-          </div>
-          <button onClick={handleCreate} className="bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-2.5 text-sm font-medium transition-colors">Create Variant – OBBO</button>
-        </div>
-      )}
-
-      {/* FFYC – Fiscal Calendar – critical missing form */}
-      <div id="form-FFYC" className={`bg-white rounded-2xl border-2 shadow-sm p-6 scroll-mt-24 transition-all ${highlighted==='FFYC' ? 'border-black shadow-md' : 'border-zinc-200'}`}>
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center font-mono font-bold text-xs">FFYC</div>
-            <div>
-              <div className="font-semibold flex items-center gap-2">Fiscal Calendars – FFYC <span className="text-[10px] bg-black text-white rounded-full px-2 py-0.5">OB29</span> <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 rounded-full px-2 py-0.5">MISSING FORM FIXED</span></div>
-              <div className="text-xs text-zinc-500">{fiscalCalendars.length} calendars • API: POST /api/fiscal-calendars • Used by ELEC FISCAL_CALENDAR_CODE – must exist before Legal Entity</div>
-            </div>
-          </div>
-          <div className="text-[10px] text-zinc-400">K4 April-March India, V3 Calendar Year, K1 Variant</div>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-4 mb-5">
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CODE *</label>
-            <input value={fiscalForm.code} onChange={e=>setFiscalForm({...fiscalForm,code:e.target.value.toUpperCase()})} placeholder="FISCAL_CALENDAR_CODE – e.g., K4" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black uppercase" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME *</label>
-            <input value={fiscalForm.name} onChange={e=>setFiscalForm({...fiscalForm,name:e.target.value})} placeholder="NAME – e.g., April-March Fiscal" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION</label>
-            <input value={fiscalForm.description} onChange={e=>setFiscalForm({...fiscalForm,description:e.target.value})} placeholder="DESCRIPTION" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-          </div>
-        </div>
-        <button onClick={handleCreateFiscal} className="w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Fiscal Calendar – FFYC</button>
-
-        <div className="mt-6 grid md:grid-cols-3 gap-3">
-          {fiscalCalendars.map((fc:any)=>(
-            <div key={fc.code} className="border border-zinc-200 rounded-xl p-4 bg-zinc-50/50 hover:border-zinc-900 hover:shadow-sm transition-all">
-              <div className="flex justify-between items-start">
-                <div className="font-mono font-bold text-sm">{fc.code}</div>
-                <span className="text-[9px] bg-black text-white rounded-full px-2 py-0.5">FFYC</span>
-              </div>
-              <div className="text-xs text-zinc-600 mt-1">{fc.name}</div>
-              <div className="text-[10px] text-zinc-400 mt-1">{fc.description || 'No description'}</div>
-              <div className="mt-2 text-[10px] text-emerald-600">✓ Valid for ELEC FISCAL_CALENDAR_CODE</div>
-            </div>
-          ))}
-          {fiscalCalendars.length===0 && (
-            <div className="col-span-3 border border-dashed border-amber-300 bg-amber-50/50 rounded-xl p-6 text-center">
-              <div className="text-sm text-amber-800 font-medium">No fiscal calendars – this was the bug! ELEC accepted K6 even though not in DB</div>
-              <div className="text-xs text-zinc-600 mt-1">Create K4 (April-March), V3 (Calendar Year), K1 now – then ELEC autocomplete will only show valid values</div>
-              <div className="mt-3 flex gap-2 justify-center">
-                <button onClick={()=>setFiscalForm({code:'K4',name:'April-March Fiscal – India',description:'India FY April-March', from_date:'2026-04-01', to_date:'2027-03-31'})} className="text-xs bg-black text-white rounded-full px-3 py-1">Use K4</button>
-                <button onClick={()=>setFiscalForm({code:'V3',name:'Calendar Year Jan-Dec',description:'Calendar Year', from_date:'2026-01-01', to_date:'2026-12-31'})} className="text-xs border rounded-full px-3 py-1 bg-white">Use V3</button>
-                <button onClick={()=>setFiscalForm({code:'K1',name:'Calendar Year Variant',description:'Variant K1', from_date:'2026-01-01', to_date:'2026-12-31'})} className="text-xs border rounded-full px-3 py-1 bg-white">Use K1</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* FEXC – Exchange Rates */}
-      <div id="form-FEXC" className={`bg-white rounded-2xl border-2 shadow-sm p-6 scroll-mt-24 ${highlighted==='FEXC' ? 'border-black' : 'border-zinc-200'}`}>
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-mono font-bold text-xs">FEXC</div>
-          <div>
-            <div className="font-semibold">Exchange Rates – FEXC <span className="text-[10px] bg-zinc-100 border rounded-full px-2 py-0.5">{exchangeRates.length}</span></div>
-            <div className="text-xs text-zinc-500">FROM_CURRENCY, TO_CURRENCY, RATE – autocomplete from DB</div>
-          </div>
-        </div>
-        <div className="grid md:grid-cols-4 gap-4">
-          <DbAutocomplete label="FROM_CURRENCY *" value={exchangeForm.from_currency} onChange={v=>setExchangeForm({...exchangeForm,from_currency:v})} apiUrl="/api/currencies" dataKey="data" placeholder="FROM_CURRENCY" required createUrl={`/${companyCode}/fico/currencies`} createCode="FCYC" />
-          <DbAutocomplete label="TO_CURRENCY *" value={exchangeForm.to_currency} onChange={v=>setExchangeForm({...exchangeForm,to_currency:v})} apiUrl="/api/currencies" dataKey="data" placeholder="TO_CURRENCY" required createUrl={`/${companyCode}/fico/currencies`} createCode="FCYC" />
-          <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">RATE *</label><input value={exchangeForm.rate} onChange={e=>setExchangeForm({...exchangeForm,rate:e.target.value})} placeholder="RATE" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
-          <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">VALID_FROM</label><input type="date" value={exchangeForm.valid_from} onChange={e=>setExchangeForm({...exchangeForm,valid_from:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
-        </div>
-        <button onClick={handleCreateExchange} className="mt-4 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium">Create Exchange Rate – FEXC</button>
-        <div className="mt-4 space-y-2 max-h-[200px] overflow-auto">
-          {exchangeRates.map((er:any, idx:number)=>(
-            <div key={idx} className="border border-zinc-200 rounded-xl p-3 bg-zinc-50/50 text-xs flex justify-between"><span>{er.from_currency} → {er.to_currency} = {er.rate}</span><span className="text-zinc-400">{er.valid_from || ''}</span></div>
-          ))}
-          {exchangeRates.length===0 && <div className="text-xs text-zinc-500 border border-dashed rounded-xl p-4 text-center">No exchange rates – create INR→USD etc via FEXC</div>}
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <div id="form-OBBO" className={`bg-white rounded-2xl border-2 shadow-sm p-6 scroll-mt-24 ${highlighted==='OBBO' ? 'border-black' : 'border-zinc-200'}`}>
-          <h4 className="font-semibold text-sm flex items-center gap-2">Variants OBBO/FPPC <span className="text-[10px] bg-black text-white rounded-full px-2 py-0.5">{variants.length}</span> <span className="text-[10px] bg-zinc-100 border rounded-full px-2 py-0.5">FPPC</span></h4>
-          <div className="mt-4 space-y-2">
-            {variants.map((v:any)=>(
-              <div key={v.code} className="border border-zinc-200 rounded-xl p-3 bg-zinc-50/50 flex justify-between items-center hover:border-zinc-900 transition-colors">
-                <div><div className="font-medium text-sm">{v.code} – {v.name}</div><div className="text-xs text-zinc-500">OBBO Variant – FPPC</div></div>
-                <button onClick={()=>handleDelete(v.code)} className="text-xs border border-red-200 text-red-600 hover:bg-red-50 rounded-full px-3 py-1 bg-white transition-colors">Delete</button>
-              </div>
-            ))}
-            {variants.length===0 && <div className="text-sm text-zinc-500 border border-dashed rounded-xl p-6 text-center">No variants – Create first via OBBO/FPPC</div>}
-          </div>
-        </div>
-        <div id="form-OB52" className={`bg-white rounded-2xl border-2 shadow-sm p-6 scroll-mt-24 ${highlighted==='OB52' ? 'border-black' : 'border-zinc-200'}`}>
-          <h4 className="font-semibold text-sm flex items-center gap-2">Open/Close Periods OB52/FPPE <span className="text-[10px] bg-black text-white rounded-full px-2 py-0.5">{periods.length}</span> <span className="text-[10px] bg-zinc-100 border rounded-full px-2 py-0.5">FPPE</span> <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 rounded-full px-2 py-0.5">Month-end critical</span></h4>
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-            <DbAutocomplete label="VARIANT_CODE *" value={ob52Form.variant_code} onChange={v=>setOb52Form({...ob52Form,variant_code:v})} apiUrl="/api/posting-period-variants" dataKey="postingPeriodVariants" codeField="code" nameField="name" placeholder="VARIANT_CODE – e.g., 1000" required createUrl={`/${companyCode}/fico/posting-period?focus=OBBO`} createCode="OBBO" companyCode={companyCode} />
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">ACCOUNT_TYPE *</label>
-              <select value={ob52Form.account_type} onChange={e=>setOb52Form({...ob52Form,account_type:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black">
-                <option value="+">+ All Account Types</option>
-                <option value="A">A Assets</option>
-                <option value="D">D Customers</option>
-                <option value="K">K Vendors</option>
-                <option value="M">M Materials</option>
-                <option value="S">S G/L Accounts</option>
-                <option value="V">V Contract Accounts</option>
-              </select>
-              <div className="text-[10px] text-zinc-400 mt-1">SAP: +/A/D/K/M/S/V – we use same but legal-safe FPPE</div>
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">STATUS</label>
-              <select value={ob52Form.is_open ? 'open' : 'closed'} onChange={e=>setOb52Form({...ob52Form,is_open:e.target.value==='open'})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black">
-                <option value="open">Open</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">FROM_PERIOD *</label>
-              <input type="number" min="1" max="16" value={ob52Form.from_period} onChange={e=>setOb52Form({...ob52Form,from_period:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="1" />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">FROM_YEAR *</label>
-              <input type="number" value={ob52Form.from_year} onChange={e=>setOb52Form({...ob52Form,from_year:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="2026" />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">TO_PERIOD *</label>
-              <input type="number" min="1" max="16" value={ob52Form.to_period} onChange={e=>setOb52Form({...ob52Form,to_period:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="12" />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">TO_YEAR *</label>
-              <input type="number" value={ob52Form.to_year} onChange={e=>setOb52Form({...ob52Form,to_year:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="2026" />
-            </div>
-          </div>
-          <button onClick={handleCreateOB52} className="mt-4 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Open/Close – OB52</button>
-          <div className="mt-4 space-y-2 max-h-[300px] overflow-auto">
-            {periods.map((p:any)=>(
-              <div key={p.id} className="border border-zinc-200 rounded-xl p-3 bg-zinc-50/50 flex justify-between text-xs hover:border-zinc-300 transition-colors">
-                <span className="font-mono">{p.variant_code} – TYPE {p.account_type} – {p.from_period}/{p.from_year} → {p.to_period}/{p.to_year}</span>
-                <span className={`text-[10px] rounded-full px-2 py-0.5 ${p.is_open ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>{p.is_open ? 'OPEN' : 'CLOSED'}</span>
-              </div>
-            ))}
-            {periods.length===0 && <div className="text-sm text-zinc-500 border border-dashed rounded-xl p-6 text-center">No periods – Fresh deployment – Create 1000 + 1/2026 → 12/2026 OPEN for month-end</div>}
-          </div>
-          <div className="text-[11px] text-zinc-500 mt-3 bg-zinc-50 rounded-xl p-3">OB52 Open and Close Posting Periods – Account Types + (All), A Assets, D Customers, K Vendors, M Materials, S G/L, V Contract – Real DB – Critical for normal enterprise month-end closing – SAP function matches but legal-safe FPPE</div>
-        </div>
-      </div>
-
-      <div id="form-FNRC" className={`bg-white rounded-2xl border-2 shadow-sm p-6 scroll-mt-24 ${highlighted==='FNRC' ? 'border-black' : 'border-zinc-200'}`}>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-mono text-[10px]">FNRC</div>
-          <div>
-            <div className="font-semibold text-sm">Number Ranges – FNRC – {numberRanges.length}</div>
-            <div className="text-xs text-zinc-500">FBN1 – Document numbers – API /api/number-ranges</div>
-          </div>
-        </div>
-        <div className="grid md:grid-cols-3 gap-2">
-          {numberRanges.slice(0,9).map((nr:any, idx:number)=>(
-            <div key={idx} className="border border-zinc-200 rounded-xl p-2 bg-zinc-50/50 text-xs"><div className="font-mono font-bold">{nr.object_type || nr.code}</div><div className="text-[11px] text-zinc-500">Current: {nr.current_number} Prefix: {nr.prefix}</div></div>
-          ))}
-          {numberRanges.length===0 && <div className="col-span-3 text-xs text-zinc-500 border border-dashed rounded-xl p-4 text-center">No number ranges – fresh deployment</div>}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-5">
-        <h4 className="font-medium text-sm">Other Financial Codes – Direct Links – User must always find specific form for specific code</h4>
-        <div className="mt-3 grid md:grid-cols-4 gap-2 text-xs">
-          <a href={`/${companyCode}/fico/currencies`} className="border rounded-xl p-3 hover:border-black hover:bg-zinc-900 hover:text-white transition-colors"><div className="font-mono font-bold">FCYC / OY03</div><div className="text-[11px] opacity-70">Currencies – INR default</div></a>
-          <a href={`/${companyCode}/fico/chart-of-accounts`} className="border rounded-xl p-3 hover:border-black hover:bg-zinc-900 hover:text-white transition-colors"><div className="font-mono font-bold">FCOA / OB13</div><div className="text-[11px] opacity-70">Chart of Accounts</div></a>
-          <a href={`/${companyCode}/fico/gl-accounts`} className="border rounded-xl p-3 hover:border-black hover:bg-zinc-900 hover:text-white transition-colors"><div className="font-mono font-bold">FGLC / FS00</div><div className="text-[11px] opacity-70">G/L Accounts</div></a>
-          <a href={`/${companyCode}/fico/tax-codes`} className="border rounded-xl p-3 hover:border-black hover:bg-zinc-900 hover:text-white transition-colors"><div className="font-mono font-bold">FTXC / FTXP</div><div className="text-[11px] opacity-70">Tax Codes</div></a>
-          <a href={`/${companyCode}/fico/cost-centers`} className="border rounded-xl p-3 hover:border-black hover:bg-zinc-900 hover:text-white transition-colors"><div className="font-mono font-bold">FCCA / KS01</div><div className="text-[11px] opacity-70">Cost Centers</div></a>
-          <a href={`/${companyCode}/foundation/enterprise-structure?focus=ECGC`} className="border rounded-xl p-3 hover:border-black hover:bg-zinc-900 hover:text-white transition-colors"><div className="font-mono font-bold">ECGC / OX15</div><div className="text-[11px] opacity-70">Company Group</div></a>
-          <a href={`/${companyCode}/foundation/enterprise-structure?focus=ELEC`} className="border rounded-xl p-3 hover:border-black hover:bg-zinc-900 hover:text-white transition-colors"><div className="font-mono font-bold">ELEC / OX02</div><div className="text-[11px] opacity-70">Legal Entity LE-2000</div></a>
-          <a href={`/${companyCode}/foundation/enterprise-structure?focus=FFYC`} className="border rounded-xl p-3 hover:border-black bg-black text-white"><div className="font-mono font-bold">FFYC / OB29</div><div className="text-[11px] opacity-70">Fiscal Calendar K4 – FIXED</div></a>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <ModernModuleShell title="Financial Configuration – Posting Period & Fiscal Calendar" subtitle={`${variants.length} Variants • ${periods.length} Periods • ${fiscalCalendars.length} Fiscal Calendars • ${exchangeRates.length} Exchange Rates • OBBO/OB52/FFYC/FEXC/FNRC`} code="FFYC" module="FICO" classicChildren={classicContent}>
-      {modernContent}
-    </ModernModuleShell>
+    <div className={modern ? "min-h-screen bg-[#fafaf9] p-6" : "min-h-screen bg-white p-4"}>
+      <div className={modern ? "max-w-[1200px] mx-auto space-y-6" : "max-w-[1000px] mx-auto space-y-4"}>
+        <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6" : "border-b pb-4"}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📊</div>
+              <div>
+                <h1 className={modern ? "text-xl font-bold tracking-tight" : "text-lg font-bold"}>Financial Configuration Hub – One Code One Page Overview</h1>
+                <p className="text-sm text-zinc-500">Company: <b>{companyCode}</b> – Previously multiple forms in one page with focus param – now split into dedicated pages – one code one page – strict ERP usage no dummy</p>
+                <p className="text-[11px] text-zinc-400 mt-1">General ERP terminology – SAP aliases for search only – e.g., Fiscal Calendar not OB29, Posting Period Variant not OBBO, Posting Period Control not OB52 – but OB29/OBBO/OB52 kept as searchable alias – Navigator tree replaces sidebar</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href={`/${companyCode}/navigator`} className={modern ? "px-4 py-2 rounded-full bg-black text-white text-xs" : "border px-3 py-1 text-xs bg-black text-white"}>🌳 Navigator – Tree Structure</Link>
+              <Link href={`/${companyCode}/foundation/enterprise-config`} className={modern ? "px-4 py-2 rounded-full border text-xs hover:bg-zinc-50" : "border px-3 py-1 text-xs"}>Enterprise Config Hub</Link>
+            </div>
+          </div>
+        </div>
+
+        {sections.map((section, si)=>(
+          <div key={si} className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden" : "border bg-white"}>
+            <div className={modern ? "px-5 py-3.5 bg-zinc-50/80 border-b border-zinc-100 flex items-center gap-2" : "px-3 py-2 bg-zinc-100 border-b flex items-center gap-2"}>
+              <span className="text-lg">{section.icon}</span>
+              <span className={modern ? "font-semibold text-sm" : "font-semibold text-xs"}>{section.title}</span>
+              <span className="ml-auto text-[11px] text-zinc-400">{section.items.length} functions</span>
+            </div>
+            <div className={modern ? "p-3 grid grid-cols-1 md:grid-cols-2 gap-2" : "p-2 space-y-1"}>
+              {section.items.map((item, ii)=>(
+                <Link key={ii} href={`/${companyCode}${item.route}`} className={modern ? "flex items-start gap-2.5 p-3 rounded-xl hover:bg-zinc-50 border border-transparent hover:border-zinc-200 group" : "flex items-start gap-2 p-2 hover:bg-zinc-50 border-b border-zinc-100"}>
+                  <span className={modern ? "text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-black text-white shrink-0 mt-0.5" : "text-[9px] font-mono border px-1 bg-black text-white shrink-0"}>{item.code}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className={modern ? "text-sm font-medium text-zinc-900 group-hover:text-black" : "text-xs font-medium"}>{item.label}</div>
+                    <div className={modern ? "text-[11px] text-zinc-500 mt-0.5 leading-relaxed" : "text-[10px] text-zinc-500"}>{item.desc}</div>
+                  </div>
+                  <span className={modern ? "text-[10px] text-zinc-400 group-hover:text-zinc-900 mt-1" : "text-[10px] text-zinc-400"}>→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div className={modern ? "bg-zinc-900 text-white rounded-2xl p-5" : "border p-3 bg-zinc-900 text-white"}>
+          <h3 className={modern ? "font-semibold text-sm mb-2" : "font-semibold text-xs mb-1"}>One Code One Page – Strict ERP No Dummy – Previously Multiple Forms in One Page Now Dedicated</h3>
+          <p className="text-xs text-zinc-300 leading-relaxed">
+            Previously posting-period page had multiple forms with focus param – FFYC fiscal calendars, FEXC exchange rates, FNRC number ranges, FTGC tax groups, OBBO posting period variant, OB52 posting period control all in one page – functionally confusing – now split into dedicated pages – one code one page – e.g., FFYC Fiscal Calendar → /fico/fiscal-calendars with single form CODE* NAME* FROM_DATE* TO_DATE* START_MONTH* END_MONTH* YEAR_SHIFT* DESCRIPTION* – FROM_DATE TO_DATE required – strict usage calculates fiscal year/period from posting date K4 2026-05-15 → FY2026 P02 – FEXC Exchange Rates → /fico/exchange-rates with FROM_CURRENCY* TO_CURRENCY* RATE* FROM_DATE* TO_DATE* – strict usage converts foreign currency – FNRC Number Ranges → /fico/number-ranges with CODE* OBJECT_TYPE* PREFIX* CURRENT_NUMBER* FISCAL_YEAR* – atomic next via /api/number-ranges/next – strict usage generates unique document numbers – FTGC Tax Groups → /fico/tax-groups – FTXC Tax Codes → /fico/tax-codes with CODE* NAME* RATE* LEDGER_ACCOUNT_CODE* FK FGLC – strict usage calculates tax amount – FPPC Posting Period Variant → /fico/posting-period-variants with CODE* NAME* – groups company codes – FPPE Posting Period Control → /fico/posting-periods with VARIANT_CODE* FK FPPC ACCOUNT_TYPE* +/A/D/K/M/S/V FROM_PERIOD* FROM_YEAR* TO_PERIOD* TO_YEAR* IS_OPEN* – strict usage rejects posting if period closed – e.g., close 03/2026 open 04/2026 prevents back-posting – enforced in PR/PO/GR/IV/SO/DL/BL/Documents – each page has single form with modes Create/Change/Display/List – border yellow empty green valid red invalid – short button Create Fiscal Calendar – code in heading badge – bottom Related Masters low importance auto FK – e.g., ELEC page bottom shows ECGC, FCYC, FFYC, FPPC links – muted small – helps create necessary data – data strictly used in practice – no dummy – general ERP terminology – SAP aliases for search only – Navigator tree replaces sidebar – no sidebar – tree is navigation.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
