@@ -101,22 +101,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Try fin_fiscal_calendar first – robust upsert without assuming constraint name
     try {
-      const res = await db.execute(sql`
-        INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description)
-        VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}, updated_at = NOW()
-        RETURNING id, code, name
-      `);
+      // Check existing
+      const existing = await db.execute(sql`SELECT id FROM fin_fiscal_calendar WHERE code = ${code.toUpperCase()} LIMIT 1`);
+      let res;
+      if (existing.rows.length > 0) {
+        res = await db.execute(sql`
+          UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, updated_at = NOW()
+          WHERE code = ${code.toUpperCase()}
+          RETURNING id, code, name
+        `);
+      } else {
+        try {
+          res = await db.execute(sql`
+            INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description)
+            VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
+            RETURNING id, code, name
+          `);
+        } catch (insErr: any) {
+          // If tenant_id column missing or other, try without tenant_id
+          if (insErr.message?.includes('tenant_id') || insErr.message?.includes('column')) {
+            res = await db.execute(sql`
+              INSERT INTO fin_fiscal_calendar (code, name, description)
+              VALUES (${code.toUpperCase()}, ${name}, ${description || null})
+              RETURNING id, code, name
+            `);
+          } else throw insErr;
+        }
+      }
       const calId = (res.rows[0] as any).id;
 
-      // Insert periods if provided
       if (periods && Array.isArray(periods) && periods.length > 0) {
         for (const p of periods) {
           try {
             await db.execute(sql`
               INSERT INTO fin_fiscal_calendar_period (fiscal_calendar_id, period_number, month, year_shift, description)
-              VALUES (${calId}, ${p.period_number || p.period}, ${p.month || p.period_number || 1}, ${p.year_shift || p.yearShift || 0}, ${p.description || null})
+              VALUES (${calId}, ${p.period_number || p.period || 1}, ${p.month || p.period_number || 1}, ${p.year_shift || p.yearShift || 0}, ${p.description || null})
               ON CONFLICT (fiscal_calendar_id, period_number) DO UPDATE SET month = ${p.month || p.period_number || 1}, year_shift = ${p.year_shift || p.yearShift || 0}, description = ${p.description || null}
             `);
           } catch (pe: any) {
@@ -128,13 +149,57 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, fiscalCalendar: res.rows[0], code: 'FFYC', aliasCodes: ['FYC','OB29'], message: `Fiscal Calendar ${code.toUpperCase()} created – FFYC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
       console.warn('fin_fiscal_calendar insert failed fallback ent_fiscal_year_variant:', newErr.message);
-      const res = await db.execute(sql`
-        INSERT INTO ent_fiscal_year_variant (tenant_id, code, name, description)
-        VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}
-        RETURNING id, code, name
-      `);
-      return NextResponse.json({ success: true, fiscalCalendar: res.rows[0], code: 'FFYC', aliasCodes: ['OB29'], message: `Fiscal Calendar ${code.toUpperCase()} created – OB29 legacy (migrating to FFYC)`, legalSafe: false });
+      // Fallback to legacy ent_fiscal_year_variant – robust upsert without ON CONFLICT (code) assumption
+      try {
+        const existingLegacy = await db.execute(sql`SELECT id FROM ent_fiscal_year_variant WHERE code = ${code.toUpperCase()} LIMIT 1`);
+        let res;
+        if (existingLegacy.rows.length > 0) {
+          res = await db.execute(sql`
+            UPDATE ent_fiscal_year_variant SET name = ${name}, description = ${description || null}
+            WHERE code = ${code.toUpperCase()}
+            RETURNING id, code, name
+          `);
+        } else {
+          try {
+            res = await db.execute(sql`
+              INSERT INTO ent_fiscal_year_variant (tenant_id, code, name, description)
+              VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
+              RETURNING id, code, name
+            `);
+          } catch (legacyInsErr: any) {
+            // Try without tenant_id if column missing, or with ON CONFLICT (tenant_id, code) or plain insert
+            try {
+              res = await db.execute(sql`
+                INSERT INTO ent_fiscal_year_variant (code, name, description)
+                VALUES (${code.toUpperCase()}, ${name}, ${description || null})
+                RETURNING id, code, name
+              `);
+            } catch {
+              // Last resort: try ON CONFLICT (tenant_id, code) if constraint is composite
+              try {
+                res = await db.execute(sql`
+                  INSERT INTO ent_fiscal_year_variant (tenant_id, code, name, description)
+                  VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
+                  ON CONFLICT (tenant_id, code) DO UPDATE SET name = ${name}, description = ${description || null}
+                  RETURNING id, code, name
+                `);
+              } catch (finalErr: any) {
+                // If even that fails, try ON CONFLICT DO NOTHING then SELECT
+                await db.execute(sql`
+                  INSERT INTO ent_fiscal_year_variant (tenant_id, code, name, description)
+                  VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
+                  ON CONFLICT DO NOTHING
+                `);
+                res = await db.execute(sql`SELECT id, code, name FROM ent_fiscal_year_variant WHERE code = ${code.toUpperCase()} LIMIT 1`);
+              }
+            }
+          }
+        }
+        return NextResponse.json({ success: true, fiscalCalendar: res.rows[0], code: 'FFYC', aliasCodes: ['OB29'], message: `Fiscal Calendar ${code.toUpperCase()} created – OB29 legacy (migrating to FFYC)`, legalSafe: false });
+      } catch (fallbackErr: any) {
+        console.error('Both fin and ent fiscal calendar insert failed:', fallbackErr.message);
+        return NextResponse.json({ error: `Failed to create fiscal calendar: ${fallbackErr.message}. Tried fin_fiscal_calendar and ent_fiscal_year_variant. Check DB schema.` }, { status: 500 });
+      }
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
