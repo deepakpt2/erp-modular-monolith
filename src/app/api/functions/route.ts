@@ -1,34 +1,38 @@
 import { NextResponse } from 'next/server';
-import { FUNCTION_MAP, GENERAL_COA_DEFAULTS, getAllFunctions, MANDATORY_CODES } from '@/shared/kernel/functions';
+import { FUNCTION_MAP } from '@/shared/kernel/functions';
 import { FUNCTIONS } from '@/shared/lib/functions';
 
 /**
- * Functions API – All functions have helper code to identify function
- * Function is destination (e.g., Create Purchase Order), helper code is just identifier (e.g., ME21N is helper for Create Purchase Order)
- * Searching ME21N redirects to background function Create Purchase Order – code is not target, function is target
- * From this point any function you add to the app, if it has corresponding helper code it should be available in app too
- * Enforcement: GET returns all functions with helper codes, their API, module, configurable, and whether implemented
+ * Functions API – New Intuitive Helper Code System
+ * Primary codes: FND-*, PUR-*, INV-*, MFG-*, SAL-*, FIN-*, CST-*, HRM-*, AUD-* – own IP
+ * Old codes (OX02, MM01, ME21N etc) kept as aliases in searchable keywords
+ * Function is destination, helper code is just identifier
  */
 
 export async function GET() {
   const allCodesKernel = Object.entries(FUNCTION_MAP).map(([code, info]) => {
-    const { code: _ignore, ...rest } = info as any;
     return {
-      code, // helper code
+      code, // new intuitive primary helper code
       helperCode: code,
+      aliases: (info as any).aliases || [],
       functionName: (info as any).desc,
-      ...rest,
+      desc: (info as any).desc,
+      module: (info as any).module,
+      api: (info as any).api,
+      configurable: (info as any).configurable || false,
       implemented: true,
       availableInApp: true,
       source: 'kernel/FUNCTION_MAP',
-      note: 'Function is destination, code is helper to identify function',
+      note: 'Function is destination, new intuitive code is primary helper, old SAP-like codes kept as alias',
+      isNewSystem: true,
     };
   });
 
   const allCodesUI = FUNCTIONS.map(tc => ({
-    code: tc.code, // helper code
+    code: tc.code, // new intuitive primary
     helperCode: tc.code,
-    functionName: tc.description, // function is destination
+    aliases: tc.aliases || [],
+    functionName: tc.description,
     desc: tc.description,
     module: tc.module,
     subModule: tc.subModule,
@@ -39,46 +43,75 @@ export async function GET() {
     implemented: true,
     availableInApp: true,
     source: 'lib/FUNCTIONS',
-    note: 'Function is destination, code is helper',
+    note: 'Function is destination, new code primary, old codes alias',
+    isNewSystem: true,
   }));
 
-  // Merge unique by code – kernel takes precedence
+  // Merge unique by code – kernel takes precedence, but also merge aliases
   const mergedMap = new Map<string, any>();
   allCodesUI.forEach(t => mergedMap.set(t.code, t));
-  allCodesKernel.forEach(t => mergedMap.set(t.code, { ...mergedMap.get(t.code), ...t }));
+  allCodesKernel.forEach(t => {
+    const existing = mergedMap.get(t.code);
+    if (existing) {
+      mergedMap.set(t.code, { ...existing, ...t, aliases: [...new Set([...(existing.aliases || []), ...(t.aliases || [])])] });
+    } else {
+      mergedMap.set(t.code, t);
+    }
+  });
 
-  const merged = Array.from(mergedMap.values()).sort((a,b)=>a.code.localeCompare(b.code));
+  const merged = Array.from(mergedMap.values()).sort((a, b) => a.code.localeCompare(b.code));
+
+  // Also collect all aliases for search validation
+  const allAliases = merged.flatMap(m => m.aliases || []);
+  const uniqueAliases = [...new Set(allAliases)].sort();
 
   return NextResponse.json({
-    functions: merged, // primary – functions are destination
+    functions: merged,
     count: merged.length,
     kernelCount: allCodesKernel.length,
     uiCount: allCodesUI.length,
-    mandatory: MANDATORY_CODES,
-    generalCoA: GENERAL_COA_DEFAULTS,
-    rule: 'Function is destination, helper code (e.g., ME21N) is just identifier to quickly open function Create Purchase Order – searching code redirects to background function',
+    aliasesCount: uniqueAliases.length,
+    aliases: uniqueAliases,
+    newSystem: {
+      format: 'MODULE-OBJECT-ACTION',
+      modules: {
+        FND: 'Foundation (Enterprise, Material, Partner, UoM, etc)',
+        PUR: 'Procurement (PR, PO, IV)',
+        INV: 'Inventory (GR, Stock, Physical Inventory)',
+        MFG: 'Manufacturing (BOM, Work Center, Routing, MRP)',
+        SAL: 'Sales & Distribution (Sales Order, Delivery, Billing)',
+        FIN: 'Financials (Chart, GL, Tax, Currency)',
+        CST: 'Costing & Controlling (Cost Unit, Profit Unit, Costing Run)',
+        HRM: 'Human Resources (Employee, Payroll)',
+        AUD: 'Audit & Workflow',
+      },
+      actions: {
+        CR: 'Create',
+        CH: 'Change',
+        DP: 'Display',
+        LS: 'List / Report',
+        PS: 'Post / Process',
+        RL: 'Release / Approve',
+        AS: 'Assign',
+      },
+      example: 'FND-LE-CR = Foundation Legal Entity Create (alias OX02), PUR-PO-CR = Procurement Purchase Order Create (alias ME21N)',
+      autoGeneration: 'When new function implemented, generate code as MODULE-OBJECT-ACTION, add old SAP-like code (if any) as alias for backward search compatibility',
+    },
+    rule: 'Function is destination, new intuitive helper code (e.g., FND-LE-CR, PUR-PO-CR) is primary identifier – old codes (OX02, ME21N, MM01 etc) kept as searchable aliases, not primary',
     enforcement: {
-      guideline: 'Every new API route must have helper code field and be added to FUNCTION_MAP in src/shared/kernel/functions.ts AND to FUNCTIONS in src/shared/lib/functions.ts – function is destination, code is helper',
-      uiRequirement: 'Every new page must use ModernModuleShell with code prop (helper code) – function name is shown as title, helper code as small badge – function is destination',
-      apiRequirement: 'Every new API must return code/helperCode/functionName and be listed in /api/functions – include helper code in JSON response – function is destination',
-      check: 'Run GET /api/functions to see all implemented functions with helper codes – if new function added without helper code, it will be flagged as missing',
+      guideline: 'Every new API route must have new intuitive helper code as primary and be added to FUNCTION_MAP and FUNCTIONS with aliases for old codes if applicable',
+      uiRequirement: 'Every new page must use ModernModuleShell with code prop = new intuitive code (FND-*, PUR-*, etc) – old alias shown as secondary muted badge',
+      apiRequirement: 'Every new API must return code (new intuitive) + aliases (old codes) + functionName',
+      check: 'GET /api/functions lists all implemented functions with new codes and aliases',
       newFunctionChecklist: [
-        '1. Add helper code to src/shared/kernel/functions.ts FUNCTION_MAP with desc (function name), module, api, code (helper), configurable if needed – function is destination',
-        '2. Add function to src/shared/lib/functions.ts FUNCTIONS array with route – code is helper',
-        '3. API GET response must include { code/helperCode, functionName, functionDescription } – function is destination',
-        '4. UI page must use ModernModuleShell with code prop (helper) and title prop (function name)',
-        '5. Update /api/functions GET will auto-list new function',
-        '6. Only INR default per OY03 – any currency addition via POST /api/currencies – OY03 is helper for Define Currencies function',
-        '7. General CoA defaults kept like ERP – INT, KSCA, CAUS, GKR, YIN – OB13 helper for Define Chart of Accounts function',
+        '1. Generate new intuitive code: MODULE-OBJECT-ACTION, e.g., FND-WH-CR for Warehouse Site Create',
+        '2. Add to src/shared/kernel/functions.ts FUNCTION_MAP with new code as key, desc = function name, aliases = [old SAP code if any]',
+        '3. Add to src/shared/lib/functions.ts FUNCTIONS array with code = new intuitive, aliases = [old codes]',
+        '4. API response must include { code: newCode, aliases: oldCodes, functionName }',
+        '5. UI page must use ModernModuleShell with code = new intuitive primary',
+        '6. Search for old alias (e.g., OX02) should still find new function via alias',
       ],
     },
-    note: 'Searching ME21N is not target, target is Create Purchase Order function – ME21N is just helper to identify function quickly',
-    erpStandard: 'General CoA and its corresponding accounts available like in ERP – INT, KSCA, CAUS, GKR, YIN – kept as ERP defaults – FS00 accounts 5000000001-5000000006, 100000-500005',
-    currencies: 'Only INR default – KWD/USD/EUR added by user via OY03 helper – POST /api/currencies – configurable – OY03 UI /fico/currencies – Define Currencies is function, OY03 is helper',
-    taxCodes: 'VAT 5% V5/A5 + GST5 – FTXP helper – configurable – ERP defaults kept – tax GL OB40 – Define Tax Codes is function',
-    postingPeriod: 'OBBO helper for Define Posting Period Variant function – OB52 helper for Open/Close function – OBBP helper for Assign function – UI /fico/posting-period',
-    materialTypes: 'OMS2 helper for Define Material Types function – ROH/HALB/FERT/HAWA/VERP/NLAG/DIEN – configurable – UI /foundation/material-types',
-    uom: 'CUNI helper for Define Units of Measure function – KG/G/L/ML/PC/BOX/PACK/KIT/M/TON – configurable – UI /foundation/uom',
-    costCenters: 'KS01 helper for Create Cost Center function, KS02 helper for Change, KS03 for Display – function is destination',
+    note: 'Old helper codes like OX02, MM01, ME21N, MIGO etc are now aliases, not primary – new system FND-LE-CR, FND-MAT-CR, PUR-PO-CR, INV-GR-PS etc is primary own IP, intuitive, legal-safe',
   });
 }

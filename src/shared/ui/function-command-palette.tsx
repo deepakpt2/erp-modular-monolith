@@ -111,11 +111,16 @@ export function FunctionCommandPalette() {
               >
                 <div className={`w-8 h-8 rounded-lg border flex items-center justify-center text-sm ${isSelected ? 'bg-white/20 border-white/20 text-white' : modInfo.color + ' text-zinc-700'}`}>{modInfo.icon}</div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {/* Function is the destination, code is just helper */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Function is the destination, code is just helper – new intuitive primary, old alias secondary */}
                     <span className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-zinc-900'}`}>{tc.description}</span>
                     {SHOW_FUNCTION_CODE && (
-                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${isSelected ? 'bg-white/20 border-white/20 text-zinc-200' : 'bg-zinc-50 border-zinc-200 text-zinc-500'}`} title="Helper code to identify function">↳ {tc.code}</span>
+                      <>
+                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${isSelected ? 'bg-white text-black border-white' : 'bg-black text-white border-black'}`} title="New intuitive helper code – own IP, primary">↳ {tc.code}</span>
+                        {tc.aliases && tc.aliases.length > 0 && (
+                          <span className={`text-[9px] font-mono px-1 py-0.5 rounded border ${isSelected ? 'bg-white/10 border-white/20 text-zinc-300' : 'bg-zinc-100 border-zinc-200 text-zinc-400'}`} title={`Old codes kept as searchable alias: ${tc.aliases.join(', ')}`}>alias {tc.aliases.slice(0,2).join(', ')}</span>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className={`text-xs mt-0.5 truncate ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>

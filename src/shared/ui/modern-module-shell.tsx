@@ -32,7 +32,7 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
   const handleCmdEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const code = cmd.trim().toUpperCase();
-      const found = FUNCTIONS.find(t => t.code === code);
+      const found = FUNCTIONS.find(t => t.code.toUpperCase() === code || (t.aliases && t.aliases.some(a => a.toUpperCase() === code)));
       if (found) {
         router.push(found.route);
       }
@@ -50,11 +50,12 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
               onChange={e => setCmd(e.target.value.toUpperCase())}
               onKeyDown={handleCmdEnter}
               className="w-[90px] h-[20px] border border-black bg-white px-1 text-[11px] font-bold outline-none focus:border-[#000080]"
-              title="Enter helper code to open function – e.g., ME21N opens Create Purchase Order, MM01 opens Create Material"
+              title="Enter helper code to open function – e.g., FND-LE-CR or alias OX02 opens Legal Entity, PUR-PO-CR or alias ME21N opens Create Purchase Order"
             />
             <button
               onClick={() => {
-                const found = FUNCTIONS.find(t => t.code === cmd.trim().toUpperCase());
+                const c = cmd.trim().toUpperCase();
+                const found = FUNCTIONS.find(t => t.code.toUpperCase() === c || (t.aliases && t.aliases.some(a => a.toUpperCase() === c)));
                 if (found) router.push(found.route);
               }}
               className="h-[20px] w-[20px] border border-[#404040] bg-[#d4d0c8] text-[12px] flex items-center justify-center hover:bg-[#e8e8e8]"
@@ -130,7 +131,17 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-semibold">{title}</h1>
-                {SHOW_FUNCTION_CODE && <span className="text-[10px] bg-zinc-50 border border-zinc-200 text-zinc-500 rounded-full px-2 py-0.5" title="Helper code to identify function – function is the destination">↳ {code}</span>}
+                {SHOW_FUNCTION_CODE && (
+                  <>
+                    <span className="text-[10px] bg-black text-white border border-black rounded-full px-2 py-0.5" title="New intuitive helper code – own IP, primary">↳ {code}</span>
+                    {(() => {
+                      const f = FUNCTIONS.find(t => t.code === code);
+                      return f?.aliases && f.aliases.length > 0 ? (
+                        <span className="text-[9px] bg-zinc-100 border border-zinc-200 text-zinc-400 rounded-full px-2 py-0.5" title={`Alias: ${f.aliases.join(', ')}`}>alias {f.aliases.slice(0,2).join(', ')}</span>
+                      ) : null;
+                    })()}
+                  </>
+                )}
                 <span className="text-[10px] border rounded-full px-2 py-0.5">{module}</span>
                 {tooltip && (
                   <div className="relative group">
@@ -198,7 +209,8 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
 }
 
 function relatedFunctionInfo(code: string): string {
-  const tc = FUNCTIONS.find(t => t.code === code);
+  const tc = FUNCTIONS.find(t => t.code === code || (t.aliases && t.aliases.some(a => a === code)));
   if (!tc) return '';
-  return `${tc.subModule} ${tc.type} – Function is destination, ${code} is helper`;
+  const aliasStr = tc.aliases && tc.aliases.length > 0 ? ` (alias ${tc.aliases.join(', ')})` : '';
+  return `${tc.subModule} ${tc.type} – Function is destination, ${tc.code}${aliasStr} is helper – New intuitive primary`;
 }
