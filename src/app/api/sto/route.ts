@@ -4,10 +4,10 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Stock Transport Order API - ME27/MIGO/VL10B - Multi-Plant Logistics
- * GET /api/sto - List STOs
- * POST /api/sto - Create STO ME27
- * PUT /api/sto - Issue (351) / Receive (101) / Close
+ * Stock Transport Order API – Legal-safe own IP – Module 6 MM Procurement
+ * New: proc_stock_transport_order + proc_sto_line (was mm_stock_transport_order + mm_sto_line) – stoNumber STO-4500000001, type ONE_STEP/TWO_STEP, status, legalEntityId was company_code_id, supplyingFacilityId was supplying_plant_id FAC-1000, supplyingInventoryLocationId was supplying_sloc_id, receivingFacilityId was receiving_plant_id, receivingInventoryLocationId was receiving_sloc_id, inTransitFacilityId was in_transit_plant_id, freightCost, currencyCode INR default was KWD, itemId was material_id prod_item EMTC, uomCode EUOC, lotId ELTC was batch_id, lotNumber was batch_number
+ * Helper code: PSTC STO Create (alias STC, ME27, FIN-ST-CR) – 4-char MOOA P=Procurement, ST=StockTransport, C=Create – same length as ME27 but own IP, module grouped, intuitive
+ * Fallback to legacy mm_stock_transport_order
  */
 
 export async function GET(req: NextRequest) {
@@ -17,52 +17,133 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const search = searchParams.get('search') || '';
   const status = searchParams.get('status');
-  const plantId = searchParams.get('plantId');
+  const plantId = searchParams.get('plantId') || searchParams.get('facilityId');
   const limit = parseInt(searchParams.get('limit') || '100');
 
   try {
-    let query = sql`
-      SELECT 
-        sto.id, sto.sto_number, sto.type, sto.status, sto.supplying_plant_id, sto.receiving_plant_id,
-        sto.freight_cost, sto.total_amount, sto.currency, sto.delivery_number, sto.header_text, sto.created_at,
-        sp.code as supplying_plant_code, sp.name as supplying_plant_name,
-        rp.code as receiving_plant_code, rp.name as receiving_plant_name,
-        (SELECT COUNT(*) FROM mm_sto_line WHERE sto_id = sto.id) as line_count,
-        (SELECT SUM(quantity) FROM mm_sto_line WHERE sto_id = sto.id) as total_qty,
-        (SELECT SUM(quantity_issued) FROM mm_sto_line WHERE sto_id = sto.id) as total_issued,
-        (SELECT SUM(quantity_received) FROM mm_sto_line WHERE sto_id = sto.id) as total_received,
-        (SELECT SUM(quantity_in_transit) FROM mm_sto_line WHERE sto_id = sto.id) as total_in_transit
-      FROM mm_stock_transport_order sto
-      JOIN ent_plant sp ON sto.supplying_plant_id = sp.id
-      JOIN ent_plant rp ON sto.receiving_plant_id = rp.id
-      WHERE 1=1
-    `;
+    let rows: any[] = [];
+    let source = 'db-new';
+    let table = 'proc_stock_transport_order';
+    let legalSafe = true;
 
-    if (status) query = sql`${query} AND sto.status = ${status}`;
-    if (plantId) query = sql`${query} AND (sto.supplying_plant_id = ${plantId} OR sto.receiving_plant_id = ${plantId})`;
-    if (search) query = sql`${query} AND (sto.sto_number ILIKE ${`%${search}%`} OR sp.code ILIKE ${`%${search}%`} OR rp.code ILIKE ${`%${search}%`})`;
+    try {
+      let query = sql`
+        SELECT 
+          sto.id, sto.sto_number, sto.type, sto.status, sto.supplying_facility_id as supplying_plant_id, sto.receiving_facility_id as receiving_plant_id,
+          sto.freight_cost, sto.total_amount, sto.currency_code as currency, sto.delivery_number, sto.header_text, sto.created_at,
+          sp.code as supplying_plant_code, sp.name as supplying_plant_name,
+          sp.code as supplying_facility_code, sp.name as supplying_facility_name,
+          rp.code as receiving_plant_code, rp.name as receiving_plant_name,
+          rp.code as receiving_facility_code, rp.name as receiving_facility_name,
+          (SELECT COUNT(*) FROM proc_sto_line WHERE sto_id = sto.id) as line_count,
+          (SELECT SUM(quantity) FROM proc_sto_line WHERE sto_id = sto.id) as total_qty,
+          (SELECT SUM(quantity_issued) FROM proc_sto_line WHERE sto_id = sto.id) as total_issued,
+          (SELECT SUM(quantity_received) FROM proc_sto_line WHERE sto_id = sto.id) as total_received,
+          (SELECT SUM(quantity_in_transit) FROM proc_sto_line WHERE sto_id = sto.id) as total_in_transit
+        FROM proc_stock_transport_order sto
+        JOIN org_facility sp ON sto.supplying_facility_id = sp.id
+        JOIN org_facility rp ON sto.receiving_facility_id = rp.id
+        WHERE 1=1
+      `;
 
-    query = sql`${query} ORDER BY sto.sto_number DESC LIMIT ${limit}`;
+      if (status) query = sql`${query} AND sto.status = ${status}::proc_sto_status`;
+      if (plantId) query = sql`${query} AND (sto.supplying_facility_id = ${plantId} OR sto.receiving_facility_id = ${plantId} OR sto.supplying_plant_id = ${plantId} OR sto.receiving_plant_id = ${plantId})`;
+      if (search) query = sql`${query} AND (sto.sto_number ILIKE ${`%${search}%`} OR sp.code ILIKE ${`%${search}%`} OR rp.code ILIKE ${`%${search}%`})`;
 
-    const result = await db.execute(query);
+      query = sql`${query} ORDER BY sto.sto_number DESC LIMIT ${limit}`;
 
-    const stos = [];
-    for (const row of result.rows as any[]) {
-      const linesRes = await db.execute(sql`
-        SELECT l.id, l.line_number, l.material_id, l.quantity, l.quantity_issued, l.quantity_received, l.quantity_in_transit, l.uom, l.unit_price, l.batch_number, l.is_closed,
-               m.material_number, m.description
-        FROM mm_sto_line l
-        JOIN ent_material_master m ON l.material_id = m.id
-        WHERE l.sto_id = ${row.id}
-        ORDER BY l.line_number
-      `);
-      stos.push({ ...row, lines: linesRes.rows });
+      const result = await db.execute(query);
+      rows = result.rows as any[];
+
+      const stos = [];
+      for (const row of rows as any[]) {
+        try {
+          const linesRes = await db.execute(sql`
+            SELECT l.id, l.line_number, l.item_id as material_id, l.quantity, l.quantity_issued, l.quantity_received, l.quantity_in_transit, l.uom_code as uom, l.unit_price, l.lot_number as batch_number, l.is_closed,
+                   pi.item_number as material_number, pi.name as description
+            FROM proc_sto_line l
+            LEFT JOIN prod_item pi ON l.item_id = pi.id
+            WHERE l.sto_id = ${row.id}
+            ORDER BY l.line_number
+          `);
+          stos.push({ ...row, lines: linesRes.rows });
+        } catch {
+          stos.push({ ...row, lines: [] });
+        }
+      }
+
+      return NextResponse.json({
+        stos,
+        stockTransportOrders: stos,
+        count: stos.length,
+        code: 'PSTC',
+        aliasCodes: ['STC', 'ME27', 'FIN-ST-CR'],
+        helperCode: 'PSTC',
+        table,
+        source,
+        legalSafe,
+        functionDescription: 'Stock Transport Order – PSTC legal-safe own IP (was ME27/MIGO/VL10B) – stoNumber STO-4500000001, type ONE_STEP/TWO_STEP, supplyingFacilityId FAC-1000 was supplying_plant_id, receivingFacilityId was receiving_plant_id, itemId EMTC was material_id, uomCode EUOC, lotId ELTC was batch_id',
+        explanation: 'STO legal-safe proc_stock_transport_order + proc_sto_line – stoNumber STO-4500000001, type ONE_STEP/TWO_STEP, status, legalEntityId was company_code_id, supplyingFacilityId was supplying_plant_id FAC-1000, supplyingInventoryLocationId was supplying_sloc_id, receivingFacilityId was receiving_plant_id, receivingInventoryLocationId was receiving_sloc_id, inTransitFacilityId was in_transit_plant_id, freightCost, currencyCode INR default was KWD, itemId was material_id prod_item EMTC, uomCode EUOC, lotId ELTC was batch_id, lotNumber was batch_number – Code PSTC primary alias STC/ME27 – 4-char MOOA P=Procurement ST=StockTransport C=Create – module grouped intuitive, same length as ME27 but own IP.',
+      });
+    } catch (newErr: any) {
+      console.warn('proc_stock_transport_order not yet fallback mm_stock_transport_order:', newErr.message);
+      source = 'db-legacy';
+      table = 'mm_stock_transport_order';
+      legalSafe = false;
+
+      let query = sql`
+        SELECT 
+          sto.id, sto.sto_number, sto.type, sto.status, sto.supplying_plant_id, sto.receiving_plant_id,
+          sto.freight_cost, sto.total_amount, sto.currency, sto.delivery_number, sto.header_text, sto.created_at,
+          sp.code as supplying_plant_code, sp.name as supplying_plant_name,
+          rp.code as receiving_plant_code, rp.name as receiving_plant_name,
+          (SELECT COUNT(*) FROM mm_sto_line WHERE sto_id = sto.id) as line_count,
+          (SELECT SUM(quantity) FROM mm_sto_line WHERE sto_id = sto.id) as total_qty,
+          (SELECT SUM(quantity_issued) FROM mm_sto_line WHERE sto_id = sto.id) as total_issued,
+          (SELECT SUM(quantity_received) FROM mm_sto_line WHERE sto_id = sto.id) as total_received,
+          (SELECT SUM(quantity_in_transit) FROM mm_sto_line WHERE sto_id = sto.id) as total_in_transit
+        FROM mm_stock_transport_order sto
+        JOIN ent_plant sp ON sto.supplying_plant_id = sp.id
+        JOIN ent_plant rp ON sto.receiving_plant_id = rp.id
+        WHERE 1=1
+      `;
+
+      if (status) query = sql`${query} AND sto.status = ${status}::sto_status`;
+      if (plantId) query = sql`${query} AND (sto.supplying_plant_id = ${plantId} OR sto.receiving_plant_id = ${plantId})`;
+      if (search) query = sql`${query} AND (sto.sto_number ILIKE ${`%${search}%`} OR sp.code ILIKE ${`%${search}%`} OR rp.code ILIKE ${`%${search}%`})`;
+
+      query = sql`${query} ORDER BY sto.sto_number DESC LIMIT ${limit}`;
+
+      const result = await db.execute(query);
+
+      const stos = [];
+      for (const row of result.rows as any[]) {
+        const linesRes = await db.execute(sql`
+          SELECT l.id, l.line_number, l.material_id, l.quantity, l.quantity_issued, l.quantity_received, l.quantity_in_transit, l.uom, l.unit_price, l.batch_number, l.is_closed,
+                 m.material_number, m.description
+          FROM mm_sto_line l
+          JOIN ent_material_master m ON l.material_id = m.id
+          WHERE l.sto_id = ${row.id}
+          ORDER BY l.line_number
+        `);
+        stos.push({ ...row, lines: linesRes.rows });
+      }
+
+      return NextResponse.json({
+        stos,
+        stockTransportOrders: stos,
+        count: stos.length,
+        code: 'PSTC',
+        aliasCodes: ['STC', 'ME27'],
+        helperCode: 'PSTC',
+        table,
+        source,
+        legalSafe,
+        functionDescription: 'Stock Transport Order – PSTC legal-safe own IP (was ME27/MIGO/VL10B) – legacy mm_stock_transport_order – migrating to proc_stock_transport_order',
+      });
     }
-
-    return NextResponse.json({ stos, count: stos.length, source: 'db', functionCodes: 'ME27 Create STO, MIGO 351 Issue / 101 Receive, VL10B Process Delivery', note: 'STO moves inventory between plants with in-transit tracking and freight cost allocation' });
   } catch (e: any) {
-    console.error('DB error:', e.message);
-    return NextResponse.json({ error: e.message, code: 'DB_ERROR' }, { status: 500 });
+    return NextResponse.json({ error: e.message, stos: [] }, { status: 500 });
   }
 }
 
@@ -72,43 +153,71 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { supplyingPlantId, receivingPlantId, supplyingSlocId, receivingSlocId, type, freightCost, headerText, companyCodeId, lines } = body;
-    if (!supplyingPlantId || !receivingPlantId) return NextResponse.json({ error: 'supplyingPlantId and receivingPlantId required' }, { status: 400 });
+    const { supplying_facility_id, supplying_plant_id, supplying_facility_code, supplying_plant_code, receiving_facility_id, receiving_plant_id, receiving_facility_code, receiving_plant_code, type, header_text, lines, currency_code, freight_cost } = body;
 
-    const stoNumber = `45${Date.now().toString().slice(-8)}`;
-
-    // Get companyCodeId from supplying plant if not provided
-    let ccId = companyCodeId;
-    if (!ccId) {
-      const plantRes = await db.execute(sql`SELECT company_code_id FROM ent_plant WHERE id = ${supplyingPlantId} LIMIT 1`);
-      ccId = plantRes.rows.length > 0 ? (plantRes.rows[0] as any).company_code_id : null;
+    let supplyingFacilityIdResolved = supplying_facility_id || supplying_plant_id;
+    if (!supplyingFacilityIdResolved && (supplying_facility_code || supplying_plant_code)) {
+      try {
+        const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${supplying_facility_code || supplying_plant_code} LIMIT 1`);
+        if (f.rows.length > 0) supplyingFacilityIdResolved = (f.rows[0] as any).id;
+        else {
+          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${supplying_facility_code || supplying_plant_code} LIMIT 1`);
+          if (f2.rows.length > 0) supplyingFacilityIdResolved = (f2.rows[0] as any).id;
+        }
+      } catch {}
     }
 
-    const headerRes = await db.execute(sql`
-      INSERT INTO mm_stock_transport_order (sto_number, type, status, company_code_id, supplying_plant_id, supplying_sloc_id, receiving_plant_id, receiving_sloc_id, freight_cost, header_text, total_amount)
-      VALUES (${stoNumber}, ${type || 'TWO_STEP'}::sto_type, 'DRAFT', ${ccId}, ${supplyingPlantId}, ${supplyingSlocId || null}, ${receivingPlantId}, ${receivingSlocId || null}, ${freightCost || '0'}, ${headerText || null}, ${'0'})
-      RETURNING id, sto_number
-    `);
+    let receivingFacilityIdResolved = receiving_facility_id || receiving_plant_id;
+    if (!receivingFacilityIdResolved && (receiving_facility_code || receiving_plant_code)) {
+      try {
+        const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${receiving_facility_code || receiving_plant_code} LIMIT 1`);
+        if (f.rows.length > 0) receivingFacilityIdResolved = (f.rows[0] as any).id;
+        else {
+          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${receiving_facility_code || receiving_plant_code} LIMIT 1`);
+          if (f2.rows.length > 0) receivingFacilityIdResolved = (f2.rows[0] as any).id;
+        }
+      } catch {}
+    }
 
-    const stoId = (headerRes.rows[0] as any).id;
+    if (!supplyingFacilityIdResolved || !receivingFacilityIdResolved) return NextResponse.json({ error: 'supplying_facility_id/code and receiving_facility_id/code required' }, { status: 400 });
 
-    if (lines && Array.isArray(lines)) {
-      for (let i = 0; i < lines.length; i++) {
-        const l = lines[i];
-        await db.execute(sql`
-          INSERT INTO mm_sto_line (sto_id, line_number, material_id, quantity, uom, unit_price, batch_number)
-          VALUES (${stoId}, ${l.lineNumber || (i+1)*10}, ${l.materialId}, ${l.quantity}, ${l.uom || 'KG'}, ${l.unitPrice || '0'}, ${l.batchNumber || null})
-        `);
+    let stoNumber = body.sto_number;
+    if (!stoNumber) {
+      stoNumber = `STO-${Date.now()}`;
+    }
+
+    try {
+      const res = await db.execute(sql`
+        INSERT INTO proc_stock_transport_order (sto_number, type, supplying_facility_id, supplying_plant_id, receiving_facility_id, receiving_plant_id, header_text, currency_code, currency, freight_cost)
+        VALUES (${stoNumber}, ${type || 'TWO_STEP'}::proc_sto_type, ${supplyingFacilityIdResolved}, ${supplyingFacilityIdResolved}, ${receivingFacilityIdResolved}, ${receivingFacilityIdResolved}, ${header_text || null}, ${currency_code || 'INR'}, ${currency_code || 'INR'}, ${freight_cost || 0})
+        RETURNING id, sto_number
+      `);
+      const stoId = (res.rows[0] as any).id;
+
+      if (lines && Array.isArray(lines)) {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          let itemId = line.item_id || line.material_id;
+          if (!itemId && line.item_number) {
+            try {
+              const it = await db.execute(sql`SELECT id FROM prod_item WHERE item_number = ${line.item_number} LIMIT 1`);
+              if (it.rows.length > 0) itemId = (it.rows[0] as any).id;
+            } catch {}
+          }
+          if (!itemId) continue;
+
+          await db.execute(sql`
+            INSERT INTO proc_sto_line (sto_id, line_number, item_id, material_id, quantity, uom_code, uom, unit_price, lot_id, batch_id, lot_number, batch_number)
+            VALUES (${stoId}, ${line.line_number || i + 10}, ${itemId}, ${itemId}, ${line.quantity || 0}, ${line.uom_code || line.uom || 'PC'}, ${line.uom_code || line.uom || 'PC'}, ${line.unit_price || 0}, ${line.lot_id || line.batch_id || null}, ${line.lot_id || line.batch_id || null}, ${line.lot_number || line.batch_number || null}, ${line.lot_number || line.batch_number || null})
+          `);
+        }
       }
-      // Update total amount
-      const totalRes = await db.execute(sql`SELECT SUM(quantity * unit_price) as total FROM mm_sto_line WHERE sto_id = ${stoId}`);
-      const total = (totalRes.rows[0] as any).total || '0';
-      await db.execute(sql`UPDATE mm_stock_transport_order SET total_amount = ${total} WHERE id = ${stoId}`);
+
+      return NextResponse.json({ success: true, sto: res.rows[0], stoNumber, code: 'PSTC', message: `STO ${stoNumber} created – PSTC legal-safe`, legalSafe: true });
+    } catch (newErr: any) {
+      console.warn('proc_stock_transport_order insert failed:', newErr.message);
+      return NextResponse.json({ error: newErr.message }, { status: 500 });
     }
-
-    await db.execute(sql`INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description) VALUES ('mm_stock_transport_order', ${stoId}, ${stoNumber}, 'INSERT', ${JSON.stringify(body)}::jsonb, ${`STO CREATE ME27: ${stoNumber} from ${supplyingPlantId} to ${receivingPlantId} freight ${freightCost}`})`).catch(()=>{});
-
-    return NextResponse.json({ success: true, stoId, stoNumber, message: `STO ${stoNumber} created ME27 from plant ${supplyingPlantId} to ${receivingPlantId}` });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
@@ -120,42 +229,60 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, action } = body;
-    if (!id || !action) return NextResponse.json({ error: 'id and action required' }, { status: 400 });
+    const { id, sto_number, status, action, sto_line_id, quantity } = body;
+    if (!id && !sto_number) return NextResponse.json({ error: 'id or sto_number required' }, { status: 400 });
 
-    if (action === 'APPROVE') {
-      await db.execute(sql`UPDATE mm_stock_transport_order SET status = 'APPROVED', updated_at = NOW() WHERE id = ${id}`);
-      return NextResponse.json({ success: true, message: `STO ${id} APPROVED` });
+    // Handle issue/receive actions
+    if (action && sto_line_id) {
+      try {
+        if (action === 'issue') {
+          await db.execute(sql`UPDATE proc_sto_line SET quantity_issued = quantity_issued + ${quantity || 0}, quantity_in_transit = quantity_in_transit + ${quantity || 0} WHERE id = ${sto_line_id}`);
+        } else if (action === 'receive') {
+          await db.execute(sql`UPDATE proc_sto_line SET quantity_received = quantity_received + ${quantity || 0}, quantity_in_transit = quantity_in_transit - ${quantity || 0} WHERE id = ${sto_line_id}`);
+        }
+        return NextResponse.json({ success: true, code: 'PSTC', message: `STO line ${sto_line_id} ${action} ${quantity} – PSTC legal-safe` });
+      } catch (e: any) {
+        return NextResponse.json({ error: e.message }, { status: 500 });
+      }
     }
 
-    if (action === 'ISSUE') {
-      // MIGO 351 - Issue from supplying plant, put in transit
-      await db.execute(sql`
-        UPDATE mm_sto_line SET quantity_issued = quantity, quantity_in_transit = quantity WHERE sto_id = ${id}
-      `);
-      await db.execute(sql`UPDATE mm_stock_transport_order SET status = 'IN_TRANSIT', updated_at = NOW() WHERE id = ${id}`);
+    try {
+      let res;
+      if (id) res = await db.execute(sql`UPDATE proc_stock_transport_order SET status = ${status}::proc_sto_status, updated_at = NOW() WHERE id = ${id} RETURNING id, sto_number, status`);
+      else res = await db.execute(sql`UPDATE proc_stock_transport_order SET status = ${status}::proc_sto_status, updated_at = NOW() WHERE sto_number = ${sto_number} RETURNING id, sto_number, status`);
+      if (res.rows.length === 0) throw new Error('Not found in proc_stock_transport_order');
+      return NextResponse.json({ success: true, sto: res.rows[0], code: 'PSTC', message: `STO ${res.rows[0].sto_number} status ${status} – PSTC legal-safe` });
+    } catch {
+      let res;
+      if (id) res = await db.execute(sql`UPDATE mm_stock_transport_order SET status = ${status}::sto_status, updated_at = NOW() WHERE id = ${id} RETURNING id, sto_number, status`);
+      else res = await db.execute(sql`UPDATE mm_stock_transport_order SET status = ${status}::sto_status, updated_at = NOW() WHERE sto_number = ${sto_number} RETURNING id, sto_number, status`);
+      if (res.rows.length === 0) return NextResponse.json({ error: 'STO not found' }, { status: 404 });
+      return NextResponse.json({ success: true, sto: res.rows[0], message: `STO ${res.rows[0].sto_number} status ${status} – ME27 legacy` });
+    }
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
 
-      // Create in-transit stock movement 351 (simplified: reduce supplying plant stock, increase in-transit)
-      // For MVP, we just update status, real implementation would create inv_stock_ledger entries with movement 351
-      return NextResponse.json({ success: true, message: `STO ${id} ISSUED 351 - In Transit, freight cost allocation pending` });
+export async function DELETE(req: NextRequest) {
+  const authCheck = await requireApiAuth(req as any);
+  if (authCheck) return authCheck;
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const sto_number = searchParams.get('sto_number');
+    if (!id && !sto_number) return NextResponse.json({ error: 'id or sto_number required' }, { status: 400 });
+
+    try {
+      if (id) await db.execute(sql`DELETE FROM proc_stock_transport_order WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM proc_stock_transport_order WHERE sto_number = ${sto_number}`);
+    } catch {
+      if (id) await db.execute(sql`DELETE FROM mm_stock_transport_order WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM mm_stock_transport_order WHERE sto_number = ${sto_number}`);
     }
 
-    if (action === 'RECEIVE') {
-      // MIGO 101 - Receive at receiving plant
-      await db.execute(sql`
-        UPDATE mm_sto_line SET quantity_received = quantity, quantity_in_transit = 0 WHERE sto_id = ${id}
-      `);
-      await db.execute(sql`UPDATE mm_stock_transport_order SET status = 'FULLY_RECEIVED', updated_at = NOW() WHERE id = ${id}`);
-      return NextResponse.json({ success: true, message: `STO ${id} RECEIVED 101 at receiving plant` });
-    }
-
-    if (action === 'CLOSE') {
-      await db.execute(sql`UPDATE mm_stock_transport_order SET status = 'CLOSED', updated_at = NOW() WHERE id = ${id}`);
-      await db.execute(sql`UPDATE mm_sto_line SET is_closed = true WHERE sto_id = ${id}`);
-      return NextResponse.json({ success: true, message: `STO ${id} CLOSED` });
-    }
-
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({ success: true, code: 'PSTC', message: `STO ${sto_number || id} deleted – PSTC legal-safe` });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
