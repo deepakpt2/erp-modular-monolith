@@ -277,6 +277,58 @@ async function initProduction() {
     } catch {}
   }
 
+  // 9b. Field Status Variant – ensure FSSV-1000 persists across builds – fix bug where variant gets deleted on each build
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS fin_field_status_variant (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        code VARCHAR(20) UNIQUE NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`
+      INSERT INTO fin_field_status_variant (code, name, description)
+      VALUES 
+        ('FSSV-1000', 'Field Status Variant 1000 – India', 'Field Status Variant for India – controls field status groups G001 etc – required before ELEC – per guide'),
+        ('1000', 'Standard Field Status', 'Standard variant – controls required/suppressed fields per GL')
+      ON CONFLICT (code) DO NOTHING
+    `);
+    console.log('✅ Field Status Variant FSSV-1000 ensured – persists across builds');
+  } catch (e: any) {
+    console.warn('Field Status Variant ensure failed:', e.message);
+  }
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS fin_field_status_group (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        variant_code VARCHAR(20) NOT NULL,
+        group_code VARCHAR(20) NOT NULL,
+        field_name VARCHAR(50) NOT NULL,
+        status VARCHAR(1) NOT NULL CHECK (status IN ('R','S','O','D')),
+        description TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(variant_code, group_code, field_name)
+      )
+    `);
+    await db.execute(sql`
+      INSERT INTO fin_field_status_group (variant_code, group_code, field_name, status, description) VALUES
+        ('FSSV-1000', 'G001', 'cost_center', 'R', 'Cost center required for expense accounts – FSSV-1000 G001'),
+        ('FSSV-1000', 'G001', 'profit_center', 'O', 'Profit center optional for expense'),
+        ('FSSV-1000', 'G001', 'tax_code', 'O', 'Tax code optional'),
+        ('FSSV-1000', 'G002', 'cost_center', 'S', 'Cost center suppressed for cash accounts – G002'),
+        ('FSSV-1000', 'G002', 'profit_center', 'S', 'Profit center suppressed for cash'),
+        ('FSSV-1000', 'G002', 'tax_code', 'S', 'Tax suppressed for cash')
+      ON CONFLICT (variant_code, group_code, field_name) DO NOTHING
+    `);
+    console.log('✅ Field Status Groups FSSV-1000/G001/G002 ensured – persists across builds');
+  } catch (e: any) {
+    console.warn('Field Status Groups ensure failed:', e.message);
+  }
+
   // 10. Number Ranges – try new core_number_range then old ent_number_range
   const year = new Date().getFullYear();
   if (finalLegalId) {
