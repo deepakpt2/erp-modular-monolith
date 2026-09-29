@@ -505,12 +505,52 @@ account_modifier: WRX
 
 ---
 
-## PHASE 1 – USER ONBOARDING & ROLES – ERP ADMIN + HR MANAGER
+## PHASE 1 – USER ONBOARDING & ROLES – FIRST STEP AFTER COMPANY CREATION – ERP ADMIN + HR MANAGER
 
-### Title: Create Roles
+> **YES – Guide includes who is the user doing specific functions and user creation/approval as FIRST STEP after company creation + basic data required – This Phase is mandatory before any master data or transactions – NO USER → NO FUNCTION TESTING**
+
+### Title: Basic Data Required for User Creation – Before Any User Can Be Created
+**Code:** `BASIC-DATA-FOR-USER` – Prerequisites – Must exist before user onboarding
+
+**User:** `erp_admin` – ERP Admin creates basic data, then creates roles, then users
+
+**Data to be entered – copyable – Basic Data Checklist Before User Creation:**
+```
+1. Company Group ECGC must exist:
+code: ECGC-FMCG-01
+
+2. Legal Entity / Company Code ELEC must exist:
+code: 1000
+company_group_code: ECGC-FMCG-01
+chart_of_accounts_code: CA-IN-01
+field_status_variant: FSSV-1000
+posting_period_variant: PPV-1000
+credit_control_area: CRED-1000
+
+3. Chart of Accounts FCOA must exist:
+code: CA-IN-01
+
+4. Facility EFAC must exist:
+code: FAC-1000
+legal_entity_code: 1000
+
+5. Cost Center ECUC must exist for payroll + reservation:
+code: CC-1000
+name: Production Cost Center
+facility_code: FAC-1000
+
+6. Profit Center PC-1000 must exist:
+code: PC-1000
+name: Production Profit Center
+facility_code: FAC-1000
+
+Without above 6, user creation fails – company_code 1000 must be valid, facility FAC-1000 must be valid for role assignment
+```
+
+### Title: Create Roles – First Step – Defines Who Can Do What
 **Code:** `EROL` – Roles – `POST /api/roles`
 
-**User:** `erp_admin`
+**User:** `erp_admin` – ERP Admin creates roles – HR Manager approves roles
 
 **Data to be entered – copyable – 12 roles:**
 ```
@@ -733,15 +773,232 @@ role_code: PAYROLL_CLERK
 company_code: 1000
 ```
 
-**Approval Flow Setup:**
-- PR approval: Requester creates PR → Buyer + Warehouse Manager approves if amount > 10000
-- PO approval: Buyer creates PO → Procurement Manager approves if amount > 50000
-- SO credit check: Sales Rep creates SO → Credit exposure check FD32/OVA8 → If exposure > limit → Accountant AR approves or blocks
-- GR approval: Warehouse Clerk creates GR 101 → Warehouse Manager posts if tolerance OBA0 ok
-- IV tolerance: Accountant AP creates IV → OBA4 tolerance check – if diff > 5% → block → Accountant GL approves
-- Delivery PGI: Shipping Clerk picks → Warehouse Manager PGI 601 → posts COGS GBB/BSX
-- Billing release: Billing Clerk creates billing → Accountant GL release to accounting VFX3 → posts AR + Revenue KOFI/KOFK
-- Payment Proposal: Accountant AP runs F110-PROP → selects due vendors → Accountant GL approves → F110-RUN creates KZ + DME
+### Title: User Creation Approval Flow – First Step After Company Creation – Who Approves Users
+**Code:** `EUSR-APPROVAL` – User Approval – `POST /api/users` + `POST /api/user-roles` + Workflow SWDD
+
+**User:** `erp_admin` creates → `hr_manager_01` approves → `auditor_01` audits
+
+**Data to be entered – copyable – User Approval Steps:**
+```
+Step 1 – ERP Admin creates role – EROL:
+role_code: PROCUREMENT_REQUESTER
+created_by: erp_admin
+approved_by: hr_manager_01
+status: ACTIVE
+
+Step 2 – ERP Admin creates user – EUSR:
+username: pr_requester_01
+role_code: PROCUREMENT_REQUESTER
+company_code: 1000
+created_by: erp_admin
+status: PENDING_APPROVAL
+
+Step 3 – HR Manager approves user:
+username: pr_requester_01
+approved_by: hr_manager_01
+status: ACTIVE
+action: APPROVE
+
+Step 4 – Auditor audits user creation – CDHDR:
+object_type: USER
+object_id: pr_requester_01
+changed_by: hr_manager_01
+field_name: status
+old_value: PENDING_APPROVAL
+new_value: ACTIVE
+
+Without approval, user cannot login – SWDD workflow WF-USER-01 enforces approval for role assignment
+```
+
+### Title: WHO IS THE USER DOING SPECIFIC FUNCTIONS – Complete Mapping – Mandatory for Testing
+**Code:** `USER-FUNCTION-MATRIX` – Matrix – Who does what – Must onboard users as needed for each function to test approval flow
+
+**Data to be entered – copyable – Function → User → Role → Approval Required:**
+```
+MM – Material Flow PR→IV:
+
+1. Create Material Master EMTC-FULL – MM01:
+   User: master_data_mgr
+   Role: MASTER_DATA_MANAGER
+   Approval: None – master data manager creates directly
+   Data: ITM-1001 RAW valuation_class RAW
+
+2. Create Info Record ME11 PIRC – PO Auto Price:
+   User: buyer_01
+   Role: PROCUREMENT_BUYER
+   Approval: None – buyer creates
+   Data: SUP-1001 + ITM-1001 price 50
+
+3. Create Source List ME01 PSRC – MRP Source:
+   User: buyer_01
+   Role: PROCUREMENT_BUYER
+   Approval: None
+   Data: SUP-1001 + ITM-1001 priority 1 MRP relevant true
+
+4. Create Quota MEQ1 – % Split:
+   User: buyer_01
+   Role: PROCUREMENT_BUYER
+   Approval: None – but total % ≤100 validated
+   Data: ITM-1001 FAC-1000 SUP-1001 60% SUP-1002 40%
+
+5. Create RFQ ME41 + Quotation ME47 + Comparison ME49:
+   User: buyer_01 creates RFQ, vendor replies via quotation (simulated by buyer_01), buyer_01 selects winner ME49 → PO
+   Role: PROCUREMENT_BUYER
+   Approval: Procurement Manager approves RFQ >50000
+   Data: RFQ-xxxx material ITM-1001 qty100, QT-xxxx vendor SUP-1001 price48, QT-xxxx vendor SUP-1002 price45 winner lowest
+
+6. Create PR ME51N:
+   User: pr_requester_01
+   Role: PROCUREMENT_REQUESTER
+   Approval: Warehouse Manager wh_manager_01 approves if amount >10000 – SWDD WF-PR-01
+   Data: ITM-1001 qty100 plant FAC-1000 cost center CC-1000
+
+7. Create PO ME21N – Uses Info Record Price if unit_price 0:
+   User: buyer_01
+   Role: PROCUREMENT_BUYER
+   Approval: Procurement Manager approves if amount >50000 – SWDD WF-PO-01
+   Data: SUP-1001 FAC-1000 lines ITM-1001 qty100 unit_price 0 auto 50 from ME11
+
+8. GR 101 MIGO – Stock + MAP + BSX/WRX:
+   User: wh_clerk_01 creates, wh_manager_01 approves/posts
+   Role: WAREHOUSE_CLERK + WAREHOUSE_MANAGER
+   Approval: WH Manager posts – checks posting period OB52 open + field status OBC4/OBC5 + tolerance OBA0
+   Data: po_number qty100 batch BATCH-1001 sloc0001
+
+9. IV MIRO – WRX Clearing + PRD + Tolerance OBA4:
+   User: accountant_ap_01
+   Role: ACCOUNTANT_AP
+   Approval: accountant_gl_01 approves if diff >5% OBA4 VEND-01
+   Data: po_number gr_number invoice INV-SUP-1001-001 gross5000 qty100 unit50
+
+10. GR/IR Clearing F.13 CLR-* – WRX Zero:
+    User: accountant_ap_01
+    Role: ACCOUNTANT_AP
+    Approval: None – auto
+    Data: action auto clears where GR qty = IV qty
+
+11. Payment Proposal F110-PROP + Run F110-RUN KZ + DME:
+    User: accountant_ap_01 creates proposal, accountant_gl_01 approves, accountant_ap_01 runs
+    Role: ACCOUNTANT_AP + ACCOUNTANT_GL
+    Approval: GL approves proposal → AP runs
+    Data: company 1000 BANK SBI-001 proposal_numbers KZ 53* Dr Vendor Cr Bank
+
+12. Reservation MB21 + GI 261/201 – T2 GOOD:
+    User: wh_clerk_01 creates reservation, prod_planner_01 uses for prod order, wh_clerk_01 GI
+    Role: WAREHOUSE_CLERK + PRODUCTION_PLANNER
+    Approval: WH Manager approves reservation >1000
+    Data: material ITM-1001 facility FAC-1000 sloc0001 qty10 movement261 order ORD-1001 requirement 2026-09-30
+
+13. Physical Inventory MI01+MI04+MI07+MICN – T2 GOOD:
+    User: wh_clerk_01 creates + counts, wh_manager_01 posts
+    Role: WAREHOUSE_CLERK + WAREHOUSE_MANAGER
+    Approval: WH Manager posts variance
+    Data: facility FAC-1000 sloc0001 planned 2026-09-30 lines ITM-1001 system100 counted98 variance2, MICN class A interval30
+
+SD – Sales Flow:
+
+14. Customer Master SCUC + Cust-Mat VD51 + Free Goods VBN1 + Rebate VBO1:
+    User: master_data_mgr creates customer, sales_rep_01 creates cust-mat/free goods/rebate
+    Role: MASTER_DATA_MANAGER + SALES_REP
+    Approval: None
+    Data: CUST-1001 Retail Chain sales org CO-1000 channel SC-10 product line PL-10 credit CRED-1000 limit500000, VD51 CUST-CHILLI-100G, VBN1 buy10 get1 free, VBO1 2% min volume1000
+
+15. Pricing PP-1000 PR00 150 INR:
+    User: master_data_mgr
+    Role: MASTER_DATA_MANAGER
+    Approval: None
+    Data: condition PR00 material ITM-1003 sales org CO-1000 channel SC-10 amount150 INR
+
+16. Sales Order VA01 – Pricing + Free Goods + Credit FD32/OVA8 + Output BA00:
+    User: sales_rep_01 creates, accountant_ar_01 approves if credit exposure > limit
+    Role: SALES_REP + ACCOUNTANT_AR
+    Approval: Credit check FD32 exposure SO+DL+BL+AR vs limit500000 → if >limit block → AR approves
+    Data: customer CUST-1001 sales org CO-1000 channel SC-10 product line PL-10 currency INR payment NT30 pricing PP-1000 credit CRED-1000 lines ITM-1003 qty10 PC plant FAC-1000 TAN
+
+17. Delivery VL01N – Due VL10C + Change VL02N + PGI 601 + Reverse VL09:
+    User: shipping_clerk_01 creates + change + PGI, wh_manager_01 approves PGI
+    Role: SHIPPING_CLERK + WAREHOUSE_MANAGER
+    Approval: WH Manager PGI posts COGS GBB/BSX
+    Data: sales_order SO-xxx facility FAC-1000 shipping DP-1000 priority02 route ROUTE-01 EXW lines sales_line10 material ITM-1003 qty10 sloc0002 batch BATCH-1003, VL02N picking PICKED qty10, PGI 601 posting stock-10 FI Dr COGS5000000000 1000 Cr BSX1000000001 1000, VL09 reverse REV-GI-* restores stock
+
+18. Billing VF01 – Due VF04 + Change VF02 + Cancel VF11 + G2/L2/RE + Output RD00:
+    User: billing_clerk_01 creates/change/cancel/credit memo, accountant_gl_01 release VFX3
+    Role: BILLING_CLERK + ACCOUNTANT_GL
+    Approval: GL release to accounting posts AR + Revenue KOFI/KOFK
+    Data: delivery DN-xxx typeF2 date2026-09-30 payment NT30 lines delivery_line10 material ITM-1003 qty10 unit150, release FI Dr Customer1000000002 1500 Cr Revenue KOFI4000001000 1500 via VKOA, VF02 change payment NT45, VF11 cancel REV-BL-* CANCELLED FI reversed delivery NOT_BILLED, G2 credit memo Dr Revenue Cr Customer, L2 debit Dr Customer Cr Revenue, RE returns movement651 stock+10 reverse revenue, Output RD00 email customer@retailchain.com
+
+PP – Production:
+
+19. PIR MD61 + MRP MD02/MD03 + List MD05 + Conversion MD12 + MMRP:
+    User: prod_planner_01
+    Role: PRODUCTION_PLANNER
+    Approval: None – planner runs
+    Data: MD61 material ITM-1003 facility FAC-1000 qty100 date2026-10-15 type LS version00, MD02 single-level Demand PIR+SO Supply Stock+PO Net shortage→Planned Order, MD03 multi-level BOM dependent ITM-1001/ITM-1002, MD05 list material ITM-1003, MD12 conversion planned_order_id target PR facility FAC-1000 → PR-MD12-*
+
+20. Prod Order CO01 + Change CO02 + Mass COHV + Capacity CM01 + Confirmation CO11N + GI261 + GR101:
+    User: prod_planner_01 create/change/mass/capacity, shop_operator_01 confirm
+    Role: PRODUCTION_PLANNER + SHOP_FLOOR_OPERATOR
+    Approval: Planner REL release – component availability check
+    Data: CO01 material ITM-1003 plant FAC-1000 qty10 type PP01 start2026-09-30 end2026-10-01 copies BOM+Routing, CO02 status REL, CO11N operation0010 yield10 scrap0 activity LAB-01 posts GI261 Dr GBB Cr BSX component ITM-1001 1KG+ITM-1002 0.5KG stock decrease, GR101 finished ITM-1003 qty10 facility FAC-1000 sloc0002 Dr BSX Cr GBB stock+10, COHV mass TECO order_numbers, CM01 capacity WC-1001 capacity100
+
+21. Costing CK11N + CK24 + CK40N:
+    User: accountant_gl_01 + cost_accountant
+    Role: ACCOUNTANT_GL + COST_ACCOUNTANT
+    Approval: Cost Accountant approves release
+    Data: CK11N material ITM-1003 facility FAC-1000 variant PPC1 base1 rollup ITM-1001 0.1*50=5 + ITM-1002 0.05*100=5 + labor WC-1001 5*10=50 total60 prev150 new60 diff-90, CK24 MARK CE-* MARKED, CK24 RELEASE updates std_price60, CK40N mass plant FAC-1000 type STANDARD description Monthly costing Sep2026 created_by accountant_gl_01 COSTxxx
+
+FICO – Finance:
+
+22. GL Posting SA – Field Status OBC4/OBC5:
+    User: accountant_gl_01
+    Role: ACCOUNTANT_GL
+    Approval: None – but field status G001 cost_center required enforced – if missing error
+    Data: SA company1000 posting2026-09-29 reference GL Posting Test lines gl_account1000000001 debit1000 cost_center CC-1000 profit_center PC-1000 text Inventory adjustment + gl_account4000000000 credit1000 cost_center CC-1000
+
+23. Tolerance OBA0/OBA4 + Credit FD32/OVA8:
+    User: accountant_gl_01 creates tolerance, accountant_ap_01 uses in IV/payment, accountant_ar_01 credit, sales_rep_01 SO credit check
+    Role: ACCOUNTANT_GL + ACCOUNTANT_AP + ACCOUNTANT_AR + SALES_REP
+    Approval: GL approves tolerance override, AR approves credit limit increase
+    Data: GL tolerance company1000 group GL-01 upper1000000, Vendor tolerance company1000 group VEND-01 vendor SUP-1001 diff5%, Credit Master customer CUST-1001 credit CRED-1000 limit500000 risk MEDIUM, SO exposure 1500 vs limit OK
+
+24. Reversal FB08 + Reset FBRA + Clearing F.13 + FX F.05 + Payment F110:
+    User: accountant_gl_01 reversal, accountant_ap_01 clearing/payment, accountant_ar_01 FX
+    Role: ACCOUNTANT_GL + ACCOUNTANT_AP + ACCOUNTANT_AR
+    Approval: GL approves reversal reason 01
+    Data: FB08 document FI-1000000001 reason01 action REVERSE REV-* opposite Dr/Cr is_reversed audit, FBRA reset CLR-* RST-*, F.13 auto CLR-* WRX zero, F.05 currency USD rate83.5 date2026-09-30 company1000 action RUN reads foreign open items variance KDM via OBYC posts FXV-* KDM, F110 Proposal company1000 BANK SBI-001 PROP-* + Run company1000 proposal_numbers KZ 53* Dr Vendor Cr Bank DME+advice AP PAID
+
+25. House Bank FI12 + Dunning F150 + Groups OKEON + Activity KL01 + Cycles KSU5 + Workflow SWDD + DMS + Jobs SM37 + Change Docs CDHDR – T2 GOOD:
+    User: accountant_gl_01 house bank, accountant_ar_01 dunning, cost_accountant groups/activity/cycles, erp_admin workflow, wh_clerk_01 DMS, erp_admin jobs, auditor_01 change docs
+    Role: ACCOUNTANT_GL + ACCOUNTANT_AR + COST_ACCOUNTANT + ERP_ADMIN + WAREHOUSE_CLERK + AUDITOR
+    Approval: GL approves house bank, AR approves dunning level
+    Data: FI12 house_bank SBI-001 State Bank India account123456789001 GL8000000001 INR, F150 dunning CUST-1001 level1 amount1500 overdue10, OKEON group CC-GRP-01 Production Cost Centers CC-1000 CC-1001, KL01 activity LAB-01 Labor Hours CC CC-1000 price100 H, KSU5 cycle CYC-01 Production Overhead Allocation sender CC-1000 receiver CC-1001 allocation100%, SWDD workflow WF-PR-01 PR Approval >10000 doc type PR release_strategy threshold10000 approvers wh_manager_01 buyer_01, DMS attachment PO PO-xxx file PO_Attachment.pdf size102400, SM37 job MRP Daily Run type MRP SCHEDULED, CDHDR change doc MATERIAL ITM-1001 changed_by master_data_mgr field standard_price old50 new52
+
+26. Payroll PA03 + PE01 + PC00 + FI Posting:
+    User: hr_manager_01 control+schema, payroll_clerk_01 run, accountant_gl_01 FI posting
+    Role: HR_MANAGER + PAYROLL_CLERK + ACCOUNTANT_GL
+    Approval: HR Manager RELEASED status, GL approves FI posting
+    Data: PA03 company1000 period2026-09 area01 status RELEASED, PE01 schema SCHEMA-01 Standard Payroll Schema wage_types 1000 2000 3000 calc steps CALC_BASIC CALC_ALLOWANCE CALC_GROSS CALC_DEDUCTIONS CALC_NET, Payroll Run period2026-09 employee EMP-1001 description Sep2026 Payroll company1000 gross basic30000 allowance5000 overtime2000 37000 deductions tax3000 insurance1000 4000 net33000, PC00 FI posting period2026-09 company1000 posts PAY-FI-* FI doc FI-PAY-* Dr Payroll Expense6000000000 37000 Cr Payable2000000001 33000
+
+27. Audit – Display Only:
+    User: auditor_01
+    Role: AUDITOR
+    Approval: None – display only + audit logs
+    Data: Universal ledger FULC company1000 posting2026-09-01 to2026-09-30 check BSX/WRX/GBB/PRD/KDM/KOFI/KOFK trial balance zero, CDHDR MATERIAL ITM-1001 std_price 50→52 by master_data_mgr, Audit Logs PR by pr_requester_01 PO buyer_01 GR wh_clerk_01 IV accountant_ap_01 Payment accountant_ap_01 SO sales_rep_01 Delivery shipping_clerk_01 Billing billing_clerk_01 Prod Order prod_planner_01 Confirmation shop_operator_01
+```
+
+**Approval Flow Setup – Updated with Users:**
+- PR approval: Requester `pr_requester_01` creates PR → Buyer `buyer_01` + Warehouse Manager `wh_manager_01` approves if amount > 10000 – SWDD WF-PR-01 – T2 GOOD
+- PO approval: Buyer `buyer_01` creates PO → Procurement Manager (role PROCUREMENT_BUYER with approval permission) approves if amount > 50000 – SWDD WF-PO-01 – uses info record ME11 price if unit_price 0
+- SO credit check: Sales Rep `sales_rep_01` creates SO → Credit exposure check FD32/OVA8 → If exposure > limit → Accountant AR `accountant_ar_01` approves or blocks – increases FD32 limit or OVA8 warning
+- GR approval: Warehouse Clerk `wh_clerk_01` creates GR 101 → Warehouse Manager `wh_manager_01` posts if tolerance OBA0 ok + posting period OB52 open + field status OBC4/OBC5
+- IV tolerance: Accountant AP `accountant_ap_01` creates IV → OBA4 tolerance check – if diff > 5% → block → Accountant GL `accountant_gl_01` approves override
+- Delivery PGI: Shipping Clerk `shipping_clerk_01` picks → Warehouse Manager `wh_manager_01` PGI 601 → posts COGS GBB/BSX – batch where-used MSC1N + serial
+- Billing release: Billing Clerk `billing_clerk_01` creates billing → Accountant GL `accountant_gl_01` release to accounting VFX3 → posts AR + Revenue KOFI/KOFK + output RD00 email
+- Payment Proposal: Accountant AP `accountant_ap_01` runs F110-PROP → selects due vendors → Accountant GL `accountant_gl_01` approves → F110-RUN creates KZ + DME file + advice
+- Prod Order: Production Planner `prod_planner_01` creates REL → Shop Operator `shop_operator_01` confirms CO11N GI 261 + GR 101 → Cost Accountant `cost_accountant` runs costing CK40N
+- Payroll: HR Manager `hr_manager_01` releases PA03 control → Payroll Clerk `payroll_clerk_01` runs payroll → Accountant GL `accountant_gl_01` posts to FI PC00
+- Audit: Auditor `auditor_01` displays universal ledger + change docs CDHDR + audit logs – display only – no create
+- User Approval: ERP Admin `erp_admin` creates role EROL + user EUSR status PENDING_APPROVAL → HR Manager `hr_manager_01` approves status ACTIVE → Auditor `auditor_01` audits CDHDR change doc USER status PENDING→ACTIVE – SWDD WF-USER-01 enforces approval for role assignment – NO USER → NO FUNCTION TESTING – T2 GOOD
 
 ---
 
