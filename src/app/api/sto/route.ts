@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * Stock Transport Order API – Legal-safe own IP – Module 6 MM Procurement
@@ -153,6 +154,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let sto_number = body.sto_number;
+    if (!sto_number) {
+      try {
+        const next = await getNextDocumentNumber('STO', body.company_code || body.legal_entity_code || '1000');
+        sto_number = next.document_number;
+      } catch { sto_number = `STO-${Date.now()}`; }
+    }
     const { supplying_facility_id, supplying_plant_id, supplying_facility_code, supplying_plant_code, receiving_facility_id, receiving_plant_id, receiving_facility_code, receiving_plant_code, type, header_text, lines, currency_code, freight_cost } = body;
 
     let supplyingFacilityIdResolved = supplying_facility_id || supplying_plant_id;
@@ -229,6 +238,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.sto_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, sto_number, status, action, sto_line_id, quantity } = body;
     if (!id && !sto_number) return NextResponse.json({ error: 'id or sto_number required' }, { status: 400 });
 

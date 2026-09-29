@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * BOM API – Legal-safe own IP – Module 7 PP Manufacturing
@@ -138,6 +139,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let bom_number = body.bom_number;
+    if (!bom_number) {
+      try {
+        const next = await getNextDocumentNumber('BOM', body.company_code || body.legal_entity_code || '1000');
+        bom_number = next.document_number;
+      } catch { bom_number = `BOM-${Date.now()}`; }
+    }
     const { item_id, material_id, item_number, facility_id, plant_id, facility_code, plant_code, type, version, base_quantity, base_uom, is_phantom, is_kit, expiry_rule, lines } = body;
 
     let itemIdResolved = item_id || material_id;
@@ -213,6 +222,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.bom_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, bom_number, status } = body;
     if (!id && !bom_number) return NextResponse.json({ error: 'id or bom_number required' }, { status: 400 });
 

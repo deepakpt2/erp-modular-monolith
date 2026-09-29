@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * Purchase Requisition API – Legal-safe own IP – Module 6 MM Procurement
@@ -237,7 +238,8 @@ export async function POST(req: NextRequest) {
         await db.execute(sql`UPDATE proc_purchase_requisition SET total_amount = ${total} WHERE id = ${prId}`);
       }
 
-      return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC legal-safe`, legalSafe: true });
+            try { await createDocumentEntry({ document_type: 'PR', document_number: prNumber, company_code: finalLegalCode || '1000', fiscal_year: new Date().getFullYear().toString(), created_by: 'system', payload: { pr_number: prNumber, facility_id: facilityIdResolved } }); } catch (e) { console.warn('Doc entry failed', e); }
+      return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC legal-safe`, legalSafe: true, document_number: prNumber });
     } catch (newErr: any) {
       console.warn('proc_purchase_requisition insert failed fallback mm_purchase_requisition:', newErr.message);
       // Fallback legacy
@@ -284,6 +286,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.pr_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, pr_number, status } = body;
     if (!id && !pr_number) return NextResponse.json({ error: 'id or pr_number required' }, { status: 400 });
 

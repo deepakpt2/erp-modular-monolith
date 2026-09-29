@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * Work Centers API – Legal-safe own IP – Module 7 PP Manufacturing
@@ -81,6 +82,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let work_center_code = body.work_center_code;
+    if (!work_center_code) {
+      try {
+        const next = await getNextDocumentNumber('WC', body.company_code || body.legal_entity_code || '1000');
+        work_center_code = next.document_number;
+      } catch { work_center_code = `WC-${Date.now()}`; }
+    }
     const { code, name, facility_id, plant_id, facility_code, plant_code, cost_unit_id, cost_center_id, capacity_per_hour, labor_rate_per_hour, machine_rate_per_hour, overhead_rate_percent, setup_time_minutes, description } = body;
     if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
 
@@ -135,6 +144,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.work_center_code || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, code, name, is_active } = body;
     if (!id && !code) return NextResponse.json({ error: 'id or code required' }, { status: 400 });
 

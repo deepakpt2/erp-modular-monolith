@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * Goods Receipt API – Legal-safe own IP – Module 6 MM Procurement
@@ -119,6 +120,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let gr_number = body.gr_number;
+    if (!gr_number) {
+      try {
+        const next = await getNextDocumentNumber('GR', body.company_code || body.legal_entity_code || '1000');
+        gr_number = next.document_number;
+      } catch { gr_number = `GR-${Date.now()}`; }
+    }
     const { po_id, po_number, facility_id, plant_id, facility_code, plant_code, posting_date, document_date, header_text, lines } = body;
 
     let poIdResolved = po_id;
@@ -247,6 +256,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.gr_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, gr_number, status } = body;
     if (!id && !gr_number) return NextResponse.json({ error: 'id or gr_number required' }, { status: 400 });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * Routings API – Legal-safe own IP – Module 7 PP Manufacturing
@@ -133,6 +134,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let routing_number = body.routing_number;
+    if (!routing_number) {
+      try {
+        const next = await getNextDocumentNumber('ROUTING', body.company_code || body.legal_entity_code || '1000');
+        routing_number = next.document_number;
+      } catch { routing_number = `ROUTING-${Date.now()}`; }
+    }
     const { item_id, material_id, item_number, facility_id, plant_id, facility_code, plant_code, bom_header_id, bom_number, description, version, lot_size_from, lot_size_to, operations, lines } = body;
 
     let itemIdResolved = item_id || material_id;
@@ -199,6 +208,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.routing_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, routing_number, status } = body;
     if (!id && !routing_number) return NextResponse.json({ error: 'id or routing_number required' }, { status: 400 });
 

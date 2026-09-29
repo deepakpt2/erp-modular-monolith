@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * Sales Orders API – Legal-safe own IP – Module 8 SD Sales & Distribution
@@ -147,6 +148,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let order_number = body.order_number;
+    if (!order_number) {
+      try {
+        const next = await getNextDocumentNumber('SO', body.company_code || body.legal_entity_code || '1000');
+        order_number = next.document_number;
+      } catch { order_number = `SO-${Date.now()}`; }
+    }
     const { facility_id, plant_id, facility_code, plant_code, legal_entity_code, company_code, partner_id, customer_id, partner_number, customer_number, customer_name, type, payment_type, source, external_id, required_date, customer_po_number, shipping_point, delivery_priority, route, incoterms, billing_type, payment_terms, commercial_org_id, sales_org, sales_channel_id, distribution_channel, product_line_id, division, lines, currency_code } = body;
 
     let facilityIdResolved = facility_id || plant_id;
@@ -248,6 +257,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.order_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, sales_number, status } = body;
     if (!id && !sales_number) return NextResponse.json({ error: 'id or sales_number required' }, { status: 400 });
 

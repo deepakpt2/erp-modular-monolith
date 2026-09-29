@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * Invoice Verification API – Legal-safe own IP – Module 6 MM Procurement
@@ -108,6 +109,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let iv_number = body.iv_number;
+    if (!iv_number) {
+      try {
+        const next = await getNextDocumentNumber('IV', body.company_code || body.legal_entity_code || '1000');
+        iv_number = next.document_number;
+      } catch { iv_number = `IV-${Date.now()}`; }
+    }
     const { po_id, po_number, gr_id, gr_number, partner_id, vendor_id, partner_number, vendor_number, invoice_date, posting_date, vendor_invoice_number, total_amount, tax_amount, freight_amount, customs_amount, other_charges, lines } = body;
 
     let poIdResolved = po_id;
@@ -234,6 +243,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.iv_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, iv_number, status } = body;
     if (!id && !iv_number) return NextResponse.json({ error: 'id or iv_number required' }, { status: 400 });
 

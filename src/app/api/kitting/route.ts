@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 
 /**
  * Kitting API – Legal-safe own IP – Module 7 PP Manufacturing
@@ -85,6 +86,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let kit_number = body.kit_number;
+    if (!kit_number) {
+      try {
+        const next = await getNextDocumentNumber('KIT', body.company_code || body.legal_entity_code || '1000');
+        kit_number = next.document_number;
+      } catch { kit_number = `KIT-${Date.now()}`; }
+    }
     const { production_order_id, kit_item_id, kit_item_number, target_lot_id, target_quantity, min_component_expiry, calculated_expiry } = body;
 
     let kitItemIdResolved = kit_item_id;
@@ -139,6 +148,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.kit_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, kitting_number, status } = body;
     if (!id && !kitting_number) return NextResponse.json({ error: 'id or kitting_number required' }, { status: 400 });
 

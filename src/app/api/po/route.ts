@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db, withTransaction } from '@/shared/kernel/db/client';
+import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -134,6 +135,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // SAP-like unique document number – FNDC – auto-generate from FNRC if not provided
+    let po_number = body.po_number;
+    if (!po_number) {
+      try {
+        const next = await getNextDocumentNumber('PO', body.company_code || body.legal_entity_code || '1000');
+        po_number = next.document_number;
+      } catch { po_number = `PO-${Date.now()}`; }
+    }
     const { facility_id, plant_id, facility_code, plant_code, legal_entity_code, company_code, partner_id, vendor_id, partner_number, vendor_number, pr_id, pr_number, delivery_date, header_text, lines, currency_code, payment_terms_days, incoterms, freight_amount, customs_amount, tax_amount } = body;
 
     const finalFacilityCode = facility_code || plant_code;
@@ -279,6 +288,11 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // Immutable audit trail – log before update
+    try {
+      const docNum = body.po_number || body.document_number || body.id;
+      if (docNum) await updateDocumentWithAudit({ document_number: docNum, new_payload: body, changed_by: 'system', action: 'UPDATE' });
+    } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
     const { id, po_number, status, delivery_completed, po_line_id } = body;
     if (!id && !po_number && !po_line_id) return NextResponse.json({ error: 'id or po_number or po_line_id required' }, { status: 400 });
 
