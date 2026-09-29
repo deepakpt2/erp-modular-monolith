@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-      const { code, name, description, tenant_id, tenant_code, company_group_id, company_group_code, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number } = body;
+      const { code, name, description, tenant_id, tenant_code, company_group_id, company_group_code, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, fiscal_calendar_code } = body;
       if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
       let tenantId = tenant_id;
       if (!tenantId) {
@@ -57,11 +57,32 @@ export async function POST(req: NextRequest) {
         if (cgr.rows.length) cgId = cgr.rows[0].id;
       }
       try {
-        const res = await db.execute(sql`
-          INSERT INTO org_legal_entity (tenant_id, company_group_id, code, name, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, description)
-          VALUES (${tenantId}, ${cgId || null}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null}, ${description || null})
-          ON CONFLICT DO NOTHING RETURNING id, code, name
-        `);
+        // Try with fiscal_calendar_code if column exists – fallback without it
+        let res;
+        try {
+          res = await db.execute(sql`
+            INSERT INTO org_legal_entity (tenant_id, company_group_id, code, name, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, description, fiscal_calendar_code)
+            VALUES (${tenantId}, ${cgId || null}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null}, ${description || null}, ${fiscal_calendar_code || 'K4'})
+            ON CONFLICT DO NOTHING RETURNING id, code, name
+          `);
+        } catch (fiscalErr: any) {
+          // Column fiscal_calendar_code may not exist yet – fallback without it, store fiscal in description if needed
+          if (fiscalErr.message?.includes('fiscal_calendar_code')) {
+            res = await db.execute(sql`
+              INSERT INTO org_legal_entity (tenant_id, company_group_id, code, name, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, description)
+              VALUES (${tenantId}, ${cgId || null}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null}, ${description || null})
+              ON CONFLICT DO NOTHING RETURNING id, code, name
+            `);
+            // Also try to create assignment to fiscal calendar if table exists
+            try {
+              if (fiscal_calendar_code) {
+                await db.execute(sql`INSERT INTO org_legal_entity_fiscal_assign (legal_entity_id, fiscal_calendar_code) VALUES (${res.rows[0]?.id}, ${fiscal_calendar_code}) ON CONFLICT DO NOTHING`).catch(()=>{});
+              }
+            } catch {}
+          } else {
+            throw fiscalErr;
+          }
+        }
         if (res.rows.length===0) {
           const ex = await db.execute(sql`SELECT id, code, name FROM org_legal_entity WHERE tenant_id=${tenantId} AND code=${code} LIMIT 1`);
           if (ex.rows.length) {

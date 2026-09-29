@@ -61,6 +61,8 @@ export const orgLegalEntity = pgTable('org_legal_entity', {
   website: varchar('website', { length: 100 }),
   legalForm: varchar('legal_form', { length: 50 }),
   registrationNumber: varchar('registration_number', { length: 50 }),
+  fiscalCalendarCode: varchar('fiscal_calendar_code', { length: 20 }).default('K4'),
+  description: text('description'),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
