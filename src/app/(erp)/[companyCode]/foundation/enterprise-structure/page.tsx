@@ -41,7 +41,7 @@ export default function EnterpriseStructurePage() {
     code: '', name: '', company_group_code: '', currency_code: 'INR', country: 'IN', city: '',
     address: '', street: '', postal_code: '', region: '', tax_id: '', gst_number: '', pan: '', cin: '',
     phone: '', email: '', website: '', legal_form: '', registration_number: '', description: '',
-    tenant_code: 'TEN-100', fiscal_calendar_code: 'K4'
+    tenant_code: 'TEN-100', fiscal_calendar_code: 'K4', posting_period_variant_code: '1000'
   });
   const [caForm, setCaForm] = useState({ code: '', name: '', currency_code: 'INR', description: '', tenant_code: 'TEN-100' });
   const [facForm, setFacForm] = useState({ code: '', name: '', legal_entity_code: '', city: '', country: 'IN', address: '', description: '' });
@@ -270,7 +270,8 @@ export default function EnterpriseStructurePage() {
                 <div><label className="text-[11px] text-zinc-500 font-medium">CITY</label><input value={leForm.city} onChange={e => setLeForm({ ...leForm, city: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" placeholder="CITY" /></div>
                 <div><label className="text-[11px] text-zinc-500 font-medium">TAX_ID</label><input value={leForm.tax_id} onChange={e => setLeForm({ ...leForm, tax_id: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" placeholder="TAX_ID" /></div>
                 <div><label className="text-[11px] text-zinc-500 font-medium">GST_NUMBER</label><input value={leForm.gst_number} onChange={e => setLeForm({ ...leForm, gst_number: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" placeholder="GST_NUMBER" /></div>
-                <DbAutocomplete label="FISCAL_CALENDAR_CODE *" value={leForm.fiscal_calendar_code} onChange={v => setLeForm({ ...leForm, fiscal_calendar_code: v })} apiUrl="/api/fiscal-calendars" dataKey="fiscalCalendars" codeField="code" nameField="name" placeholder="FISCAL_CALENDAR_CODE" required createUrl={`/${companyCode}/fico/posting-period?focus=FFYC`} createCode="FFYC" />
+                <DbAutocomplete label="FISCAL_CALENDAR_CODE *" value={leForm.fiscal_calendar_code} onChange={v => setLeForm({ ...leForm, fiscal_calendar_code: v })} apiUrl="/api/fiscal-calendars" dataKey="fiscalCalendars" codeField="code" nameField="name" placeholder="FISCAL_CALENDAR_CODE" required createUrl={`/${companyCode}/fico/posting-period?focus=FFYC`} createCode="FFYC" companyCode={companyCode} />
+                <DbAutocomplete label="POSTING_PERIOD_VARIANT_CODE *" value={leForm.posting_period_variant_code} onChange={v => setLeForm({ ...leForm, posting_period_variant_code: v })} apiUrl="/api/posting-period-variants" dataKey="postingPeriodVariants" codeField="code" nameField="name" placeholder="POSTING_PERIOD_VARIANT_CODE – e.g., 1000" required createUrl={`/${companyCode}/fico/posting-period?focus=OBBO`} createCode="OBBO" companyCode={companyCode} />
                 <div className="col-span-3"><label className="text-[11px] text-zinc-500 font-medium">DESCRIPTION</label><input value={leForm.description} onChange={e => setLeForm({ ...leForm, description: e.target.value })} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm" placeholder="DESCRIPTION" /></div>
               </div>
               <button onClick={() => postData('/api/legal-entities', leForm, 'LEGAL_ENTITY CREATED')} className="mt-4 w-full bg-zinc-900 text-white rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-black transition-colors">Create Legal Entity</button>

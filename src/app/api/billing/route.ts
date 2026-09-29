@@ -3,6 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from '@/shared/kernel/db/documentHelpers';
+import { enforcePostingPeriod, getFiscalYearPeriodFromDate } from '@/shared/kernel/db/postingPeriodHelpers';
 import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared/kernel/db/reversalHelpers';
 
 /**
@@ -140,6 +141,30 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    // SAP-like posting period enforcement – OB52 – check if period open for account type D
+    try {
+      const postingDate = body.posting_date || body.posting_date || new Date().toISOString();
+      const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';
+      const fiscalCheck = await getFiscalYearPeriodFromDate(companyCodeForPosting, postingDate);
+      const postingCheck = await enforcePostingPeriod({ company_code: companyCodeForPosting, posting_date: postingDate, account_type: 'D' });
+      if (!postingCheck.allowed) {
+        return NextResponse.json({ 
+          error: postingCheck.message,
+          fiscal_year: postingCheck.fiscal_year,
+          fiscal_period: postingCheck.fiscal_period,
+          variant_code: postingCheck.variant_code,
+          posting_date: postingDate,
+          account_type: 'D',
+          help: `Create open period via POST /api/posting-period-variants with variant_code=${postingCheck.variant_code}, account_type=D, from_period=${postingCheck.fiscal_period}, from_year=${postingCheck.fiscal_year}, to_period=${postingCheck.fiscal_period}, to_year=${postingCheck.fiscal_year}, is_open=true`
+        }, { status: 400 });
+      }
+      // Attach fiscal info to body for storage
+      (body as any)._fiscal_year = postingCheck.fiscal_year;
+      (body as any)._fiscal_period = postingCheck.fiscal_period;
+    } catch (ppErr: any) {
+      console.warn('Posting period enforcement failed, allowing posting to not block fresh:', ppErr.message);
+    }
     const { sales_order_id, salesOrderId, delivery_id, deliveryId, partner_id, customer_id, partnerId, type, billing_type, payment_terms, incoterms, billing_block, due_date, lines, currency_code } = body;
 
     const finalSalesOrderId = sales_order_id || salesOrderId;

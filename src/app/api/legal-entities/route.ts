@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-      const { code, name, description, tenant_id, tenant_code, company_group_id, company_group_code, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, fiscal_calendar_code } = body;
+      const { code, name, description, tenant_id, tenant_code, company_group_id, company_group_code, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, fiscal_calendar_code, posting_period_variant_code } = body;
       if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
       let tenantId = tenant_id;
       if (!tenantId) {
@@ -96,6 +96,32 @@ export async function POST(req: NextRequest) {
           }
         } catch {}
       }
+      if (posting_period_variant_code) {
+        let ppExists = false;
+        try {
+          const ppr = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE code=${posting_period_variant_code} LIMIT 1`);
+          if (ppr.rows.length > 0) ppExists = true;
+        } catch {}
+        if (!ppExists) {
+          try {
+            const ppr2 = await db.execute(sql`SELECT id FROM fi_posting_period_variant WHERE code=${posting_period_variant_code} LIMIT 1`);
+            if (ppr2.rows.length > 0) ppExists = true;
+          } catch {}
+        }
+        if (!ppExists) {
+          let validPP: string[] = [];
+          try {
+            const list = await db.execute(sql`SELECT code FROM fin_posting_calendar ORDER BY code LIMIT 20`);
+            validPP = list.rows.map((r:any)=>r.code);
+          } catch {
+            try {
+              const list = await db.execute(sql`SELECT code FROM fi_posting_period_variant ORDER BY code LIMIT 20`);
+              validPP = list.rows.map((r:any)=>r.code);
+            } catch {}
+          }
+          return NextResponse.json({ error: `POSTING_PERIOD_VARIANT_CODE ${posting_period_variant_code} not found in DB – create it first via OBBO. Valid: ${validPP.join(', ') || '1000, KS01 – POST /api/posting-period-variants'}`, validCodes: validPP }, { status: 400 });
+        }
+      }
 
       let cgId = company_group_id;
       if (!cgId && company_group_code) {
@@ -103,26 +129,37 @@ export async function POST(req: NextRequest) {
         if (cgr.rows.length) cgId = cgr.rows[0].id;
       }
       try {
-        // Try with fiscal_calendar_code if column exists – fallback without it
+        // Try with fiscal_calendar_code and posting_period_variant_code if columns exist – fallback without
         let res;
         try {
           res = await db.execute(sql`
-            INSERT INTO org_legal_entity (tenant_id, company_group_id, code, name, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, description, fiscal_calendar_code)
-            VALUES (${tenantId}, ${cgId || null}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null}, ${description || null}, ${fiscal_calendar_code || 'K4'})
+            INSERT INTO org_legal_entity (tenant_id, company_group_id, code, name, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, description, fiscal_calendar_code, posting_period_variant_code)
+            VALUES (${tenantId}, ${cgId || null}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null}, ${description || null}, ${fiscal_calendar_code || 'K4'}, ${posting_period_variant_code || '1000'})
             ON CONFLICT DO NOTHING RETURNING id, code, name
           `);
         } catch (fiscalErr: any) {
-          // Column fiscal_calendar_code may not exist yet – fallback without it, store fiscal in description if needed
-          if (fiscalErr.message?.includes('fiscal_calendar_code')) {
-            res = await db.execute(sql`
-              INSERT INTO org_legal_entity (tenant_id, company_group_id, code, name, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, description)
-              VALUES (${tenantId}, ${cgId || null}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null}, ${description || null})
-              ON CONFLICT DO NOTHING RETURNING id, code, name
-            `);
-            // Also try to create assignment to fiscal calendar if table exists
+          // Column fiscal_calendar_code or posting_period_variant_code may not exist yet – fallback without it
+          if (fiscalErr.message?.includes('fiscal_calendar_code') || fiscalErr.message?.includes('posting_period_variant_code')) {
+            try {
+              res = await db.execute(sql`
+                INSERT INTO org_legal_entity (tenant_id, company_group_id, code, name, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, description, fiscal_calendar_code)
+                VALUES (${tenantId}, ${cgId || null}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null}, ${description || null}, ${fiscal_calendar_code || 'K4'})
+                ON CONFLICT DO NOTHING RETURNING id, code, name
+              `);
+            } catch {
+              res = await db.execute(sql`
+                INSERT INTO org_legal_entity (tenant_id, company_group_id, code, name, currency_code, city, country, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number, description)
+                VALUES (${tenantId}, ${cgId || null}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null}, ${description || null})
+                ON CONFLICT DO NOTHING RETURNING id, code, name
+              `);
+            }
+            // Also try to create assignment to fiscal calendar and posting period if tables exist
             try {
               if (fiscal_calendar_code) {
                 await db.execute(sql`INSERT INTO org_legal_entity_fiscal_assign (legal_entity_id, fiscal_calendar_code) VALUES (${res.rows[0]?.id}, ${fiscal_calendar_code}) ON CONFLICT DO NOTHING`).catch(()=>{});
+              }
+              if (posting_period_variant_code) {
+                await db.execute(sql`INSERT INTO org_legal_entity_posting_assign (legal_entity_id, posting_period_variant_code) VALUES (${res.rows[0]?.id}, ${posting_period_variant_code}) ON CONFLICT DO NOTHING`).catch(()=>{});
               }
             } catch {}
           } else {

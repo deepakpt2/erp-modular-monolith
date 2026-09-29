@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { enforcePostingPeriod, getFiscalYearPeriodFromDate } from '@/shared/kernel/db/postingPeriodHelpers';
 
 /**
  * Documents API – SAP-like unique document for every business transaction
@@ -123,6 +124,30 @@ export async function POST(req: NextRequest) {
   try {
     await ensureTables();
     const body = await req.json();
+
+    // SAP-like posting period enforcement – OB52 – check if period open for account type +
+    try {
+      const postingDate = body.posting_date || body.posting_date || new Date().toISOString();
+      const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';
+      const fiscalCheck = await getFiscalYearPeriodFromDate(companyCodeForPosting, postingDate);
+      const postingCheck = await enforcePostingPeriod({ company_code: companyCodeForPosting, posting_date: postingDate, account_type: '+' });
+      if (!postingCheck.allowed) {
+        return NextResponse.json({ 
+          error: postingCheck.message,
+          fiscal_year: postingCheck.fiscal_year,
+          fiscal_period: postingCheck.fiscal_period,
+          variant_code: postingCheck.variant_code,
+          posting_date: postingDate,
+          account_type: '+',
+          help: `Create open period via POST /api/posting-period-variants with variant_code=${postingCheck.variant_code}, account_type=+, from_period=${postingCheck.fiscal_period}, from_year=${postingCheck.fiscal_year}, to_period=${postingCheck.fiscal_period}, to_year=${postingCheck.fiscal_year}, is_open=true`
+        }, { status: 400 });
+      }
+      // Attach fiscal info to body for storage
+      (body as any)._fiscal_year = postingCheck.fiscal_year;
+      (body as any)._fiscal_period = postingCheck.fiscal_period;
+    } catch (ppErr: any) {
+      console.warn('Posting period enforcement failed, allowing posting to not block fresh:', ppErr.message);
+    }
     const { document_type, documentType, document_number, documentNumber, company_code, companyCode, fiscal_year, fiscalYear, reference, payload, created_by, createdBy } = body;
     const finalType = (document_type || documentType || 'FI_DOC').toUpperCase();
     const finalCompany = company_code || companyCode || '1000';
