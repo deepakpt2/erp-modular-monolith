@@ -42,7 +42,7 @@ export default function GlAccountsPage(){
           <div><div className="text-[9px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
           <div><div className="text-[9px] text-zinc-500">ACCOUNT_TYPE</div><select value={form.account_type} onChange={e=>setForm({...form,account_type:e.target.value})} className="w-full border-2 border-black px-1 py-1"><option>ASSET</option><option>LIABILITY</option><option>EXPENSE</option><option>REVENUE</option><option>EQUITY</option></select></div>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE FGLC</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
       <div className="grid md:grid-cols-3 gap-2">
         {gls.map((g:any)=>(

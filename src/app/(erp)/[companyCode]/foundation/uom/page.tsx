@@ -37,7 +37,7 @@ export default function UomPage(){
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Units of Measure <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">{uoms.length} {primaryCode}</span></h3>
         <div className="flex gap-2">
-          <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black">+ Create {primaryCode}</button>
+          <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black">Create {primaryCode}</button>
           <button onClick={load} className="text-xs border rounded-full px-4 py-2 bg-white">Refresh</button>
         </div>
       </div>
@@ -75,7 +75,7 @@ export default function UomPage(){
         <div><div className="text-[10px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">DIMENSION</div><select value={form.dimension} onChange={e=>setForm({...form,dimension:e.target.value})} className="w-full border border-black px-1 py-1 text-xs"><option>QUANTITY</option><option>WEIGHT</option><option>VOLUME</option></select></div>
       </div>
-      <button onClick={handleCreate} className="bg-black text-white px-3 py-1 w-full">CREATE EUOC</button>
+      <button onClick={handleCreate} className="bg-black text-white px-3 py-1 w-full">CREATE</button>
     </div>
   );
 

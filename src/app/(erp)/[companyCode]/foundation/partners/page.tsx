@@ -44,7 +44,7 @@ export default function PartnersPage() {
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Business Partners <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">{partners.length} EPAC</span> <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." className="ml-3 border border-zinc-200 rounded-full px-3 py-1.5 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-black" /></h3>
         <div className="flex gap-2">
-          <button onClick={()=>setShowAdd(!showAdd)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black transition-colors">+ Create EPAC</button>
+          <button onClick={()=>setShowAdd(!showAdd)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black transition-colors">Create EPAC</button>
           <button onClick={load} className="text-xs border border-zinc-200 rounded-full px-4 py-2 bg-white hover:bg-zinc-50">Refresh</button>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function PartnersPage() {
         <div><div className="text-[10px] text-zinc-500">DISPLAY_NAME</div><input value={form.display_name} onChange={e=>setForm({...form,display_name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">ROLE</div><select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="w-full border border-black px-1 py-1 text-xs"><option>VENDOR</option><option>CUSTOMER</option><option>BOTH</option></select></div>
       </div>
-      <button onClick={(e:any)=>handleCreate(e)} className="bg-black text-white px-3 py-1 w-full">CREATE EPAC</button>
+      <button onClick={(e:any)=>handleCreate(e)} className="bg-black text-white px-3 py-1 w-full">CREATE</button>
     </div>
   );
 

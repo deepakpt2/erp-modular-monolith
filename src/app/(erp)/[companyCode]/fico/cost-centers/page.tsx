@@ -66,7 +66,7 @@ export default function CostCentersPage(){
         <div><div className="text-[10px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">COMPANY_CODE</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
       </div>
-      <button onClick={create} className="bg-black text-white px-3 py-1 w-full">CREATE KS01</button>
+      <button onClick={create} className="bg-black text-white px-3 py-1 w-full">CREATE</button>
     </div>
   );
 

@@ -41,7 +41,7 @@ export default function MaterialsPage() {
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Products <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">{materials.length} EMTC</span> <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." className="ml-3 border border-zinc-200 rounded-full px-3 py-1.5 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-black" /></h3>
         <div className="flex gap-2">
-          <button onClick={()=>setShowAdd(!showAdd)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black">+ Create EMTC</button>
+          <button onClick={()=>setShowAdd(!showAdd)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black">Create EMTC</button>
           <button onClick={load} className="text-xs border border-zinc-200 rounded-full px-4 py-2 bg-white">Refresh</button>
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function MaterialsPage() {
         <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">TYPE</div><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} className="w-full border border-black px-1 py-1 text-xs"><option>RAW</option><option>SEMI</option><option>FINISHED</option></select></div>
       </div>
-      <button onClick={(e:any)=>handleCreate(e)} className="bg-black text-white px-3 py-1 w-full">CREATE EMTC</button>
+      <button onClick={(e:any)=>handleCreate(e)} className="bg-black text-white px-3 py-1 w-full">CREATE</button>
     </div>
   );
 

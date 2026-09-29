@@ -44,7 +44,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">ROLE</div><input value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="ROLE" /></div>
           <div><div className="text-[9px] text-zinc-500">PASSWORD</div><input value={form.password} onChange={e=>setForm({...form,password:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="PASSWORD" /></div>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE SU01</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(

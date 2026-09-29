@@ -46,7 +46,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">CURRENCY_CODE * (DB: FCYC)</div><input value={(form as any).currency_code} onChange={e=>setForm({...form,currency_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CURRENCY_CODE" /></div>
           <div><div className="text-[9px] text-zinc-500">COA_CODE</div><input value={(form as any).coa_code} onChange={e=>setForm({...form,coa_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COA_CODE" /></div>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE OX02</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(

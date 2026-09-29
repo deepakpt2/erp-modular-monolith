@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
@@ -28,6 +28,16 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
   const { data: session, status } = useSession();
   const isLoggedIn = status === 'authenticated' && session?.user;
   const moduleInfo = MODULE_CLASSIFICATION[module];
+
+  // Persist view mode across pages
+  useEffect(() => {
+    const saved = localStorage.getItem('erp-view-mode') as 'modern' | 'classic' | null;
+    if (saved) setView(saved);
+  }, []);
+  const setViewPersist = (v: 'modern' | 'classic') => {
+    setView(v);
+    localStorage.setItem('erp-view-mode', v);
+  };
 
   const handleCmdEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -77,7 +87,7 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
                 {(session?.user as any)?.email?.split('@')[0]} {(session?.user as any)?.role}
               </span>
             )}
-            <button onClick={() => setView('modern')} className="ml-2 h-[20px] px-3 bg-white text-black text-[11px] font-bold hover:bg-zinc-200">
+            <button onClick={() => setViewPersist('modern')} className="ml-2 h-[20px] px-3 bg-white text-black text-[11px] font-bold hover:bg-zinc-200">
               MODERN
             </button>
           </div>
@@ -223,7 +233,7 @@ export function ModernModuleShell({ title, subtitle, code, module, children, cla
                 </div>
               </div>
             ) : null}
-            <button onClick={() => setView('classic')} className="text-xs border rounded-full px-3 py-1.5 bg-black text-white hover:bg-zinc-800 transition-colors" title="Classic – Power user, no nonsense, only required fields, exact names">Classic</button>
+            <button onClick={() => setViewPersist('classic')} className="text-xs border rounded-full px-3 py-1.5 bg-black text-white hover:bg-zinc-800 transition-colors" title="Classic – Power user, no nonsense, only required fields, exact names">Classic</button>
             <Link href="/" className="text-xs bg-zinc-900 text-white rounded-full px-3 py-1.5 hover:bg-black transition-colors">Home</Link>
           </div>
         </div>

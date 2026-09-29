@@ -45,7 +45,7 @@ export default function TaxCodesPage(){
           <div><div className="text-[9px] text-zinc-500">HSN_CODE</div><input value={form.hsn_code} onChange={e=>setForm({...form,hsn_code:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="HSN_CODE" /></div>
           <div><div className="text-[9px] text-zinc-500">LEDGER_ACCOUNT_CODE</div><input value={form.ledger_account_code} onChange={e=>setForm({...form,ledger_account_code:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="LEDGER_ACCOUNT_CODE" /></div>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE FTXC</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
       <div className="grid md:grid-cols-3 gap-2">
         {taxes.map((t:any)=>(

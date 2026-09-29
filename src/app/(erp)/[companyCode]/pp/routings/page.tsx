@@ -44,7 +44,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">OPERATION</div><input value={form.operation} onChange={e=>setForm({...form,operation:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="OPERATION" /></div>
           <div><div className="text-[9px] text-zinc-500">WORK_CENTER * (DB: CR01)</div><input value={(form as any).work_center} onChange={e=>setForm({...form,work_center:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="WORK_CENTER" /></div>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE CA01</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(

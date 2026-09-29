@@ -39,7 +39,7 @@ export default function MaterialTypesPage(){
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Product Types <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">{types.length} {primaryCode}</span></h3>
         <div className="flex gap-2">
-          <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black transition-colors">+ Create {primaryCode}</button>
+          <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black transition-colors">Create {primaryCode}</button>
           <button onClick={load} className="text-xs border border-zinc-200 rounded-full px-4 py-2 bg-white hover:bg-zinc-50">Refresh</button>
         </div>
       </div>
@@ -74,7 +74,7 @@ export default function MaterialTypesPage(){
         <div><div className="text-[10px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
       </div>
-      <button onClick={handleCreate} className="bg-black text-white px-3 py-1 w-full">CREATE EMTP</button>
+      <button onClick={handleCreate} className="bg-black text-white px-3 py-1 w-full">CREATE</button>
       <div className="space-y-1">{types.map((t:any)=><div key={t.code} className="border border-black p-1"><span className="font-bold">{t.code} | {t.name}</span> DESCRIPTION={t.description}</div>)}</div>
     </div>
   );

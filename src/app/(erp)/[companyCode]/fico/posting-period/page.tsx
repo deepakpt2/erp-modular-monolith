@@ -117,7 +117,7 @@ export default function PostingPeriodPage(){
           <div><div className="text-[9px]">FFYC CODE *</div><input value={fiscalForm.code} onChange={e=>setFiscalForm({...fiscalForm,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="FISCAL_CALENDAR_CODE" /></div>
           <div><div className="text-[9px]">FFYC NAME *</div><input value={fiscalForm.name} onChange={e=>setFiscalForm({...fiscalForm,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
         </div>
-        <button onClick={handleCreateFiscal} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE FFYC</button>
+        <button onClick={handleCreateFiscal} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <div><div className="text-[9px]">CODE *</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CODE" /></div>
           <div><div className="text-[9px]">NAME *</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
@@ -179,7 +179,7 @@ export default function PostingPeriodPage(){
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Financial Configuration – OBBO/OB52/FFYC/FEXC/FNRC – {variants.length + fiscalCalendars.length + exchangeRates.length} total</h3>
         <div className="flex gap-2">
-          <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 hover:bg-black text-white rounded-full px-4 py-2 transition-colors">+ Create Variant OBBO/FPPC</button>
+          <button onClick={()=>setShowForm(!showForm)} className="text-xs bg-zinc-900 hover:bg-black text-white rounded-full px-4 py-2 transition-colors">Create Variant</button>
           <button onClick={load} className="text-xs border border-zinc-200 bg-white hover:bg-zinc-50 rounded-full px-4 py-2 transition-colors">Refresh</button>
         </div>
       </div>

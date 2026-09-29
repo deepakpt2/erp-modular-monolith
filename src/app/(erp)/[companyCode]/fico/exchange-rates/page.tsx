@@ -47,7 +47,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">RATE</div><input value={(form as any).rate} onChange={e=>setForm({...form,rate:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="RATE" /></div>
           <div><div className="text-[9px] text-zinc-500">VALID_FROM</div><input value={(form as any).valid_from} onChange={e=>setForm({...form,valid_from:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="VALID_FROM" /></div>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE FEXC</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
