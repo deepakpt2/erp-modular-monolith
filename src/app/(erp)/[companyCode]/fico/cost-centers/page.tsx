@@ -6,20 +6,24 @@ export default function Page() {
     <SingleCodePage
       code="FCCA"
       sapAlias="KS01"
-      title="Cost Centers"
-      description="Create Cost Center – code company_code – e.g., KS-CC-01..05 – strict usage: cost center required for expense GL via field status OBC5, actuals via CCA report"
+      title="Cost Units – Cost Centers"
+      description="Create Cost Unit – General ERP term Cost Unit, alias Cost Center KS01 – code + legal entity – e.g., CC-1000 – strict usage: cost unit required for expense GL via field status OBC5, actuals via CCA report KSB1, production order cost, payroll posting – T0 BLOCKING – NO DANGLING"
       apiEndpoint="/api/cost-centers"
-      initialForm={{ code: '', name: '', company_code: '', description: '' }}
+      initialForm={{ code: '', name: '', company_code: '', legal_entity_code: '', control_area_code: '', description: '' }}
       fields={[
-        { key: "code", label: "COST_CENTER_CODE", required: true, placeholder: "CC-1000" },
-        { key: "name", label: "COST_CENTER_NAME", required: true, placeholder: "Production Cost Center" },
-        { key: "company_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal Entity FK – company code" },
-        { key: "description", label: "DESCRIPTION", type: "textarea" },
+        { key: "code", label: "COST_UNIT_CODE", required: true, placeholder: "CU-1000", description: "Cost Unit code – General ERP Cost Unit, alias Cost Center KS01 – e.g., CU-1000, CC-1000 – used as FK in expense postings, production orders, payroll – T0 BLOCKING" },
+        { key: "name", label: "COST_UNIT_NAME", required: true, placeholder: "Production Cost Unit", description: "Cost Unit name – e.g., Production, Sales, Admin – used in CCA reporting" },
+        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal Entity FK – company code – General ERP Legal Entity, alias Company Code OX02" },
+        { key: "company_code", label: "COMPANY_CODE_LEGACY", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legacy alias for legal_entity_code" },
+        { key: "control_area_code", label: "CONTROL_AREA_CODE", placeholder: "CA-1000", description: "Management Control Area – General ERP Control Area, alias Controlling Area OX06 – groups cost units" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", description: "Description – used in reporting – cost unit purpose" },
       ]}
       relatedLinks={[
-        { code: "ELEC", label: "Legal Entity – required", route: "/foundation/legal-entities", description: "Legal Entity" },
-        { code: "OBC5", label: "Field Status Groups – cost center required", route: "/fico/field-status-groups", description: "Field Status" },
-        { code: "CCUL", label: "CCA Report uses Cost Center", route: "/fico/cca-report", description: "CCA Report" },
+        { code: "ELEC", label: "Legal Entity – required – company code", route: "/foundation/legal-entities", description: "Legal Entity OX02 – required" },
+        { code: "OBC5", label: "Field Status Groups – cost unit required", route: "/fico/field-status-groups", description: "Field Status OBC5 – cost unit field required/suppressed" },
+        { code: "CCUL", label: "Cost Actuals Report – uses Cost Unit", route: "/fico/cca-report", description: "CCA Report KSB1 – actual line items per cost unit" },
+        { code: "MMOC", label: "Manufacturing Order – uses Cost Unit", route: "/pp/production-orders", description: "Manufacturing Order CO01 – cost unit for costing" },
+        { code: "HPYC", label: "Payroll Run – posts to Cost Unit", route: "/hr/payroll-run", description: "Payroll PC00 – salary expense to cost unit" },
       ]}
     />
   );
