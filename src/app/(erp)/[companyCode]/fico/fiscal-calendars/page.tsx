@@ -12,7 +12,7 @@ export default function Page(){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [msg,setMsg]=useState('');
-  const [form,setForm]=useState({code: "", name: "", description: ""});
+  const [form,setForm]=useState({code: "", name: "", description: "", from_date: "", to_date: "", start_month: "4", end_month: "3", year_shift: "0"});
   const [highlighted,setHighlighted]=useState(focus);
 
   async function load(){
@@ -27,9 +27,19 @@ export default function Page(){
 
   async function create(){
     if(!(form as any).code){ setMsg('CODE required'); return; }
-    const payload = {...form, company_code: companyCode};
+    if(!(form as any).name){ setMsg('NAME required'); return; }
+    if(!(form as any).from_date){ setMsg('FROM_DATE required – e.g., 2026-04-01 for K4'); return; }
+    if(!(form as any).to_date){ setMsg('TO_DATE required – e.g., 2027-03-31 for K4'); return; }
+    if(new Date((form as any).from_date) >= new Date((form as any).to_date)){ setMsg('❌ FROM_DATE must be before TO_DATE'); return; }
+    const payload = {
+      ...form, 
+      company_code: companyCode,
+      periods: [
+        { period_number: 1, month: parseInt((form as any).start_month) || 4, year_shift: parseInt((form as any).year_shift) || 0, description: `Period 1 start` },
+      ]
+    };
     const res = await fetch('/api/fiscal-calendars',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
-    if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||'CREATED')+' CREATED – FFYC'); load(); setForm({code: "", name: "", description: ""}); }
+    if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||'CREATED')+' CREATED – FFYC'); load(); setForm({code: "", name: "", description: "", from_date: "", to_date: "", start_month: "4", end_month: "3", year_shift: "0"}); }
     else setMsg('❌ '+(res.error||'Failed'));
   }
 
@@ -40,14 +50,17 @@ export default function Page(){
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">FFYC FISCAL CALENDARS CREATE – API: POST /api/fiscal-calendars – {Array.isArray(items)?items.length:0} RECORDS – K4 April-March India, V3 Calendar Year – used by ELEC FISCAL_CALENDAR_CODE – must exist before Legal Entity</div>
-        <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">CODE</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CODE" /></div>
-          <div><div className="text-[9px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="NAME" /></div>
-          <div><div className="text-[9px] text-zinc-500">DESCRIPTION</div><input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="DESCRIPTION" /></div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">FFYC FISCAL CALENDARS CREATE – API: POST /api/fiscal-calendars – {Array.isArray(items)?items.length:0} RECORDS – K4 April-March India, V3 Calendar Year – FROM_DATE TO_DATE required</div>
+        <div className="grid grid-cols-5 gap-2">
+          <div><div className="text-[9px] text-zinc-500">CODE *</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="K4" /></div>
+          <div><div className="text-[9px] text-zinc-500">NAME *</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="April-March India" /></div>
+          <div><div className="text-[9px] text-zinc-500">FROM_DATE *</div><input type="date" value={(form as any).from_date} onChange={e=>setForm({...form,from_date:e.target.value})} className="w-full border-2 border-black px-1 py-1 " /></div>
+          <div><div className="text-[9px] text-zinc-500">TO_DATE *</div><input type="date" value={(form as any).to_date} onChange={e=>setForm({...form,to_date:e.target.value})} className="w-full border-2 border-black px-1 py-1 " /></div>
+          <div><div className="text-[9px] text-zinc-500">DESCRIPTION</div><input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="Apr 01 – Mar 31" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
+
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white border-2 border-black p-2">
@@ -87,15 +100,39 @@ export default function Page(){
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CODE *</label>
-            <input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="CODE" />
+            <input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="K4" />
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME *</label>
-            <input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="NAME" />
+            <input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" placeholder="April-March India" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION </label>
-            <input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="DESCRIPTION" />
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION</label>
+            <input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" placeholder="Apr 01 – Mar 31 India fiscal" />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">FROM_DATE *</label>
+            <input type="date" value={(form as any).from_date} onChange={e=>setForm({...form,from_date:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" />
+            <div className="text-[10px] text-zinc-400 mt-1">Start – e.g., 2026-04-01 for K4</div>
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">TO_DATE *</label>
+            <input type="date" value={(form as any).to_date} onChange={e=>setForm({...form,to_date:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" />
+            <div className="text-[10px] text-zinc-400 mt-1">End – e.g., 2027-03-31 for K4</div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">START_MONTH</label>
+              <input type="number" min="1" max="12" value={(form as any).start_month} onChange={e=>setForm({...form,start_month:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="4" />
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">END_MONTH</label>
+              <input type="number" min="1" max="12" value={(form as any).end_month} onChange={e=>setForm({...form,end_month:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="3" />
+            </div>
+            <div>
+              <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">YEAR_SHIFT</label>
+              <input type="number" value={(form as any).year_shift} onChange={e=>setForm({...form,year_shift:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="0" />
+            </div>
           </div>
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create FFYC</button>

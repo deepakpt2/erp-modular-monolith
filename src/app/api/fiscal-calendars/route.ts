@@ -81,8 +81,13 @@ export async function POST(req: NextRequest) {
   if (authCheck) return authCheck;
   try {
     const body = await req.json();
-    const { code, name, description, tenant_id, periods } = body;
+    const { code, name, description, tenant_id, periods, from_date, to_date, start_month, end_month, year_shift } = body;
     if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
+    if (!from_date || !to_date) return NextResponse.json({ error: 'from_date and to_date required – e.g., K4 needs Apr 01 to Mar 31' }, { status: 400 });
+    // Validate from < to
+    if (new Date(from_date) >= new Date(to_date)) {
+      return NextResponse.json({ error: 'from_date must be before to_date' }, { status: 400 });
+    }
 
     let tenantId = tenant_id;
     if (!tenantId) {
@@ -107,27 +112,44 @@ export async function POST(req: NextRequest) {
       const existing = await db.execute(sql`SELECT id FROM fin_fiscal_calendar WHERE code = ${code.toUpperCase()} LIMIT 1`);
       let res;
       if (existing.rows.length > 0) {
-        res = await db.execute(sql`
-          UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, updated_at = NOW()
-          WHERE code = ${code.toUpperCase()}
-          RETURNING id, code, name
-        `);
+        // Try update with from_date/to_date if columns exist
+        try {
+          res = await db.execute(sql`
+            UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, from_date = ${from_date ? new Date(from_date) : null}, to_date = ${to_date ? new Date(to_date) : null}, start_month = ${start_month ? parseInt(start_month) : null}, end_month = ${end_month ? parseInt(end_month) : null}, year_shift = ${year_shift ? parseInt(year_shift) : 0}, updated_at = NOW()
+            WHERE code = ${code.toUpperCase()}
+            RETURNING id, code, name
+          `);
+        } catch {
+          res = await db.execute(sql`
+            UPDATE fin_fiscal_calendar SET name = ${name}, description = ${description || null}, updated_at = NOW()
+            WHERE code = ${code.toUpperCase()}
+            RETURNING id, code, name
+          `);
+        }
       } else {
         try {
           res = await db.execute(sql`
-            INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description)
-            VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
+            INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description, from_date, to_date, start_month, end_month, year_shift)
+            VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null}, ${from_date ? new Date(from_date) : null}, ${to_date ? new Date(to_date) : null}, ${start_month ? parseInt(start_month) : 4}, ${end_month ? parseInt(end_month) : 3}, ${year_shift ? parseInt(year_shift) : 0})
             RETURNING id, code, name
           `);
         } catch (insErr: any) {
-          // If tenant_id column missing or other, try without tenant_id
-          if (insErr.message?.includes('tenant_id') || insErr.message?.includes('column')) {
+          // If columns missing, try without from_date/to_date
+          try {
             res = await db.execute(sql`
-              INSERT INTO fin_fiscal_calendar (code, name, description)
-              VALUES (${code.toUpperCase()}, ${name}, ${description || null})
+              INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description)
+              VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
               RETURNING id, code, name
             `);
-          } else throw insErr;
+          } catch (insErr2: any) {
+            if (insErr2.message?.includes('tenant_id') || insErr2.message?.includes('column')) {
+              res = await db.execute(sql`
+                INSERT INTO fin_fiscal_calendar (code, name, description)
+                VALUES (${code.toUpperCase()}, ${name}, ${description || null})
+                RETURNING id, code, name
+              `);
+            } else throw insErr2;
+          }
         }
       }
       const calId = (res.rows[0] as any).id;
@@ -150,12 +172,14 @@ export async function POST(req: NextRequest) {
     } catch (newErr: any) {
       console.warn('fin_fiscal_calendar insert failed fallback ent_fiscal_year_variant:', newErr.message);
       // Fallback to legacy ent_fiscal_year_variant – robust upsert without ON CONFLICT (code) assumption
+      // Include from_date/to_date in description for legacy table
+      const legacyDesc = `${description || ''} | FROM ${from_date} TO ${to_date} | START_MONTH ${start_month} END_MONTH ${end_month} YEAR_SHIFT ${year_shift}`.trim();
       try {
         const existingLegacy = await db.execute(sql`SELECT id FROM ent_fiscal_year_variant WHERE code = ${code.toUpperCase()} LIMIT 1`);
         let res;
         if (existingLegacy.rows.length > 0) {
           res = await db.execute(sql`
-            UPDATE ent_fiscal_year_variant SET name = ${name}, description = ${description || null}
+            UPDATE ent_fiscal_year_variant SET name = ${name}, description = ${legacyDesc}
             WHERE code = ${code.toUpperCase()}
             RETURNING id, code, name
           `);
@@ -163,31 +187,28 @@ export async function POST(req: NextRequest) {
           try {
             res = await db.execute(sql`
               INSERT INTO ent_fiscal_year_variant (tenant_id, code, name, description)
-              VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
+              VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${legacyDesc})
               RETURNING id, code, name
             `);
           } catch (legacyInsErr: any) {
-            // Try without tenant_id if column missing, or with ON CONFLICT (tenant_id, code) or plain insert
             try {
               res = await db.execute(sql`
                 INSERT INTO ent_fiscal_year_variant (code, name, description)
-                VALUES (${code.toUpperCase()}, ${name}, ${description || null})
+                VALUES (${code.toUpperCase()}, ${name}, ${legacyDesc})
                 RETURNING id, code, name
               `);
             } catch {
-              // Last resort: try ON CONFLICT (tenant_id, code) if constraint is composite
               try {
                 res = await db.execute(sql`
                   INSERT INTO ent_fiscal_year_variant (tenant_id, code, name, description)
-                  VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
-                  ON CONFLICT (tenant_id, code) DO UPDATE SET name = ${name}, description = ${description || null}
+                  VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${legacyDesc})
+                  ON CONFLICT (tenant_id, code) DO UPDATE SET name = ${name}, description = ${legacyDesc}
                   RETURNING id, code, name
                 `);
               } catch (finalErr: any) {
-                // If even that fails, try ON CONFLICT DO NOTHING then SELECT
                 await db.execute(sql`
                   INSERT INTO ent_fiscal_year_variant (tenant_id, code, name, description)
-                  VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
+                  VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${legacyDesc})
                   ON CONFLICT DO NOTHING
                 `);
                 res = await db.execute(sql`SELECT id, code, name FROM ent_fiscal_year_variant WHERE code = ${code.toUpperCase()} LIMIT 1`);
