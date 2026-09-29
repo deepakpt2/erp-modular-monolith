@@ -20,6 +20,8 @@ services:
 
   # Auto Migrate - runs automatically on docker compose up, reads .env for preferences
   # No manual steps needed: does db:push + init-prod + optional FMCG seed based on env
+  # FIX: docker compose up --build should NOT delete entries on each build – only critical DB errors should trigger migration that deletes – per user report
+  # Previously ran `npx drizzle-kit push --force || true` on every up --build – could cause data loss if schema drift – now only runs auto-migrate which checks tables exist and skips push if exists, and initProduction uses ON CONFLICT DO NOTHING – preserves data
   auto-migrate:
     build:
       context: .
@@ -43,7 +45,7 @@ services:
         condition: service_healthy
     networks:
       - internal
-    command: ["sh", "-c", "npx drizzle-kit push --force || true && npm run db:auto-migrate"]
+    command: ["sh", "-c", "npm run db:auto-migrate"]
     restart: "no"
 
   app:
