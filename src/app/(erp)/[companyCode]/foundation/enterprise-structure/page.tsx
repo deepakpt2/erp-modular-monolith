@@ -33,6 +33,7 @@ export default function EnterpriseStructurePage() {
   const [warehouseSites, setWarehouseSites] = useState<any[]>([]);
   const [dispatchPoints, setDispatchPoints] = useState<any[]>([]);
   const [creditPolicyAreas, setCreditPolicyAreas] = useState<any[]>([]);
+  // FFYC moved to dedicated page /fico/fiscal-calendars – keep local state for validation but not displayed as section
   const [fiscalCalendars, setFiscalCalendars] = useState<any[]>([]);
 
   const [cgForm, setCgForm] = useState({ code: '', name: '', description: '', tenant_code: 'TEN-100' });
@@ -95,12 +96,16 @@ export default function EnterpriseStructurePage() {
     if (focusCode) {
       const code = focusCode.toUpperCase();
       setHighlightedForm(code);
-      if (['ECGC', 'ELEC', 'FFYC'].includes(code)) setActiveTab('company');
+      if (['ECGC', 'ELEC'].includes(code)) setActiveTab('company');
       if (['ECAC', 'FCPC'].includes(code)) setActiveTab('control');
       if (['EFCC', 'EILC', 'EWSC', 'EDPC'].includes(code)) setActiveTab('facility');
       if (['EPDC', 'EBTC'].includes(code)) setActiveTab('procurement');
       if (['ECOC', 'ESCC', 'EPLC'].includes(code)) setActiveTab('commercial');
       if (['EPUC', 'ECUC', 'EBSC', 'EWHC', 'EDPC', 'EDPC'].includes(code)) setActiveTab('profit');
+      // FFYC moved to /fico/fiscal-calendars – if focused, redirect hint
+      if (code === 'FFYC') {
+        setMessage('ℹ️ FFYC Fiscal Calendars moved to /fico/fiscal-calendars – use that page. Autocomplete still works for ELEC.');
+      }
       setTimeout(() => {
         const el = document.getElementById(`form-${code}`);
         if (el) {
@@ -158,7 +163,7 @@ export default function EnterpriseStructurePage() {
   };
 
   const tabs = [
-    { id: 'company' as TabId, label: 'Company Group & Legal Entity & Fiscal Calendar', code: 'ECGC/ELEC/FFYC', desc: 'ECGC Company Group, ELEC Legal Entity LE-2000, FFYC Fiscal Calendar K4' },
+    { id: 'company' as TabId, label: 'Company Group & Legal Entity', code: 'ECGC/ELEC', desc: 'ECGC Company Group, ELEC Legal Entity LE-2000 – FFYC moved to /fico/fiscal-calendars' },
     { id: 'control' as TabId, label: 'Control Area & Credit Policy', code: 'ECOC/ECAC/FCPC', desc: 'ECOC Control Area, FCPC Credit Policy' },
     { id: 'facility' as TabId, label: 'Facility & Inventory & Warehouse & Dispatch', code: 'EFCC/EILC/EWSC/EDPC', desc: 'EFCC Facility FAC-2000, EILC Inventory Loc, EWSC Warehouse WH-2000, EDPC Dispatch' },
     { id: 'procurement' as TabId, label: 'Procurement Division & Buyer Team', code: 'EPDC/EBTC', desc: 'EPDC Proc Division, EBTC Buyer Team' },
@@ -166,7 +171,8 @@ export default function EnterpriseStructurePage() {
     { id: 'profit' as TabId, label: 'Profit & Cost & Segment', code: 'EPUC/ECUC/EBSC', desc: 'EPUC Profit Unit, ECUC Cost Unit, EBSC Business Segment' },
   ];
 
-  const allCodes = ['ECGC','ELEC','FFYC','EFCC','EILC','ECOC','ESCC','EPLC','EPDC','EBTC','EDPC','EWSC','EPUC','ECUC','EBSC','FCPC','ECAC'];
+  // FFYC removed from enterprise-structure – now dedicated /fico/fiscal-calendars – kept only as FK reference for ELEC
+  const allCodes = ['ECGC','ELEC','EFCC','EILC','ECOC','ESCC','EPLC','EPDC','EBTC','EDPC','EWSC','EPUC','ECUC','EBSC','FCPC','ECAC'];
 
   if (loading) return <div className="p-6">Loading enterprise structure...</div>;
 
@@ -186,7 +192,7 @@ export default function EnterpriseStructurePage() {
                   el.classList.add('ring-2','ring-black');
                   setTimeout(()=>el.classList.remove('ring-2','ring-black'),2000);
                 }
-                if (['ECGC','ELEC','FFYC'].includes(c)) setActiveTab('company');
+                if (['ECGC','ELEC'].includes(c)) setActiveTab('company');
                 if (['ECAC','FCPC','ECOC'].includes(c)) setActiveTab('control');
                 if (['EFCC','EILC','EWSC','EDPC'].includes(c)) setActiveTab('facility');
                 if (['EPDC','EBTC'].includes(c)) setActiveTab('procurement');
@@ -238,22 +244,13 @@ export default function EnterpriseStructurePage() {
               </div>
             </div>
 
-            <div id="form-FFYC" className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 scroll-mt-24">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold">Fiscal Calendars <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">FFYC {fiscalCalendars.length}</span></h3>
-                <span className="text-[10px] font-mono bg-black text-white rounded-full px-2 py-0.5">FFYC</span>
+            <div id="form-FFYC" className="bg-amber-50 border border-amber-200 rounded-2xl shadow-sm p-4 scroll-mt-24">
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-sm flex items-center gap-2"><span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>Fiscal Calendars moved to dedicated page</h3>
+                <span className="text-[10px] font-mono bg-black text-white rounded-full px-2 py-0.5">FFYC → FICO</span>
               </div>
-              <div className="text-[11px] text-zinc-500 bg-zinc-50 rounded-xl p-3 mb-3">FFYC – Fiscal Calendar – K4 April-March, V3 Calendar Year – used by ELEC – must exist before Legal Entity</div>
-              <div className="grid grid-cols-2 gap-2">
-                {fiscalCalendars.map((fc:any)=>(
-                  <div key={fc.code} className="border border-zinc-200 rounded-xl p-2 bg-zinc-50/50">
-                    <div className="font-mono font-bold text-xs">{fc.code}</div>
-                    <div className="text-[11px] text-zinc-600">{fc.name}</div>
-                  </div>
-                ))}
-                {fiscalCalendars.length===0 && <div className="col-span-2 text-xs text-zinc-500 border border-dashed rounded-xl p-3 text-center">No fiscal calendars – create K4, V3, K1 via POST /api/fiscal-calendars or via Posting Period page FFYC section</div>}
-              </div>
-              <a href={`/${companyCode}/fico/posting-period?focus=FFYC`} className="mt-3 inline-flex text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black">Manage FFYC in Posting Period page ↗</a>
+              <div className="text-[11px] text-zinc-600 mt-2">FFYC now lives in <span className="font-mono font-bold">/fico/fiscal-calendars</span> and <span className="font-mono">/fico/posting-period?focus=FFYC</span>. Use autocomplete below – only DB values allowed. {fiscalCalendars.length} calendars in DB: {fiscalCalendars.map(f=>f.code).join(', ') || 'none – create K4, V3, K1'}</div>
+              <a href={`/${companyCode}/fico/fiscal-calendars`} className="mt-3 inline-flex text-xs bg-zinc-900 text-white rounded-full px-4 py-2 hover:bg-black">Manage FFYC in Fiscal Calendars page ↗</a>
             </div>
           </div>
 
