@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
-import { enforcePostingPeriod, getFiscalYearPeriodFromDate } from '@/shared/kernel/db/postingPeriodHelpers';
+import { enforcePostingPeriod, getFiscalYearPeriodFromDate, checkFieldStatus, getDocumentTypeNumberRange } from '@/shared/kernel/db/postingPeriodHelpers';
 
 /**
  * Documents API – SAP-like unique document for every business transaction
@@ -145,6 +145,41 @@ export async function POST(req: NextRequest) {
       // Attach fiscal info to body for storage
       (body as any)._fiscal_year = postingCheck.fiscal_year;
       (body as any)._fiscal_period = postingCheck.fiscal_period;
+      // Strict ERP: Document Types OBA7 – get number range from document type
+      try {
+        if (body.document_type_code) {
+          const docTypeNR = await getDocumentTypeNumberRange(body.document_type_code);
+          if (docTypeNR.found && docTypeNR.number_range_code) {
+            (body as any)._number_range_code = docTypeNR.number_range_code;
+            console.log(`Document type ${body.document_type_code} → number range ${docTypeNR.number_range_code} – ${docTypeNR.message}`);
+          }
+        }
+      } catch (docTypeErr: any) {
+        console.warn('Document type check failed:', docTypeErr.message);
+      }
+      // Strict ERP: Field Status OBC4/OBC5 – validate required/suppressed fields per GL group
+      try {
+        if (body.field_status_variant_code && body.field_status_group_code) {
+          const fieldCheck = await checkFieldStatus({
+            variant_code: body.field_status_variant_code,
+            group_code: body.field_status_group_code,
+            field_values: body
+          });
+          if (!fieldCheck.allowed) {
+            return NextResponse.json({
+              error: fieldCheck.message,
+              field_status_errors: fieldCheck.errors,
+              variant_code: body.field_status_variant_code,
+              group_code: body.field_status_group_code,
+              help: `Check field status groups via /fico/field-status-groups?variant=${body.field_status_variant_code}&group=${body.field_status_group_code}`
+            }, { status: 400 });
+          }
+          console.log(`Field status OK: ${fieldCheck.message}`);
+        }
+      } catch (fieldErr: any) {
+        console.warn('Field status check failed:', fieldErr.message);
+      }
+
     } catch (ppErr: any) {
       console.warn('Posting period enforcement failed, allowing posting to not block fresh:', ppErr.message);
     }

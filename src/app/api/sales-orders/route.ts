@@ -193,6 +193,45 @@ export async function POST(req: NextRequest) {
       } catch (creditErr: any) {
         console.warn('Credit check failed, allowing SO:', creditErr.message);
       }
+      // Strict ERP: Pricing Procedure PRIC – calculate pricing for SO
+      try {
+        let netValue = 0;
+        let taxValue = 0;
+        let discountValue = 0;
+        if (body.items && Array.isArray(body.items)) {
+          for (const item of body.items) {
+            const qty = parseFloat(item.quantity || 0);
+            const price = parseFloat(item.unit_price || item.price || 0);
+            const lineNet = qty * price;
+            netValue += lineNet;
+            if (item.discount_percent) {
+              discountValue += lineNet * (parseFloat(item.discount_percent) / 100);
+            }
+            if (item.tax_code) {
+              try {
+                const taxRes = await db.execute(sql`SELECT rate FROM fin_tax_code WHERE code = ${item.tax_code.toUpperCase()} LIMIT 1`);
+                if (taxRes.rows.length > 0) {
+                  const taxRate = parseFloat((taxRes.rows[0] as any).rate || 0);
+                  taxValue += (lineNet - (lineNet * (parseFloat(item.discount_percent || 0) / 100))) * (taxRate / 100);
+                }
+              } catch {}
+            }
+          }
+        } else {
+          netValue = parseFloat(body.total_amount || body.net_value || 0) || 0;
+        }
+        const totalAmount = netValue - discountValue + taxValue;
+        (body as any)._calculated_net = netValue;
+        (body as any)._calculated_discount = discountValue;
+        (body as any)._calculated_tax = taxValue;
+        (body as any)._calculated_total = totalAmount;
+        console.log(`Pricing PRIC: net=${netValue} discount=${discountValue} tax=${taxValue} total=${totalAmount}`);
+        if (!body.total_amount) {
+          body.total_amount = totalAmount;
+        }
+      } catch (pricingErr: any) {
+        console.warn('Pricing calc failed:', pricingErr.message);
+      }
       // Strict ERP: Payment Terms
       try {
         if (body.payment_term_code) {
