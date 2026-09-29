@@ -291,7 +291,7 @@ export async function DELETE(req: NextRequest) {
       const checkCode = legalCode || upperCode || '';
       if (checkCode) {
         try {
-          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM prod_item WHERE type = ${checkCode}::prod_item_type`);
+          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM prod_item WHERE type = ${checkCode}::prod_item_type_enum`);
           inUse = parseInt((r.rows[0] as any).cnt || '0');
         } catch {}
         // Also check legacy mapping

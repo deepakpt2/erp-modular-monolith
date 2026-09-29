@@ -259,14 +259,14 @@ export async function POST(req: NextRequest) {
           is_kit, is_phantom_kit, inventory_valuation_class, is_hazardous, landed_cost_scope, is_active, hsn_code, barcode
         )
         VALUES (
-          ${finalItemNumber}, ${finalType}::prod_item_type, ${categoryId}, ${finalBaseUnit}, ${description}, ${description_long || null},
+          ${finalItemNumber}, ${finalType}::prod_item_type_enum, ${categoryId}, ${finalBaseUnit}, ${description}, ${description_long || null},
           ${finalIsLotManaged}, ${shelf_life_days || 30}, ${finalLotControl}::prod_lot_control,
           ${is_kit || false}, ${is_phantom_kit || false}, ${finalValuationClass}, ${is_hazardous || false}, ${finalLandedScope}::prod_landed_cost_scope, true, ${hsn_code || null}, ${barcode || null}
         )
         ON CONFLICT (item_number) DO UPDATE SET
           description = ${description},
           description_long = COALESCE(${description_long || null}, prod_item.description_long),
-          type = ${finalType}::prod_item_type,
+          type = ${finalType}::prod_item_type_enum,
           base_unit = ${finalBaseUnit},
           shelf_life_days = ${shelf_life_days || 30},
           inventory_valuation_class = ${finalValuationClass}
@@ -583,7 +583,7 @@ export async function PUT(req: NextRequest) {
         const updated = await db.execute(sql`
           UPDATE prod_item SET
             description = COALESCE(${description}, description),
-            type = COALESCE(${finalType}::prod_item_type, type),
+            type = COALESCE(${finalType}::prod_item_type_enum, type),
             base_unit = COALESCE(${finalBaseUnit}, base_unit),
             category_id = COALESCE(${categoryId}, category_id),
             shelf_life_days = COALESCE(${shelf_life_days}, shelf_life_days),

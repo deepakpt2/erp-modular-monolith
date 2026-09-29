@@ -12,7 +12,7 @@ import { orgFacility } from './orgStructureSchema';
  */
 
 // Legal-safe enums – no SAP codes like ROH/FERT/S/V/PD
-export const itemTypeEnum = pgEnum('prod_item_type', ['RAW', 'FINISHED', 'SEMI', 'TRADING', 'PACKAGING', 'CONSUMABLE', 'SERVICE']);
+export const itemTypeEnum = pgEnum('prod_item_type_enum', ['RAW', 'FINISHED', 'SEMI', 'TRADING', 'PACKAGING', 'CONSUMABLE', 'SERVICE']);
 export const pricingMethodEnum = pgEnum('prod_pricing_method', ['STANDARD', 'MOVING_AVG']);
 export const lotControlEnum = pgEnum('prod_lot_control', ['BLOCKED', 'WARN', 'RESTRICTED']);
 export const landedCostScopeEnum = pgEnum('prod_landed_cost_scope', ['NONE', 'FREIGHT', 'CUSTOMS', 'FREIGHT_CUSTOMS', 'ALL']);
