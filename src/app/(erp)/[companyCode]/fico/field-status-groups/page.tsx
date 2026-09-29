@@ -30,8 +30,8 @@ export default function FieldStatusGroupsPage() {
   const params = useParams();
   const companyCode = params.companyCode as string;
   const [uiMode, setUiMode] = useState<'modern'|'classic'>('modern');
-  const [variantCode, setVariantCode] = useState('FSSV-1000');
-  const [groupCode, setGroupCode] = useState('G001');
+  const [variantCode, setVariantCode] = useState('');
+  const [groupCode, setGroupCode] = useState('');
   const [groupName, setGroupName] = useState('');
   const [fieldStatuses, setFieldStatuses] = useState<Record<string, string>>({});
   const [existing, setExisting] = useState<any[]>([]);
@@ -139,14 +139,14 @@ export default function FieldStatusGroupsPage() {
           </div>
 
           <div className={modern ? "border rounded-2xl overflow-hidden" : "border"}>
-            <div className={modern ? "bg-zinc-50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "bg-zinc-50 px-3 py-1 text-[10px] font-medium"}>Field Status Matrix – Same Group {variantCode}/{groupCode} – Multiple FIELD_NAME – SAP Structure – R=Required S=Suppressed O=Optional D=Display</div>
+            <div className={modern ? "bg-zinc-50 px-4 py-2 text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "bg-zinc-50 px-3 py-1 text-[10px] font-medium"}>Field Status Matrix – {variantCode && groupCode ? `Group ${variantCode}/${groupCode}` : 'Select Variant and Group'} – Multiple FIELD_NAME – R=Required S=Suppressed O=Optional D=Display</div>
             <div className="overflow-auto">
               <table className="w-full text-xs">
                 <thead className={modern ? "bg-white text-[11px] text-zinc-500 border-b" : "bg-white text-[10px] text-zinc-500 border-b"}>
                   <tr>
                     <th className="text-left px-3 py-2">FIELD_NAME</th>
                     <th className="text-left px-3 py-2">STATUS</th>
-                    <th className="text-left px-3 py-2">SAP Meaning</th>
+                    <th className="text-left px-3 py-2">Description</th>
                     <th className="text-left px-3 py-2">Current DB</th>
                   </tr>
                 </thead>
@@ -163,8 +163,8 @@ export default function FieldStatusGroupsPage() {
                           </select>
                         </td>
                         <td className="px-3 py-2 text-[10px] text-zinc-500">
-                          {currentStatus==='R' ? 'Required – must have value – e.g., cost_center required for expense G001' : 
-                           currentStatus==='S' ? 'Suppressed – must be empty – e.g., cost_center suppressed for cash G002' :
+                          {currentStatus==='R' ? 'Required – must have value – e.g., cost_center required for expense' : 
+                           currentStatus==='S' ? 'Suppressed – must be empty – e.g., cost_center suppressed for cash' :
                            currentStatus==='O' ? 'Optional – can have value' : 'Display – display only'}
                         </td>
                         <td className="px-3 py-2 text-[10px] text-zinc-400">{existingRec ? `${existingRec.status} – in DB` : 'Not yet – default O'}</td>
