@@ -48,7 +48,10 @@ export function DbAutocomplete({
     async function fetchData() {
       setLoading(true);
       try {
-        const url = companyCode ? `${apiUrl}?companyCode=${companyCode}` : apiUrl;
+        let url = apiUrl;
+        if (companyCode) {
+          url += apiUrl.includes('?') ? `&companyCode=${companyCode}` : `?companyCode=${companyCode}`;
+        }
         const res = await fetch(url).then(r => r.json()).catch(() => ({ data: [] }));
         // Try various keys
         let data: any[] = [];

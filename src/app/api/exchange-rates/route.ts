@@ -167,6 +167,19 @@ export async function POST(req: NextRequest) {
     const { from_currency, to_currency, rate, valid_from, rate_type, company_code } = body;
     if (!from_currency || !to_currency || !rate) return NextResponse.json({ error: 'from_currency, to_currency, rate required' }, { status: 400 });
 
+    // VALIDATION: Check currencies exist in DB – autocomplete only
+    for (const curr of [from_currency, to_currency]) {
+      try {
+        const c1 = await db.execute(sql`SELECT id FROM core_currency WHERE code = ${curr.toUpperCase()} LIMIT 1`);
+        if (c1.rows.length === 0) {
+          const c2 = await db.execute(sql`SELECT id FROM ent_currency WHERE code = ${curr.toUpperCase()} LIMIT 1`);
+          if (c2.rows.length === 0) {
+            return NextResponse.json({ error: `CURRENCY ${curr} not found in DB – create it first via FCYC. Valid: /api/currencies` }, { status: 400 });
+          }
+        }
+      } catch {}
+    }
+
     let companyCodeId = null;
     if (company_code) {
       try {

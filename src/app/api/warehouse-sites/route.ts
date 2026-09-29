@@ -35,7 +35,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     
       const { code, name, description, facility_id, facility_code } = body;
-      if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
+      
+      // VALIDATION: Check foreign keys exist in DB – prevents invalid data
+
+      if (facility_code) {
+        const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${facility_code} LIMIT 1`);
+        if (f.rows.length === 0) {
+          return NextResponse.json({ error: `FACILITY_CODE ${facility_code} not found` }, { status: 400 });
+        }
+      }
+
+if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
       let facId = facility_id;
       if (!facId && facility_code) {
         const fr = await db.execute(sql`SELECT id FROM org_facility WHERE code=${facility_code} LIMIT 1`);

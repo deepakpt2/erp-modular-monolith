@@ -21,7 +21,7 @@ export default function UomPage(){
   useEffect(()=>{load();},[]);
 
   const handleCreate = async () => {
-    if(!(form as any).code||!form.name){ setMsg('CODE and NAME required'); return; }
+    if(!(form as any).code||!(form as any).name){ setMsg('CODE and NAME required'); return; }
     const res = await fetch('/api/uom',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)}).then(r=>r.json());
     if(res.success){ setMsg(`✅ ${res.uom.code} CREATED`); setShowForm(false); setForm({code:'',name:'',dimension:'QUANTITY', base_uom_code:'', decimal_places:'0'}); load(); }
     else setMsg(`❌ ${res.error}`);
@@ -46,7 +46,7 @@ export default function UomPage(){
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 space-y-4">
           <div className="grid md:grid-cols-3 gap-4">
             <div><label className="text-xs font-medium text-zinc-600">CODE</label><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
-            <div><label className="text-xs font-medium text-zinc-600">NAME</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
+            <div><label className="text-xs font-medium text-zinc-600">NAME</label><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
             <div><label className="text-xs font-medium text-zinc-600">DIMENSION</label><select value={form.dimension} onChange={e=>setForm({...form,dimension:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm"><option>QUANTITY</option><option>WEIGHT</option><option>VOLUME</option><option>LENGTH</option><option>TIME</option></select></div>
             <div><label className="text-xs font-medium text-zinc-600">BASE_UOM_CODE</label><input value={form.base_uom_code} onChange={e=>setForm({...form,base_uom_code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase" /></div>
             <div><label className="text-xs font-medium text-zinc-600">DECIMAL_PLACES</label><input value={form.decimal_places} onChange={e=>setForm({...form,decimal_places:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
@@ -72,7 +72,7 @@ export default function UomPage(){
       <div className="font-bold border-b border-black pb-1">EUOC UOM_CREATE {uoms.length} API: POST /api/uom {`{code, name, dimension, base_uom_code, decimal_places}`}</div>
       <div className="grid grid-cols-3 gap-2">
         <div><div className="text-[10px] text-zinc-500">CODE</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
-        <div><div className="text-[10px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
         <div><div className="text-[10px] text-zinc-500">DIMENSION</div><select value={form.dimension} onChange={e=>setForm({...form,dimension:e.target.value})} className="w-full border border-black px-1 py-1 text-xs"><option>QUANTITY</option><option>WEIGHT</option><option>VOLUME</option></select></div>
       </div>
       <button onClick={handleCreate} className="bg-black text-white px-3 py-1 w-full">CREATE EUOC</button>

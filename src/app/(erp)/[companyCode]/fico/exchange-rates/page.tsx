@@ -26,7 +26,7 @@ export default function Page(){
   useEffect(()=>{load();},[]);
 
   async function create(){
-    if(!form.from_currency){ setMsg('FROM_CURRENCY required'); return; }
+    if(!(form as any).from_currency){ setMsg('FROM_CURRENCY required'); return; }
     const payload = {...form, company_code: companyCode};
     const res = await fetch('/api/exchange-rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
     if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||'CREATED')+' CREATED – FEXC'); load(); setForm({from_currency: "", to_currency: "", rate: "", valid_from: ""}); }
@@ -42,10 +42,10 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">FEXC EXCHANGE RATES CREATE – API: POST /api/exchange-rates – {Array.isArray(items)?items.length:0} RECORDS – Currency conversion rates INR→USD etc – autocomplete from DB</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">FROM_CURRENCY</div><input value={form.from_currency} onChange={e=>setForm({...form,from_currency:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="FROM_CURRENCY" /></div>
-          <div><div className="text-[9px] text-zinc-500">TO_CURRENCY</div><input value={form.to_currency} onChange={e=>setForm({...form,to_currency:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="TO_CURRENCY" /></div>
-          <div><div className="text-[9px] text-zinc-500">RATE</div><input value={form.rate} onChange={e=>setForm({...form,rate:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="RATE" /></div>
-          <div><div className="text-[9px] text-zinc-500">VALID_FROM</div><input value={form.valid_from} onChange={e=>setForm({...form,valid_from:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="VALID_FROM" /></div>
+          <div><div className="text-[9px] text-zinc-500">FROM_CURRENCY</div><input value={(form as any).from_currency} onChange={e=>setForm({...form,from_currency:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="FROM_CURRENCY" /></div>
+          <div><div className="text-[9px] text-zinc-500">TO_CURRENCY</div><input value={(form as any).to_currency} onChange={e=>setForm({...form,to_currency:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="TO_CURRENCY" /></div>
+          <div><div className="text-[9px] text-zinc-500">RATE</div><input value={(form as any).rate} onChange={e=>setForm({...form,rate:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="RATE" /></div>
+          <div><div className="text-[9px] text-zinc-500">VALID_FROM</div><input value={(form as any).valid_from} onChange={e=>setForm({...form,valid_from:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="VALID_FROM" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE FEXC</button>
       </div>
@@ -88,9 +88,11 @@ export default function Page(){
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete
             label="FROM_CURRENCY *"
-            value={form.from_currency}
+            value={(form as any).from_currency}
             onChange={v=>setForm({...form,from_currency:v})}
             apiUrl="/api/currencies"
+            codeField="code"
+            nameField="name"
             placeholder="FROM_CURRENCY"
             required
             createUrl={`/${companyCode}/fico/currencies`}
@@ -99,9 +101,11 @@ export default function Page(){
           />
           <DbAutocomplete
             label="TO_CURRENCY *"
-            value={form.to_currency}
+            value={(form as any).to_currency}
             onChange={v=>setForm({...form,to_currency:v})}
             apiUrl="/api/currencies"
+            codeField="code"
+            nameField="name"
             placeholder="TO_CURRENCY"
             required
             createUrl={`/${companyCode}/fico/currencies`}
@@ -109,12 +113,12 @@ export default function Page(){
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">RATE </label>
-            <input value={form.rate} onChange={e=>setForm({...form,rate:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="RATE" />
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">RATE *</label>
+            <input value={(form as any).rate} onChange={e=>setForm({...form,rate:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="RATE" />
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">VALID_FROM </label>
-            <input value={form.valid_from} onChange={e=>setForm({...form,valid_from:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="VALID_FROM" />
+            <input value={(form as any).valid_from} onChange={e=>setForm({...form,valid_from:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="VALID_FROM" />
           </div>
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create FEXC</button>

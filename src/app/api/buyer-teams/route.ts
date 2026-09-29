@@ -35,7 +35,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     
       const { code, name, description, procurement_division_id, procurement_division_code, email, phone } = body;
-      if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
+      
+      // VALIDATION: Check foreign keys exist in DB – prevents invalid data
+
+      if (procurement_division_code) {
+        const pd = await db.execute(sql`SELECT id FROM org_procurement_division WHERE code = ${procurement_division_code} LIMIT 1`);
+        if (pd.rows.length === 0) {
+          return NextResponse.json({ error: `PROCUREMENT_DIVISION_CODE ${procurement_division_code} not found – create via EPDC` }, { status: 400 });
+        }
+      }
+
+if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
       let pdId = procurement_division_id;
       if (!pdId && procurement_division_code) {
         const pdr = await db.execute(sql`SELECT id FROM org_procurement_division WHERE code=${procurement_division_code} LIMIT 1`);

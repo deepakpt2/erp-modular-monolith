@@ -40,8 +40,8 @@ export default function Page(){
         <div className="font-bold border-b-2 border-black pb-1 mb-2">CR01 WORK CENTERS CREATE – API: POST /api/work-centers [WORK_CENTER_CODE, DESCRIPTION, COST_CENTER, PLANT] – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
           <div><div className="text-[9px] text-zinc-500">WORK_CENTER_CODE * (DB: CR01)</div><input value={(form as any).work_center_code} onChange={e=>setForm({...form,work_center_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="WORK_CENTER_CODE" /></div>
-          <div><div className="text-[9px] text-zinc-500">DESCRIPTION</div><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="DESCRIPTION" /></div>
-          <div><div className="text-[9px] text-zinc-500">COST_CENTER * (DB: FCCA)</div><input value={form.cost_center} onChange={e=>setForm({...form,cost_center:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COST_CENTER" /></div>
+          <div><div className="text-[9px] text-zinc-500">DESCRIPTION</div><input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="DESCRIPTION" /></div>
+          <div><div className="text-[9px] text-zinc-500">COST_CENTER * (DB: FCCA)</div><input value={(form as any).cost_center} onChange={e=>setForm({...form,cost_center:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COST_CENTER" /></div>
           <div><div className="text-[9px] text-zinc-500">PLANT * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PLANT" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE CR01</button>
@@ -74,24 +74,28 @@ export default function Page(){
             value={(form as any).work_center_code}
             onChange={v=>setForm({...form,work_center_code:v})}
             apiUrl="/api/work-centers"
+            codeField="code"
+            nameField="name"
             placeholder="WORK_CENTER_CODE"
             required
-            createUrl={`/${companyCode}/{companyCode}/pp/work-centers`}
+            createUrl={`/${companyCode}/pp/work-centers`}
             createCode="CR01"
             companyCode={companyCode}
           />
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION </label>
-            <input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="DESCRIPTION" />
+            <input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="DESCRIPTION" />
           </div>
           <DbAutocomplete
             label="COST_CENTER *"
-            value={form.cost_center}
+            value={(form as any).cost_center}
             onChange={v=>setForm({...form,cost_center:v})}
             apiUrl="/api/cost-centers"
+            codeField="code"
+            nameField="name"
             placeholder="COST_CENTER"
             required
-            createUrl={`/${companyCode}/{companyCode}/fico/cost-centers`}
+            createUrl={`/${companyCode}/fico/cost-centers`}
             createCode="FCCA"
             companyCode={companyCode}
           />
@@ -100,9 +104,11 @@ export default function Page(){
             value={(form as any).plant}
             onChange={v=>setForm({...form,plant:v})}
             apiUrl="/api/facilities"
+            codeField="code"
+            nameField="name"
             placeholder="PLANT"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/enterprise-structure?focus=EFCC`}
+            createUrl={`/${companyCode}/foundation/enterprise-structure?focus=EFCC`}
             createCode="EFCC"
             companyCode={companyCode}
           />

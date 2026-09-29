@@ -26,7 +26,7 @@ export default function Page(){
   useEffect(()=>{load();},[]);
 
   async function create(){
-    if(!form.object_type){ setMsg('OBJECT_TYPE required'); return; }
+    if(!(form as any).object_type){ setMsg('OBJECT_TYPE required'); return; }
     const payload = {...form, company_code: companyCode};
     const res = await fetch('/api/number-ranges',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
     if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||'CREATED')+' CREATED – FNRC'); load(); setForm({object_type: "", current_number: "", prefix: ""}); }
@@ -42,9 +42,9 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">FNRC NUMBER RANGES CREATE – API: POST /api/number-ranges – {Array.isArray(items)?items.length:0} RECORDS – Document number ranges FBN1 – 50-54 etc</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">OBJECT_TYPE</div><input value={form.object_type} onChange={e=>setForm({...form,object_type:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="OBJECT_TYPE" /></div>
-          <div><div className="text-[9px] text-zinc-500">CURRENT_NUMBER</div><input value={form.current_number} onChange={e=>setForm({...form,current_number:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="CURRENT_NUMBER" /></div>
-          <div><div className="text-[9px] text-zinc-500">PREFIX</div><input value={form.prefix} onChange={e=>setForm({...form,prefix:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="PREFIX" /></div>
+          <div><div className="text-[9px] text-zinc-500">OBJECT_TYPE</div><input value={(form as any).object_type} onChange={e=>setForm({...form,object_type:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="OBJECT_TYPE" /></div>
+          <div><div className="text-[9px] text-zinc-500">CURRENT_NUMBER</div><input value={(form as any).current_number} onChange={e=>setForm({...form,current_number:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="CURRENT_NUMBER" /></div>
+          <div><div className="text-[9px] text-zinc-500">PREFIX</div><input value={(form as any).prefix} onChange={e=>setForm({...form,prefix:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="PREFIX" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE FNRC</button>
       </div>
@@ -86,16 +86,16 @@ export default function Page(){
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">OBJECT_TYPE *</label>
-            <input value={form.object_type} onChange={e=>setForm({...form,object_type:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="OBJECT_TYPE" />
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">OBJECT_TYPE </label>
+            <input value={(form as any).object_type} onChange={e=>setForm({...form,object_type:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="OBJECT_TYPE" />
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CURRENT_NUMBER *</label>
-            <input value={form.current_number} onChange={e=>setForm({...form,current_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="CURRENT_NUMBER" />
+            <input value={(form as any).current_number} onChange={e=>setForm({...form,current_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="CURRENT_NUMBER" />
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PREFIX </label>
-            <input value={form.prefix} onChange={e=>setForm({...form,prefix:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="PREFIX" />
+            <input value={(form as any).prefix} onChange={e=>setForm({...form,prefix:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="PREFIX" />
           </div>
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create FNRC</button>

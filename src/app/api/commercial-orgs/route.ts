@@ -35,7 +35,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     
       const { code, name, description, tenant_id, tenant_code, legal_entity_id, legal_entity_code, currency_code } = body;
-      if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
+      
+      // VALIDATION: Check foreign keys exist in DB – prevents invalid data
+
+      if (legal_entity_code) {
+        const le = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${legal_entity_code} LIMIT 1`);
+        if (le.rows.length === 0) {
+          return NextResponse.json({ error: `LEGAL_ENTITY_CODE ${legal_entity_code} not found – create via ELEC` }, { status: 400 });
+        }
+      }
+
+if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
       let tenantId = tenant_id;
       if (!tenantId) {
         const tr = await db.execute(sql`SELECT id FROM core_tenant LIMIT 1`);

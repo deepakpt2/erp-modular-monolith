@@ -59,8 +59,8 @@ export default function PartnersPage() {
             <div><label className="text-xs font-medium text-zinc-600">EMAIL</label><input value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
             <div><label className="text-xs font-medium text-zinc-600">PHONE</label><input value={form.phone} onChange={e=>setForm({...form, phone:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
             <div><label className="text-xs font-medium text-zinc-600">GST_NUMBER</label><input value={form.gst_number} onChange={e=>setForm({...form, gst_number:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
-            <div><label className="text-xs font-medium text-zinc-600">CITY</label><input value={form.city} onChange={e=>setForm({...form, city:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
-            <div><label className="text-xs font-medium text-zinc-600">COUNTRY</label><input value={form.country} onChange={e=>setForm({...form, country:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase" /></div>
+            <div><label className="text-xs font-medium text-zinc-600">CITY</label><input value={(form as any).city} onChange={e=>setForm({...form, city:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
+            <div><label className="text-xs font-medium text-zinc-600">COUNTRY</label><input value={(form as any).country} onChange={e=>setForm({...form, country:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase" /></div>
           </div>
           <button type="submit" className="w-full bg-zinc-900 text-white rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-black transition-colors">Create EPAC</button>
         </form>

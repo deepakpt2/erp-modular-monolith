@@ -73,9 +73,11 @@ export default function Page(){
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
+            codeField="item_number"
+            nameField="description"
             placeholder="MATERIAL"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
             companyCode={companyCode}
           />
@@ -84,15 +86,17 @@ export default function Page(){
             value={(form as any).plant}
             onChange={v=>setForm({...form,plant:v})}
             apiUrl="/api/facilities"
+            codeField="code"
+            nameField="name"
             placeholder="PLANT"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/enterprise-structure?focus=EFCC`}
+            createUrl={`/${companyCode}/foundation/enterprise-structure?focus=EFCC`}
             createCode="EFCC"
             companyCode={companyCode}
           />
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DEMAND </label>
-            <input value={form.demand} onChange={e=>setForm({...form,demand:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="DEMAND" />
+            <input value={(form as any).demand} onChange={e=>setForm({...form,demand:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="DEMAND" />
           </div>
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create MD01</button>

@@ -22,7 +22,7 @@ export default function GlAccountsPage(){
   useEffect(()=>{load();},[]);
 
   async function create(){
-    if(!(form as any).account_number || !form.name || !form.coa_code){ setMsg('COA_CODE, ACCOUNT_NUMBER, NAME required'); return; }
+    if(!(form as any).account_number || !(form as any).name || !(form as any).coa_code){ setMsg('COA_CODE, ACCOUNT_NUMBER, NAME required'); return; }
     const res = await fetch('/api/gl-accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)}).then(r=>r.json());
     if(res.success){ setMsg(`✅ ${(form as any).account_number} CREATED`); load(); setForm({coa_code:'INT', account_number:'', name:'', account_type:'EXPENSE', is_balance_sheet:'false'}); }
     else setMsg(`❌ ${res.error}`);
@@ -37,9 +37,9 @@ export default function GlAccountsPage(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">FGLC GL_ACCOUNT_CREATE FS00 {gls.length} API: POST /api/gl-accounts {`{coa_code, account_number, name, account_type, is_balance_sheet}`}</div>
         <div className="grid grid-cols-4 gap-2">
-          <div><div className="text-[9px] text-zinc-500">COA_CODE</div><input value={form.coa_code} onChange={e=>setForm({...form,coa_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COA_CODE" /></div>
+          <div><div className="text-[9px] text-zinc-500">COA_CODE</div><input value={(form as any).coa_code} onChange={e=>setForm({...form,coa_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COA_CODE" /></div>
           <div><div className="text-[9px] text-zinc-500">ACCOUNT_NUMBER</div><input value={(form as any).account_number} onChange={e=>setForm({...form,account_number:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="ACCOUNT_NUMBER" /></div>
-          <div><div className="text-[9px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
+          <div><div className="text-[9px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
           <div><div className="text-[9px] text-zinc-500">ACCOUNT_TYPE</div><select value={form.account_type} onChange={e=>setForm({...form,account_type:e.target.value})} className="w-full border-2 border-black px-1 py-1"><option>ASSET</option><option>LIABILITY</option><option>EXPENSE</option><option>REVENUE</option><option>EQUITY</option></select></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE FGLC</button>
@@ -70,7 +70,7 @@ export default function GlAccountsPage(){
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">COA_CODE</label>
-            <input value={form.coa_code} onChange={e=>setForm({...form,coa_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="COA_CODE" />
+            <input value={(form as any).coa_code} onChange={e=>setForm({...form,coa_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="COA_CODE" />
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">ACCOUNT_NUMBER</label>
@@ -78,7 +78,7 @@ export default function GlAccountsPage(){
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME</label>
-            <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" placeholder="NAME" />
+            <input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" placeholder="NAME" />
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">ACCOUNT_TYPE</label>

@@ -35,7 +35,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     
       const { code, name, description, tenant_id, legal_entity_id, legal_entity_code, control_area_id, control_area_code, parent_id, parent_code } = body;
-      if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
+      
+      // VALIDATION: Check foreign keys exist in DB – prevents invalid data
+
+      if (control_area_code) {
+        const ca = await db.execute(sql`SELECT id FROM org_mgmt_control_area WHERE code = ${control_area_code} LIMIT 1`);
+        if (ca.rows.length === 0) {
+          return NextResponse.json({ error: `CONTROL_AREA_CODE ${control_area_code} not found` }, { status: 400 });
+        }
+      }
+
+if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
       let tenantId = tenant_id;
       if (!tenantId) {
         const tr = await db.execute(sql`SELECT id FROM core_tenant LIMIT 1`);

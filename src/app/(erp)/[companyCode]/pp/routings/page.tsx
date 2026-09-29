@@ -42,7 +42,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">ROUTING_NUMBER * (DB: CA01)</div><input value={(form as any).routing_number} onChange={e=>setForm({...form,routing_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="ROUTING_NUMBER" /></div>
           <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
           <div><div className="text-[9px] text-zinc-500">OPERATION</div><input value={form.operation} onChange={e=>setForm({...form,operation:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="OPERATION" /></div>
-          <div><div className="text-[9px] text-zinc-500">WORK_CENTER * (DB: CR01)</div><input value={form.work_center} onChange={e=>setForm({...form,work_center:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="WORK_CENTER" /></div>
+          <div><div className="text-[9px] text-zinc-500">WORK_CENTER * (DB: CR01)</div><input value={(form as any).work_center} onChange={e=>setForm({...form,work_center:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="WORK_CENTER" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE CA01</button>
       </div>
@@ -74,9 +74,11 @@ export default function Page(){
             value={(form as any).routing_number}
             onChange={v=>setForm({...form,routing_number:v})}
             apiUrl="/api/routings"
+            codeField="routing_number"
+            nameField="name"
             placeholder="ROUTING_NUMBER"
             required
-            createUrl={`/${companyCode}/{companyCode}/pp/routings`}
+            createUrl={`/${companyCode}/pp/routings`}
             createCode="CA01"
             companyCode={companyCode}
           />
@@ -85,24 +87,28 @@ export default function Page(){
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
+            codeField="item_number"
+            nameField="description"
             placeholder="MATERIAL"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
             companyCode={companyCode}
           />
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">OPERATION </label>
-            <input value={form.operation} onChange={e=>setForm({...form,operation:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="OPERATION" />
+            <input value={(form as any).operation} onChange={e=>setForm({...form,operation:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="OPERATION" />
           </div>
           <DbAutocomplete
             label="WORK_CENTER *"
-            value={form.work_center}
+            value={(form as any).work_center}
             onChange={v=>setForm({...form,work_center:v})}
             apiUrl="/api/work-centers"
+            codeField="code"
+            nameField="name"
             placeholder="WORK_CENTER"
             required
-            createUrl={`/${companyCode}/{companyCode}/pp/work-centers`}
+            createUrl={`/${companyCode}/pp/work-centers`}
             createCode="CR01"
             companyCode={companyCode}
           />

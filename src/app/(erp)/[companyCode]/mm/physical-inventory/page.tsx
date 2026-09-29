@@ -74,20 +74,24 @@ export default function Page(){
             value={(form as any).plant}
             onChange={v=>setForm({...form,plant:v})}
             apiUrl="/api/facilities"
+            codeField="code"
+            nameField="name"
             placeholder="PLANT"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/enterprise-structure?focus=EFCC`}
+            createUrl={`/${companyCode}/foundation/enterprise-structure?focus=EFCC`}
             createCode="EFCC"
             companyCode={companyCode}
           />
           <DbAutocomplete
             label="STORAGE_LOCATION *"
-            value={form.storage_location}
+            value={(form as any).storage_location}
             onChange={v=>setForm({...form,storage_location:v})}
             apiUrl="/api/inventory-locations"
+            codeField="code"
+            nameField="name"
             placeholder="STORAGE_LOCATION"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/enterprise-structure?focus=EILC`}
+            createUrl={`/${companyCode}/foundation/enterprise-structure?focus=EILC`}
             createCode="EILC"
             companyCode={companyCode}
           />
@@ -96,15 +100,17 @@ export default function Page(){
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
+            codeField="item_number"
+            nameField="description"
             placeholder="MATERIAL"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
             companyCode={companyCode}
           />
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY *</label>
-            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="QUANTITY" />
+            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="QUANTITY" />
           </div>
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create MI01</button>

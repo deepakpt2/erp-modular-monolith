@@ -22,7 +22,7 @@ export default function ChartOfAccountsPage(){
   useEffect(()=>{load();},[]);
 
   async function create(){
-    if(!(form as any).code || !form.name){ setMsg('CODE and NAME required'); return; }
+    if(!(form as any).code || !(form as any).name){ setMsg('CODE and NAME required'); return; }
     const res = await fetch('/api/chart-of-accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)}).then(r=>r.json());
     if(res.success || res.chartOfAccounts){ setMsg(`✅ ${(form as any).code} CREATED`); load(); setForm({code:'',name:'',description:''}); }
     else setMsg(`❌ ${res.error}`);
@@ -38,8 +38,8 @@ export default function ChartOfAccountsPage(){
         <h3 className="font-semibold mb-4">Create Chart of Accounts <span className="ml-2 text-xs font-mono bg-zinc-100 border rounded-full px-2 py-0.5">FCOA {coas.length}</span></h3>
         <div className="grid grid-cols-3 gap-4">
           <div><label className="text-xs font-medium text-zinc-600">CODE</label><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm uppercase focus:ring-2 focus:ring-black focus:outline-none" /></div>
-          <div><label className="text-xs font-medium text-zinc-600">NAME</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
-          <div><label className="text-xs font-medium text-zinc-600">DESCRIPTION</label><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
+          <div><label className="text-xs font-medium text-zinc-600">NAME</label><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-black focus:outline-none" /></div>
+          <div><label className="text-xs font-medium text-zinc-600">DESCRIPTION</label><input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2.5 text-sm" /></div>
         </div>
         <button onClick={create} className="mt-4 w-full bg-zinc-900 text-white rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-black">Create FCOA</button>
       </div>
@@ -59,8 +59,8 @@ export default function ChartOfAccountsPage(){
       <div className="font-bold border-b border-black pb-1">FCOA CHART_OF_ACCOUNTS_CREATE {coas.length} API: POST /api/chart-of-accounts {`{code, name, description}`}</div>
       <div className="grid grid-cols-3 gap-2">
         <div><div className="text-[10px] text-zinc-500">CODE</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border border-black px-1 py-1 uppercase text-xs" /></div>
-        <div><div className="text-[10px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
-        <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
+        <div><div className="text-[10px] text-zinc-500">DESCRIPTION</div><input value={(form as any).description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-black px-1 py-1 text-xs" /></div>
       </div>
       <button onClick={create} className="bg-black text-white px-3 py-1 w-full">CREATE FCOA</button>
     </div>

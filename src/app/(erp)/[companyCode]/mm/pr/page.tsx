@@ -42,7 +42,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
           <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
           <div><div className="text-[9px] text-zinc-500">PLANT * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PLANT" /></div>
-          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
+          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE ME51N</button>
       </div>
@@ -74,35 +74,41 @@ export default function Page(){
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
+            codeField="item_number"
+            nameField="description"
             placeholder="MATERIAL"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
             companyCode={companyCode}
           />
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY *</label>
-            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="QUANTITY" />
+            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="QUANTITY" />
           </div>
           <DbAutocomplete
             label="PLANT *"
             value={(form as any).plant}
             onChange={v=>setForm({...form,plant:v})}
             apiUrl="/api/facilities"
+            codeField="code"
+            nameField="name"
             placeholder="PLANT"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/enterprise-structure?focus=EFCC`}
+            createUrl={`/${companyCode}/foundation/enterprise-structure?focus=EFCC`}
             createCode="EFCC"
             companyCode={companyCode}
           />
           <DbAutocomplete
             label="COMPANY_CODE *"
-            value={form.company_code}
+            value={(form as any).company_code}
             onChange={v=>setForm({...form,company_code:v})}
             apiUrl="/api/company-codes"
+            codeField="code"
+            nameField="name"
             placeholder="COMPANY_CODE"
             required
-            createUrl={`/${companyCode}/{companyCode}/fico/company-master`}
+            createUrl={`/${companyCode}/fico/company-master`}
             createCode="OX02"
             companyCode={companyCode}
           />

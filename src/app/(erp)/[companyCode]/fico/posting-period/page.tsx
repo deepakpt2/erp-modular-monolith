@@ -59,7 +59,7 @@ export default function PostingPeriodPage(){
   }, [focusParam]);
 
   const handleCreate = async () => {
-    if(!(form as any).code||!form.name){ setMsg('CODE and NAME required'); return; }
+    if(!(form as any).code||!(form as any).name){ setMsg('CODE and NAME required'); return; }
     const res = await fetch('/api/posting-period-variants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)}).then(r=>r.json());
     if(res.success){ setMsg(`✅ Posting Period Variant ${res.variant.code} created – OBBO/FPPC`); setShowForm(false); setForm({code:'',name:''}); load(); }
     else setMsg(`❌ ${res.error}`);
@@ -120,7 +120,7 @@ export default function PostingPeriodPage(){
         <button onClick={handleCreateFiscal} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE FFYC</button>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <div><div className="text-[9px]">CODE *</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CODE" /></div>
-          <div><div className="text-[9px]">NAME *</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
+          <div><div className="text-[9px]">NAME *</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="NAME" /></div>
         </div>
         <button onClick={handleCreate} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE OBBO/FPPC</button>
       </div>
@@ -192,7 +192,7 @@ export default function PostingPeriodPage(){
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CODE *</label><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} placeholder="CODE" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black uppercase" /></div>
-            <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME *</label><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="NAME" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
+            <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME *</label><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="NAME" className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" /></div>
           </div>
           <button onClick={handleCreate} className="bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-2.5 text-sm font-medium transition-colors">Create Variant – OBBO</button>
         </div>

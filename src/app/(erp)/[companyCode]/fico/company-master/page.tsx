@@ -40,11 +40,11 @@ export default function Page(){
         <div className="font-bold border-b-2 border-black pb-1 mb-2">OX02 COMPANY MASTER CREATE – API: POST /api/company-codes [CODE, NAME, CITY, COUNTRY, CURRENCY_CODE, COA_CODE] – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
           <div><div className="text-[9px] text-zinc-500">CODE</div><input value={(form as any).code} onChange={e=>setForm({...form,code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CODE" /></div>
-          <div><div className="text-[9px] text-zinc-500">NAME</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="NAME" /></div>
-          <div><div className="text-[9px] text-zinc-500">CITY</div><input value={form.city} onChange={e=>setForm({...form,city:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="CITY" /></div>
-          <div><div className="text-[9px] text-zinc-500">COUNTRY</div><input value={form.country} onChange={e=>setForm({...form,country:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="COUNTRY" /></div>
-          <div><div className="text-[9px] text-zinc-500">CURRENCY_CODE * (DB: FCYC)</div><input value={form.currency_code} onChange={e=>setForm({...form,currency_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CURRENCY_CODE" /></div>
-          <div><div className="text-[9px] text-zinc-500">COA_CODE</div><input value={form.coa_code} onChange={e=>setForm({...form,coa_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COA_CODE" /></div>
+          <div><div className="text-[9px] text-zinc-500">NAME</div><input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="NAME" /></div>
+          <div><div className="text-[9px] text-zinc-500">CITY</div><input value={(form as any).city} onChange={e=>setForm({...form,city:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="CITY" /></div>
+          <div><div className="text-[9px] text-zinc-500">COUNTRY</div><input value={(form as any).country} onChange={e=>setForm({...form,country:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="COUNTRY" /></div>
+          <div><div className="text-[9px] text-zinc-500">CURRENCY_CODE * (DB: FCYC)</div><input value={(form as any).currency_code} onChange={e=>setForm({...form,currency_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CURRENCY_CODE" /></div>
+          <div><div className="text-[9px] text-zinc-500">COA_CODE</div><input value={(form as any).coa_code} onChange={e=>setForm({...form,coa_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COA_CODE" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE OX02</button>
       </div>
@@ -77,31 +77,51 @@ export default function Page(){
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">NAME *</label>
-            <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="NAME" />
+            <input value={(form as any).name} onChange={e=>setForm({...form,name:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="NAME" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CITY </label>
-            <input value={form.city} onChange={e=>setForm({...form,city:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="CITY" />
-          </div>
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">COUNTRY </label>
-            <input value={form.country} onChange={e=>setForm({...form,country:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="COUNTRY" />
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CITY *</label>
+            <input value={(form as any).city} onChange={e=>setForm({...form,city:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="CITY" />
           </div>
           <DbAutocomplete
+            label="COUNTRY *"
+            value={(form as any).country}
+            onChange={v=>setForm({...form,country:v})}
+            apiUrl="/api/countries"
+            codeField="code"
+            nameField="name"
+            placeholder="COUNTRY"
+            required
+            createUrl={`/${companyCode}/foundation/enterprise-structure?focus=ELEC`}
+            createCode="COUNTRY"
+            companyCode={companyCode}
+          />
+          <DbAutocomplete
             label="CURRENCY_CODE *"
-            value={form.currency_code}
+            value={(form as any).currency_code}
             onChange={v=>setForm({...form,currency_code:v})}
             apiUrl="/api/currencies"
+            codeField="code"
+            nameField="name"
             placeholder="CURRENCY_CODE"
             required
-            createUrl={`/${companyCode}/{companyCode}/fico/currencies`}
+            createUrl={`/${companyCode}/fico/currencies`}
             createCode="FCYC"
             companyCode={companyCode}
           />
-          <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">COA_CODE *</label>
-            <input value={form.coa_code} onChange={e=>setForm({...form,coa_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="COA_CODE" />
-          </div>
+          <DbAutocomplete
+            label="COA_CODE *"
+            value={(form as any).coa_code}
+            onChange={v=>setForm({...form,coa_code:v})}
+            apiUrl="/api/chart-of-accounts"
+            codeField="code"
+            nameField="name"
+            placeholder="COA_CODE"
+            required
+            createUrl={`/${companyCode}/fico/chart-of-accounts`}
+            createCode="FCOA"
+            companyCode={companyCode}
+          />
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create OX02</button>
       </div>

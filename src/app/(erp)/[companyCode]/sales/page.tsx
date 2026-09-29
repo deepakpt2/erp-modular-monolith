@@ -42,7 +42,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">CUSTOMER * (DB: PSUC)</div><input value={(form as any).customer} onChange={e=>setForm({...form,customer:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="CUSTOMER" /></div>
           <div><div className="text-[9px] text-zinc-500">MATERIAL * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="MATERIAL" /></div>
           <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
-          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
+          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE VA01</button>
       </div>
@@ -73,11 +73,13 @@ export default function Page(){
             label="CUSTOMER *"
             value={(form as any).customer}
             onChange={v=>setForm({...form,customer:v})}
-            apiUrl="/api/business-partners"
+            apiUrl="/api/business-partners?role=CUSTOMER"
+            codeField="account_number"
+            nameField="display_name"
             placeholder="CUSTOMER"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/partners`}
-            createCode="PSUC"
+            createUrl={`/${companyCode}/foundation/partners?role=CUSTOMER`}
+            createCode="SCUC"
             companyCode={companyCode}
           />
           <DbAutocomplete
@@ -85,24 +87,28 @@ export default function Page(){
             value={(form as any).material}
             onChange={v=>setForm({...form,material:v})}
             apiUrl="/api/materials"
+            codeField="item_number"
+            nameField="description"
             placeholder="MATERIAL"
             required
-            createUrl={`/${companyCode}/{companyCode}/foundation/materials`}
+            createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
             companyCode={companyCode}
           />
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY *</label>
-            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black " placeholder="QUANTITY" />
+            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="QUANTITY" />
           </div>
           <DbAutocomplete
             label="COMPANY_CODE *"
-            value={form.company_code}
+            value={(form as any).company_code}
             onChange={v=>setForm({...form,company_code:v})}
             apiUrl="/api/company-codes"
+            codeField="code"
+            nameField="name"
             placeholder="COMPANY_CODE"
             required
-            createUrl={`/${companyCode}/{companyCode}/fico/company-master`}
+            createUrl={`/${companyCode}/fico/company-master`}
             createCode="OX02"
             companyCode={companyCode}
           />
