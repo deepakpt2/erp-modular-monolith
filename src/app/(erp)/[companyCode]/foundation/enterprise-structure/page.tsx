@@ -104,23 +104,23 @@ export default function EnterpriseStructurePage() {
   };
 
   const tabs = [
-    { id: 'company' as TabId, label: 'Company Group & Legal Entity', codes: 'FND-CG-CR/FND-LE-CR (alias OX15/OX02)' },
-    { id: 'control' as TabId, label: 'Control Area & Credit Policy', codes: 'FND-CA-CR/FIN-CP-CR (alias OX06/OB45)' },
-    { id: 'facility' as TabId, label: 'Facility & Inventory Location', codes: 'FND-FAC-CR/FND-IL-CR (alias OX10/OX09)' },
-    { id: 'procurement' as TabId, label: 'Procurement Division & Buyer Team', codes: 'FND-PD-CR/FND-BT-CR (alias OX08/OME4)' },
-    { id: 'commercial' as TabId, label: 'Commercial Org, Channel, Product Line', codes: 'FND-CO-CR/FND-SC-CR/FND-PL-CR (alias OVX2/OVX1)' },
-    { id: 'profit' as TabId, label: 'Profit, Cost, Segment, Warehouse, Dispatch', codes: 'FND-PU-CR/FND-CU-CR/FND-BS-CR/FND-WH-CR/FND-DP-CR (alias KS01)' },
+    { id: 'company' as TabId, label: 'Company Group & Legal Entity', codes: 'CGC/LEC (alias OX15/OX02, FND-CG-CR/FND-LE-CR)' },
+    { id: 'control' as TabId, label: 'Control Area & Credit Policy', codes: 'CAC/CPC (alias OX06/OB45)' },
+    { id: 'facility' as TabId, label: 'Facility & Inventory Location', codes: 'FCC/ILC (alias OX10/OX09)' },
+    { id: 'procurement' as TabId, label: 'Procurement Division & Buyer Team', codes: 'PDC/BTC (alias OX08/OME4)' },
+    { id: 'commercial' as TabId, label: 'Commercial Org, Channel, Product Line', codes: 'COC/SCC/PLC (alias OVX2/OVX1)' },
+    { id: 'profit' as TabId, label: 'Profit, Cost, Segment, Warehouse, Dispatch', codes: 'PUC/CUC/BSC/WHC/DPC (alias KS01)' },
   ];
 
   if (loading) return <div className="p-6">Loading legal-safe enterprise structure – fresh empty Module 1...</div>;
 
   return (
     <ModernModuleShell
-      title={`Enterprise Structure • ${companyCode} – Legal-Safe Module 1 – New Codes FND-*`}
+      title={`Enterprise Structure • ${companyCode} – Short Codes CGC/LEC etc`}
       subtitle={`Fresh empty – ${tenants.length} Tenants • ${companyGroups.length} Company Groups • ${legalEntities.length} Legal Entities • ${facilities.length} Facilities • ${inventoryLocs.length} Inventory Locations • ${procDivs.length} Proc Divs • ${commercialOrgs.length} Commercial Orgs – Sample data kept: Currencies, UoM, CoA, GL, Tax`}
-      code="FND-CG-CR"
+      code="LEC"
       module="FOUNDATION"
-      tooltip={`Module 1 Legal-Safe – New Intuitive Helper Codes: FND-CG-CR Company Group (alias OX15), FND-LE-CR Legal Entity (alias OX02), FND-CA-CR Control Area (alias OX06), FND-FAC-CR Facility (alias OX10 Plant), FND-IL-CR Inventory Location (alias OX09 SLoc), FND-PD-CR Procurement Division (alias OX08 Purch Org), FND-BT-CR Buyer Team (alias OME4 Purch Group), FND-CO-CR Commercial Org (alias OVX2 Sales Org), FND-SC-CR Sales Channel (alias OVX1 Dist Channel), FND-PL-CR Product Line (alias Division), FND-PU-CR Profit Unit (alias Profit Center), FND-CU-CR Cost Unit (alias KS01 Cost Center), FND-BS-CR Business Segment, FND-WH-CR Warehouse Site, FND-DP-CR Dispatch Point – helper codes kept as aliases, new codes primary own IP`}
+      tooltip={`Module 1 Legal-Safe – New Short Intuitive Codes: CGC Company Group (alias OX15 FND-CG-CR), LEC Legal Entity (alias OX02 FND-LE-CR), CAC Control Area (alias OX06), FCC Facility (alias OX10), ILC Inventory Location (alias OX09), PDC Procurement Division (alias OX08), BTC Buyer Team (alias OME4), COC Commercial Org (alias OVX2), SCC Sales Channel (alias OVX1), PLC Product Line, PUC Profit Unit, CUC Cost Unit (alias KS01), BSC Business Segment, WHC Warehouse Site, DPC Dispatch Point – short 3-char own IP, old codes searchable aliases`}
     >
       <div className="max-w-[1700px] mx-auto p-6 space-y-4">
         <div className="flex gap-2 mb-4 flex-wrap">
