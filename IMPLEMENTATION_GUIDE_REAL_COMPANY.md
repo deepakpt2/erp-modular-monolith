@@ -5,36 +5,155 @@
 
 ---
 
-## PHASE 0 – COMPANY CREATION FROM SCRATCH – ERP ADMIN
+## PHASE 0 – COMPANY CREATION FROM SCRATCH – ERP ADMIN – CORRECT ORDER – REQUIRED DATA BEFORE OB13/ELEC
+
+> **Critical Order – per user report:** `credit_control_area: CRED-1000 didnt create before ob13` – `chart_of_accounts_code: CA-IN-01 fiscal_year_variant: K4 field_status_variant: FSSV-1000 posting_period_variant: PPV-1000 credit_control_area: CRED-1000` must exist BEFORE `ELEC` – and `FCOA OB13` needs `language: EN` – `ECGC` needs `currency_code: INR country_code: IN language: EN` – this section fixes order.
 
 ### Title: Create Tenant / Company Group
-**Code:** `ECGC` – Company Group – `POST /api/company-groups` – alias `ECGC`
+**Code:** `ECGC` – Company Group – `POST /api/company-groups` – alias `OX15`
 
 **User:** `erp_admin` – Role: `ERP_ADMIN` – super admin – creates tenant
 
-**Data to be entered – copyable:**
+**Data to be entered – copyable – per guide needs currency_code, country_code, language EN:**
 ```
 code: ECGC-FMCG-01
 name: FMCG Group India
 description: FMCG Group for Spices and Foods
 currency_code: INR
 country_code: IN
+language: EN
+tenant_code: TEN-100
 ```
 
 **Steps:**
 1. Login as `erp_admin` / password `Admin@123`
 2. Navigate `/[companyCode]/foundation/company-groups?mode=create`
-3. Enter above fields – click Create
-4. Verify GET `/api/company-groups` returns ECGC-FMCG-01
+3. Enter above fields – currency_code INR was missing per report – now required – click Create
+4. Verify GET `/api/company-groups` returns ECGC-FMCG-01 with currency_code INR country_code IN language EN
 
 ---
 
-### Title: Create Legal Entity / Company Code
+### Title: Create Currency INR
+**Code:** `FCYC` – Currency – `OY03` – `POST /api/currencies`
+
+**User:** `erp_admin`
+
+**Data to be entered – copyable – required before ELEC:**
+```
+code: INR
+name: Indian Rupee
+decimal_places: 2
+symbol: ₹
+```
+
+---
+
+### Title: Create Fiscal Year Variant K4
+**Code:** `FFYC` – Fiscal Calendar – `OB29` – `POST /api/fiscal-calendars`
+
+**User:** `erp_admin`
+
+**Data to be entered – copyable – fiscal_year_variant K4 must exist before ELEC – per guide:**
+```
+code: K4
+name: April-March Fiscal – India
+description: Fiscal Year Variant K4 – April to March – 12 periods – India standard – required before ELEC
+year_dependent: false
+calendar_year: false
+number_of_periods: 12
+```
+
+**Why before OB13/ELEC:** ELEC needs `fiscal_year_variant: K4` – calculates FY/Period from posting date – e.g., posting 2026-05-15 → FY2026 P02
+
+---
+
+### Title: Create Field Status Variant FSSV-1000
+**Code:** `FSSV` – Field Status Variant – `OBC4` – `POST /api/field-status-variants`
+
+**User:** `erp_admin`
+
+**Data to be entered – copyable – field_status_variant FSSV-1000 must exist before ELEC:**
+```
+code: FSSV-1000
+name: Field Status Variant 1000 – India
+description: Field Status Variant for India – controls field status groups G001 etc – required before ELEC
+```
+
+**Why before OB13/ELEC:** ELEC needs `field_status_variant: FSSV-1000` – controls GL field status – per user report
+
+---
+
+### Title: Create Posting Period Variant PPV-1000
+**Code:** `FPPC` – Posting Calendar – `OBBO` – `POST /api/posting-period-variants`
+
+**User:** `erp_admin`
+
+**Data to be entered – copyable – posting_period_variant PPV-1000 must exist before ELEC:**
+```
+code: PPV-1000
+name: Posting Period Variant 1000 – India
+description: Posting Period Variant PPV-1000 – groups company codes for OB52 open/close – required before ELEC
+```
+
+**Why before OB13/ELEC:** ELEC needs `posting_period_variant: PPV-1000` – per guide – controls OB52 posting period open/close
+
+---
+
+### Title: Create Credit Control Area CRED-1000 – MUST EXIST BEFORE OB13/ELEC
+**Code:** `FCPC` – Credit Policy Area – `OB45` – `POST /api/credit-policy-areas`
+
+**User:** `erp_admin`
+
+**Data to be entered – copyable – credit_control_area CRED-1000 didnt create before OB13 – per user report – MUST CREATE BEFORE OB13/ELEC:**
+```
+code: CRED-1000
+name: Credit Control India – Domestic
+currency_code: INR
+description: Credit Control Area CRED-1000 – credit_control_area per guide – must exist before OB13 and ELEC – OB45 – defines credit control boundary for customer credit FD32
+```
+
+**Why before OB13/ELEC:** Per user report `credit_control_area: CRED-1000 didnt create before ob13` – ELEC needs `credit_control_area: CRED-1000` – defines credit control – if not created, ELEC creation fails – create now – also used in FD32 customer credit master + OVA8 credit check on SO
+
+---
+
+### Title: Create Chart of Accounts CA-IN-01 with Language EN – OB13
+**Code:** `FCOA` – Chart of Accounts – `OB13` – `POST /api/chart-of-accounts`
+
+**User:** `erp_admin`
+
+**Data to be entered – copyable – OB13 dont have language: EN to add – per user report – NOW HAS LANGUAGE:**
+```
+code: CA-IN-01
+name: Chart of Accounts India
+description: India Standard CoA – CA-IN-01 per guide
+language: EN
+```
+
+**Steps:**
+1. Navigate `/[companyCode]/fico/chart-of-accounts?mode=create`
+2. Enter code CA-IN-01, name, language EN – **language field now added per report**
+3. Create – verify GET `/api/chart-of-accounts` returns CA-IN-01 with language EN – existing count should be 1+ not 0 (fixed via merged fin_chart+fi_chart_of_accounts)
+4. Related Masters bottom shows [FGLC GL Account uses CoA→OBYC Auto Account uses CoA→FFYC K4→FSSV FSSV-1000→FPPC PPV-1000→FCPC CRED-1000] – low importance but helps create necessary data
+
+**Why before ELEC:** ELEC needs `chart_of_accounts_code: CA-IN-01` – must exist before Legal Entity – OB13 is prerequisite for ELEC
+
+---
+
+### Title: Create Legal Entity / Company Code – AFTER ALL DEPENDENCIES
 **Code:** `ELEC` – Legal Entity – `OX02` – `POST /api/legal-entities` – alias `ELEC`
 
 **User:** `erp_admin`
 
-**Data to be entered – copyable:**
+**Prerequisites – MUST EXIST BEFORE ELEC – per guide – correct order:**
+- `ECGC-FMCG-01` with `currency_code INR country_code IN language EN`
+- `INR` currency `FCYC`
+- `K4` fiscal year variant `FFYC` – `fiscal_year_variant: K4`
+- `FSSV-1000` field status variant – `field_status_variant: FSSV-1000`
+- `PPV-1000` posting period variant `FPPC` – `posting_period_variant: PPV-1000`
+- `CRED-1000` credit control area `FCPC OB45` – `credit_control_area: CRED-1000 didnt create before ob13` – now must exist
+- `CA-IN-01` chart of accounts `FCOA OB13` with `language: EN` – `chart_of_accounts_code: CA-IN-01`
+
+**Data to be entered – copyable – AFTER dependencies:**
 ```
 code: 1000
 name: FMCG India Pvt Ltd
@@ -46,27 +165,13 @@ fiscal_year_variant: K4
 field_status_variant: FSSV-1000
 posting_period_variant: PPV-1000
 credit_control_area: CRED-1000
+language: EN
 ```
 
 **Steps:**
 1. `/[companyCode]/foundation/legal-entities?mode=create`
-2. Enter fields – field_status_variant from OBC4, posting_period_variant from OB52
-3. Create – check OBYC will use chart CA-IN-01 for BSX/WRX
-
----
-
-### Title: Create Chart of Accounts
-**Code:** `FCOA` – Chart of Accounts – `OB13` – `POST /api/chart-of-accounts`
-
-**User:** `erp_admin`
-
-**Data to be entered – copyable:**
-```
-code: CA-IN-01
-name: Chart of Accounts India
-description: India Standard CoA
-language: EN
-```
+2. Enter fields – all autocomplete now show CA-IN-01, K4, FSSV-1000, PPV-1000, CRED-1000 – select from list
+3. Create – API auto-creates missing dependencies if not exist (downstream safe) but should exist per correct order – check OBYC will use chart CA-IN-01 for BSX/WRX
 
 ---
 
