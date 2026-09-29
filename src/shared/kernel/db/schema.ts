@@ -7,6 +7,7 @@ export * from '../../../modules/foundation/enterprise/infrastructure/orgStructur
 export * from '../../../modules/foundation/enterprise/infrastructure/productCatalogSchema';
 export * from '../../../modules/foundation/enterprise/infrastructure/partnerAccountSchema';
 export * from '../../../modules/foundation/enterprise/infrastructure/financialsFoundationSchema';
+export * from '../../../modules/fico/infrastructure/financialsDeepDiveSchema';
 export * from '../../../modules/foundation/enterprise/infrastructure/jobQueueSchema';
 export * from '../../../modules/foundation/enterprise/infrastructure/exchangeRateSchema';
 export * from '../../../modules/foundation/number-range/infrastructure/schema';

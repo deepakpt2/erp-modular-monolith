@@ -4,78 +4,81 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Account Groups API – GL Account Groups configurable (OBD4)
- * Groups like KASS Assets, KLIA Liabilities, KREV Revenue, KEXP Expenses, KMAT Material, KREC Recon, KTAX Tax, KCSH Cash
- * You can add new groups or edit current
- * Storage: fi_account_group or ent_account_group – we try both
+ * Account Groups API – Legal-safe own IP – Module 5 FICO Deep Dive
+ * New: fin_account_group (was fi_account_group) – chartId was coa_id, code, name, from_account, to_account – OBD4
+ * Helper code: FAGC Account Group Create (alias AGC, OBD4, FIN-AG-CR) – 4-char MOOA F=Financials, AG=AccountGroup, C=Create – module grouped intuitive
+ * Fallback to legacy fi_account_group
  */
-
-async function ensureTable() {
-  try {
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS fi_account_group (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        code VARCHAR(20) NOT NULL UNIQUE,
-        name VARCHAR(100) NOT NULL,
-        description TEXT,
-        created_at TIMESTAMP DEFAULT NOW() NOT NULL
-      );
-    `);
-    const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM fi_account_group`);
-    if (parseInt((cnt.rows[0] as any).c || '0') === 0) {
-      await db.execute(sql`
-        INSERT INTO fi_account_group (code, name, description) VALUES
-        ('KASS', 'Assets', 'Balance Sheet Assets 100000-199999'),
-        ('KLIA', 'Liabilities', 'Balance Sheet Liabilities 200000-299999'),
-        ('KREV', 'Revenue', 'P&L Revenue 400000-499999'),
-        ('KEXP', 'Expenses', 'P&L Expenses 500000-599999'),
-        ('KMAT', 'Material Stock', 'Material Stock Accounts 5000000001-5000000006'),
-        ('KREC', 'Reconciliation', 'Recon Accounts AR/AP'),
-        ('KTAX', 'Tax', 'Tax Accounts'),
-        ('KCSH', 'Cash', 'Cash/Bank Accounts')
-        ON CONFLICT (code) DO NOTHING
-      `);
-    }
-  } catch (e: any) {
-    console.warn('ensure fi_account_group failed', e);
-  }
-}
 
 export async function GET(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
 
-  await ensureTable();
+  const { searchParams } = new URL(req.url);
+  const coaCode = searchParams.get('coaCode') || searchParams.get('chartCode') || 'ALL';
 
   try {
-    const res = await db.execute(sql`SELECT id, code, name, description, created_at FROM fi_account_group ORDER BY code`);
-    // Also get G/L count per group if possible
-    let glCounts: any[] = [];
+    let rows: any[] = [];
+    let source = 'db-new';
+    let table = 'fin_account_group';
+    let legalSafe = true;
+
     try {
-      const r = await db.execute(sql`SELECT account_group, COUNT(*) as cnt FROM fi_gl_account GROUP BY account_group`);
-      glCounts = r.rows;
-    } catch {}
+      let query = sql`
+        SELECT ag.*, c.code as chart_code, c.name as chart_name
+        FROM fin_account_group ag
+        JOIN fin_chart c ON ag.chart_id = c.id
+        WHERE 1=1
+      `;
+      if (coaCode && coaCode !== 'ALL') query = sql`${query} AND c.code = ${coaCode}`;
+      query = sql`${query} ORDER BY c.code, ag.code`;
+      const res = await db.execute(query);
+      rows = res.rows as any[];
+    } catch (newErr: any) {
+      console.warn('fin_account_group not yet fallback fi_account_group:', newErr.message);
+      source = 'db-legacy';
+      table = 'fi_account_group';
+      legalSafe = false;
+      try {
+        let query = sql`
+          SELECT ag.*, coa.code as chart_code, coa.name as chart_name
+          FROM fi_account_group ag
+          JOIN fi_chart_of_accounts coa ON ag.coa_id = coa.id
+          WHERE 1=1
+        `;
+        if (coaCode && coaCode !== 'ALL') query = sql`${query} AND coa.code = ${coaCode}`;
+        query = sql`${query} ORDER BY coa.code, ag.code`;
+        const res = await db.execute(query);
+        rows = res.rows as any[];
+      } catch (e: any) {
+        if (e.message?.includes('does not exist')) {
+          return NextResponse.json({ data: [], accountGroups: [], count: 0, message: 'Table fin_account_group not yet migrated – fresh empty Module5', code: 'FAGC', aliasCodes: ['AGC','OBD4'], helperCode: 'FAGC', table: 'fin_account_group', source: 'none', legalSafe: true });
+        }
+        throw e;
+      }
+    }
 
     return NextResponse.json({
-      accountGroups: res.rows,
-      glCounts,
-      count: res.rows.length,
-      configurable: true, helperCode: 'OBD4',
-      functionDescription: 'G/L Account Groups – ERP OBD4 – Groups like KASS/KLIA/KREV/KEXP/KMAT/KREC/KTAX/KCSH – configurable, ERP standard groups',
+      data: rows,
+      accountGroups: rows,
+      count: rows.length,
+      code: 'FAGC',
+      aliasCodes: ['AGC', 'OBD4', 'FIN-AG-CR'],
+      helperCode: 'FAGC',
+      table,
+      source,
+      legalSafe,
+      functionDescription: 'Account Groups – FAGC legal-safe own IP (was OBD4) – chartId was coa_id, code ASST/LIAB/REVN/EXPN, from_account 100000 to_account 199999, sample kept',
       erpDefaults: [
-        { code: 'KASS', name: 'Assets', range: '1000000000-1999999999', helperCode: 'OBD4' },
-        { code: 'KLIA', name: 'Liabilities', range: '2000000000-2999999999', helperCode: 'OBD4' },
-        { code: 'KREV', name: 'Revenue', range: '3000000000-3999999999', helperCode: 'OBD4' },
-        { code: 'KEXP', name: 'Expenses', range: '4000000000-4999999999', helperCode: 'OBD4' },
-        { code: 'KMAT', name: 'Material Stock', range: '5000000000-5999999999', helperCode: 'OBD4', note: '5000000001 ROH, 5000000002 FERT, 5000000003 GR/IR WRX' },
-        { code: 'KREC', name: 'Reconciliation', range: '6000000000-6999999999', helperCode: 'OBD4' },
-        { code: 'KTAX', name: 'Tax', range: '7000000000-7999999999', helperCode: 'OBD4' },
-        { code: 'KCSH', name: 'Cash/Bank', range: '8000000000-8999999999', helperCode: 'OBD4' },
+        { code: 'ASST', name: 'Asset Accounts', from: '100000', to: '199999', chart: 'INT', helperCode: 'FAGC', note: 'Sample kept' },
+        { code: 'LIAB', name: 'Liability Accounts', from: '200000', to: '299999', chart: 'INT', helperCode: 'FAGC' },
+        { code: 'REVN', name: 'Revenue Accounts', from: '300000', to: '399999', chart: 'INT', helperCode: 'FAGC' },
+        { code: 'EXPN', name: 'Expense Accounts', from: '400000', to: '499999', chart: 'INT', helperCode: 'FAGC' },
       ],
-      explanation: 'Account Groups configurable (OBD4) – e.g., KASS Assets, KMAT Material. Add new via POST. Used to group G/L accounts in FS00. Code OBD4.',
+      explanation: 'Account groups legal-safe fin_account_group – chartId was coa_id, code, name, from_account, to_account – Code FAGC primary alias AGC/OBD4 – 4-char MOOA F=Financials AG=AccountGroup C=Create – module grouped intuitive – sample data kept for user convenience.',
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json({ error: e.message, data: [], accountGroups: [] }, { status: 500 });
   }
 }
 
@@ -83,21 +86,38 @@ export async function POST(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
 
-  await ensureTable();
-
   try {
     const body = await req.json();
-    const { code, name, description } = body;
-    if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
+    const { coa_code, chart_code, code, name, from_account, to_account, description } = body;
+    const finalChartCode = chart_code || coa_code;
+    if (!finalChartCode || !code || !name || !from_account || !to_account) return NextResponse.json({ error: 'chart_code/coa_code, code, name, from_account, to_account required' }, { status: 400 });
 
-    const res = await db.execute(sql`
-      INSERT INTO fi_account_group (code, name, description)
-      VALUES (${code.toUpperCase()}, ${name}, ${description || null})
-      ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}
-      RETURNING id, code, name
-    `);
+    try {
+      const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
+      if (chartRes.rows.length === 0) return NextResponse.json({ error: `Chart ${finalChartCode} not found in fin_chart` }, { status: 404 });
+      const chartId = (chartRes.rows[0] as any).id;
 
-    return NextResponse.json({ success: true, accountGroup: res.rows[0], message: `Account Group ${code.toUpperCase()} created/updated` });
+      const res = await db.execute(sql`
+        INSERT INTO fin_account_group (chart_id, coa_id, code, name, from_account, to_account, description)
+        VALUES (${chartId}, ${chartId}, ${code.toUpperCase()}, ${name}, ${from_account}, ${to_account}, ${description || null})
+        ON CONFLICT (chart_id, code) DO UPDATE SET name = ${name}, from_account = ${from_account}, to_account = ${to_account}, description = ${description || null}, updated_at = NOW()
+        RETURNING id, code, name
+      `);
+      return NextResponse.json({ success: true, accountGroup: res.rows[0], code: 'FAGC', message: `Account group ${code.toUpperCase()} created – FAGC legal-safe`, legalSafe: true });
+    } catch (newErr: any) {
+      console.warn('fin_account_group insert failed fallback fi_account_group:', newErr.message);
+      const chartRes = await db.execute(sql`SELECT id FROM fi_chart_of_accounts WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
+      if (chartRes.rows.length === 0) return NextResponse.json({ error: `Chart ${finalChartCode} not found` }, { status: 404 });
+      const chartId = (chartRes.rows[0] as any).id;
+
+      const res = await db.execute(sql`
+        INSERT INTO fi_account_group (coa_id, code, name, from_account, to_account, description)
+        VALUES (${chartId}, ${code.toUpperCase()}, ${name}, ${from_account}, ${to_account}, ${description || null})
+        ON CONFLICT (coa_id, code) DO UPDATE SET name = ${name}, from_account = ${from_account}, to_account = ${to_account}, description = ${description || null}
+        RETURNING id, code, name
+      `);
+      return NextResponse.json({ success: true, accountGroup: res.rows[0], code: 'FAGC', message: `Account group ${code.toUpperCase()} created – OBD4 legacy (migrating to FAGC)`, legalSafe: false });
+    }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
@@ -107,22 +127,24 @@ export async function PUT(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
 
-  await ensureTable();
-
   try {
     const body = await req.json();
-    const { id, code, name, description } = body;
+    const { id, code, name, from_account, to_account } = body;
     if (!id && !code) return NextResponse.json({ error: 'id or code required' }, { status: 400 });
 
-    let res;
-    if (id) {
-      res = await db.execute(sql`UPDATE fi_account_group SET code = COALESCE(${code?.toUpperCase()}, code), name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE id = ${id} RETURNING id, code, name`);
-    } else {
-      res = await db.execute(sql`UPDATE fi_account_group SET name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+    try {
+      let res;
+      if (id) res = await db.execute(sql`UPDATE fin_account_group SET name = COALESCE(${name}, name), from_account = COALESCE(${from_account}, from_account), to_account = COALESCE(${to_account}, to_account), updated_at = NOW() WHERE id = ${id} RETURNING id, code, name`);
+      else res = await db.execute(sql`UPDATE fin_account_group SET name = COALESCE(${name}, name), from_account = COALESCE(${from_account}, from_account), to_account = COALESCE(${to_account}, to_account), updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+      if (res.rows.length === 0) throw new Error('Not found in fin_account_group');
+      return NextResponse.json({ success: true, accountGroup: res.rows[0], code: 'FAGC', message: `Account group ${res.rows[0].code} updated – FAGC legal-safe` });
+    } catch {
+      let res;
+      if (id) res = await db.execute(sql`UPDATE fi_account_group SET name = COALESCE(${name}, name), from_account = COALESCE(${from_account}, from_account), to_account = COALESCE(${to_account}, to_account) WHERE id = ${id} RETURNING id, code, name`);
+      else res = await db.execute(sql`UPDATE fi_account_group SET name = COALESCE(${name}, name), from_account = COALESCE(${from_account}, from_account), to_account = COALESCE(${to_account}, to_account) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+      if (res.rows.length === 0) return NextResponse.json({ error: 'Account group not found' }, { status: 404 });
+      return NextResponse.json({ success: true, accountGroup: res.rows[0], message: `Account group ${res.rows[0].code} updated – OBD4 legacy` });
     }
-
-    if (res.rows.length === 0) return NextResponse.json({ error: 'Account group not found' }, { status: 404 });
-    return NextResponse.json({ success: true, accountGroup: res.rows[0] });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
@@ -134,27 +156,19 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const code = searchParams.get('code');
+    const code = searchParams.get('code')?.toUpperCase();
     const id = searchParams.get('id');
     if (!code && !id) return NextResponse.json({ error: 'code or id required' }, { status: 400 });
 
-    // Check if has G/L accounts
-    let inUse = 0;
     try {
-      if (code) {
-        const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM fi_gl_account WHERE account_group = ${code.toUpperCase()}`);
-        inUse = parseInt((r.rows[0] as any).cnt || '0');
-      }
-    } catch {}
-
-    if (inUse > 0) {
-      return NextResponse.json({ error: `Cannot delete – account group ${code} has ${inUse} G/L accounts and cannot be deleted to maintain audit trail.`, code: 'HAS_GL' }, { status: 400 });
+      if (id) await db.execute(sql`DELETE FROM fin_account_group WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM fin_account_group WHERE code = ${code}`);
+    } catch {
+      if (id) await db.execute(sql`DELETE FROM fi_account_group WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM fi_account_group WHERE code = ${code}`);
     }
 
-    if (id) await db.execute(sql`DELETE FROM fi_account_group WHERE id = ${id}`);
-    else await db.execute(sql`DELETE FROM fi_account_group WHERE code = ${code?.toUpperCase()}`);
-
-    return NextResponse.json({ success: true, message: `Account Group ${code || id} deleted` });
+    return NextResponse.json({ success: true, code: 'FAGC', message: `Account group ${code || id} deleted – FAGC legal-safe` });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
