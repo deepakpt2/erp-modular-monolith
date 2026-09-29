@@ -193,6 +193,10 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     const value = form[field.key] || '';
     const isEmpty = !value;
     const borderColor = field.required && isEmpty ? 'border-yellow-300' : value ? 'border-green-400' : 'border-zinc-200';
+    // Per user rule: if form has formlabel, dont use placeholder, if label not present, label should be placeholder, never sample value
+    // Fix double entry in dropdown: placeholder should NOT be same as actual option – use empty + Select {label}, not sample like K4, CA-IN-01, false
+    const inputPlaceholder = ''; // No placeholder when label exists – per rule – never sample value
+    const selectPlaceholder = `Select ${field.label}`; // Distinct – prevents double entry
     
     if (field.type === 'autocomplete') {
       return (
@@ -204,7 +208,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
           codeField={field.codeField || 'code'}
           value={value}
           onChange={(v)=>setForm({ ...form, [field.key]: v })}
-          placeholder={field.placeholder}
+          placeholder={inputPlaceholder}
           required={field.required}
           createUrl={field.createUrl}
           createCode={field.createCode}
@@ -217,7 +221,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
         <div key={field.key} className="space-y-1">
           <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{field.label}{field.required?' *':''}</label>
           <select value={value} onChange={e=>setForm({ ...form, [field.key]: e.target.value })} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs`}>
-            <option value="">{field.placeholder || `Select ${field.label}`}</option>
+            <option value="">{selectPlaceholder}</option>
             {field.options.map(o=><option key={o} value={o}>{o}</option>)}
           </select>
           {field.description && <p className="text-[10px] text-zinc-400">{field.description}</p>}
@@ -228,7 +232,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
       return (
         <div key={field.key} className="space-y-1">
           <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{field.label}{field.required?' *':''}</label>
-          <textarea value={value} onChange={e=>setForm({ ...form, [field.key]: e.target.value })} placeholder={field.placeholder} rows={3} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs`} />
+          <textarea value={value} onChange={e=>setForm({ ...form, [field.key]: e.target.value })} placeholder={inputPlaceholder} rows={3} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs`} />
           {field.description && <p className="text-[10px] text-zinc-400">{field.description}</p>}
         </div>
       );
@@ -236,7 +240,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     return (
       <div key={field.key} className="space-y-1">
         <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{field.label}{field.required?' *':''}</label>
-        <input value={value} onChange={e=>setForm({ ...form, [field.key]: e.target.value })} placeholder={field.placeholder} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs`} />
+        <input value={value} onChange={e=>setForm({ ...form, [field.key]: e.target.value })} placeholder={inputPlaceholder} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs`} />
         {field.description && <p className="text-[10px] text-zinc-400">{field.description}</p>}
       </div>
     );

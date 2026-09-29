@@ -134,7 +134,7 @@ export function DbAutocomplete({
             setShowDropdown(true);
           }}
           onFocus={() => setShowDropdown(true)}
-          placeholder={placeholder || label}
+          placeholder="" // Per rule: if form has label, dont use placeholder – never sample value – label exists, so placeholder empty
           className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 uppercase pr-8 transition-colors ${borderClass}`}
         />
         <button

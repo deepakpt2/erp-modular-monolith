@@ -40,10 +40,10 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">PIVC INVOICE VERIFICATION – MIRO ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">VENDOR * (DB: PSUC)</div><input value={(form as any).vendor} onChange={e=>setForm({...form,vendor:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="VENDOR" /></div>
-          <div><div className="text-[9px] text-zinc-500">INVOICE_NUMBER</div><input value={(form as any).invoice_number} onChange={e=>setForm({...form,invoice_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INVOICE_NUMBER" /></div>
-          <div><div className="text-[9px] text-zinc-500">AMOUNT</div><input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="AMOUNT" /></div>
-          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="COMPANY_CODE" /></div>
+          <div><div className="text-[9px] text-zinc-500">VENDOR * (DB: PSUC)</div><input value={(form as any).vendor} onChange={e=>setForm({...form,vendor:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">INVOICE_NUMBER</div><input value={(form as any).invoice_number} onChange={e=>setForm({...form,invoice_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">AMOUNT</div><input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
@@ -88,7 +88,7 @@ export default function Page(){
             apiUrl="/api/business-partners?role=VENDOR"
             codeField="account_number"
             nameField="display_name"
-            placeholder="VENDOR"
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/partners?role=VENDOR`}
             createCode="PSUC"
@@ -96,11 +96,11 @@ export default function Page(){
           />
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">INVOICE_NUMBER *</label>
-            <input value={(form as any).invoice_number} onChange={e=>setForm({...form,invoice_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="INVOICE_NUMBER" />
+            <input value={(form as any).invoice_number} onChange={e=>setForm({...form,invoice_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="" />
           </div>
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">AMOUNT *</label>
-            <input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="AMOUNT" />
+            <input value={(form as any).amount} onChange={e=>setForm({...form,amount:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="" />
           </div>
           <DbAutocomplete
             label="COMPANY_CODE *"
@@ -109,7 +109,7 @@ export default function Page(){
             apiUrl="/api/company-codes"
             codeField="code"
             nameField="name"
-            placeholder="COMPANY_CODE"
+            placeholder=""
             required
             createUrl={`/${companyCode}/fico/company-master`}
             createCode="OX02"

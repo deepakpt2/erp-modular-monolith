@@ -49,7 +49,7 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">FB08 DOCUMENT REVERSAL + FBRA RESET CLEARING – GENERAL ERP – {reversals.length+resets.length} RECORDS – T1 REQUIRED – FB08-FBRA-F13 – REVERSAL + CLEARING RESET – NO DANGLING</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">DOCUMENT_NUMBER * (FULC) – General ERP FI doc to reverse – e.g., FI-1000000001 – must exist</div><input value={form.document_number} onChange={e=>setForm({...form,document_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="FI-1000000001 – doc to reverse" /></div>
+          <div><div className="text-[9px] text-zinc-500">DOCUMENT_NUMBER * (FULC) – General ERP FI doc to reverse – e.g., FI-1000000001 – must exist</div><input value={form.document_number} onChange={e=>setForm({...form,document_number:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">REVERSAL_REASON – 01 Reversal in current period, 02 Reversal in closed period – OBA7 reversal reason</div><select value={form.reversal_reason} onChange={e=>setForm({...form,reversal_reason:e.target.value})} className="w-full border-2 border-black px-1 py-1"><option>01</option><option>02</option><option>03</option></select></div>
           <div><div className="text-[9px] text-zinc-500">ACTION – REVERSE FB08 or RESET FBRA – FB08 reverses FI doc, FBRA resets clearing</div><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="w-full border-2 border-black px-1 py-1"><option>REVERSE</option><option>RESET</option></select></div>
         </div>
@@ -87,7 +87,7 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <DbAutocomplete label="DOCUMENT_NUMBER * – FULC – FI doc to reverse – must exist – FB08" value={form.document_number} onChange={v=>setForm({...form,document_number:v})} apiUrl="/api/universal-ledger" codeField="document_number" nameField="text" placeholder="FI-1000000001" required createUrl={`/${companyCode}/fico/universal-ledger`} createCode="FULC" companyCode={companyCode} />
+          <DbAutocomplete label="DOCUMENT_NUMBER * – FULC – FI doc to reverse – must exist – FB08" value={form.document_number} onChange={v=>setForm({...form,document_number:v})} apiUrl="/api/universal-ledger" codeField="document_number" nameField="text" placeholder="" required createUrl={`/${companyCode}/fico/universal-ledger`} createCode="FULC" companyCode={companyCode} />
           <div><label className="text-[11px] font-medium">REVERSAL_REASON – 01 current period, 02 closed period – OBA7</label><select value={form.reversal_reason} onChange={e=>setForm({...form,reversal_reason:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>01</option><option>02</option><option>03</option></select></div>
           <div><label className="text-[11px] font-medium">ACTION – REVERSE FB08 or RESET FBRA</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>REVERSE</option><option>RESET</option></select></div>
         </div>

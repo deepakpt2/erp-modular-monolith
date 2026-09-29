@@ -95,7 +95,7 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
           <div className="w-full max-w-[640px] bg-white rounded-2xl shadow-2xl border border-zinc-200 overflow-hidden" onClick={e=>e.stopPropagation()}>
             <div className="flex items-center gap-3 p-4 border-b">
               <span>🔍</span>
-              <input autoFocus value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Type function code e.g., MM01, ME21N, OB29, or name e.g., Create Material…" className="flex-1 outline-none text-sm" />
+              <input autoFocus value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="" className="flex-1 outline-none text-sm" />
               <button onClick={()=>setSearchOpen(false)} className="text-xs border rounded-full px-2 py-1 hover:bg-zinc-50">Esc</button>
             </div>
             <div className="p-2 max-h-[60vh] overflow-auto text-xs text-zinc-500">

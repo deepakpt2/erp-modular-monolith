@@ -61,9 +61,9 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">F110 AUTOMATIC PAYMENT PROGRAM – PROPOSAL + RUN – GENERAL ERP – {proposals.length} PROPOSALS – {runs.length} RUNS – {due_items.length} DUE – T1 REQUIRED – F110-FULL – NO DANGLING</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE (ELEC OX02) – General ERP Legal Entity – alias Company Code – defines variant</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder={companyCode} /></div>
+          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE (ELEC OX02) – General ERP Legal Entity – alias Company Code – defines variant</div><input value={form.company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">PAYMENT_METHOD – BANK/CASH/CHEQUE – General ERP Payment Method – checks payment method per vendor</div><select value={form.payment_method} onChange={e=>setForm({...form,payment_method:e.target.value})} className="w-full border-2 border-black px-1 py-1"><option>BANK</option><option>CASH</option><option>CHEQUE</option></select></div>
-          <div><div className="text-[9px] text-zinc-500">HOUSE_BANK (FI12) – General ERP House Bank – e.g., SBI-001 – defines bank account for payment</div><input value={form.house_bank} onChange={e=>setForm({...form,house_bank:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="SBI-001 – House Bank" /></div>
+          <div><div className="text-[9px] text-zinc-500">HOUSE_BANK (FI12) – General ERP House Bank – e.g., SBI-001 – defines bank account for payment</div><input value={form.house_bank} onChange={e=>setForm({...form,house_bank:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
         </div>
         <div className="flex gap-2 mt-3">
           <button onClick={createProposal} className="flex-1 bg-black text-white px-3 py-1">PROPOSAL F110-PROP – SELECT VENDORS DUE</button>
@@ -116,9 +116,9 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <DbAutocomplete label="COMPANY_CODE – ELEC – Legal Entity – defines variant – OB52" value={form.company_code} onChange={v=>setForm({...form,company_code:v})} apiUrl="/api/company-codes" codeField="code" nameField="name" placeholder={companyCode} createUrl={`/${companyCode}/fico/company-master`} createCode="OX02" companyCode={companyCode} />
+          <DbAutocomplete label="COMPANY_CODE – ELEC – Legal Entity – defines variant – OB52" value={form.company_code} onChange={v=>setForm({...form,company_code:v})} apiUrl="/api/company-codes" codeField="code" nameField="name" placeholder="" createUrl={`/${companyCode}/fico/company-master`} createCode="OX02" companyCode={companyCode} />
           <div><label className="text-[11px] font-medium">PAYMENT_METHOD – BANK/CASH/CHEQUE – checks per vendor</label><select value={form.payment_method} onChange={e=>setForm({...form,payment_method:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>BANK</option><option>CASH</option><option>CHEQUE</option></select></div>
-          <div><label className="text-[11px] font-medium">HOUSE_BANK – FI12 – House Bank – e.g., SBI-001</label><input value={form.house_bank} onChange={e=>setForm({...form,house_bank:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="SBI-001" /></div>
+          <div><label className="text-[11px] font-medium">HOUSE_BANK – FI12 – House Bank – e.g., SBI-001</label><input value={form.house_bank} onChange={e=>setForm({...form,house_bank:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={createProposal} className="flex-1 bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Proposal F110-PROP – Select Vendors Due – Tolerance OBA4 + Payment Terms FAPT + House Bank FI12</button>

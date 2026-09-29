@@ -56,7 +56,7 @@ export default function DocumentFlowPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 mt-4">
-            <input value={searchDoc} onChange={e=>setSearchDoc(e.target.value)} placeholder="Enter document number e.g., PR-5000000001, PO-5000000001, GR-5000000001 to see flow" className={modern ? "flex-1 border border-zinc-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10" : "flex-1 border px-3 py-1.5 text-xs"} />
+            <input value={searchDoc} onChange={e=>setSearchDoc(e.target.value)} placeholder="" className={modern ? "flex-1 border border-zinc-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10" : "flex-1 border px-3 py-1.5 text-xs"} />
             <button onClick={()=>load(searchDoc)} className={modern ? "px-4 py-2 rounded-full bg-black text-white text-xs" : "border px-3 py-1 text-xs bg-black text-white"}>Search Flow</button>
           </div>
         </div>

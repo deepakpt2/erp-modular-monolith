@@ -40,10 +40,10 @@ export default function Page(){
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">IPIC PHYSICAL INVENTORY DOCUMENTS – MI01 ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">FACILITY * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PLANT" /></div>
-          <div><div className="text-[9px] text-zinc-500">STORAGE_LOCATION * (DB: EILC)</div><input value={form.storage_location} onChange={e=>setForm({...form,storage_location:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="STORAGE_LOCATION" /></div>
-          <div><div className="text-[9px] text-zinc-500">PRODUCT * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PRODUCT" /></div>
-          <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="QUANTITY" /></div>
+          <div><div className="text-[9px] text-zinc-500">FACILITY * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">STORAGE_LOCATION * (DB: EILC)</div><input value={form.storage_location} onChange={e=>setForm({...form,storage_location:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">PRODUCT * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="" /></div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
       </div>
@@ -86,7 +86,7 @@ export default function Page(){
             apiUrl="/api/facilities"
             codeField="code"
             nameField="name"
-            placeholder="PLANT"
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/enterprise-structure?focus=EFCC`}
             createCode="EFCC"
@@ -99,7 +99,7 @@ export default function Page(){
             apiUrl="/api/inventory-locations"
             codeField="code"
             nameField="name"
-            placeholder="STORAGE_LOCATION"
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/enterprise-structure?focus=EILC`}
             createCode="EILC"
@@ -112,7 +112,7 @@ export default function Page(){
             apiUrl="/api/materials"
             codeField="item_number"
             nameField="description"
-            placeholder="PRODUCT"
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
@@ -120,7 +120,7 @@ export default function Page(){
           />
           <div>
             <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY *</label>
-            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="QUANTITY" />
+            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="" />
           </div>
         </div>
         <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create MI01</button>
