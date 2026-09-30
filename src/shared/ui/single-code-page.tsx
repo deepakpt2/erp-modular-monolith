@@ -139,8 +139,9 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     fetchMe();
   }, [code]);
 
-  // Tab classification for create/change forms
-  const tabs = useMemo(() => classifyFields(fields), [fields]);
+  // Tab classification for create/change forms – stable via JSON.stringify to avoid new array each render causing hook mismatch #310
+  const fieldsKey = useMemo(() => JSON.stringify(fields.map(f=>f.key)), [fields]);
+  const tabs = useMemo(() => classifyFields(fields), [fieldsKey]);
 
   useEffect(() => {
     if (tabs.length > 0 && !tabs.find(t => t.key === activeTab)) {
@@ -324,6 +325,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   };
 
   const filteredListItems = useMemo(() => {
+    if (!Array.isArray(items)) return [];
     if (!listSearch.trim()) return items;
     const q = listSearch.toLowerCase();
     return items.filter((it: any) => {
@@ -334,6 +336,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   }, [items, listSearch]);
 
   const filteredChangeItems = useMemo(() => {
+    if (!Array.isArray(items)) return [];
     if (!changeSearch.trim()) return items.slice(0, 20);
     const q = changeSearch.toLowerCase();
     return items.filter((it: any) => {
@@ -344,6 +347,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   }, [items, changeSearch]);
 
   const listSuggestions = useMemo(() => {
+    if (!Array.isArray(items)) return [];
     if (!listSearch.trim() || listSearch.length < 2) return [];
     const q = listSearch.toLowerCase();
     return items.filter((it: any) => {
@@ -354,6 +358,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   }, [items, listSearch]);
 
   const changeSuggestions = useMemo(() => {
+    if (!Array.isArray(items)) return [];
     if (!changeSearch.trim() || changeSearch.length < 1) return [];
     const q = changeSearch.toLowerCase();
     return items.filter((it: any) => {
