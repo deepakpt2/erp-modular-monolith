@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { FUNCTIONS, MODULE_CLASSIFICATION } from '@/shared/lib/functions';
+import { canUserAccessPage } from '@/shared/kernel/auth/pagePermissions';
 
 type TreeNode = {
   label: string;
@@ -238,15 +239,28 @@ export default function NavigatorPage() {
   ]; }, [counts, me, meLoading]);
 
   const filteredTree = useMemo(()=>{
-    // First filter by RBAC module access
-    let rbacFiltered = tree.filter(group => {
+    // First filter by RBAC module access – sitewide – remove pages without permission from navigator per user request
+    let rbacFiltered = tree.map(group => {
+      if (meLoading) return group;
+      if (me?.isAdmin) return group;
+      // Filter children based on page permission – canUserAccessPage
+      const filteredChildren = group.children?.filter(child => {
+        if (!child.code) return true; // no code, allow
+        const access = canUserAccessPage(me, child.code);
+        return access.allowed;
+      });
+      return { ...group, children: filteredChildren };
+    }).filter(group => {
+      // Remove groups with no children after RBAC filter – per user request, remove pages without permission from navigator
       if (meLoading) return true;
       if (me?.isAdmin) return true;
       const module = group.module || 'FOUNDATION';
-      // HR module only for HR/Admin
+      // HR module only for HR/Admin – hide entirely for MDM
       if (module === 'HR' && !me?.canAccessPayroll && !me?.isHR && !me?.isAdmin) {
-        // Check if any child is accessible? For HR, if cannot access payroll, hide entire HR group for MDM
-        // But still show Employee Master for HR roles only – for MDM, hide HR entirely
+        return false;
+      }
+      // If group has no children after filtering, hide it – per user request
+      if (!group.children || group.children.length === 0) {
         return false;
       }
       return true;

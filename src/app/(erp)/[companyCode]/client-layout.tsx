@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { JobIndicator } from '@/shared/ui/job-indicator';
+import { getFrontendPermission } from '@/shared/kernel/auth/frontendPermissions';
+import { canUserAccessPage } from '@/shared/kernel/auth/pagePermissions';
 
 const SHOW_FUNCTION_CODE = process.env.NEXT_PUBLIC_SHOW_FUNCTION_CODE !== 'false';
 
@@ -97,6 +99,78 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
   });
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [me, setMe] = useState<any>(null);
+  const [meLoading, setMeLoading] = useState(true);
+  const [rbacDenied, setRbacDenied] = useState<{ denied: boolean; reason?: string; requiredPermission?: string; requiredRoles?: string[]; code?: string } | null>(null);
+
+  useEffect(() => {
+    async function fetchMe() {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const j = await res.json();
+          setMe(j);
+        }
+      } catch {}
+      setMeLoading(false);
+    }
+    fetchMe();
+  }, []);
+
+  useEffect(() => {
+    if (meLoading || !me) return;
+    if (!pathname) return;
+    // Skip navigator and enterprise-structure – allow all, but navigator will filter children
+    if (pathname.includes('/navigator') || pathname.includes('/enterprise-structure')) {
+      setRbacDenied({ denied: false });
+      return;
+    }
+    const fp = getFrontendPermission(pathname);
+    if (!fp) {
+      setRbacDenied({ denied: false });
+      return;
+    }
+    // If roles contains *, allow all
+    if (fp.roles.includes('*')) {
+      setRbacDenied({ denied: false });
+      return;
+    }
+    const isAdmin = me?.isAdmin || me?.roles?.includes('ADMIN') || me?.roles?.includes('OWNER') || me?.simpleRole === 'ADMIN' || me?.simpleRole === 'OWNER';
+    if (isAdmin) {
+      setRbacDenied({ denied: false });
+      return;
+    }
+    // Check via canUserAccessPage if code exists, else check roles
+    let allowed = false;
+    // First check code-based permission if available
+    if (fp.code) {
+      const access = canUserAccessPage(me, fp.code);
+      allowed = access.allowed;
+      if (!allowed) {
+        setRbacDenied({ denied: true, reason: access.reason, requiredPermission: access.requiredPermission, requiredRoles: access.requiredRoles, code: fp.code });
+        return;
+      }
+    }
+    // Also check roles
+    const userRoles = me?.roles || [];
+    const simpleRole = me?.simpleRole || '';
+    const hasRole = fp.roles.some((r: string) => userRoles.includes(r) || simpleRole === r);
+    const hasPerm = me?.permissions?.includes(fp.permission) || me?.permissions?.includes('ADMIN_ALL');
+    if (hasRole || hasPerm) {
+      allowed = true;
+    }
+    if (!allowed) {
+      setRbacDenied({
+        denied: true,
+        reason: `Forbidden – requires permission ${fp.permission} – roles [${fp.roles.join(',')}] – current role ${simpleRole} roles [${userRoles.join(',')}] – ${fp.description} – SoD`,
+        requiredPermission: fp.permission,
+        requiredRoles: fp.roles,
+        code: fp.code,
+      });
+    } else {
+      setRbacDenied({ denied: false });
+    }
+  }, [pathname, me, meLoading]);
 
   useEffect(()=>{
     try {
@@ -195,7 +269,45 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
       )}
 
       <main className="flex-1 min-w-0 flex flex-col">
-        <div className="flex-1">{children}</div>
+        {rbacDenied?.denied ? (
+          <div className="min-h-[60vh] bg-[#fafaf9] p-6 flex items-center justify-center">
+            <div className="bg-white rounded-2xl shadow-sm border border-red-200 p-8 max-w-[700px] w-full">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-3xl">🔒</span>
+                <div>
+                  <h2 className="text-xl font-bold text-red-700">Unauthorised for this transaction – Contact Administrator</h2>
+                  <p className="text-xs text-zinc-500 mt-1">FRPC Authorization – Code {rbacDenied.code} – {pathname} – sitewide RBAC – SoD segregation of duties – industry standard</p>
+                </div>
+              </div>
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="text-sm font-mono font-bold text-red-800">{rbacDenied.reason}</div>
+                <div className="text-xs text-zinc-600 mt-3">
+                  <div>User: <b>{me?.email}</b> – simpleRole <b>{me?.simpleRole}</b> – roles [{me?.roles?.join(', ')}]</div>
+                  <div className="mt-1">Required permission: <b>{rbacDenied.requiredPermission}</b> – required roles [{rbacDenied.requiredRoles?.join(', ')}]</div>
+                  <div className="mt-2 text-[11px] text-zinc-500">If code is used show error message instead of formdata per your request – completely block view – master data manager cannot access HR payroll or Inventory if requires WAREHOUSE/MATERIAL_MANAGER – SoD – payroll sensitive salary data, inventory sensitive stock – only allowed roles can access – contact administrator to grant role via /admin/roles and /admin/authorizations – FRPC own IP alias PFCG/SU01 – industry standard</div>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px]">
+                <div className="font-semibold">Why this transaction is blocked?</div>
+                <div className="mt-1">• Transaction {rbacDenied.code} – {pathname} – requires permission {rbacDenied.requiredPermission} – user {me?.simpleRole} roles [{me?.roles?.join(', ')}] does not have it</div>
+                <div>• Master data manager (MASTER_DATA_MANAGER) has only FOUNDATION permissions MATERIAL_CREATE/MATERIAL_VIEW – cannot access HR payroll (PAYROLL_RUN) or Inventory if requires WAREHOUSE/MATERIAL_MANAGER – SoD</div>
+                <div>• If you came to a page that is not allowed, show this unauthorized message instead of form data – per your request – completely block view – remove pages without permission from navigator</div>
+                <div className="mt-2">Contact administrator to assign role via POST /api/user-roles – e.g., assign HR role to access payroll, WAREHOUSE to access inventory, MATERIAL_MANAGER to access Inventory</div>
+              </div>
+              <div className="mt-6 flex gap-2">
+                <Link href={`/${companyCode}/navigator`} className="px-4 py-2 rounded-full bg-black text-white text-xs">🌳 Navigator – only allowed pages shown (pages without permission removed)</Link>
+                <a href="/login" className="px-4 py-2 rounded-full border text-xs bg-white hover:bg-zinc-50">Switch User</a>
+              </div>
+              <div className="mt-4 text-[10px] text-zinc-400">
+                <div>Code {rbacDenied.code} – {pathname} – permission {rbacDenied.requiredPermission} – roles {rbacDenied.requiredRoles?.join(', ')}</div>
+                <div>Current: {me?.email} – {me?.simpleRole} – [{me?.roles?.join(', ')}] – perms [{me?.permissions?.slice(0,5).join(', ')}...]</div>
+                <div>Error shown instead of formdata per your request – if code is used show error message instead of formdata – completely block view – navigator removes pages without permission</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1">{children}</div>
+        )}
         <footer className="border-t border-zinc-200 bg-white px-6 py-3 flex flex-col sm:flex-row gap-2 justify-between items-center text-[11px] text-zinc-500">
           <div className="flex gap-3 items-center">
             <Link href={`/${companyCode}/navigator`} className="hover:text-black font-medium">🌳 Navigator</Link>

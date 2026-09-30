@@ -3,6 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
+import { canUserAccessPage, getPagePermission } from '@/shared/kernel/auth/pagePermissions';
 
 export interface FieldDef {
   key: string;
@@ -107,6 +108,36 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   const [showListSuggestions, setShowListSuggestions] = useState(false);
   const [showChangeSuggestions, setShowChangeSuggestions] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('basic');
+  const [me, setMe] = useState<any>(null);
+  const [meLoading, setMeLoading] = useState(true);
+  const [rbacDenied, setRbacDenied] = useState<{ denied: boolean; reason?: string; requiredPermission?: string; requiredRoles?: string[] } | null>(null);
+
+  useEffect(() => {
+    async function fetchMe() {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const j = await res.json();
+          setMe(j);
+          // Check if user can access this page code
+          const access = canUserAccessPage(j, code);
+          if (!access.allowed) {
+            setRbacDenied({ denied: true, reason: access.reason, requiredPermission: access.requiredPermission, requiredRoles: access.requiredRoles });
+          } else {
+            setRbacDenied({ denied: false });
+          }
+        } else {
+          // If /api/me fails, allow for MVP
+          setRbacDenied({ denied: false });
+        }
+      } catch (e) {
+        console.warn('Failed to fetch /api/me for RBAC', e);
+        setRbacDenied({ denied: false });
+      }
+      setMeLoading(false);
+    }
+    fetchMe();
+  }, [code]);
 
   // Tab classification for create/change forms
   const tabs = useMemo(() => classifyFields(fields), [fields]);
@@ -293,6 +324,61 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   };
 
   const modern = uiMode === 'modern';
+
+  // Sitewide RBAC – completely block view if not allowed – show unauthorized for this transaction, contact administrator
+  if (meLoading) {
+    return (
+      <div className={modern ? "min-h-screen bg-[#fafaf9] p-6 flex items-center justify-center" : "min-h-screen bg-white p-4 flex items-center justify-center"}>
+        <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-8 text-center" : "border p-4 text-center"}>
+          <div className="text-sm">Checking permissions – FRPC – {code} – {title}</div>
+          <div className="text-[11px] text-zinc-500 mt-1">Verifying if user can access {code} – {title} – sitewide RBAC</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (rbacDenied?.denied) {
+    return (
+      <div className={modern ? "min-h-screen bg-[#fafaf9] p-6" : "min-h-screen bg-white p-4"}>
+        <div className={modern ? "max-w-[700px] mx-auto space-y-6" : "max-w-[600px] mx-auto space-y-4"}>
+          <div className={modern ? "bg-white rounded-2xl shadow-sm border border-red-200 p-8" : "border-2 border-red-200 p-6 bg-red-50"}>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">🔒</span>
+              <div>
+                <h2 className="text-xl font-bold text-red-700">Unauthorised for this transaction – Contact Administrator</h2>
+                <p className="text-xs text-zinc-500 mt-1">FRPC Authorization – Code {code} – {title} – {sapAlias || ''} – sitewide RBAC – SoD segregation of duties – industry standard</p>
+              </div>
+            </div>
+            <div className={modern ? "bg-red-50 border border-red-200 rounded-xl p-4" : "border border-red-300 p-3 bg-white"}>
+              <div className="text-sm font-mono font-bold text-red-800">{rbacDenied.reason}</div>
+              <div className="text-xs text-zinc-600 mt-3">
+                <div>User: <b>{me?.email}</b> – simpleRole <b>{me?.simpleRole}</b> – roles [{me?.roles?.join(', ')}]</div>
+                <div className="mt-1">Required permission: <b>{rbacDenied.requiredPermission}</b> – required roles [{rbacDenied.requiredRoles?.join(', ')}]</div>
+                <div className="mt-2 text-[11px] text-zinc-500">Master data manager (MASTER_DATA_MANAGER) has only FOUNDATION permissions MATERIAL_CREATE/MATERIAL_VIEW – cannot access HR payroll (PAYROLL_RUN) or Inventory if requires WAREHOUSE/MATERIAL_MANAGER – SoD – payroll sensitive salary data, inventory sensitive stock – only allowed roles can access – contact administrator to grant role via /admin/roles and /admin/authorizations – FRPC own IP alias PFCG/SU01 – industry standard</div>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px]">
+              <div className="font-semibold">Why this transaction is blocked?</div>
+              <div className="mt-1">• If code is {code} – {title} – requires permission {rbacDenied.requiredPermission} – user {me?.simpleRole} roles [{me?.roles?.join(', ')}] does not have it</div>
+              <div>• Master data manager cannot access HR payroll – payroll contains sensitive salary data – only HR, ADMIN, OWNER with PAYROLL_RUN – SoD</div>
+              <div>• Inventory (ISTV) requires WAREHOUSE,ADMIN,OWNER,MANAGER,MATERIAL_MANAGER – MASTER_DATA_MANAGER alone not enough – per your error message</div>
+              <div>• If you came to a page that is not allowed, show this unauthorized message instead of form data – per your request – completely block view</div>
+              <div className="mt-2">Contact administrator to assign role via POST /api/user-roles {"{ userId, roleCode }"} – e.g., assign HR role to access payroll, WAREHOUSE to access inventory</div>
+            </div>
+            <div className="mt-6 flex gap-2">
+              <a href={`/${companyCode}/navigator`} className={modern ? "px-4 py-2 rounded-full bg-black text-white text-xs" : "border px-3 py-1 text-xs bg-black text-white"}>🌳 Navigator – only allowed pages shown</a>
+              <a href="/login" className={modern ? "px-4 py-2 rounded-full border text-xs bg-white hover:bg-zinc-50" : "border px-3 py-1 text-xs bg-white"}>Switch User</a>
+            </div>
+            <div className="mt-4 text-[10px] text-zinc-400">
+              <div>Code {code} – {title} – module {getPagePermission(code)?.module || 'UNKNOWN'} – permission {rbacDenied.requiredPermission} – roles {rbacDenied.requiredRoles?.join(', ')}</div>
+              <div>Current: {me?.email} – {me?.simpleRole} – [{me?.roles?.join(', ')}] – perms [{me?.permissions?.slice(0,5).join(', ')}...]</div>
+              <div>Error shown instead of formdata per your request – if code is used show error message instead of formdata – completely block view</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const renderField = (field: FieldDef) => {
     const value = form[field.key] || '';

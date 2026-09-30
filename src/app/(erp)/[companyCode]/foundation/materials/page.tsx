@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 import { useAutoPromoteJob } from '@/shared/ui/job-popup';
+import { RoleGuard } from '@/shared/ui/role-guard';
 
 type TabKey = 'basic' | 'purchasing' | 'mrp' | 'storage' | 'accounting' | 'costing';
 
@@ -624,6 +625,7 @@ export default function MaterialMasterPage() {
   };
 
   return (
+    <RoleGuard requiredPermission="MATERIAL_VIEW" requiredRoles={['MATERIAL_MANAGER','MASTER_DATA_MANAGER','ADMIN','OWNER','MANAGER','WAREHOUSE','PURCHASER','SALES']}>
     <>
       <JobPopupComponent />
       <div className={modern ? "min-h-screen bg-[#fafaf9] p-6" : "min-h-screen bg-white p-4"}>
@@ -798,5 +800,6 @@ export default function MaterialMasterPage() {
       </div>
     </div>
     </>
+    </RoleGuard>
   );
 }
