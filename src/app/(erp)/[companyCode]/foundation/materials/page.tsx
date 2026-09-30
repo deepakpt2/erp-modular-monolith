@@ -260,14 +260,16 @@ export default function MaterialMasterPage() {
       payload.is_kit = payload.is_kit === 'true' || payload.is_kit === true;
       payload.is_phantom_kit = payload.is_phantom_kit === 'true' || payload.is_phantom_kit === true;
       payload.is_quality_active = payload.is_quality_active === 'true' || payload.is_quality_active === true;
-      if (!payload.item_number && mode === 'create') {
-        try {
-          const nextRes = await fetch('/api/number-ranges/next?object_type=ITEM');
-          const nextJson = await nextRes.json();
-          if (nextJson.success && nextJson.document_number) payload.item_number = nextJson.document_number;
-        } catch {}
+      // SAP STANDARD – ALWAYS AUTO – BLOCK MANUAL – per user block_manual
+      // If user types random 10 digits like 1234567890, it is BLOCKED – backend will ignore and auto-generate
+      // For create mode, always delete item_number to force backend auto via number range MAT-01/ITEM – purely numeric
+      if (mode === 'create') {
+        delete payload.item_number;
+        delete payload.material_number;
+        // Backend will auto-generate via core_number_range ITEM – e.g., 10000001 – SAP numeric – no prefix
+        // Frontend nextNumberPreview shows what will be generated – but actual number from backend atomic UPDATE
       }
-      payload.material_number = payload.item_number;
+      payload.material_number = payload.item_number; // For change mode, item_number exists
       payload.base_uom = payload.base_unit;
       payload.group_code = payload.category_code;
       payload.valuation_class = payload.inventory_valuation_class;
@@ -345,11 +347,22 @@ export default function MaterialMasterPage() {
                 <>
                   {nextNumberPreview && (
                     <div className={modern ? "mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs" : "mb-2 p-2 border bg-blue-50 text-[11px]"}>
-                      <span className="font-medium">SAP Auto-number preview – numeric – no prefix:</span> {nextNumberPreview} – Leave PRODUCT_CODE blank to auto-generate purely numeric like <span className="font-mono">10000001</span> (SAP standard, no MAT- prefix). Or enter manual alphanumeric if needed. Setup via <Link href={`/${companyCode}/fico/number-ranges`} className="text-blue-600 underline">FNRC Number Ranges</Link> – create MAT-01 / ITEM-01 with object_type ITEM, from 10000000 to 19999999 – SAP FBN1 style – shows next available + locked 🔒 badge if used.
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold">SAP AUTO – INTERNAL – NO MANUAL</span>
+                        <span className="font-medium">Material Number – Always Auto – Numeric – No Manual Entry – Blocked per your confirmation</span>
+                      </div>
+                      <div className="mt-2 font-mono text-[11px] bg-white rounded-lg border p-2">
+                        Next: {nextNumberPreview}
+                      </div>
+                      <div className="mt-2 text-[11px] text-zinc-600">
+                        • SAP standard: Material number purely numeric (e.g., 10000001) – no MAT- prefix – random 10 digits like 1234567890 are <b>BLOCKED</b> – system generates via <Link href={`/${companyCode}/fico/number-ranges`} className="text-blue-600 underline">FNRC</Link> MAT-01/ITEM – internal numbering – MM01 style – always auto – per your selection block_manual. If you type random number, backend will ignore and still auto-generate next sequential – audit safe.
+                      </div>
                     </div>
                   )}
                   <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
-                    {renderInput('item_number', 'PRODUCT_CODE (Optional – auto if blank)', { desc: 'Leave blank → auto from MAT-01 / ITEM range (e.g., MAT-100001) – SAP-like – or enter manual FG-001 – optional, not required' })}
+                    <div className={modern ? "col-span-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs" : "col-span-2 p-2 border bg-amber-50 text-[11px]"}>
+                      <span className="font-bold">PRODUCT_CODE – Auto Only – SAP Internal – Blocked Manual</span> – System will generate purely numeric like 10000001 via number range MAT-01/ITEM – no manual entry – random 10 digits like 1234567890 are BLOCKED – always auto – per your selection block_manual – PO/PR/GR also always auto – SAP standard – field removed from UI.
+                    </div>
                   {renderInput('description', 'PRODUCT_NAME / DESCRIPTION', { required: true, desc: 'Short description – single source' })}
                   {renderInput('type', 'PRODUCT_TYPE', { required: true, options: ['RAW','FINISHED','SEMI','TRADING','PACKAGING','CONSUMABLE','SERVICE'], desc: 'RAW=ROH, FINISHED=FERT – single source' })}
                   <div className="space-y-1">

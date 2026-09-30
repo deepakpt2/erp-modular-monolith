@@ -187,28 +187,33 @@ export async function POST(req: NextRequest) {
       barcode,
     } = body;
 
-    let finalItemNumber = item_number || material_number;
-    // Auto-number from number range if blank – SAP STANDARD numeric – NO PREFIX – FBN1 style
-    // SAP: Material number is purely numeric e.g., 10000001, not MAT-10000001
-    if (!finalItemNumber) {
-      try {
-        // Try /api/number-ranges/next first via direct DB atomic increment – SAP standard
-        const nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE object_type = 'ITEM'::core_number_range_object_type OR code IN ('MAT-01','ITEM-01','ITEM','MATERIAL') ORDER BY CASE code WHEN 'MAT-01' THEN 0 WHEN 'ITEM-01' THEN 1 WHEN 'ITEM' THEN 2 ELSE 3 END LIMIT 1`);
-        if (nrRes.rows.length > 0) {
-          const nr = nrRes.rows[0] as any;
-          const nextNum = Number(nr.current_number || nr.from_number || 10000000) + 1;
-          if (nr.to_number && nextNum > Number(nr.to_number)) throw new Error(`Number range ${nr.code} exhausted – ${nextNum} > ${nr.to_number} – SAP`);
-          await db.execute(sql`UPDATE core_number_range SET current_number = ${nextNum}, prefix = '', updated_at = NOW() WHERE code = ${nr.code}`);
-          // SAP STANDARD: purely numeric – no prefix – e.g., 10000001
-          finalItemNumber = String(nextNum);
-        } else {
-          // Fallback: numeric timestamp-like – still numeric for SAP compliance
-          finalItemNumber = String(10000000 + Math.floor(Date.now() % 9000000));
-        }
-      } catch (e: any) {
-        console.warn('Auto-number failed, fallback numeric:', e.message);
+    // SAP STANDARD – ALWAYS AUTO – BLOCK MANUAL – per user confirmation block_manual
+    // If user types random 10 digits like 1234567890, it is BLOCKED – always auto via number range
+    // This is SAP internal numbering – like SAP MM01 – no manual entry allowed – field removed from UI
+    if (item_number || material_number) {
+      console.warn(`Manual material number blocked – user tried ${item_number || material_number} – SAP internal numbering – always auto – per user block_manual – random 10 digits blocked`);
+      // Optionally return error, but for backward compat we will auto-generate and warn
+      // If you want strict block, uncomment below:
+      // return NextResponse.json({ error: `Manual material number ${item_number || material_number} not allowed – SAP internal numbering – always auto via number range MAT-01/ITEM – random 10 digits like 1234567890 blocked – per configuration block_manual – system will generate 10000001 etc. Create range via FNRC.` }, { status: 400 });
+    }
+
+    let finalItemNumber: string;
+    // Always auto-number from number range – SAP STANDARD numeric – NO PREFIX – FBN1 style – no manual allowed
+    // SAP: Material number is purely numeric e.g., 10000001, not MAT-10000001 – always auto
+    try {
+      const nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE object_type = 'ITEM'::core_number_range_object_type OR code IN ('MAT-01','ITEM-01','ITEM','MATERIAL') ORDER BY CASE code WHEN 'MAT-01' THEN 0 WHEN 'ITEM-01' THEN 1 WHEN 'ITEM' THEN 2 ELSE 3 END LIMIT 1`);
+      if (nrRes.rows.length > 0) {
+        const nr = nrRes.rows[0] as any;
+        const nextNum = Number(nr.current_number || nr.from_number || 10000000) + 1;
+        if (nr.to_number && nextNum > Number(nr.to_number)) throw new Error(`Number range ${nr.code} exhausted – ${nextNum} > ${nr.to_number} – SAP – next available would be ${nextNum} > to ${nr.to_number} – create new range MAT-02`);
+        await db.execute(sql`UPDATE core_number_range SET current_number = ${nextNum}, prefix = '', updated_at = NOW() WHERE code = ${nr.code}`);
+        finalItemNumber = String(nextNum); // SAP numeric only – no prefix – e.g., 10000001
+      } else {
         finalItemNumber = String(10000000 + Math.floor(Date.now() % 9000000));
       }
+    } catch (e: any) {
+      console.warn('Auto-number failed, fallback numeric:', e.message);
+      finalItemNumber = String(10000000 + Math.floor(Date.now() % 9000000));
     }
     const finalBaseUnit = base_unit || base_uom || 'KG';
     const finalGroupCode = category_code || group_code;
