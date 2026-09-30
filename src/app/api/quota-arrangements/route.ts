@@ -38,7 +38,7 @@ export async function GET(req: NextRequest){
       )
     `);
     let query = sql`
-      SELECT qa.*, pa.account_number as vendor_number, pa.display_name as vendor_name, pi.item_number, pi.name as item_name, f.code as facility_code, f.name as facility_name
+      SELECT qa.*, pa.account_number as vendor_number, pa.display_name as vendor_name, pi.item_number, pi.description as item_name, f.code as facility_code, f.name as facility_name
       FROM proc_quota_arrangement qa
       LEFT JOIN partner_account pa ON qa.partner_id = pa.id OR pa.account_number = qa.vendor_number
       LEFT JOIN prod_item pi ON qa.item_id = pi.id OR pi.item_number = qa.material_code

@@ -48,9 +48,9 @@ export async function GET(req: NextRequest) {
           )
         `);
         await db.execute(sql`
-          INSERT INTO fin_credit_policy_area (code, name, currency_code, credit_limit, risk_category, description)
-          VALUES ('CPA-1000', 'Standard Credit Control', 'INR', 1000000, 'LOW', 'Standard credit policy area – FD32 credit limit 10L – used in SO credit check OVA8 – T1 REQUIRED')
-          ON CONFLICT (code) DO NOTHING
+          INSERT INTO fin_credit_policy_area (tenant_id, code, name, currency_code, credit_limit, risk_category, description)
+          SELECT (SELECT id FROM core_tenant LIMIT 1), 'CPA-1000', 'Standard Credit Control', 'INR', 1000000, 'LOW', 'Standard credit policy area – FD32 credit limit 10L – used in SO credit check OVA8 – T1 REQUIRED'
+          WHERE NOT EXISTS (SELECT 1 FROM fin_credit_policy_area WHERE code='CPA-1000')
         `);
         result = await db.execute(sql`SELECT * FROM fin_credit_policy_area ORDER BY code`);
       } else throw e;
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
       const res = await db.execute(sql`
         INSERT INTO fin_credit_policy_area (tenant_id, code, name, currency_code, credit_limit, risk_category, description) 
         VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${currency_code || 'INR'}, ${credit_limit || 1000000}, ${risk_category || 'LOW'}, ${description || null}) 
-        ON CONFLICT (code) DO UPDATE SET name = ${name}, credit_limit = ${credit_limit || 1000000}, risk_category = ${risk_category || 'LOW'}, description = ${description || null}, updated_at = NOW()
+        ON CONFLICT (tenant_id, code) DO UPDATE SET name = ${name}, credit_limit = ${credit_limit || 1000000}, risk_category = ${risk_category || 'LOW'}, description = ${description || null}
         RETURNING id, code, name, credit_limit, risk_category
       `);
       return NextResponse.json({ 
@@ -224,9 +224,9 @@ export async function PUT(req: NextRequest) {
 
     let res;
     if (id) {
-      res = await db.execute(sql`UPDATE fin_credit_policy_area SET code = COALESCE(${code?.toUpperCase() ?? null}, code), name = COALESCE(${name ?? null}, name), description = COALESCE(${description ?? null}, description), is_active = COALESCE(${is_active ?? null}, is_active), credit_limit = COALESCE(${credit_limit ?? null}, credit_limit), risk_category = COALESCE(${risk_category ?? null}, risk_category), updated_at = NOW() WHERE id = ${id} RETURNING id, code, name, credit_limit`);
+      res = await db.execute(sql`UPDATE fin_credit_policy_area SET code = COALESCE(${code?.toUpperCase() ?? null}, code), name = COALESCE(${name ?? null}, name), description = COALESCE(${description ?? null}, description), is_active = COALESCE(${is_active ?? null}, is_active), credit_limit = COALESCE(${credit_limit ?? null}, credit_limit), risk_category = COALESCE(${risk_category ?? null}, risk_category) WHERE id = ${id} RETURNING id, code, name, credit_limit`);
     } else {
-      res = await db.execute(sql`UPDATE fin_credit_policy_area SET name = COALESCE(${name ?? null}, name), description = COALESCE(${description ?? null}, description), is_active = COALESCE(${is_active ?? null}, is_active), credit_limit = COALESCE(${credit_limit ?? null}, credit_limit), risk_category = COALESCE(${risk_category ?? null}, risk_category), updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, name, credit_limit`);
+      res = await db.execute(sql`UPDATE fin_credit_policy_area SET name = COALESCE(${name ?? null}, name), description = COALESCE(${description ?? null}, description), is_active = COALESCE(${is_active ?? null}, is_active), credit_limit = COALESCE(${credit_limit ?? null}, credit_limit), risk_category = COALESCE(${risk_category ?? null}, risk_category) WHERE code = ${code.toUpperCase()} RETURNING id, code, name, credit_limit`);
     }
     if (res.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true, data: res.rows[0], code: 'FCPC', message: `Credit Policy Area ${res.rows[0].code} updated – limit ${res.rows[0].credit_limit}` });

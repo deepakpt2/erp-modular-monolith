@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
         SELECT 
           h.id, h.routing_number, h.item_id as material_id, h.facility_id as plant_id, h.bom_header_id, h.description, h.status, h.version,
           h.lot_size_from, h.lot_size_to, h.valid_from, h.valid_to,
-          pi.item_number as material_number, pi.name as material_description,
+          pi.item_number as material_number, pi.description as material_description,
           f.code as plant_code, f.name as plant_name,
           f.code as facility_code, f.name as facility_name,
           bh.bom_number,

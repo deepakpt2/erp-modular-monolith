@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
           (SELECT COUNT(*) FROM org_cost_unit WHERE legal_entity_id = le.id) as cost_center_count,
           (SELECT COUNT(*) FROM core_number_range WHERE fiscal_year = EXTRACT(YEAR FROM NOW())::int) as number_range_count
         FROM org_legal_entity le
-        LEFT JOIN fin_chart fc ON le.chart_id = fc.id
+        LEFT JOIN fin_chart fc ON fc.code = le.chart_of_accounts_code
         LEFT JOIN core_tenant ct ON le.tenant_id = ct.id
         ORDER BY le.code
       `);
@@ -104,29 +104,29 @@ export async function GET(req: NextRequest) {
     let currencies: any[] = [];
 
     try {
-      const fv = await db.execute(sql`SELECT code, description FROM fi_fiscal_year_variant ORDER BY code`);
+      const fv = await db.execute(sql`SELECT code, name as description FROM fin_fiscal_calendar ORDER BY code`);
       fiscalVariants = fv.rows as any[];
     } catch {
       try {
-        const fv = await db.execute(sql`SELECT code, name as description FROM fin_fiscal_calendar ORDER BY code`);
+        const fv = await db.execute(sql`SELECT code, description FROM fi_fiscal_year_variant ORDER BY code`);
         fiscalVariants = fv.rows as any[];
       } catch {}
     }
     try {
-      const pv = await db.execute(sql`SELECT code, name FROM fi_posting_period_variant ORDER BY code`);
+      const pv = await db.execute(sql`SELECT code, name FROM fin_posting_calendar ORDER BY code`);
       postingVariants = pv.rows as any[];
     } catch {
       try {
-        const pv = await db.execute(sql`SELECT code, name FROM fin_posting_calendar ORDER BY code`);
+        const pv = await db.execute(sql`SELECT code, name FROM fi_posting_period_variant ORDER BY code`);
         postingVariants = pv.rows as any[];
       } catch {}
     }
     try {
-      const cca = await db.execute(sql`SELECT code, description, currency FROM fi_credit_control_area ORDER BY code`);
+      const cca = await db.execute(sql`SELECT code, name as description FROM fin_credit_policy_area ORDER BY code`);
       creditControlAreas = cca.rows as any[];
     } catch {
       try {
-        const cca = await db.execute(sql`SELECT code, name as description FROM fin_credit_policy_area ORDER BY code`);
+        const cca = await db.execute(sql`SELECT code, description, currency FROM fi_credit_control_area ORDER BY code`);
         creditControlAreas = cca.rows as any[];
       } catch {}
     }
@@ -216,9 +216,9 @@ export async function POST(req: NextRequest) {
       }
 
       const res = await db.execute(sql`
-        INSERT INTO org_legal_entity (tenant_id, code, name, currency_code, country_code, city, chart_id, address, street, postal_code, region, tax_id, gst_number, is_active)
-        VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${currency_code || 'INR'}, ${country || 'IN'}, ${city || null}, ${coaId}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, true)
-        ON CONFLICT (code) DO UPDATE SET name=${name}, currency_code=${currency_code || 'INR'}, country_code=${country || 'IN'}, city=${city || null}, updated_at=NOW()
+        INSERT INTO org_legal_entity (tenant_id, code, name, currency_code, country_code, city, chart_of_accounts_code, address, street, postal_code, region, tax_id, gst_number, is_active)
+        VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${currency_code || 'INR'}, ${country || 'IN'}, ${city || null}, ${coa_code || 'CA-IN-01'}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, true)
+        ON CONFLICT (tenant_id, code) DO UPDATE SET name=${name}, currency_code=${currency_code || 'INR'}, country_code=${country || 'IN'}, city=${city || null}
         RETURNING id, code
       `);
 
@@ -271,14 +271,14 @@ export async function PUT(req: NextRequest) {
 
     try {
       let res;
-      if (id) res = await db.execute(sql`UPDATE org_legal_entity SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), country_code=COALESCE(${country},country_code), city=COALESCE(${city},city), is_active=COALESCE(${is_active},is_active), updated_at=NOW() WHERE id=${id} RETURNING id, code`);
-      else res = await db.execute(sql`UPDATE org_legal_entity SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), country_code=COALESCE(${country},country_code), city=COALESCE(${city},city), is_active=COALESCE(${is_active},is_active), updated_at=NOW() WHERE code=${code.toUpperCase()} RETURNING id, code`);
+      if (id) res = await db.execute(sql`UPDATE org_legal_entity SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), country_code=COALESCE(${country},country_code), city=COALESCE(${city},city), is_active=COALESCE(${is_active},is_active) WHERE id=${id} RETURNING id, code`);
+      else res = await db.execute(sql`UPDATE org_legal_entity SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), country_code=COALESCE(${country},country_code), city=COALESCE(${city},city), is_active=COALESCE(${is_active},is_active) WHERE code=${code.toUpperCase()} RETURNING id, code`);
       if (res.rows.length === 0) throw new Error('Not found in org_legal_entity');
       return NextResponse.json({ success: true, companyCode: res.rows[0], code: 'ELEC', message: `Legal Entity ${res.rows[0].code} updated – ELEC legal-safe` });
     } catch {
       let res;
-      if (id) res = await db.execute(sql`UPDATE ent_company_code SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), city=COALESCE(${city},city), country=COALESCE(${country},country), is_active=COALESCE(${is_active},is_active), updated_at=NOW() WHERE id=${id} RETURNING id, code`);
-      else res = await db.execute(sql`UPDATE ent_company_code SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), city=COALESCE(${city},city), country=COALESCE(${country},country), is_active=COALESCE(${is_active},is_active), updated_at=NOW() WHERE code=${code.toUpperCase()} RETURNING id, code`);
+      if (id) res = await db.execute(sql`UPDATE ent_company_code SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), city=COALESCE(${city},city), country=COALESCE(${country},country), is_active=COALESCE(${is_active},is_active) WHERE id=${id} RETURNING id, code`);
+      else res = await db.execute(sql`UPDATE ent_company_code SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), city=COALESCE(${city},city), country=COALESCE(${country},country), is_active=COALESCE(${is_active},is_active) WHERE code=${code.toUpperCase()} RETURNING id, code`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Company code not found' }, { status: 404 });
       return NextResponse.json({ success: true, companyCode: res.rows[0], message: `Company Code ${res.rows[0].code} updated – legacy` });
     }

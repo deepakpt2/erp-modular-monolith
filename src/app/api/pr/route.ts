@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
           iloc.code as inventory_location_code,
           e.employee_number as requester_employee_number,
           e.first_name as requester_first_name,
-          pi.item_number as material_number, pi.name as material_description,
-          pi.item_number, pi.name as item_name,
+          pi.item_number as material_number, pi.description as material_description,
+          pi.item_number, pi.description as item_name,
           prl.quantity, prl.uom_code as uom, prl.estimated_price,
           prl.facility_id as plant_id, prl.inventory_location_id as sloc_id, prl.is_converted, prl.po_id,
           le.code as company_code, le.code as legal_entity_code

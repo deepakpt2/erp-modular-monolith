@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     try {
       let query = sql`
         SELECT r.id, r.reservation_number, r.quantity, r.reserved_quantity, r.movement_type, r.reference_doc_type, r.reference_doc_number, r.required_date, r.is_active, r.created_at,
-               pi.item_number, pi.name as item_name,
+               pi.item_number, pi.description as item_name,
                f.code as facility_code, f.name as facility_name,
                il.code as inventory_location_code
         FROM inventory_reservation r

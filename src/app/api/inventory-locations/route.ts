@@ -37,6 +37,29 @@ export async function POST(req: NextRequest) {
       const { code, name, facility_id, facility_code, location_type, description } = body;
       
       // VALIDATION: Check foreign keys exist in DB – prevents invalid data
+      // Map legacy location_type RAW/FG etc to legal-safe enum
+      const mapLocationType = (t: string) => {
+        if (!t) return 'PRIMARY';
+        const u = t.toUpperCase();
+        const m: Record<string,string> = {
+          'RAW': 'RAW_ZONE',
+          'FG': 'FINISHED_ZONE',
+          'FINISHED': 'FINISHED_ZONE',
+          'PACK': 'PACK_ZONE',
+          'QUALITY': 'QUALITY',
+          'RETURNS': 'RETURNS',
+          'BLOCKED': 'BLOCKED',
+          'PRIMARY': 'PRIMARY',
+          'COLD': 'COLD_ZONE',
+          'SHOP': 'SHOP_FLOOR',
+          'RAW_ZONE': 'RAW_ZONE',
+          'FINISHED_ZONE': 'FINISHED_ZONE',
+          'PACK_ZONE': 'PACK_ZONE',
+          'COLD_ZONE': 'COLD_ZONE',
+          'SHOP_FLOOR': 'SHOP_FLOOR',
+        };
+        return m[u] || 'PRIMARY';
+      };
 
       if (facility_code) {
         const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${facility_code} LIMIT 1`);
@@ -52,7 +75,8 @@ if (!code || !name) return NextResponse.json({ error: 'code and name required' }
         if (fr.rows.length) facId = fr.rows[0].id;
       }
       if (!facId) return NextResponse.json({ error: 'facility_id or facility_code required' }, { status: 400 });
-      const res = await db.execute(sql`INSERT INTO org_inventory_location (facility_id, code, name, location_type) VALUES (${facId}, ${code}, ${name}, ${location_type || 'PRIMARY'}) ON CONFLICT DO NOTHING RETURNING id, code, name`);
+      const finalLocationType = mapLocationType(location_type || 'PRIMARY');
+      const res = await db.execute(sql`INSERT INTO org_inventory_location (facility_id, code, name, location_type) VALUES (${facId}, ${code}, ${name}, ${finalLocationType}::org_location_type) ON CONFLICT DO NOTHING RETURNING id, code, name`);
       if (res.rows.length===0) {
         const ex = await db.execute(sql`SELECT id, code, name FROM org_inventory_location WHERE facility_id=${facId} AND code=${code} LIMIT 1`);
         return NextResponse.json({ success: true, inventoryLocation: ex.rows[0], message: `Inventory Location ${code} exists` });

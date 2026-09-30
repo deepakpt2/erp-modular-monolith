@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       for (let i = 0; i < rows.length; i++) {
         try {
           const elRes = await db.execute(sql`
-            SELECT e.*, pi.item_number, pi.name as item_name
+            SELECT e.*, pi.item_number, pi.description as item_name
             FROM mfg_mrp_element e
             LEFT JOIN prod_item pi ON e.item_id = pi.id
             WHERE e.mrp_run_id = ${rows[i].id}

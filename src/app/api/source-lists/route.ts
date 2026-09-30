@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     try {
       let query = sql`
-        SELECT sl.*, pa.account_number as vendor_number, pa.display_name as vendor_name, pi.item_number, pi.name as item_name, f.code as facility_code, f.name as facility_name
+        SELECT sl.*, pa.account_number as vendor_number, pa.display_name as vendor_name, pi.item_number, pi.description as item_name, f.code as facility_code, f.name as facility_name
         FROM proc_source_list sl
         LEFT JOIN partner_account pa ON sl.partner_id = pa.id
         LEFT JOIN prod_item pi ON sl.item_id = pi.id

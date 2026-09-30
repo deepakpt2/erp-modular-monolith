@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       const res = await db.execute(sql`
         INSERT INTO fin_posting_calendar (tenant_id, code, name, description)
         VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}, updated_at = NOW()
+        ON CONFLICT (tenant_id, code) DO UPDATE SET name = ${name}, description = ${description || null}
         RETURNING id, code, name
       `);
       const calId = (res.rows[0] as any).id;
@@ -144,8 +144,8 @@ export async function PUT(req: NextRequest) {
 
     try {
       let res;
-      if (id) res = await db.execute(sql`UPDATE fin_posting_calendar SET code = COALESCE(${code?.toUpperCase()}, code), name = COALESCE(${name}, name), description = COALESCE(${description}, description), updated_at = NOW() WHERE id = ${id} RETURNING id, code, name`);
-      else res = await db.execute(sql`UPDATE fin_posting_calendar SET name = COALESCE(${name}, name), description = COALESCE(${description}, description), updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+      if (id) res = await db.execute(sql`UPDATE fin_posting_calendar SET code = COALESCE(${code?.toUpperCase()}, code), name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE id = ${id} RETURNING id, code, name`);
+      else res = await db.execute(sql`UPDATE fin_posting_calendar SET name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
       if (res.rows.length === 0) throw new Error('Not found in fin_posting_calendar');
       return NextResponse.json({ success: true, postingCalendar: res.rows[0], code: 'FPPC', message: `Posting Calendar ${res.rows[0].code} updated – FPPC legal-safe` });
     } catch {

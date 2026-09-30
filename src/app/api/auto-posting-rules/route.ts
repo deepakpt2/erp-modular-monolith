@@ -79,6 +79,19 @@ export async function GET(req: NextRequest) {
   }
 }
 
+const legacyToNewMap: Record<string,string> = {
+  'BSX': 'INV_POSTING',
+  'WRX': 'GR_IR_CLEARING',
+  'PRD': 'PRICE_DIFF',
+  'GBB': 'INV_OFFSET',
+  'KOFI': 'REVENUE',
+  'KOFK': 'REVENUE',
+  'KDM': 'PRICE_DIFF',
+  'BSV': 'INV_POSTING',
+  'FRL': 'FREIGHT',
+  'TAX': 'TAX_INPUT',
+};
+
 export async function POST(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -88,6 +101,8 @@ export async function POST(req: NextRequest) {
     const { company_code, transaction_key, valuation_class, inventory_valuation_class, gl_account_number, ledger_account_number, description } = body;
     if (!company_code || !transaction_key || (!gl_account_number && !ledger_account_number)) return NextResponse.json({ error: 'company_code, transaction_key, gl_account_number/ledger_account_number required' }, { status: 400 });
 
+    const rawKey = transaction_key.toUpperCase();
+    const mappedKey = legacyToNewMap[rawKey] || rawKey; // BSX -> INV_POSTING etc
     const finalGl = ledger_account_number || gl_account_number;
     const finalValuation = inventory_valuation_class || valuation_class;
 
@@ -109,12 +124,19 @@ export async function POST(req: NextRequest) {
       if (!glId) return NextResponse.json({ error: `G/L ${finalGl} not found` }, { status: 404 });
 
       const res = await db.execute(sql`
-        INSERT INTO fin_auto_posting_rule (company_code_id, transaction_key, inventory_valuation_class, ledger_account_id, description, legacy_transaction_key)
-        VALUES (${companyCodeId}, ${transaction_key.toUpperCase()}::fin_auto_posting_transaction_key, ${finalValuation || null}, ${glId}, ${description || null}, ${transaction_key.toUpperCase()})
-        ON CONFLICT (company_code_id, transaction_key, inventory_valuation_class) DO UPDATE SET ledger_account_id = ${glId}, description = ${description || null}, updated_at = NOW()
+        INSERT INTO fin_auto_posting_rule (company_code_id, transaction_key, inventory_valuation_class, ledger_account_id, description, transaction_key_legacy)
+        VALUES (${companyCodeId}, ${mappedKey}::fin_auto_posting_key, ${finalValuation || null}, ${glId}, ${description || null}, ${rawKey})
+        ON CONFLICT DO NOTHING
         RETURNING id, transaction_key
       `);
-      return NextResponse.json({ success: true, autoPostingRule: res.rows[0], code: 'FAUC', message: `Auto posting ${transaction_key} -> ${finalGl} created – FAUC legal-safe`, legalSafe: true });
+      // If conflict due to unique index (legal_entity_id, transaction_key, inventory_valuation_class), try update
+      if (res.rows.length === 0) {
+        const upd = await db.execute(sql`UPDATE fin_auto_posting_rule SET ledger_account_id = ${glId}, description = ${description || null} WHERE transaction_key = ${mappedKey}::fin_auto_posting_key AND COALESCE(inventory_valuation_class,'') = COALESCE(${finalValuation || null},'') RETURNING id, transaction_key`);
+        if (upd.rows.length > 0) {
+          return NextResponse.json({ success: true, autoPostingRule: upd.rows[0], code: 'FAUC', message: `Auto posting ${rawKey} (${mappedKey}) -> ${finalGl} updated – FAUC legal-safe`, legalSafe: true });
+        }
+      }
+      return NextResponse.json({ success: true, autoPostingRule: res.rows[0] || { transaction_key: mappedKey }, code: 'FAUC', message: `Auto posting ${rawKey} (${mappedKey}) -> ${finalGl} created – FAUC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
       console.warn('fin_auto_posting_rule insert failed fallback fi_auto_account_determination:', newErr.message);
       const g = await db.execute(sql`SELECT id FROM fi_gl_account WHERE account_number = ${finalGl} LIMIT 1`);

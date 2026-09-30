@@ -62,7 +62,7 @@ export async function GET(req: NextRequest){
     if(action === 'QUOTATION' || action === 'ME47'){
       const rfqNumber = searchParams.get('rfq_number') || searchParams.get('rfqNumber');
       let query = sql`
-        SELECT q.*, r.rfq_number as rfq_num, pa.account_number as vendor_number, pa.display_name as vendor_name, pi.item_number, pi.name as item_name
+        SELECT q.*, r.rfq_number as rfq_num, pa.account_number as vendor_number, pa.display_name as vendor_name, pi.item_number, pi.description as item_name
         FROM proc_quotation q
         LEFT JOIN proc_rfq r ON q.rfq_id = r.id
         LEFT JOIN partner_account pa ON q.partner_id = pa.id OR pa.account_number = q.vendor_number

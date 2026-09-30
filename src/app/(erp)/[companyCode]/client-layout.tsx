@@ -2,9 +2,87 @@
 
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const SHOW_FUNCTION_CODE = process.env.NEXT_PUBLIC_SHOW_FUNCTION_CODE !== 'false';
+
+function UserMenu({ userEmail, userRole }: { userEmail?: string; userRole?: string }) {
+  const [open, setOpen] = useState(false);
+  const hideTimeout = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const showMenu = () => {
+    if (hideTimeout.current) {
+      clearTimeout(hideTimeout.current);
+      hideTimeout.current = null;
+    }
+    setOpen(true);
+  };
+
+  const hideMenu = () => {
+    // Delay hide to allow moving to submenu block
+    if (hideTimeout.current) clearTimeout(hideTimeout.current);
+    hideTimeout.current = setTimeout(() => {
+      setOpen(false);
+    }, 300); // 300ms delay per user request
+  };
+
+  const cancelHide = () => {
+    if (hideTimeout.current) {
+      clearTimeout(hideTimeout.current);
+      hideTimeout.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hideTimeout.current) clearTimeout(hideTimeout.current);
+    };
+  }, []);
+
+  if (!userEmail) {
+    return (
+      <a href="/api/auth/signout" className="text-[11px] border rounded-full px-2.5 py-1 hover:bg-black hover:text-white transition-colors">Sign out</a>
+    );
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative"
+      onMouseEnter={showMenu}
+      onMouseLeave={hideMenu}
+    >
+      <div className="hidden sm:flex items-center gap-2 text-[11px] border rounded-full px-2.5 py-1 bg-zinc-900 text-white cursor-pointer select-none">
+        <span className="font-medium truncate max-w-[120px]">{userEmail.split('@')[0]}</span>
+        <span className="text-zinc-400">• {userRole || 'USER'}</span>
+        <span className="ml-1 text-[10px]">▼</span>
+      </div>
+
+      {/* Submenu – stays on hover, hides after delay when move away from menu block */}
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 w-[220px] bg-white rounded-2xl shadow-xl border border-zinc-200 overflow-hidden z-50"
+          onMouseEnter={cancelHide}
+          onMouseLeave={hideMenu}
+        >
+          <div className="p-3 border-b border-zinc-100">
+            <div className="text-xs font-semibold truncate">{userEmail}</div>
+            <div className="text-[10px] text-zinc-500">{userRole || 'USER'}</div>
+          </div>
+          <div className="p-1">
+            <Link href={`/${containerRef.current?.closest('[data-company-code]')?.getAttribute('data-company-code') || ''}/navigator`} className="block px-3 py-2 text-xs hover:bg-zinc-50 rounded-xl">🌳 Navigator</Link>
+            <Link href="/docs" className="block px-3 py-2 text-xs hover:bg-zinc-50 rounded-xl">📚 Documentation</Link>
+            <a href="https://github.com/deepakpt2/erp-modular-monolith" target="_blank" className="block px-3 py-2 text-xs hover:bg-zinc-50 rounded-xl">💻 GitHub ↗</a>
+          </div>
+          <div className="p-1 border-t border-zinc-100">
+            <a href="/api/auth/signout" className="block px-3 py-2 text-xs hover:bg-red-50 hover:text-red-600 rounded-xl">🚪 Sign out</a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CompanyClientLayout({ children, companyCode, userEmail, userRole }: { children: React.ReactNode; companyCode: string; userEmail?: string; userRole?: string }) {
   const pathname = usePathname();
@@ -79,13 +157,7 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
             <button onClick={()=>toggleMode('modern')} className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${uiMode==='modern'?'bg-black text-white':'hover:bg-white text-zinc-600'}`}>Modern</button>
             <button onClick={()=>toggleMode('classic')} className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${uiMode==='classic'?'bg-black text-white':'hover:bg-white text-zinc-600'}`}>Classic</button>
           </div>
-          {userEmail && (
-            <div className="hidden sm:flex items-center gap-2 text-[11px] border rounded-full px-2.5 py-1 bg-zinc-900 text-white">
-              <span className="font-medium truncate max-w-[120px]">{userEmail.split('@')[0]}</span>
-              <span className="text-zinc-400">• {userRole || 'USER'}</span>
-            </div>
-          )}
-          <a href="/api/auth/signout" className="text-[11px] border rounded-full px-2.5 py-1 hover:bg-black hover:text-white transition-colors">Sign out</a>
+          <UserMenu userEmail={userEmail} userRole={userRole} />
         </div>
       </header>
 

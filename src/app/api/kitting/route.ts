@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     try {
       let query = sql`
-        SELECT ko.*, po.order_number as production_order_number, pi.item_number as kit_number, pi.name as kit_name, il.lot_number as target_lot_number, f.code as facility_code
+        SELECT ko.*, po.order_number as production_order_number, pi.item_number as kit_number, pi.description as kit_name, il.lot_number as target_lot_number, f.code as facility_code
         FROM mfg_kitting_order ko
         LEFT JOIN mfg_production_order po ON ko.production_order_id = po.id
         LEFT JOIN prod_item pi ON ko.kit_item_id = pi.id

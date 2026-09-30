@@ -23,7 +23,7 @@ export async function GET(req: NextRequest){
       if(!materialCode) return NextResponse.json({ error:'material_code required for CS11 explosion – T2 GOOD' }, {status:400});
       try{
         const res = await db.execute(sql`
-          SELECT b.id, b.parent_material_code, b.component_material_code, b.quantity, b.uom_code, pi.name as component_name
+          SELECT b.id, b.parent_material_code, b.component_material_code, b.quantity, b.uom_code, pi.description as component_name
           FROM mfg_bom_line b
           LEFT JOIN prod_item pi ON b.component_material_code = pi.item_number
           WHERE b.parent_material_code = ${materialCode}
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest){
       if(!materialCode) return NextResponse.json({ error:'material_code required for CS12 where-used – T2 GOOD' }, {status:400});
       try{
         const res = await db.execute(sql`
-          SELECT b.parent_material_code, pi.name as parent_name, b.quantity
+          SELECT b.parent_material_code, pi.description as parent_name, b.quantity
           FROM mfg_bom_line b
           LEFT JOIN prod_item pi ON b.parent_material_code = pi.item_number
           WHERE b.component_material_code = ${materialCode}

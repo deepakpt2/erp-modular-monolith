@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
         try {
           const linesRes = await db.execute(sql`
             SELECT l.id, l.line_number, l.item_id as material_id, l.quantity, l.quantity_issued, l.quantity_received, l.quantity_in_transit, l.uom_code as uom, l.unit_price, l.lot_number as batch_number, l.is_closed,
-                   pi.item_number as material_number, pi.name as description
+                   pi.item_number as material_number, pi.description as description
             FROM proc_sto_line l
             LEFT JOIN prod_item pi ON l.item_id = pi.id
             WHERE l.sto_id = ${row.id}

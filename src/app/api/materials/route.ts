@@ -187,7 +187,31 @@ export async function POST(req: NextRequest) {
       barcode,
     } = body;
 
-    const finalItemNumber = item_number || material_number;
+    let finalItemNumber = item_number || material_number;
+    // Auto-number from number range if blank – SAP-like MAT-01 range
+    if (!finalItemNumber) {
+      try {
+        const nrRes = await db.execute(sql`SELECT code, prefix, current_number, from_number, to_number FROM core_number_range WHERE code IN ('MAT-01','ITEM','MATERIAL','MAT') ORDER BY CASE code WHEN 'MAT-01' THEN 0 WHEN 'ITEM' THEN 1 ELSE 2 END LIMIT 1`);
+        if (nrRes.rows.length > 0) {
+          const nr = nrRes.rows[0] as any;
+          const nextNum = (nr.current_number || nr.from_number || 100000) + 1;
+          // Check if exceeds to_number
+          if (nr.to_number && nextNum > nr.to_number) throw new Error('Number range exhausted');
+          await db.execute(sql`UPDATE core_number_range SET current_number = ${nextNum} WHERE code = ${nr.code}`);
+          const prefix = nr.prefix || '';
+          // Format: prefix + padded number e.g., MAT-100001
+          finalItemNumber = `${prefix}${String(nextNum).padStart(6, '0')}`.replace(/--/g, '-');
+          // If prefix already includes dash, keep as is
+          if (prefix && !finalItemNumber.startsWith(prefix)) finalItemNumber = `${prefix}${nextNum}`;
+        } else {
+          // Fallback: generate from timestamp
+          finalItemNumber = `MAT-${Date.now().toString().slice(-6)}`;
+        }
+      } catch (e: any) {
+        console.warn('Auto-number failed, fallback:', e.message);
+        finalItemNumber = `MAT-${Date.now().toString().slice(-6)}`;
+      }
+    }
     const finalBaseUnit = base_unit || base_uom || 'KG';
     const finalGroupCode = category_code || group_code;
     const finalType = mapTypeOldToNew(type || 'RAW');
@@ -202,7 +226,7 @@ export async function POST(req: NextRequest) {
     const finalIsQualityActive = is_quality_active ?? is_qm_active ?? false;
 
     if (!finalItemNumber || !description || !type) {
-      return NextResponse.json({ error: 'item_number (or material_number), description, type required – type RAW/FINISHED/SEMI (legal-safe, old ROH/FERT/HALB also accepted)' }, { status: 400 });
+      return NextResponse.json({ error: 'item_number (or material_number), description, type required – type RAW/FINISHED/SEMI (legal-safe, old ROH/FERT/HALB also accepted). If item_number blank, auto-number from MAT-01 range will be used.' }, { status: 400 });
     }
 
     // Try new tables first

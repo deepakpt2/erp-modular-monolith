@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       for (let i = 0; i < rows.length; i++) {
         try {
           const linesRes = await db.execute(sql`
-            SELECT l.*, pi.item_number, pi.name as item_name
+            SELECT l.*, pi.item_number, pi.description as item_name
             FROM inventory_physical_line l
             LEFT JOIN prod_item pi ON l.item_id = pi.id
             WHERE l.physical_document_id = ${rows[i].id}

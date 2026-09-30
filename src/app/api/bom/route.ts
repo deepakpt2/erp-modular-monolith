@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
         SELECT 
           h.id, h.bom_number, h.item_id as material_id, h.facility_id as plant_id, h.type, h.status, h.version, h.base_quantity, h.base_uom,
           h.is_phantom, h.is_kit, h.expiry_rule, h.fixed_shelf_life_days, h.valid_from, h.valid_to,
-          pi.item_number as material_number, pi.name as material_description, pi.item_type as material_type, pi.is_kit, pi.is_phantom_kit,
+          pi.item_number as material_number, pi.description as material_description, pi.type as material_type, pi.is_kit, pi.is_phantom_kit,
           f.code as plant_code, f.name as plant_name,
           f.code as facility_code, f.name as facility_name,
           (SELECT COUNT(*) FROM mfg_bom_line WHERE bom_header_id = h.id) as line_count,
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       if (plantId) query = sql`${query} AND (h.facility_id = ${plantId} OR h.plant_id = ${plantId})`;
       if (materialId) query = sql`${query} AND (h.item_id = ${materialId} OR h.material_id = ${materialId})`;
       if (status) query = sql`${query} AND h.status = ${status}::mfg_bom_status`;
-      if (search) query = sql`${query} AND (h.bom_number ILIKE ${`%${search}%`} OR pi.item_number ILIKE ${`%${search}%`} OR pi.name ILIKE ${`%${search}%`})`;
+      if (search) query = sql`${query} AND (h.bom_number ILIKE ${`%${search}%`} OR pi.item_number ILIKE ${`%${search}%`} OR pi.description ILIKE ${`%${search}%`})`;
 
       query = sql`${query} ORDER BY h.bom_number DESC LIMIT ${limit}`;
 
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
           const linesRes = await db.execute(sql`
             SELECT 
               l.id, l.line_number, l.component_item_id as component_material_id, l.quantity, l.uom_code as uom, l.is_batch_tracked, l.is_phantom_explode, l.scrap_factor, l.work_center_id,
-              cpi.item_number as component_number, cpi.name as component_description, cpi.item_type as component_type,
+              cpi.item_number as component_number, cpi.description as component_description, cpi.type as component_type,
               wc.code as work_center_code, wc.name as work_center_name
             FROM mfg_bom_line l
             LEFT JOIN prod_item cpi ON l.component_item_id = cpi.id

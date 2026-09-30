@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       let query = sql`
         SELECT sci.id, sci.customer_item_number, sci.customer_item_description, sci.is_active, sci.created_at,
                pa.account_number as customer_number, pa.display_name as customer_name,
-               pi.item_number as material_number, pi.name as material_name, pi.item_number
+               pi.item_number as material_number, pi.description as material_name, pi.item_number
         FROM sales_customer_item sci
         JOIN partner_account pa ON sci.partner_id = pa.id
         JOIN prod_item pi ON sci.item_id = pi.id

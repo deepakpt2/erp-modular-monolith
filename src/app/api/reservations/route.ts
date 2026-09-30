@@ -68,7 +68,7 @@ export async function GET(req: NextRequest){
       // MB52 Stock per SLoc
       try{
         const res = await db.execute(sql`
-          SELECT s.*, pi.item_number, pi.name as item_name, f.code as facility_code, f.name as facility_name, il.code as sloc_code
+          SELECT s.*, pi.item_number, pi.description as item_name, f.code as facility_code, f.name as facility_name, il.code as sloc_code
           FROM inv_stock s
           LEFT JOIN prod_item pi ON s.item_number = pi.item_number OR s.item_id = pi.id
           LEFT JOIN org_facility f ON s.facility_id = f.id OR f.code = s.facility_code

@@ -221,8 +221,7 @@ export const finAutoPostingRule = pgTable('fin_auto_posting_rule', {
   transactionKey: finAutoPostingTransactionKeyEnum('transaction_key').notNull(),
   transactionKeyLegacy: varchar('transaction_key_legacy', { length: 10 }),
   inventoryValuationClass: varchar('inventory_valuation_class', { length: 20 }),
-  valuationClass: varchar('valuation_class', { length: 20 }), // legacy alias
-  inventoryValuationClassLegacy: varchar('inventory_valuation_class_legacy', { length: 10 }),
+  valuationClass: varchar('valuation_class', { length: 20 }), // legacy alias – kept for backward compat, UI uses inventory_valuation_class only
   ledgerAccountId: uuid('ledger_account_id').references(() => finLedgerAccount.id),
   glAccountId: uuid('gl_account_id'), // legacy
   description: varchar('description', { length: 200 }),

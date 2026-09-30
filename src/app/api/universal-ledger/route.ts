@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
     try {
       let query = sql`
-        SELECT ul.*, la.account_number, la.name as ledger_account_name, le.code as legal_entity_code, pa.account_number as partner_number, pa.display_name as partner_name, pi.item_number, pi.name as item_name
+        SELECT ul.*, la.account_number, la.name as ledger_account_name, le.code as legal_entity_code, pa.account_number as partner_number, pa.display_name as partner_name, pi.item_number, pi.description as item_name
         FROM fin_universal_ledger ul
         LEFT JOIN fin_ledger_account la ON ul.ledger_account_id = la.id
         LEFT JOIN org_legal_entity le ON ul.legal_entity_id = le.id

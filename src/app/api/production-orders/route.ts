@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       const res = await db.execute(sql`
         SELECT 
           mo.id, mo.order_number, mo.type, mo.status, mo.quantity_planned, mo.quantity_yield,
-          pi.item_number as material_code, pi.name as material_name, pi.inventory_valuation_class,
+          pi.item_number as material_code, pi.description as material_name, pi.inventory_valuation_class,
           f.code as facility_code,
           bh.bom_number,
           (SELECT COUNT(*) FROM mfg_production_order_component WHERE production_order_id = mo.id) as component_count

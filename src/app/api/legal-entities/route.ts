@@ -80,10 +80,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Auto-create dependencies per guide – credit_control_area didnt create before ob13
+    // Auto-create dependencies per guide – credit_control_area didnt create before ob13 – FIXED: tenant_id required + composite unique
     try {
-      await db.execute(sql`INSERT INTO fin_fiscal_calendar (code, name) VALUES (${finalFiscal}, ${finalFiscal}) ON CONFLICT (code) DO NOTHING`);
-    } catch {}
+      // Fiscal calendar requires tenant_id
+      const fcExists = await db.execute(sql`SELECT id FROM fin_fiscal_calendar WHERE tenant_id=${tenantId} AND code=${finalFiscal} LIMIT 1`);
+      if (fcExists.rows.length === 0) {
+        await db.execute(sql`INSERT INTO fin_fiscal_calendar (tenant_id, code, name) VALUES (${tenantId}, ${finalFiscal}, ${finalFiscal}) ON CONFLICT (tenant_id, code) DO NOTHING`);
+      }
+    } catch (e: any) { console.warn('Fiscal auto-create failed:', e.message); }
     try {
       await db.execute(sql`INSERT INTO fin_chart (code, name, language) VALUES (${finalChart}, ${finalChart}, 'EN') ON CONFLICT (code) DO NOTHING`);
       await db.execute(sql`INSERT INTO fi_chart_of_accounts (code, name) VALUES (${finalChart}, ${finalChart}) ON CONFLICT (code) DO NOTHING`).catch(()=>{});
@@ -93,12 +97,18 @@ export async function POST(req: NextRequest) {
       await db.execute(sql`INSERT INTO fin_field_status_variant (code, name) VALUES (${finalFieldStatus}, ${finalFieldStatus}) ON CONFLICT (code) DO NOTHING`);
     } catch {}
     try {
-      await db.execute(sql`INSERT INTO fin_posting_calendar (code, name) VALUES (${finalPostingVariant}, ${finalPostingVariant}) ON CONFLICT (code) DO NOTHING`);
-    } catch {}
+      const pcExists = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE tenant_id=${tenantId} AND code=${finalPostingVariant} LIMIT 1`);
+      if (pcExists.rows.length === 0) {
+        await db.execute(sql`INSERT INTO fin_posting_calendar (tenant_id, code, name) VALUES (${tenantId}, ${finalPostingVariant}, ${finalPostingVariant}) ON CONFLICT (tenant_id, code) DO NOTHING`);
+      }
+    } catch (e: any) { console.warn('Posting calendar auto-create failed:', e.message); }
     try {
-      await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_credit_policy_area (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), code VARCHAR(20) UNIQUE, name VARCHAR(100), currency_code VARCHAR(3))`);
-      await db.execute(sql`INSERT INTO fin_credit_policy_area (code, name, currency_code) VALUES (${finalCredit}, ${finalCredit}, 'INR') ON CONFLICT (code) DO NOTHING`);
-    } catch {}
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_credit_policy_area (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code VARCHAR(20) NOT NULL, name VARCHAR(100), currency_code VARCHAR(3), UNIQUE(tenant_id, code))`);
+      const cpaExists = await db.execute(sql`SELECT id FROM fin_credit_policy_area WHERE tenant_id=${tenantId} AND code=${finalCredit} LIMIT 1`);
+      if (cpaExists.rows.length === 0) {
+        await db.execute(sql`INSERT INTO fin_credit_policy_area (tenant_id, code, name, currency_code) VALUES (${tenantId}, ${finalCredit}, ${finalCredit}, 'INR') ON CONFLICT (tenant_id, code) DO NOTHING`);
+      }
+    } catch (e: any) { console.warn('Credit policy auto-create failed:', e.message); }
     try {
       await db.execute(sql`INSERT INTO core_currency (code, name) VALUES (${finalCurrency}, ${finalCurrency}) ON CONFLICT (code) DO NOTHING`);
     } catch {}
@@ -136,7 +146,11 @@ export async function POST(req: NextRequest) {
     if (res.rows.length===0) {
       const ex = await db.execute(sql`SELECT id, code, name FROM org_legal_entity WHERE tenant_id=${tenantId} AND code=${code} LIMIT 1`);
       if (ex.rows.length) {
-        await db.execute(sql`UPDATE org_legal_entity SET name=${name}, currency_code=${finalCurrency}, chart_of_accounts_code=${finalChart}, fiscal_year_variant=${finalFiscal}, field_status_variant=${finalFieldStatus}, posting_period_variant=${finalPostingVariant}, credit_control_area=${finalCredit}, language=${finalLang}, updated_at=NOW() WHERE id=${ex.rows[0].id}`);
+        try {
+          await db.execute(sql`UPDATE org_legal_entity SET name=${name}, currency_code=${finalCurrency}, chart_of_accounts_code=${finalChart}, fiscal_year_variant=${finalFiscal}, field_status_variant=${finalFieldStatus}, posting_period_variant=${finalPostingVariant}, credit_control_area=${finalCredit}, language=${finalLang} WHERE id=${ex.rows[0].id}`);
+        } catch {
+          await db.execute(sql`UPDATE org_legal_entity SET name=${name} WHERE id=${ex.rows[0].id}`);
+        }
         return NextResponse.json({ success: true, legalEntity: ex.rows[0], message: `Legal Entity ${code} updated – CoA ${finalChart} FY ${finalFiscal} FSSV ${finalFieldStatus} PPV ${finalPostingVariant} CRED ${finalCredit} Lang ${finalLang}` });
       }
     }
@@ -155,9 +169,9 @@ export async function PUT(req: NextRequest) {
     if (!id && !code) return NextResponse.json({ error: 'id or code required' }, { status: 400 });
     let res;
     if (id) {
-      res = await db.execute(sql`UPDATE org_legal_entity SET code = COALESCE(${code ?? null}, code), name = COALESCE(${name ?? null}, name), description = COALESCE(${description ?? null}, description), is_active = COALESCE(${is_active ?? null}, is_active), updated_at = NOW() WHERE id = ${id} RETURNING id, code, name`);
+      res = await db.execute(sql`UPDATE org_legal_entity SET code = COALESCE(${code ?? null}, code), name = COALESCE(${name ?? null}, name), description = COALESCE(${description ?? null}, description), is_active = COALESCE(${is_active ?? null}, is_active) WHERE id = ${id} RETURNING id, code, name`);
     } else {
-      res = await db.execute(sql`UPDATE org_legal_entity SET name = COALESCE(${name ?? null}, name), description = COALESCE(${description ?? null}, description), is_active = COALESCE(${is_active ?? null}, is_active), updated_at = NOW() WHERE code = ${code} RETURNING id, code, name`);
+      res = await db.execute(sql`UPDATE org_legal_entity SET name = COALESCE(${name ?? null}, name), description = COALESCE(${description ?? null}, description), is_active = COALESCE(${is_active ?? null}, is_active) WHERE code = ${code} RETURNING id, code, name`);
     }
     if (res.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true, data: res.rows[0], message: `Legal Entity ${res.rows[0].code} updated` });

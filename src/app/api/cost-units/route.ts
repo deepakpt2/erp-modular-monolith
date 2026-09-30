@@ -65,7 +65,25 @@ if (!code || !name) return NextResponse.json({ error: 'code and name required' }
         const car = await db.execute(sql`SELECT id FROM org_mgmt_control_area WHERE code=${control_area_code} LIMIT 1`);
         if (car.rows.length) caId = car.rows[0].id;
       }
-      if (!leId || !caId) return NextResponse.json({ error: 'legal_entity_id and control_area_id required' }, { status: 400 });
+      // Auto-create control area if missing – per user fictional company script needs this
+      if (!caId) {
+        try {
+          const codeToUse = control_area_code || 'CA-1000';
+          // Try find existing
+          const existing = await db.execute(sql`SELECT id FROM org_mgmt_control_area WHERE code=${codeToUse} LIMIT 1`);
+          if (existing.rows.length > 0) caId = existing.rows[0].id;
+          else {
+            // Ensure tenant
+            const tenantRes = await db.execute(sql`SELECT id FROM core_tenant LIMIT 1`);
+            const tId = tenantRes.rows.length ? tenantRes.rows[0].id : tenantId;
+            const newCA = await db.execute(sql`INSERT INTO org_mgmt_control_area (tenant_id, code, name) VALUES (${tId}, ${codeToUse}, ${codeToUse}) ON CONFLICT (code) DO UPDATE SET name=${codeToUse} RETURNING id`);
+            caId = newCA.rows[0].id;
+          }
+        } catch (e: any) {
+          console.warn('Auto-create control area failed:', e.message);
+        }
+      }
+      if (!leId || !caId) return NextResponse.json({ error: 'legal_entity_id and control_area_id required – provide legal_entity_code and control_area_code, auto-creation attempted' }, { status: 400 });
       let pId = parent_id;
       if (!pId && parent_code) {
         const pr = await db.execute(sql`SELECT id FROM org_cost_unit WHERE code=${parent_code} LIMIT 1`);

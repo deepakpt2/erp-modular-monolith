@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     try {
       let query = sql`
         SELECT s.id, s.serial_number, s.status, s.created_at,
-               pi.item_number, pi.name as item_name,
+               pi.item_number, pi.description as item_name,
                f.code as facility_code, f.name as facility_name,
                il.code as inventory_location_code,
                l.lot_number
