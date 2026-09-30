@@ -4,33 +4,187 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Number Range Next – Atomic next number generation – SAP-like FBN1/SNRO – STANDARD SAP NUMBERING
- * SAP Standard: Number ranges are purely numeric intervals – NO PREFIX in number range itself
- * Example SAP: PO 4500000000, PR 1000000000, MAT 10000000 – numeric only, no PO- or MAT- prefix
- * Prefix handling: Removed for SAP compliance – document_number = current_number only
- * GET /api/number-ranges/next?object_type=PR&company_code=1000&fiscal_year=2026
+ * Number Range Next – Atomic next number generation – Industry standard numbering
+ * Industry standard: Number ranges are purely numeric intervals – no prefix
+ * Example: PO 4500000000, PR 1000000000, Material 10000000 – numeric only
+ * Assignment table: core_number_range_assignment – explicit XYZ to material, YZX to PO
+ * GET /api/number-ranges/next?object_type=ITEM&assignment_key=RAW&company_code=1000&fiscal_year=2026
  * Returns next document number and increments current_number atomically
- * Legal-safe own IP – FNRC Document Numbering (was FBN1/SNRO)
+ * Exhaustion: error_and_extend – if exhausted, error, admin must extend to_number or create new range and update assignment – no auto fallback
  */
+
+async function ensureAssignmentTable() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS core_number_range_assignment (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        object_type varchar(50) NOT NULL,
+        assignment_key varchar(100) NOT NULL,
+        assignment_type varchar(50) DEFAULT 'MATERIAL_TYPE',
+        number_range_code varchar(50) NOT NULL,
+        fiscal_year integer,
+        is_active boolean DEFAULT true,
+        description text,
+        created_at timestamp DEFAULT NOW(),
+        updated_at timestamp DEFAULT NOW(),
+        UNIQUE(object_type, assignment_key, fiscal_year)
+      )
+    `);
+  } catch {}
+}
 
 export async function GET(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+
+  await ensureAssignmentTable();
 
   try {
     const { searchParams } = new URL(req.url);
     const objectType = searchParams.get('object_type') || searchParams.get('objectType') || searchParams.get('type');
     const companyCode = searchParams.get('company_code') || searchParams.get('companyCode');
     const fiscalYear = searchParams.get('fiscal_year') || searchParams.get('fiscalYear');
+    const assignmentKey = searchParams.get('assignment_key') || searchParams.get('material_type') || searchParams.get('materialType') || searchParams.get('doc_type') || searchParams.get('company') || null;
+    const materialType = searchParams.get('material_type') || searchParams.get('materialType');
 
     if (!objectType) {
-      return NextResponse.json({ error: 'object_type required – e.g., PR, PO, GR, IV, SO, DL, BL, FI_DOC, BOM, etc.' }, { status: 400 });
+      return NextResponse.json({ error: 'object_type required – e.g., ITEM, PR, PO, GR, IV, SO, etc.' }, { status: 400 });
     }
 
     const upperType = objectType.toUpperCase();
+    const upperAssignKey = assignmentKey ? assignmentKey.toUpperCase() : null;
+    const upperMatType = materialType ? materialType.toUpperCase() : upperAssignKey;
 
-    // Try core_number_range first – SAP standard: purely numeric, no prefix
     try {
+      // Step 1: Try assignment table – explicit XYZ to material, YZX to PO – industry standard assignment
+      let assignedRangeCode: string | null = null;
+      let assignmentRow: any = null;
+
+      // Try to find assignment by object_type + assignment_key + fiscal_year
+      if (upperAssignKey || upperMatType) {
+        try {
+          // Try with fiscal_year first
+          if (fiscalYear) {
+            const assignRes = await db.execute(sql`
+              SELECT id, object_type, assignment_key, assignment_type, number_range_code, fiscal_year, description
+              FROM core_number_range_assignment
+              WHERE object_type = ${upperType}
+              AND UPPER(assignment_key) = ${upperAssignKey || upperMatType}
+              AND is_active = true
+              AND (fiscal_year = ${fiscalYear} OR fiscal_year IS NULL)
+              ORDER BY fiscal_year DESC NULLS LAST
+              LIMIT 1
+            `);
+            if (assignRes.rows.length > 0) {
+              assignmentRow = assignRes.rows[0] as any;
+              assignedRangeCode = assignmentRow.number_range_code;
+            }
+          }
+          if (!assignedRangeCode) {
+            const assignRes = await db.execute(sql`
+              SELECT id, object_type, assignment_key, assignment_type, number_range_code, fiscal_year, description
+              FROM core_number_range_assignment
+              WHERE object_type = ${upperType}
+              AND UPPER(assignment_key) = ${upperAssignKey || upperMatType}
+              AND is_active = true
+              LIMIT 1
+            `);
+            if (assignRes.rows.length > 0) {
+              assignmentRow = assignRes.rows[0] as any;
+              assignedRangeCode = assignmentRow.number_range_code;
+            }
+          }
+        } catch (assignErr: any) {
+          console.warn('Assignment lookup failed:', assignErr.message);
+        }
+      }
+
+      // Also try company_code based assignment if no material_type assignment found
+      if (!assignedRangeCode && companyCode) {
+        try {
+          const assignRes = await db.execute(sql`
+            SELECT id, object_type, assignment_key, assignment_type, number_range_code, fiscal_year, description
+            FROM core_number_range_assignment
+            WHERE object_type = ${upperType}
+            AND UPPER(assignment_key) = ${companyCode.toUpperCase()}
+            AND is_active = true
+            AND (fiscal_year = ${fiscalYear || null} OR fiscal_year IS NULL)
+            ORDER BY fiscal_year DESC NULLS LAST
+            LIMIT 1
+          `);
+          if (assignRes.rows.length > 0) {
+            assignmentRow = assignRes.rows[0] as any;
+            assignedRangeCode = assignmentRow.number_range_code;
+          }
+        } catch {}
+      }
+
+      // Step 2: If assignment found, use specific range code – explicit assignment XYZ to material
+      if (assignedRangeCode) {
+        try {
+          const res = await db.execute(sql`
+            UPDATE core_number_range 
+            SET current_number = current_number + 1, updated_at = NOW()
+            WHERE code = ${assignedRangeCode}
+            RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
+          `);
+          if (res.rows.length > 0) {
+            const row = res.rows[0] as any;
+            const current = Number(row.current_number);
+            const docNumber = String(current); // Purely numeric – no prefix
+
+            // Exhaustion check – industry standard error_and_extend
+            if (row.to_number && current > Number(row.to_number)) {
+              // Revert increment
+              await db.execute(sql`UPDATE core_number_range SET current_number = current_number - 1 WHERE code = ${assignedRangeCode}`);
+              return NextResponse.json({ 
+                error: `Number range ${row.code} (assigned to ${upperType} ${upperAssignKey || companyCode || ''}) exhausted – current ${current} > to ${row.to_number} – cannot generate – go to Number Ranges and increase to_number to e.g., ${Number(row.to_number)+10000} or create new range ${row.code}-NEW (e.g., from ${Number(row.to_number)+1} to ${Number(row.to_number)+10000}) and update assignment ${upperType} ${upperAssignKey || ''} → new code. No auto fallback – assignment must be updated explicitly.`,
+                code: row.code,
+                object_type: upperType,
+                assignment_key: upperAssignKey,
+                assignment: assignmentRow,
+                from_number: Number(row.from_number),
+                to_number: Number(row.to_number),
+                current_number: current - 1,
+                next_number: current,
+                exhausted: true,
+                suggestion: `Increase to_number in FNRC for ${row.code} or create new range and update assignment table core_number_range_assignment for ${upperType} ${upperAssignKey || ''}`
+              }, { status: 400 });
+            }
+
+            const nextAvailable = current + 1;
+            const usedCount = current - Number(row.from_number);
+            const totalRange = Number(row.to_number) - Number(row.from_number);
+            const usagePercent = totalRange > 0 ? Math.round((usedCount / totalRange) * 100) : 0;
+
+            return NextResponse.json({
+              success: true,
+              object_type: upperType,
+              assignment_key: upperAssignKey || upperMatType,
+              assignment: assignmentRow,
+              document_number: docNumber, // Purely numeric
+              current_number: current,
+              next_number: nextAvailable,
+              from_number: Number(row.from_number),
+              to_number: Number(row.to_number),
+              fiscal_year: row.fiscal_year,
+              code: row.code,
+              used_count: usedCount,
+              usage_percent: usagePercent,
+              usage_warning: usagePercent >= 90 ? `Range ${row.code} ${usagePercent}% used – nearly exhausted – consider increasing to_number or creating new range` : usagePercent >= 80 ? `Range ${row.code} ${usagePercent}% used – consider planning new interval` : null,
+              is_used: usedCount > 0,
+              is_locked: usedCount > 0,
+              source: 'core_number_range via assignment table',
+              assignment_found: true,
+              message: `Next number ${docNumber} for ${upperType} ${upperAssignKey || ''} via assigned range ${row.code} – next ${nextAvailable} – ${usagePercent}% used`
+            });
+          }
+        } catch (e: any) {
+          console.warn(`Assigned range ${assignedRangeCode} update failed:`, e.message);
+        }
+      }
+
+      // Step 3: Fallback – no assignment found – use object_type only – default behavior
       let res;
       if (companyCode && fiscalYear) {
         res = await db.execute(sql`
@@ -41,17 +195,16 @@ export async function GET(req: NextRequest) {
           AND (fiscal_year = ${fiscalYear} OR fiscal_year IS NULL)
           ORDER BY fiscal_year DESC NULLS LAST, legal_entity_id DESC NULLS LAST
           LIMIT 1
-          RETURNING id, code, object_type, prefix, current_number, from_number, to_number, fiscal_year
+          RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
         `);
       }
       
       if (!res || res.rows.length === 0) {
-        // SAP standard: filter by object_type only, ignore prefix
         res = await db.execute(sql`
           UPDATE core_number_range 
           SET current_number = current_number + 1, updated_at = NOW()
           WHERE object_type = ${upperType}::core_number_range_object_type
-          RETURNING id, code, object_type, prefix, current_number, from_number, to_number, fiscal_year
+          RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
         `);
         
         if (res.rows.length > 1) {
@@ -65,47 +218,55 @@ export async function GET(req: NextRequest) {
 
       if (res && res.rows.length > 0) {
         const row = res.rows[0] as any;
-        // SAP STANDARD: document_number is purely numeric – no prefix
-        // In SAP, number range defines interval, document type may add prefix via config, but range itself is numeric
         const current = Number(row.current_number);
-        const docNumber = String(current); // Pure numeric – SAP standard
-        
+        const docNumber = String(current);
+
         if (row.to_number && current > Number(row.to_number)) {
-          return NextResponse.json({ error: `Number range ${row.code} exhausted – ${current} > ${row.to_number} – SAP-like – create new interval` }, { status: 400 });
+          await db.execute(sql`UPDATE core_number_range SET current_number = current_number - 1 WHERE id = ${row.id}`);
+          return NextResponse.json({ 
+            error: `Number range ${row.code} exhausted – current ${current} > to ${row.to_number} – cannot generate – increase to_number or create new range ${row.code}-NEW and assign via assignment table. No auto fallback.`,
+            code: row.code,
+            from_number: Number(row.from_number),
+            to_number: Number(row.to_number),
+            current_number: current - 1,
+            exhausted: true
+          }, { status: 400 });
         }
 
         const nextAvailable = current + 1;
         const usedCount = current - Number(row.from_number);
+        const totalRange = Number(row.to_number) - Number(row.from_number);
+        const usagePercent = totalRange > 0 ? Math.round((usedCount / totalRange) * 100) : 0;
 
         return NextResponse.json({
           success: true,
           object_type: upperType,
-          document_number: docNumber, // SAP: purely numeric
+          document_number: docNumber,
           current_number: current,
-          next_number: nextAvailable, // SAP FBN1 shows next available
+          next_number: nextAvailable,
           from_number: Number(row.from_number),
           to_number: Number(row.to_number),
           fiscal_year: row.fiscal_year,
           code: row.code,
           used_count: usedCount,
+          usage_percent: usagePercent,
+          usage_warning: usagePercent >= 90 ? `Range ${row.code} ${usagePercent}% used – nearly exhausted` : usagePercent >= 80 ? `Range ${row.code} ${usagePercent}% used` : null,
           is_used: usedCount > 0,
-          is_locked: usedCount > 0, // SAP: if used, locked
+          is_locked: usedCount > 0,
           source: 'core_number_range',
-          sap_standard: true,
-          note: 'SAP standard – purely numeric – no prefix in range – prefix field ignored for compliance',
-          message: `Next number ${docNumber} for ${upperType} – SAP standard numeric – next available ${nextAvailable}`
+          assignment_found: false,
+          message: `Next number ${docNumber} for ${upperType} – next ${nextAvailable} – ${usagePercent}% used – via object_type (no explicit assignment, using default)`
         });
       }
 
-      // No range found – create default one – SAP standard: numeric only, empty prefix
-      const sapDefaults: Record<string, { from: number, to: number }> = {
-        'ITEM': { from: 10000000, to: 19999999 }, // Material – 8-digit SAP-like
+      // No range found – create default
+      const defaults: Record<string, { from: number, to: number }> = {
+        'ITEM': { from: 10000000, to: 19999999 },
         'MATERIAL': { from: 10000000, to: 19999999 },
-        'MAT': { from: 10000000, to: 19999999 },
-        'PR': { from: 1000000000, to: 1999999999 }, // 10-digit SAP-like PR
-        'PO': { from: 4500000000, to: 4599999999 }, // 10-digit SAP-like PO 45*
-        'GR': { from: 5000000000, to: 5099999999 }, // GR 50*
-        'IV': { from: 5100000000, to: 5199999999 }, // IV 51*
+        'PR': { from: 1000000000, to: 1999999999 },
+        'PO': { from: 4500000000, to: 4599999999 },
+        'GR': { from: 5000000000, to: 5099999999 },
+        'IV': { from: 5100000000, to: 5199999999 },
         'SO': { from: 1000000000, to: 1999999999 },
         'DL': { from: 8000000000, to: 8099999999 },
         'BL': { from: 9000000000, to: 9099999999 },
@@ -115,33 +276,30 @@ export async function GET(req: NextRequest) {
         'PARTNER': { from: 100000, to: 199999 },
         'LOT': { from: 1000000000, to: 1999999999 },
       };
-      const def = sapDefaults[upperType] || { from: 1000000000, to: 1999999999 };
+      const def = defaults[upperType] || { from: 1000000000, to: 1999999999 };
       
       try {
         const newRange = await db.execute(sql`
           INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number)
           VALUES (${`${upperType}-01`}, ${upperType}::core_number_range_object_type, '', ${def.from}, ${def.to}, ${def.from})
           ON CONFLICT (code) DO UPDATE SET current_number = core_number_range.current_number + 1, updated_at = NOW()
-          RETURNING id, code, object_type, prefix, current_number, from_number, to_number, fiscal_year
+          RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
         `);
         const row = newRange.rows[0] as any;
         const current = Number(row.current_number);
-        const docNumber = String(current); // SAP numeric only
-        const nextAvailable = current + 1;
+        const docNumber = String(current);
         return NextResponse.json({
           success: true,
           object_type: upperType,
           document_number: docNumber,
           current_number: current,
-          next_number: nextAvailable,
+          next_number: current + 1,
           from_number: Number(row.from_number),
           to_number: Number(row.to_number),
           code: row.code,
           used_count: current - Number(row.from_number),
           source: 'core_number_range auto-created',
-          sap_standard: true,
-          note: 'SAP standard numeric range auto-created – no prefix',
-          message: `Next number ${docNumber} for ${upperType} – range auto-created – next ${nextAvailable}`
+          message: `Next number ${docNumber} for ${upperType} – range auto-created – next ${current+1}`
         });
       } catch (createErr: any) {
         const fallbackNum = def.from + 1;
@@ -155,44 +313,12 @@ export async function GET(req: NextRequest) {
           to_number: def.to,
           code: `${upperType}-01`,
           source: 'fallback numeric',
-          sap_standard: true,
-          warning: `Range table not available, using fallback numeric: ${createErr.message}`,
-          message: `Next number ${fallbackNum} for ${upperType} – fallback numeric`
+          warning: `Range table not available: ${createErr.message}`,
+          message: `Next number ${fallbackNum} for ${upperType} – fallback`
         });
       }
     } catch (coreErr: any) {
-      console.warn('core_number_range next failed, trying ent_number_range:', coreErr.message);
-      
-      try {
-        const res = await db.execute(sql`
-          UPDATE ent_number_range 
-          SET current_number = current_number + 1
-          WHERE object_type = ${upperType}
-          RETURNING id, code, object_type, prefix, current_number, from_number, to_number
-        `);
-        
-        if (res.rows.length > 0) {
-          const row = res.rows[0] as any;
-          const current = Number(row.current_number);
-          const docNumber = String(current); // SAP numeric only
-          return NextResponse.json({
-            success: true,
-            object_type: upperType,
-            document_number: docNumber,
-            current_number: current,
-            next_number: current + 1,
-            from_number: Number(row.from_number),
-            to_number: Number(row.to_number),
-            code: row.code,
-            source: 'ent_number_range',
-            sap_standard: true,
-            message: `Next number ${docNumber} for ${upperType} – SAP numeric`
-          });
-        }
-      } catch (entErr: any) {
-        console.warn('ent_number_range also failed:', entErr.message);
-      }
-
+      console.warn('core_number_range next failed:', coreErr.message);
       const fallbackNum = Date.now() % 1000000000 + 1000000000;
       return NextResponse.json({
         success: true,
@@ -202,9 +328,8 @@ export async function GET(req: NextRequest) {
         next_number: fallbackNum + 1,
         code: `${upperType}-01`,
         source: 'fallback timestamp numeric',
-        sap_standard: true,
-        warning: `Both core and ent number range failed: ${coreErr.message}`,
-        message: `Next number ${fallbackNum} for ${upperType} – fallback numeric`
+        warning: `Both core and assignment failed: ${coreErr.message}`,
+        message: `Next number ${fallbackNum} for ${upperType} – fallback`
       });
     }
   } catch (e: any) {
@@ -215,16 +340,20 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+  await ensureAssignmentTable();
   try {
     const body = await req.json();
     const objectType = body.object_type || body.objectType || body.type;
     const companyCode = body.company_code || body.companyCode;
     const fiscalYear = body.fiscal_year || body.fiscalYear;
+    const assignmentKey = body.assignment_key || body.material_type || body.materialType || body.doc_type;
     if (!objectType) return NextResponse.json({ error: 'object_type required' }, { status: 400 });
     const url = new URL(req.url);
     url.searchParams.set('object_type', objectType);
     if (companyCode) url.searchParams.set('company_code', companyCode);
     if (fiscalYear) url.searchParams.set('fiscal_year', fiscalYear);
+    if (assignmentKey) url.searchParams.set('assignment_key', assignmentKey);
+    if (body.material_type) url.searchParams.set('material_type', body.material_type);
     const mockReq = { url: url.toString(), headers: req.headers } as any;
     return GET(mockReq);
   } catch (e: any) {

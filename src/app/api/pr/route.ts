@@ -200,20 +200,66 @@ export async function POST(req: NextRequest) {
 
     if (!facilityIdResolved) return NextResponse.json({ error: 'facility_id/facility_code or plant_id/plant_code required' }, { status: 400 });
 
-    // Generate PR number via number range
+    // Generate PR number via number range – industry standard – assignment table
     let prNumber = body.pr_number;
     if (!prNumber) {
       try {
-        const nrRes = await db.execute(sql`SELECT current_number FROM core_number_range WHERE object_type = 'PR'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
-        if (nrRes.rows.length > 0) {
-          const current = parseInt((nrRes.rows[0] as any).current_number) + 1;
-                    prNumber = `${current}`;
-          await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE object_type = 'PR'::core_nr_object_type`);
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS core_number_range_assignment (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            object_type varchar(50) NOT NULL,
+            assignment_key varchar(100) NOT NULL,
+            assignment_type varchar(50) DEFAULT 'MATERIAL_TYPE',
+            number_range_code varchar(50) NOT NULL,
+            fiscal_year integer,
+            is_active boolean DEFAULT true,
+            description text,
+            created_at timestamp DEFAULT NOW(),
+            updated_at timestamp DEFAULT NOW(),
+            UNIQUE(object_type, assignment_key, fiscal_year)
+          )
+        `);
+      } catch {}
+
+      let assignedRangeCode: string | null = null;
+      const companyForAssign = (body.company_code || body.legal_entity_code || finalLegalCode || '').toString().toUpperCase();
+      if (companyForAssign) {
+        try {
+          const assignRes = await db.execute(sql`
+            SELECT number_range_code FROM core_number_range_assignment
+            WHERE object_type = 'PR' AND UPPER(assignment_key) = ${companyForAssign} AND is_active = true
+            LIMIT 1
+          `);
+          if (assignRes.rows.length > 0) assignedRangeCode = (assignRes.rows[0] as any).number_range_code;
+        } catch {}
+      }
+
+      try {
+        let nrRes;
+        if (assignedRangeCode) {
+          nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE code = ${assignedRangeCode} LIMIT 1`);
         } else {
-          prNumber = `PR-${Date.now()}`;
+          nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE object_type = 'PR'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
         }
-      } catch {
-        prNumber = `PR-${Date.now()}`;
+
+        if (nrRes.rows.length > 0) {
+          const nr = nrRes.rows[0] as any;
+          const current = parseInt((nr as any).current_number) + 1;
+          if (nr.to_number && current > Number(nr.to_number)) {
+            throw new Error(`Number range ${nr.code}${assignedRangeCode ? ` assigned to PR ${companyForAssign}` : ''} exhausted – ${current} > ${nr.to_number} – increase to_number or create new range and update assignment. No auto fallback.`);
+          }
+          prNumber = `${current}`;
+          if (assignedRangeCode) {
+            await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE code = ${assignedRangeCode}`);
+          } else {
+            await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE object_type = 'PR'::core_nr_object_type`);
+          }
+        } else {
+          prNumber = `${Date.now()}`.slice(-10);
+        }
+      } catch (e: any) {
+        if (e.message?.includes('exhausted')) throw e;
+        prNumber = `${Date.now()}`.slice(-10);
       }
     }
 

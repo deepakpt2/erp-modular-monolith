@@ -240,20 +240,68 @@ export async function POST(req: NextRequest) {
       } catch {}
     }
 
-    // Generate PO number via number range
+    // Generate PO number via number range – industry standard – explicit assignment YZX to PO via assignment table
+    // Step 1: Try assignment table by company_code, Step 2: fallback to object_type PO
     let poNumber = body.po_number;
     if (!poNumber) {
       try {
-        const nrRes = await db.execute(sql`SELECT current_number FROM core_number_range WHERE object_type = 'PO'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
-        if (nrRes.rows.length > 0) {
-          const current = parseInt((nrRes.rows[0] as any).current_number) + 1;
-                    poNumber = `${current}`;
-          await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE object_type = 'PO'::core_nr_object_type`);
+        // Ensure assignment table exists
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS core_number_range_assignment (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            object_type varchar(50) NOT NULL,
+            assignment_key varchar(100) NOT NULL,
+            assignment_type varchar(50) DEFAULT 'MATERIAL_TYPE',
+            number_range_code varchar(50) NOT NULL,
+            fiscal_year integer,
+            is_active boolean DEFAULT true,
+            description text,
+            created_at timestamp DEFAULT NOW(),
+            updated_at timestamp DEFAULT NOW(),
+            UNIQUE(object_type, assignment_key, fiscal_year)
+          )
+        `);
+      } catch {}
+
+      let assignedRangeCode: string | null = null;
+      const companyForAssign = (body.company_code || body.legal_entity_code || finalLegalCode || '').toString().toUpperCase();
+      if (companyForAssign) {
+        try {
+          const assignRes = await db.execute(sql`
+            SELECT number_range_code FROM core_number_range_assignment
+            WHERE object_type = 'PO' AND UPPER(assignment_key) = ${companyForAssign} AND is_active = true
+            LIMIT 1
+          `);
+          if (assignRes.rows.length > 0) assignedRangeCode = (assignRes.rows[0] as any).number_range_code;
+        } catch {}
+      }
+
+      try {
+        let nrRes;
+        if (assignedRangeCode) {
+          nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE code = ${assignedRangeCode} LIMIT 1`);
         } else {
-          poNumber = `PO-${Date.now()}`;
+          nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE object_type = 'PO'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
         }
-      } catch {
-        poNumber = `PO-${Date.now()}`;
+
+        if (nrRes.rows.length > 0) {
+          const nr = nrRes.rows[0] as any;
+          const current = parseInt((nr as any).current_number) + 1;
+          if (nr.to_number && current > Number(nr.to_number)) {
+            throw new Error(`Number range ${nr.code}${assignedRangeCode ? ` assigned to PO ${companyForAssign}` : ''} exhausted – ${current} > ${nr.to_number} – cannot generate – increase to_number in Number Ranges to ${Number(nr.to_number)+10000} or create new range ${nr.code}-NEW and update assignment PO ${companyForAssign} → new code. No auto fallback.`);
+          }
+          poNumber = `${current}`; // Industry standard numeric only – no prefix
+          if (assignedRangeCode) {
+            await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE code = ${assignedRangeCode}`);
+          } else {
+            await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE object_type = 'PO'::core_nr_object_type`);
+          }
+        } else {
+          poNumber = `${Date.now()}`.slice(-10); // Fallback numeric 10-digit
+        }
+      } catch (e: any) {
+        if (e.message?.includes('exhausted')) throw e;
+        poNumber = `${Date.now()}`.slice(-10);
       }
     }
 

@@ -3,7 +3,7 @@ import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
-// Mapping old SAP-like values to new legal-safe values
+// Mapping old -like values to new legal-safe values
 const mapTypeOldToNew = (oldType: string): string => {
   const m: Record<string, string> = {
     'ROH': 'RAW', 'FERT': 'FINISHED', 'HALB': 'SEMI', 'HAWA': 'TRADING',
@@ -187,37 +187,76 @@ export async function POST(req: NextRequest) {
       barcode,
     } = body;
 
-    // SAP STANDARD – ALWAYS AUTO – BLOCK MANUAL – per user confirmation block_manual
+    // Industry standard – ALWAYS AUTO – BLOCK MANUAL – per user confirmation block_manual
     // If user types random 10 digits like 1234567890, it is BLOCKED – always auto via number range
-    // This is SAP internal numbering – like SAP MM01 – no manual entry allowed – field removed from UI
+    // Industry standard internal numbering – no manual entry allowed – field removed from UI
     if (item_number || material_number) {
-      console.warn(`Manual material number blocked – user tried ${item_number || material_number} – SAP internal numbering – always auto – per user block_manual – random 10 digits blocked`);
-      // Optionally return error, but for backward compat we will auto-generate and warn
-      // If you want strict block, uncomment below:
-      // return NextResponse.json({ error: `Manual material number ${item_number || material_number} not allowed – SAP internal numbering – always auto via number range MAT-01/ITEM – random 10 digits like 1234567890 blocked – per configuration block_manual – system will generate 10000001 etc. Create range via FNRC.` }, { status: 400 });
+      console.warn(`Manual material number blocked – user tried ${item_number || material_number} – industry standard internal numbering – always auto – per user block_manual – random 10 digits blocked`);
     }
 
+    const finalBaseUnit = base_unit || base_uom || 'KG';
+    const finalGroupCode = category_code || group_code;
+    const finalType = mapTypeOldToNew(type || 'RAW');
+
     let finalItemNumber: string;
-    // Always auto-number from number range – SAP STANDARD numeric – NO PREFIX – FBN1 style – no manual allowed
-    // SAP: Material number is purely numeric e.g., 10000001, not MAT-10000001 – always auto
+    // Always auto-number – industry standard – explicit assignment XYZ to material via assignment table
+    // Step 1: Try assignment table – material type RAW → MAT-RAW-01, FINISHED → MAT-FG-01 etc.
+    // Step 2: Fallback to object_type ITEM
     try {
-      const nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE object_type = 'ITEM'::core_number_range_object_type OR code IN ('MAT-01','ITEM-01','ITEM','MATERIAL') ORDER BY CASE code WHEN 'MAT-01' THEN 0 WHEN 'ITEM-01' THEN 1 WHEN 'ITEM' THEN 2 ELSE 3 END LIMIT 1`);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS core_number_range_assignment (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          object_type varchar(50) NOT NULL,
+          assignment_key varchar(100) NOT NULL,
+          assignment_type varchar(50) DEFAULT 'MATERIAL_TYPE',
+          number_range_code varchar(50) NOT NULL,
+          fiscal_year integer,
+          is_active boolean DEFAULT true,
+          description text,
+          created_at timestamp DEFAULT NOW(),
+          updated_at timestamp DEFAULT NOW(),
+          UNIQUE(object_type, assignment_key, fiscal_year)
+        )
+      `);
+    } catch {}
+
+    let assignedRangeCode: string | null = null;
+    try {
+      const assignRes = await db.execute(sql`
+        SELECT number_range_code FROM core_number_range_assignment
+        WHERE object_type = 'ITEM' AND UPPER(assignment_key) = ${finalType.toUpperCase()} AND is_active = true
+        LIMIT 1
+      `);
+      if (assignRes.rows.length > 0) assignedRangeCode = (assignRes.rows[0] as any).number_range_code;
+    } catch {}
+
+    try {
+      let nrRes;
+      if (assignedRangeCode) {
+        // Explicit assignment – XYZ to material – e.g., RAW → MAT-RAW-01 (10000-19999)
+        nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE code = ${assignedRangeCode} LIMIT 1`);
+      } else {
+        // Fallback – object_type ITEM – default range
+        nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE object_type = 'ITEM'::core_number_range_object_type OR code IN ('MAT-01','ITEM-01','ITEM','MATERIAL') ORDER BY CASE code WHEN 'MAT-01' THEN 0 WHEN 'ITEM-01' THEN 1 WHEN 'ITEM' THEN 2 ELSE 3 END LIMIT 1`);
+      }
+
       if (nrRes.rows.length > 0) {
         const nr = nrRes.rows[0] as any;
         const nextNum = Number(nr.current_number || nr.from_number || 10000000) + 1;
-        if (nr.to_number && nextNum > Number(nr.to_number)) throw new Error(`Number range ${nr.code} exhausted – ${nextNum} > ${nr.to_number} – SAP – next available would be ${nextNum} > to ${nr.to_number} – create new range MAT-02`);
+        if (nr.to_number && nextNum > Number(nr.to_number)) {
+          // Industry standard – error_and_extend – no auto fallback – must increase to_number or create new range and update assignment
+          throw new Error(`Number range ${nr.code}${assignedRangeCode ? ` assigned to ${finalType}` : ''} exhausted – ${nextNum} > ${nr.to_number} – cannot generate – go to Number Ranges and increase to_number to ${Number(nr.to_number)+10000} or create new range ${nr.code}-NEW from ${Number(nr.to_number)+1} to ${Number(nr.to_number)+10000} and update assignment ${finalType} → new code. No auto fallback.`);
+        }
         await db.execute(sql`UPDATE core_number_range SET current_number = ${nextNum}, prefix = '', updated_at = NOW() WHERE code = ${nr.code}`);
-        finalItemNumber = String(nextNum); // SAP numeric only – no prefix – e.g., 10000001
+        finalItemNumber = String(nextNum); // Industry standard numeric only – no prefix
       } else {
         finalItemNumber = String(10000000 + Math.floor(Date.now() % 9000000));
       }
     } catch (e: any) {
+      if (e.message?.includes('exhausted')) throw e;
       console.warn('Auto-number failed, fallback numeric:', e.message);
       finalItemNumber = String(10000000 + Math.floor(Date.now() % 9000000));
     }
-    const finalBaseUnit = base_unit || base_uom || 'KG';
-    const finalGroupCode = category_code || group_code;
-    const finalType = mapTypeOldToNew(type || 'RAW');
     const finalLotControl = mapExpiryOldToNew(lot_control || expiry_control || 'BLOCKED');
     const finalPricingMethod = mapPriceControlOldToNew(pricing_method || price_control || 'MOVING_AVG');
     const finalPlanningType = mapMrpOldToNew(planning_type || mrp_type || 'MRP');
