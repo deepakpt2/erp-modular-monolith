@@ -4,6 +4,19 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
+import { RoleGuard } from '@/shared/ui/role-guard';
+import { useAutoPromoteJob } from '@/shared/ui/job-popup';
+
+interface PRLine {
+  item_id?: string;
+  item_number: string;
+  quantity: string;
+  uom_code: string;
+  estimated_price: string;
+  inventory_location_code: string;
+  delivery_date: string;
+  item_text: string;
+}
 
 export default function Page(){
   const params = useParams();
@@ -11,157 +24,382 @@ export default function Page(){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [msg,setMsg]=useState('');
-  const [form,setForm]=useState({material: "", quantity: "", plant: "", company_code: ""});
+  const [facilityCode, setFacilityCode] = useState('1000');
+  const [legalEntityCode, setLegalEntityCode] = useState(companyCode);
+  const [requiredDate, setRequiredDate] = useState(new Date().toISOString().split('T')[0]);
+  const [headerText, setHeaderText] = useState('');
+  const [currencyCode, setCurrencyCode] = useState('INR');
+  const [lines, setLines] = useState<PRLine[]>([
+    { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }
+  ]);
+  const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
 
   async function load(){
     setLoading(true);
     try{
-      const res = await fetch('/api/purchase-requisitions').then(r=>r.json());
+      const res = await fetch(`/api/pr?limit=100&companyCode=${companyCode}`).then(r=>r.json());
       setData(res);
     }catch(e){console.error(e);}
     setLoading(false);
   }
-  useEffect(()=>{load();},[]);
+  useEffect(()=>{load();},[companyCode]);
 
-  async function create(){
-    if(!(form as any).material){ setMsg('PRODUCT required'); return; }
-    const payload = {...form, company_code: companyCode, companyCode};
-    const res = await fetch('/api/purchase-requisitions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
-    if(res.success || res.id || !res.error){ setMsg('✅ '+((form as any).code||(form as any).item_number||(form as any).account_number||(form as any).employee_number||(form as any).pr_number||(form as any).po_number||(form as any).bom_number||(form as any).order_number||'CREATED')+' CREATED'); load(); setForm({material: "", quantity: "", plant: "", company_code: ""}); }
-    else setMsg('❌ '+(res.error||'Failed'));
+  function addLine(){
+    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+  }
+  function updateLine(idx:number, field:keyof PRLine, value:string){
+    const newLines = [...lines];
+    (newLines[idx] as any)[field] = value;
+    setLines(newLines);
+  }
+  function removeLine(idx:number){
+    if(lines.length===1) return;
+    setLines(lines.filter((_,i)=>i!==idx));
   }
 
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING ME51N...</div>;
-  const items = data?.data || data?.items || data?.materials || data?.partners || data?.users || data?.roles || data?.employees || data?.payrolls || data?.purchaseRequisitions || data?.purchaseOrders || data?.goodsReceipts || data?.invoices || data?.stos || data?.boms || data?.kittings || data?.mrp || data?.routings || data?.workCenters || data?.salesOrders || data?.billings || data?.deliveries || data?.physicalInventories || [];
+  async function create(){
+    if(!facilityCode){
+      setMsg('❌ Facility required – EFCC OX10 – e.g., 1000 – plant – org wiring – T0 BLOCKING');
+      return;
+    }
+    const filteredLines = lines.filter(l=>l.item_number && Number(l.quantity)>0);
+    if(filteredLines.length===0){
+      setMsg('❌ At least one line with material and quantity >0 required – EMTC MM01 – e.g., 10000001 MAT-SPICE-001 qty 10 PC – T0');
+      return;
+    }
+
+    const payload = {
+      facility_code: facilityCode,
+      plant_code: facilityCode,
+      legal_entity_code: legalEntityCode || companyCode,
+      company_code: legalEntityCode || companyCode,
+      required_date: requiredDate,
+      header_text: headerText || `PR for ${facilityCode} – PPRC ME51N – ${companyCode}`,
+      currency_code: currencyCode,
+      currency: currencyCode,
+      lines: filteredLines.map((l,i)=>({
+        item_number: l.item_number,
+        quantity: Number(l.quantity),
+        uom_code: l.uom_code || 'PC',
+        uom: l.uom_code || 'PC',
+        estimated_price: Number(l.estimated_price) || 0,
+        inventory_location_code: l.inventory_location_code,
+        sloc_id: l.inventory_location_code,
+        delivery_date: l.delivery_date,
+        item_text: l.item_text,
+        line_number: (i+1)*10,
+      })),
+    };
+
+    try{
+      const result = await executeWithAutoPromote({
+        directFn: async ()=>{
+          const res = await fetch('/api/pr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const j = await res.json();
+          if (!res.ok) throw new Error(j.error || `Failed ${res.status} – ${j.help || ''}`);
+          return j;
+        },
+        backgroundJobType: 'PR_CREATE',
+        backgroundPayload: payload,
+        companyCode,
+        lockObject: 'PR',
+        lockObjectId: facilityCode,
+        onDirectSuccess: (j:any)=>{
+          setMsg(`✅ PR ${j.prNumber || j.pr?.pr_number || 'created'} created – ${filteredLines.length} lines – Facility ${facilityCode} – Legal Entity ${legalEntityCode} – PPRC ME51N – posting period M OB52 checked – number range PR 1000000000 numeric only – T0 BLOCKING – workflow will auto-start for approval ME54N if amount > threshold`);
+          load();
+          // Auto-start workflow for approval ME54N
+          try{
+            fetch('/api/workflow', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                documentType: 'PR',
+                documentId: j.pr?.id || j.prNumber,
+                documentNumber: j.prNumber || j.pr?.pr_number,
+                companyCodeId: null,
+                requesterId: null,
+                amount: filteredLines.reduce((sum,l)=>sum + Number(l.quantity)*Number(l.estimated_price),0),
+                currency: currencyCode,
+              }),
+            }).then(r=>r.json()).then(wf=>{
+              if(wf.instanceId) setMsg(prev=>prev + ` – Workflow started ${wf.instanceId.slice(0,8)} – ${wf.stepsCreated} tasks – SBWP inbox – ME54N release`);
+            }).catch(()=>{});
+          }catch{}
+          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+          setHeaderText('');
+        },
+        onBackgroundCreated: (newJobId:string)=>{
+          setMsg(`⏳ PR for ${facilityCode} moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – header Jobs icon shows – no timeout – SM37 – auto-promote 10s ALL`);
+        },
+      });
+    }catch(err:any){
+      setMsg(`❌ ${err.message} – check posting period OB52 open for account type M, facility EFCC exists, material EMTC exists, inventory location EILC exists – T0 BLOCKING – NO DANGLING`);
+    }
+  }
+
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING ME51N – PPRC – fetching PRs via /api/pr – SAP standard – posting period M OB52 – number range PR 1000000000 – facility EFCC – material EMTC – org wiring...</div>;
+  const items = data?.purchaseRequisitions || data?.data || [];
 
   const classicContent = (
     <div className="space-y-3 font-mono text-[11px]">
-      {msg && <div className="bg-black text-white p-2">{msg}</div>}
+      {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPRC PURCHASE REQUESTS – ME51N ALIAS – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS</div>
-        <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">PRODUCT * (DB: EMTC)</div><input value={(form as any).material} onChange={e=>setForm({...form,material:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
-          <div><div className="text-[9px] text-zinc-500">QUANTITY</div><input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="w-full border-2 border-black px-1 py-1 " placeholder="" /></div>
-          <div><div className="text-[9px] text-zinc-500">FACILITY * (DB: EFCC)</div><input value={(form as any).plant} onChange={e=>setForm({...form,plant:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
-          <div><div className="text-[9px] text-zinc-500">COMPANY_CODE * (DB: OX02)</div><input value={(form as any).company_code} onChange={e=>setForm({...form,company_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPRC PURCHASE REQUISITIONS – ME51N – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – ORG WIRED</div>
+        <div className="bg-amber-50 border border-amber-300 p-2 mb-2 text-[10px]">
+          <div className="font-bold">⚠️ SAP STANDARD – PPRC ME51N – T0 BLOCKING – ORG WIRED</div>
+          <div>• Facility EFCC OX10 required – e.g., 1000 – plant – org_facility – T0</div>
+          <div>• Legal Entity ELEC OX02 required – e.g., {companyCode} – company code – org_legal_entity – T0</div>
+          <div>• Material EMTC MM01 required – e.g., 10000001 MAT-SPICE-001 – prod_item – T0 – valuation_class determines BSX</div>
+          <div>• Posting Period OB52 M must be open – else error – FPPE – F_BKPF_BUP – T0</div>
+          <div>• Number Range PR 1000000000 numeric only – assignment per company – error_and_extend – FNRC FBN1 – always_auto</div>
+          <div>• Workflow auto-start ME54N – PR created → wf_instance PENDING_APPROVAL + wf_task PENDING for manager/owner → SBWP inbox → Approve → PR status APPROVED → can convert to PO PPOC ME21N</div>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE</button>
+        <div className="grid grid-cols-3 gap-2">
+          <div><div className="text-[9px] text-zinc-500">FACILITY * – EFCC OX10 – plant – 1000</div><input value={facilityCode} onChange={e=>setFacilityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="1000" /></div>
+          <div><div className="text-[9px] text-zinc-500">LEGAL_ENTITY * – ELEC OX02 – company code – {companyCode}</div><input value={legalEntityCode} onChange={e=>setLegalEntityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder={companyCode} /></div>
+          <div><div className="text-[9px] text-zinc-500">REQUIRED_DATE * – OB52</div><input type="date" value={requiredDate} onChange={e=>setRequiredDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
+          <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC OY03 – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INR" /></div>
+          <div className="col-span-2"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder={`PR for ${facilityCode} – PPRC ME51N – ${companyCode}`} /></div>
+        </div>
+        <div className="mt-3 border-2 border-black p-2 bg-blue-50">
+          <div className="font-bold">LINES – {lines.length} – Material + Qty + UoM + Price + SLOC + Delivery Date – EMTC + EUOC + EILC + FCOC + FTXC – ORG WIRED</div>
+          {lines.map((line, idx)=>(
+            <div key={idx} className="flex gap-1 items-center border bg-white p-1 mt-1">
+              <span className="font-bold">{(idx+1)*10}</span>
+              <input value={line.item_number} onChange={e=>updateLine(idx,'item_number',e.target.value.toUpperCase())} className="w-[100px] border px-1 uppercase" placeholder="10000001" />
+              <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-[50px] border px-1" placeholder="Qty" />
+              <input value={line.uom_code} onChange={e=>updateLine(idx,'uom_code',e.target.value.toUpperCase())} className="w-[40px] border px-1 uppercase" placeholder="PC" />
+              <input value={line.estimated_price} onChange={e=>updateLine(idx,'estimated_price',e.target.value)} className="w-[60px] border px-1" placeholder="Price" />
+              <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[60px] border px-1 uppercase" placeholder="SL01" />
+              <input type="date" value={line.delivery_date} onChange={e=>updateLine(idx,'delivery_date',e.target.value)} className="w-[110px] border px-1" />
+              <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border px-1" placeholder="Item text" />
+              <button onClick={()=>removeLine(idx)} className="border bg-red-50 px-1">X</button>
+            </div>
+          ))}
+          <button onClick={addLine} className="mt-1 border-2 border-black px-2 py-0.5 bg-white">+ ADD LINE</button>
+        </div>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE PR – ME51N – PPRC – T0 BLOCKING – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – WORKFLOW ME54N – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}</button>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white border-2 border-black p-2">
-            <div className="font-bold">{(it.code||it.item_number||it.account_number||it.employee_number||it.pr_number||it.po_number||it.bom_number||it.order_number||it.name||JSON.stringify(it).slice(0,80))}</div>
-            <div className="text-[10px] text-zinc-600">{Object.entries(it).slice(0,4).map(([k,v])=>k.toUpperCase()+'='+String(v)).join(' ')}</div>
+            <div className="font-bold">{it.pr_number || it.code} – {it.status} – Facility {it.facility_code || it.plant_code} – {it.company_code}</div>
+            <div className="text-[10px] text-zinc-600">{it.material_number || it.item_number} – Qty {it.quantity} {it.uom} – Price {it.estimated_price} – Total {it.total_amount} – {it.currency}</div>
           </div>
         ))}
       </div>
-          <div className="mt-4 border-2 border-black p-2 bg-[#ffffcc]">
-        <div className="font-bold text-[10px]">RELATED MASTERS – AUTO – LOW IMPORTANCE</div>
-        <div className="flex flex-wrap gap-1 mt-1">
-          <Link href={`/${companyCode}/foundation/materials`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">EMTC Product – required →</Link>
-          <Link href={`/${companyCode}/foundation/facilities`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">EFCC Facility – required →</Link>
-          <Link href={`/${companyCode}/foundation/legal-entities`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">ELEC Legal Entity →</Link>
-          <Link href={`/${companyCode}/mm/po`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">PPOC PO uses PR →</Link>
-          <Link href={`/${companyCode}/fico/number-ranges`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FNRC Number Ranges →</Link>
-        </div>
-      </div>
-
-</div>
+    </div>
   );
 
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
-      {msg && <div className={`rounded-2xl p-4 text-sm ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
+      <JobPopupComponent />
+      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
+      
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+        <div className="flex gap-2">
+          <span className="text-xl">⚠️</span>
           <div>
-            <div className="font-semibold">Purchase Requests – PPRC (alias ME51N) – General ERP</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} records • COMPANY_CODE {companyCode} • API: POST /api/purchase-requisitions</div>
+            <div className="font-bold text-sm text-amber-800">SAP Standard – PPRC ME51N – T0 BLOCKING – Org Wired – Workflow ME54N – Fixed from dummy API</div>
+            <div className="text-xs text-amber-700 mt-1 space-y-1">
+              <div>• <b>Facility EFCC OX10</b> required – e.g., 1000 – plant – org_facility – T0 – was missing in old page that only asked PRODUCT, QUANTITY, FACILITY, COMPANY_CODE – now fixed with full org wiring</div>
+              <div>• <b>Legal Entity ELEC OX02</b> required – e.g., {companyCode} – company code – org_legal_entity – chart CA-IN-01 fiscal K4 posting PPV-1000 credit CRED-1000 – T0</div>
+              <div>• <b>Material EMTC MM01</b> required – e.g., 10000001 MAT-SPICE-001 – prod_item – valuation_class RAW→1400000001 BSX – T0 – determines BSX in GR</div>
+              <div>• <b>Posting Period OB52 M</b> must be open for account type M – else error – FPPE – F_BKPF_BUP – T0 – posting period enforcement via enforcePostingPeriod</div>
+              <div>• <b>Number Range PR 1000000000</b> numeric only – assignment per company – error_and_extend – FNRC FBN1 – always_auto – user cannot type random – PO 4500000000 PR 1000000000 GR 5000000000 always auto</div>
+              <div>• <b>Workflow ME54N SBWP</b> – PR created → wf_instance PENDING_APPROVAL + wf_task PENDING for manager/owner → SBWP inbox → Approve → PR status APPROVED → can convert to PO PPOC ME21N – auto-start if amount &gt; threshold</div>
+            </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <DbAutocomplete
-            label="PRODUCT *"
-            value={(form as any).material}
-            onChange={v=>setForm({...form,material:v})}
-            apiUrl="/api/materials"
-            codeField="item_number"
-            nameField="description"
-            placeholder=""
-            required
-            createUrl={`/${companyCode}/foundation/materials`}
-            createCode="EMTC"
-            companyCode={companyCode}
-          />
+      </div>
+
+      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📋</div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY *</label>
-            <input value={(form as any).quantity} onChange={e=>setForm({...form,quantity:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black uppercase" placeholder="" />
+            <div className="font-semibold">Purchase Requisitions – PPRC (alias ME51N) – SAP Standard – Org Wired – Workflow ME54N</div>
+            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} PRs • COMPANY_CODE {companyCode} • API: POST /api/pr – facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + posting period M OB52 – T0 BLOCKING – number range PR 1000000000 – workflow SBWP</div>
           </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <DbAutocomplete
-            label="FACILITY *"
-            value={(form as any).plant}
-            onChange={v=>setForm({...form,plant:v})}
+            label="FACILITY * – EFCC OX10 – plant – 1000"
+            value={facilityCode}
+            onChange={v=>setFacilityCode(v)}
             apiUrl="/api/facilities"
             codeField="code"
             nameField="name"
-            placeholder=""
+            placeholder="1000"
             required
-            createUrl={`/${companyCode}/foundation/enterprise-structure?focus=EFCC`}
+            createUrl={`/${companyCode}/foundation/facilities`}
             createCode="EFCC"
             companyCode={companyCode}
           />
           <DbAutocomplete
-            label="COMPANY_CODE *"
-            value={(form as any).company_code}
-            onChange={v=>setForm({...form,company_code:v})}
-            apiUrl="/api/company-codes"
+            label="LEGAL_ENTITY * – ELEC OX02 – company code"
+            value={legalEntityCode}
+            onChange={v=>setLegalEntityCode(v)}
+            apiUrl="/api/legal-entities"
             codeField="code"
             nameField="name"
-            placeholder=""
+            placeholder={companyCode}
             required
-            createUrl={`/${companyCode}/fico/company-master`}
-            createCode="OX02"
+            createUrl={`/${companyCode}/foundation/legal-entities`}
+            createCode="ELEC"
             companyCode={companyCode}
           />
+          <div>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">REQUIRED_DATE * – OB52 – F_BKPF_BUP</label>
+            <input type="date" value={requiredDate} onChange={e=>setRequiredDate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+            <p className="text-[10px] text-zinc-400 mt-1">Posting period must be open for account type M – else error – FPPE</p>
+          </div>
+          <DbAutocomplete
+            label="CURRENCY – FCYC OY03 – INR"
+            value={currencyCode}
+            onChange={v=>setCurrencyCode(v)}
+            apiUrl="/api/currencies"
+            codeField="code"
+            nameField="name"
+            placeholder="INR"
+            createUrl={`/${companyCode}/fico/currencies`}
+            createCode="FCYC"
+            companyCode={companyCode}
+          />
+          <div className="md:col-span-4">
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">HEADER_TEXT – BKTXT</label>
+            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder={`PR for ${facilityCode} – PPRC ME51N – ${companyCode}`} />
+          </div>
         </div>
-        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create PPRC</button>
+
+        <div className="mt-6 border rounded-2xl p-4 bg-blue-50/50 border-blue-200">
+          <div className="flex justify-between items-center mb-3">
+            <div className="font-bold text-sm">Lines – {lines.length} – Material + Qty + UoM + Price + SLOC + Delivery Date – EMTC + EUOC + EILC + FCOC + FTXC – Org Wired – T0</div>
+            <button onClick={addLine} className="px-3 py-1 rounded-full border bg-white text-xs hover:bg-zinc-50">+ Add Line</button>
+          </div>
+          <div className="space-y-2 max-h-[400px] overflow-auto">
+            {lines.map((line, idx)=>(
+              <div key={idx} className="border rounded-xl p-3 bg-white">
+                <div className="flex gap-3 items-start">
+                  <div className="font-mono font-bold text-sm mt-2">{(idx+1)*10}</div>
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-7 gap-3">
+                    <DbAutocomplete
+                      label="MATERIAL * – EMTC"
+                      value={line.item_number}
+                      onChange={v=>updateLine(idx,'item_number',v)}
+                      apiUrl="/api/materials"
+                      codeField="item_number"
+                      nameField="description"
+                      placeholder="10000001"
+                      required
+                      createUrl={`/${companyCode}/foundation/materials`}
+                      createCode="EMTC"
+                      companyCode={companyCode}
+                    />
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Qty *</label>
+                      <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="10" />
+                    </div>
+                    <DbAutocomplete
+                      label="UoM – EUOC"
+                      value={line.uom_code}
+                      onChange={v=>updateLine(idx,'uom_code',v)}
+                      apiUrl="/api/uom"
+                      codeField="code"
+                      nameField="name"
+                      placeholder="PC"
+                      createUrl={`/${companyCode}/foundation/uom`}
+                      createCode="EUOC"
+                      companyCode={companyCode}
+                    />
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Est Price</label>
+                      <input value={line.estimated_price} onChange={e=>updateLine(idx,'estimated_price',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="100" />
+                    </div>
+                    <DbAutocomplete
+                      label="SLOC – EILC"
+                      value={line.inventory_location_code}
+                      onChange={v=>updateLine(idx,'inventory_location_code',v)}
+                      apiUrl="/api/inventory-locations"
+                      codeField="code"
+                      nameField="name"
+                      placeholder="SL01"
+                      createUrl={`/${companyCode}/foundation/inventory-locations`}
+                      createCode="EILC"
+                      companyCode={companyCode}
+                    />
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Delivery Date</label>
+                      <input type="date" value={line.delivery_date} onChange={e=>updateLine(idx,'delivery_date',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Item Text</label>
+                      <div className="flex gap-1">
+                        <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border rounded-lg px-2 py-1.5 text-sm" placeholder="Item text" />
+                        <button onClick={()=>removeLine(idx)} className="px-2 py-1 rounded-lg border bg-red-50 text-xs">X</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">
+          Create PR – ME51N – PPRC – T0 BLOCKING – Posting Period M OB52 – Number Range PR 1000000000 – Workflow ME54N SBWP – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}
+        </button>
+        <p className="text-[10px] text-zinc-400 mt-2 text-center">PR requires facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC – posting period M OB52 must be open – number range PR 1000000000 numeric only assignment per company error_and_extend – workflow auto-start ME54N SBWP – flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired</p>
       </div>
+
       <div className="grid md:grid-cols-2 gap-4">
         {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
             <div className="flex justify-between items-start">
-              <div className="font-semibold text-sm">{(it.code||it.item_number||it.account_number||it.employee_number||it.pr_number||it.po_number||it.bom_number||it.order_number||it.name||'RECORD '+(idx+1))}</div>
+              <div className="font-semibold text-sm">{it.pr_number || it.code} – {it.status} – Facility {it.facility_code || it.plant_code} – {it.company_code}</div>
               <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">ME51N</span>
             </div>
-            <div className="mt-2 text-xs text-zinc-500 line-clamp-2">{Object.entries(it).slice(0,5).map(([k,v])=>`${k.toUpperCase()}: ${String(v)}`).join(' • ')}</div>
+            <div className="mt-2 text-xs text-zinc-500">{it.material_number || it.item_number} – Qty {it.quantity} {it.uom} – Price {it.estimated_price} – Total {it.total_amount} – {it.currency} – Requester {it.requester_first_name}</div>
+            <div className="mt-2 flex gap-2">
+              <Link href={`/${companyCode}/mm/po`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">PPOC PO from PR →</Link>
+              <Link href={`/${companyCode}/workflow/inbox`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">SBWP Release PR ME54N →</Link>
+            </div>
           </div>
         ))}
         {(!items || (Array.isArray(items) && items.length===0)) && (
           <div className="col-span-2 bg-white rounded-2xl border border-dashed border-zinc-300 p-8 text-center">
-            <div className="text-sm text-zinc-500">No records yet – create first via ME51N</div>
-            <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Function is destination</div>
+            <div className="text-sm text-zinc-500">No PR yet – create first via ME51N – PPRC – requires facility + legal entity + material – org wired – posting period M OB52 – number range PR 1000000000 – workflow ME54N</div>
+            <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Flow: PPRC ME51N PR → PPOC ME21N PO → IGRC MIGO 101 GR → PIVC MIRO IV → FPYP F110 Payment</div>
           </div>
         )}
       </div>
-          <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
-        <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related Masters – auto from dependencies – low importance</h4>
-        <div className="flex flex-wrap gap-2">
-          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Product – required</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/foundation/facilities`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EFCC</span><span>Facility – required</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/foundation/legal-entities`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">ELEC</span><span>Legal Entity</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO uses PR</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/number-ranges`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FNRC</span><span>Number Ranges</span><span className="text-zinc-400">→</span></Link>
-        </div>
-        <p className="text-[10px] text-zinc-400 mt-2">These links help create necessary data needed in this form – data strictly used in practice – no dummy</p>
-      </div>
 
-</div>
+      <div className="bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
+        <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related Masters – auto from dependencies – low importance – Org Wired</h4>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Material – MM01 – required – T0 – valuation_class BSX</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/facilities`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EFCC</span><span>Facility – OX10 – plant – required – T0</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/inventory-locations`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EILC</span><span>Inventory Location – OX09 – SLOC – SL01</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/uom`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EUOC</span><span>UoM – CUNI – KG/PC/BOX – base UoM</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/currencies`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FCYC</span><span>Currency – OY03 – INR/USD/EUR/KWD – decimal_places</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO uses PR – ME21N – PPOC – ELIKZ</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/workflow/inbox`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SBWP</span><span>Workflow Inbox – ME54N Release PR – approval</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/number-ranges`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FNRC</span><span>Number Ranges – FBN1 – PR 1000000000 – assignment per company</span><span className="text-zinc-400">→</span></Link>
+        </div>
+        <p className="text-[10px] text-zinc-400 mt-2">Flow: PR (ME51N PPRC) → PO (ME21N PPOC) → GR (MIGO 101 IGRC) → IV (MIRO PIVC) → Payment (F110 FPYP) – industry standard MM – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + procurement division EPDC + buyer team EBTC + cost center FCOC + GL FGLC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC + payment terms FAPT</p>
+      </div>
+    </div>
   );
 
   return (
-    <ModernModuleShell title="Purchase Requests" subtitle={`${Array.isArray(items)?items.length:0} records • ${companyCode} • ME51N`} code="PPRC" module="MM" classicChildren={classicContent}>
-      {modernContent}
-    </ModernModuleShell>
+    <RoleGuard requiredPermission="PR_CREATE" requiredRoles={['PURCHASER','ADMIN','OWNER','MANAGER']}>
+      <ModernModuleShell title="Purchase Requisitions" subtitle={`${Array.isArray(items)?items.length:0} PRs • ${companyCode} • ME51N – Org Wired – Posting Period M – Number Range PR 1000000000 – Workflow ME54N`} code="PPRC" module="MM" classicChildren={classicContent}>
+        {modernContent}
+      </ModernModuleShell>
+    </RoleGuard>
   );
 }

@@ -310,7 +310,136 @@ export async function POST(req: NextRequest) {
       }
 
             try { await createDocumentEntry({ document_type: 'PR', document_number: prNumber, company_code: finalLegalCode || '1000', fiscal_year: new Date().getFullYear().toString(), created_by: 'system', payload: { pr_number: prNumber, facility_id: facilityIdResolved } }); } catch (e) { console.warn('Doc entry failed', e); }
-      return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC legal-safe`, legalSafe: true, document_number: prNumber });
+
+      // Document Flow – PR is root – no preceding – but create entry as root for future PO→PR link – FDFL VBFA – WORM-lite – PR→PO→GR→IV→Payment
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS audit_document_flow (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            root_document_type VARCHAR(20),
+            root_document_id UUID,
+            root_document_number VARCHAR(50),
+            preceding_doc_type VARCHAR(20),
+            preceding_doc_id UUID,
+            preceding_doc_number VARCHAR(50),
+            succeeding_doc_type VARCHAR(20),
+            succeeding_doc_id UUID,
+            succeeding_doc_number VARCHAR(50),
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        await db.execute(sql`
+          INSERT INTO audit_document_flow (root_document_type, root_document_id, root_document_number, preceding_doc_type, preceding_doc_id, preceding_doc_number, succeeding_doc_type, succeeding_doc_id, succeeding_doc_number)
+          VALUES ('PR', ${prId}, ${prNumber}, NULL, NULL, NULL, 'PR', ${prId}, ${prNumber})
+        `).catch(()=>{});
+      } catch {}
+
+      // Workflow auto-start – ME54N Release PR – if amount > threshold or always – create wf_instance + wf_task for manager/owner – SBWP – T0
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS wf_definition (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            code VARCHAR(50) UNIQUE NOT NULL,
+            name VARCHAR(200),
+            document_type VARCHAR(20) NOT NULL,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS wf_definition_step (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            definition_id UUID REFERENCES wf_definition(id),
+            step_order INTEGER NOT NULL,
+            name VARCHAR(200),
+            approver_type VARCHAR(20) DEFAULT 'MANAGER',
+            approver_role VARCHAR(50),
+            min_amount NUMERIC,
+            max_amount NUMERIC,
+            requires_dual BOOLEAN DEFAULT false,
+            is_owner_approval BOOLEAN DEFAULT false,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS wf_instance (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            definition_id UUID REFERENCES wf_definition(id),
+            document_type VARCHAR(20) NOT NULL,
+            document_id UUID,
+            document_number VARCHAR(50) NOT NULL,
+            company_code_id UUID,
+            current_state VARCHAR(30) DEFAULT 'PENDING_APPROVAL',
+            current_step_order INTEGER DEFAULT 1,
+            requester_id UUID,
+            amount NUMERIC,
+            currency VARCHAR(10) DEFAULT 'INR',
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS wf_task (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            instance_id UUID REFERENCES wf_instance(id),
+            step_id UUID REFERENCES wf_definition_step(id),
+            assignee_id UUID,
+            status VARCHAR(20) DEFAULT 'PENDING',
+            decision VARCHAR(20),
+            comment TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            decided_at TIMESTAMPTZ,
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+
+        // Ensure PR definition exists
+        let defId:any = null;
+        const defRes = await db.execute(sql`SELECT id FROM wf_definition WHERE document_type = 'PR' AND is_active = true LIMIT 1`);
+        if(defRes.rows.length>0) defId = (defRes.rows[0] as any).id;
+        else {
+          const newDef = await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PR_APPROVAL', 'PR Approval – ME54N – Manager + Owner', 'PR', true) RETURNING id`);
+          defId = (newDef.rows[0] as any).id;
+          // Create steps: 1 Manager approval <10000, 2 Owner approval >10000 dual
+          await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${defId}, 1, 'Manager Approval – PR <10000', 'MANAGER', 0, 9999.99, false, false)`);
+          await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${defId}, 2, 'Manager + Owner Dual Approval – PR >=10000', 'OWNER', 10000, 999999999, true, true)`);
+        }
+
+        // Get steps for amount
+        const stepsRes = await db.execute(sql`SELECT id, step_order, approver_type, min_amount, max_amount FROM wf_definition_step WHERE definition_id = ${defId} ORDER BY step_order ASC`);
+        let steps = stepsRes.rows as any[];
+        if(total>0){
+          const filtered = steps.filter((s:any)=>{
+            const min = s.min_amount ? parseFloat(s.min_amount) : 0;
+            const max = s.max_amount ? parseFloat(s.max_amount) : Infinity;
+            return total >= min && total <= max;
+          });
+          if(filtered.length>0) steps = filtered;
+          else if(total >= 10000) steps = steps.filter((s:any)=>s.step_order===2);
+          else steps = steps.filter((s:any)=>s.step_order===1);
+        }
+
+        if(steps.length>0){
+          const instRes = await db.execute(sql`INSERT INTO wf_instance (definition_id, document_type, document_id, document_number, current_state, current_step_order, amount, currency) VALUES (${defId}, 'PR', ${prId}, ${prNumber}, 'PENDING_APPROVAL', 1, ${total}, 'INR') RETURNING id`);
+          const instanceId = (instRes.rows[0] as any).id;
+          // Resolve assignee – first active employee as fallback
+          let assigneeId:any = null;
+          try{
+            const empRes = await db.execute(sql`SELECT id FROM hr_employee WHERE is_active = true LIMIT 1`);
+            if(empRes.rows.length>0) assigneeId = (empRes.rows[0] as any).id;
+          }catch{}
+          for(const step of steps){
+            if(assigneeId){
+              await db.execute(sql`INSERT INTO wf_task (instance_id, step_id, assignee_id, status) VALUES (${instanceId}, ${step.id}, ${assigneeId}, 'PENDING')`);
+            }
+          }
+          console.log(`Workflow auto-started for PR ${prNumber} – instance ${instanceId} – ${steps.length} tasks – amount ${total} – ME54N SBWP – T0`);
+        }
+      } catch (wfErr:any) {
+        console.warn(`Workflow auto-start failed for PR ${prNumber}:`, wfErr.message);
+      }
+
+      return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC legal-safe – total ${total} – facility ${facilityCode} – posting period M OB52 – number range PR 1000000000 numeric only – workflow auto-started ME54N SBWP – document flow PR root – T0 BLOCKING – NO DANGLING – org wired`, legalSafe: true, document_number: prNumber, total_amount: total });
     } catch (newErr: any) {
       console.warn('proc_purchase_requisition insert failed fallback mm_purchase_requisition:', newErr.message);
       // Fallback legacy

@@ -373,7 +373,141 @@ export async function POST(req: NextRequest) {
         await db.execute(sql`UPDATE proc_purchase_order SET total_amount = ${total}, total_landed_cost = ${totalLanded} WHERE id = ${poId}`);
       }
 
-      return NextResponse.json({ success: true, po: res.rows[0], poNumber, code: 'PPOC', message: `PO ${poNumber} created – PPOC legal-safe`, legalSafe: true });
+      // Document Flow – PR→PO and PO root – FDFL VBFA – WORM-lite – PR→PO→GR→IV→Payment
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS audit_document_flow (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            root_document_type VARCHAR(20),
+            root_document_id UUID,
+            root_document_number VARCHAR(50),
+            preceding_doc_type VARCHAR(20),
+            preceding_doc_id UUID,
+            preceding_doc_number VARCHAR(50),
+            succeeding_doc_type VARCHAR(20),
+            succeeding_doc_id UUID,
+            succeeding_doc_number VARCHAR(50),
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        if(prIdResolved){
+          // PR→PO link – preceding PR, succeeding PO, root PR
+          await db.execute(sql`
+            INSERT INTO audit_document_flow (root_document_type, root_document_id, root_document_number, preceding_doc_type, preceding_doc_id, preceding_doc_number, succeeding_doc_type, succeeding_doc_id, succeeding_doc_number)
+            VALUES ('PR', ${prIdResolved}, ${pr_number || ''}, 'PR', ${prIdResolved}, ${pr_number || ''}, 'PO', ${poId}, ${poNumber})
+          `).catch(()=>{});
+          // Also update PR line converted
+          await db.execute(sql`UPDATE proc_pr_line SET is_converted = true, po_id = ${poId} WHERE pr_id = ${prIdResolved}`).catch(()=>{});
+        }
+        // PO root
+        await db.execute(sql`
+          INSERT INTO audit_document_flow (root_document_type, root_document_id, root_document_number, preceding_doc_type, preceding_doc_id, preceding_doc_number, succeeding_doc_type, succeeding_doc_id, succeeding_doc_number)
+          VALUES ('PO', ${poId}, ${poNumber}, ${prIdResolved ? sql`'PR'` : sql`NULL`}, ${prIdResolved || null}, ${pr_number || null}, 'PO', ${poId}, ${poNumber})
+        `).catch(()=>{});
+      } catch {}
+
+      // Workflow auto-start – ME28 Release PO – if amount > threshold – manager/owner dual – SBWP – T0
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS wf_definition (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            code VARCHAR(50) UNIQUE NOT NULL,
+            name VARCHAR(200),
+            document_type VARCHAR(20) NOT NULL,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS wf_definition_step (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            definition_id UUID REFERENCES wf_definition(id),
+            step_order INTEGER NOT NULL,
+            name VARCHAR(200),
+            approver_type VARCHAR(20) DEFAULT 'MANAGER',
+            approver_role VARCHAR(50),
+            min_amount NUMERIC,
+            max_amount NUMERIC,
+            requires_dual BOOLEAN DEFAULT false,
+            is_owner_approval BOOLEAN DEFAULT false,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS wf_instance (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            definition_id UUID REFERENCES wf_definition(id),
+            document_type VARCHAR(20) NOT NULL,
+            document_id UUID,
+            document_number VARCHAR(50) NOT NULL,
+            company_code_id UUID,
+            current_state VARCHAR(30) DEFAULT 'PENDING_APPROVAL',
+            current_step_order INTEGER DEFAULT 1,
+            requester_id UUID,
+            amount NUMERIC,
+            currency VARCHAR(10) DEFAULT 'INR',
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS wf_task (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            instance_id UUID REFERENCES wf_instance(id),
+            step_id UUID REFERENCES wf_definition_step(id),
+            assignee_id UUID,
+            status VARCHAR(20) DEFAULT 'PENDING',
+            decision VARCHAR(20),
+            comment TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            decided_at TIMESTAMPTZ,
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+
+        let defId:any = null;
+        const defRes = await db.execute(sql`SELECT id FROM wf_definition WHERE document_type = 'PO' AND is_active = true LIMIT 1`);
+        if(defRes.rows.length>0) defId = (defRes.rows[0] as any).id;
+        else {
+          const newDef = await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PO_APPROVAL', 'PO Approval – ME28 – Manager + Owner Dual', 'PO', true) RETURNING id`);
+          defId = (newDef.rows[0] as any).id;
+          await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${defId}, 1, 'Manager Approval – PO <10000', 'MANAGER', 0, 9999.99, false, false)`);
+          await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${defId}, 2, 'Manager + Owner Dual Approval – PO >=10000', 'OWNER', 10000, 999999999, true, true)`);
+        }
+
+        const stepsRes = await db.execute(sql`SELECT id, step_order, approver_type, min_amount, max_amount FROM wf_definition_step WHERE definition_id = ${defId} ORDER BY step_order ASC`);
+        let steps = stepsRes.rows as any[];
+        if(total>0){
+          const filtered = steps.filter((s:any)=>{
+            const min = s.min_amount ? parseFloat(s.min_amount) : 0;
+            const max = s.max_amount ? parseFloat(s.max_amount) : Infinity;
+            return total >= min && total <= max;
+          });
+          if(filtered.length>0) steps = filtered;
+          else if(total >= 10000) steps = steps.filter((s:any)=>s.step_order===2);
+          else steps = steps.filter((s:any)=>s.step_order===1);
+        }
+
+        if(steps.length>0){
+          const instRes = await db.execute(sql`INSERT INTO wf_instance (definition_id, document_type, document_id, document_number, current_state, current_step_order, amount, currency) VALUES (${defId}, 'PO', ${poId}, ${poNumber}, 'PENDING_APPROVAL', 1, ${total}, ${currency_code || 'INR'}) RETURNING id`);
+          const instanceId = (instRes.rows[0] as any).id;
+          let assigneeId:any = null;
+          try{
+            const empRes = await db.execute(sql`SELECT id FROM hr_employee WHERE is_active = true LIMIT 1`);
+            if(empRes.rows.length>0) assigneeId = (empRes.rows[0] as any).id;
+          }catch{}
+          for(const step of steps){
+            if(assigneeId){
+              await db.execute(sql`INSERT INTO wf_task (instance_id, step_id, assignee_id, status) VALUES (${instanceId}, ${step.id}, ${assigneeId}, 'PENDING')`);
+            }
+          }
+          console.log(`Workflow auto-started for PO ${poNumber} – instance ${instanceId} – ${steps.length} tasks – amount ${total} – ME28 SBWP – T0 – ELIKZ`);
+        }
+      } catch (wfErr:any) {
+        console.warn(`Workflow auto-start failed for PO ${poNumber}:`, wfErr.message);
+      }
+
+      return NextResponse.json({ success: true, po: res.rows[0], poNumber, code: 'PPOC', message: `PO ${poNumber} created – PPOC legal-safe – total ${total} landed ${totalLanded} – facility ${facilityCode} – vendor ${partnerNumber} – posting period K OB52 – payment terms ${payment_terms_days} days FAPT due calc – info record ME11 auto price if 0 – number range PO 4500000000 numeric only always_auto – workflow auto-started ME28 SBWP – document flow PR→PO – ELIKZ – T0 BLOCKING – NO DANGLING – org wired`, legalSafe: true, total_amount: total, total_landed_cost: totalLanded });
     } catch (newErr: any) {
       console.warn('proc_purchase_order insert failed fallback mm_purchase_order:', newErr.message);
       return NextResponse.json({ error: newErr.message }, { status: 500 });

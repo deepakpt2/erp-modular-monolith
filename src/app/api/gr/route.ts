@@ -438,7 +438,50 @@ export async function POST(req: NextRequest) {
         await db.execute(sql`UPDATE proc_goods_receipt SET total_amount = ${total}, total_landed_cost = ${totalLanded} WHERE id = ${grId}`);
       }
 
-      return NextResponse.json({ success: true, gr: res.rows[0], grNumber, code: 'PGRC', message: `GR ${grNumber} created – PGRC legal-safe – T0 BLOCKING – Movement 101 OMJJ + OBYC BSX/WRX/GBB/PRD – valuation_class ${(body as any)._valuation_class} – MAP recalc – universal ledger BSX/WRX posted – stock ledger 101`, legalSafe: true, movement_type: (body as any)._movement_type, auto_accounts: { bsx: (body as any)._auto_gl_bsx, wrx: (body as any)._auto_gl_wrx, gbb: (body as any)._auto_gl_gbb, prd: (body as any)._auto_gl_prd } });
+      // Document Flow – PO→GR – FDFL VBFA – WORM-lite – PR→PO→GR→IV→Payment – PO→GR link
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS audit_document_flow (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            root_document_type VARCHAR(20),
+            root_document_id UUID,
+            root_document_number VARCHAR(50),
+            preceding_doc_type VARCHAR(20),
+            preceding_doc_id UUID,
+            preceding_doc_number VARCHAR(50),
+            succeeding_doc_type VARCHAR(20),
+            succeeding_doc_id UUID,
+            succeeding_doc_number VARCHAR(50),
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          )
+        `);
+        // Find root PR if PO has pr_id
+        let rootType = 'PO';
+        let rootId = poIdResolved;
+        let rootNumber = po_number || '';
+        try {
+          const poRootRes = await db.execute(sql`SELECT pr_id FROM proc_purchase_order WHERE id = ${poIdResolved} LIMIT 1`);
+          if(poRootRes.rows.length>0 && (poRootRes.rows[0] as any).pr_id){
+            const prId = (poRootRes.rows[0] as any).pr_id;
+            const prRes = await db.execute(sql`SELECT pr_number FROM proc_purchase_requisition WHERE id = ${prId} LIMIT 1`);
+            if(prRes.rows.length>0){
+              rootType = 'PR';
+              rootId = prId;
+              rootNumber = (prRes.rows[0] as any).pr_number;
+            }
+          }
+        } catch {}
+
+        await db.execute(sql`
+          INSERT INTO audit_document_flow (root_document_type, root_document_id, root_document_number, preceding_doc_type, preceding_doc_id, preceding_doc_number, succeeding_doc_type, succeeding_doc_id, succeeding_doc_number)
+          VALUES (${rootType}, ${rootId}, ${rootNumber}, 'PO', ${poIdResolved}, ${po_number || ''}, 'GR', ${grId}, ${grNumber})
+        `).catch(()=>{});
+        console.log(`Document flow PO→GR created – PO ${po_number} → GR ${grNumber} – root ${rootType} ${rootNumber} – FDFL VBFA – T0`);
+      } catch (flowErr:any) {
+        console.warn(`Document flow PO→GR failed for GR ${grNumber}:`, flowErr.message);
+      }
+
+      return NextResponse.json({ success: true, gr: res.rows[0], grNumber, code: 'PGRC', message: `GR ${grNumber} created – PGRC legal-safe – T0 BLOCKING – Movement 101 OMJJ + OBYC BSX/WRX/GBB/PRD – valuation_class ${(body as any)._valuation_class} – MAP recalc – universal ledger BSX/WRX posted – stock ledger 101 – document flow PO→GR – FDFL VBFA – stock update MMBE FSTL – GR accounting BSX/WRX – price diff PRD if STANDARD – org wired`, legalSafe: true, movement_type: (body as any)._movement_type, auto_accounts: { bsx: (body as any)._auto_gl_bsx, wrx: (body as any)._auto_gl_wrx, gbb: (body as any)._auto_gl_gbb, prd: (body as any)._auto_gl_prd }, total_amount: total, total_landed_cost: totalLanded });
     } catch (newErr: any) {
       console.warn('proc_goods_receipt insert failed:', newErr.message);
       return NextResponse.json({ error: newErr.message }, { status: 500 });
