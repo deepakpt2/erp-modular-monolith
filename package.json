@@ -15,6 +15,8 @@
     "db:seed:ks01": "tsx src/shared/kernel/db/seedKS01.ts",
     "db:seed:prod": "tsx src/shared/kernel/db/initProduction.ts",
     "db:seed:fmcg": "tsx src/shared/kernel/db/seedFmcg.ts",
+    "db:seed:fictional": "tsx scripts/setupFictionalCompany.ts",
+    "db:seed:fictional:wipe": "FULL_WIPE=true tsx scripts/setupFictionalCompany.ts",
     "db:create-admin": "tsx src/shared/kernel/db/createAdmin.ts",
     "db:init-prod": "tsx src/shared/kernel/db/initProduction.ts",
     "db:auto-migrate": "tsx src/shared/kernel/db/autoMigrate.ts"
