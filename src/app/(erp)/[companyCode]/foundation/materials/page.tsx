@@ -93,6 +93,7 @@ export default function MaterialMasterPage() {
   const [showChangeSuggestions, setShowChangeSuggestions] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [nextNumberPreview, setNextNumberPreview] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     try {
@@ -254,19 +255,20 @@ export default function MaterialMasterPage() {
       return;
     }
     setMessage(null);
+    setIsSubmitting(true);
     try {
       let payload: any = { ...form, company_code: companyCode };
       payload.is_lot_managed = payload.is_lot_managed === 'true' || payload.is_lot_managed === true;
       payload.is_kit = payload.is_kit === 'true' || payload.is_kit === true;
       payload.is_phantom_kit = payload.is_phantom_kit === 'true' || payload.is_phantom_kit === true;
       payload.is_quality_active = payload.is_quality_active === 'true' || payload.is_quality_active === true;
-      // SAP STANDARD – ALWAYS AUTO – BLOCK MANUAL – per user block_manual
+      // Industry standard – ALWAYS AUTO – BLOCK MANUAL – per user block_manual
       // If user types random 10 digits like 1234567890, it is BLOCKED – backend will ignore and auto-generate
       // For create mode, always delete item_number to force backend auto via number range MAT-01/ITEM – purely numeric
       if (mode === 'create') {
         delete payload.item_number;
         delete payload.material_number;
-        // Backend will auto-generate via core_number_range ITEM – e.g., 10000001 – SAP numeric – no prefix
+        // Backend will auto-generate via core_number_range ITEM – e.g., 10000001 – numeric – no prefix
         // Frontend nextNumberPreview shows what will be generated – but actual number from backend atomic UPDATE
       }
       payload.material_number = payload.item_number; // For change mode, item_number exists
@@ -288,11 +290,14 @@ export default function MaterialMasterPage() {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || 'Failed');
-      setMessage(`✅ Product ${payload.item_number} ${mode === 'change' ? 'updated' : 'created'} – EMTC – Facilities: ${(payload.facility_codes || []).join(',') || 'default'}`);
+      const createdNumber = j.material?.item_number || j.item?.item_number || j.material?.material_number || payload.item_number || 'auto';
+      setMessage(`✅ Product ${createdNumber} ${mode === 'change' ? 'updated' : 'created'} – EMTC – Facilities: ${(payload.facility_codes || []).join(',') || 'default'} – next ${Number(createdNumber)+1 || 'auto'} – result shown – button disabled during submit to prevent double click`);
       fetchItems();
       if (mode === 'create') setForm(initialForm);
     } catch (err: any) {
-      setMessage(`❌ ${err.message}`);
+      setMessage(`❌ ${err.message} – if server hung, check header Jobs icon or System Jobs page – progress shows if working or not`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -543,10 +548,18 @@ export default function MaterialMasterPage() {
             </div>
             <p className="text-[11px] text-zinc-400">{TABS.find(t=>t.key===activeTab)?.desc} {missingPerTab[activeTab].length > 0 && <span className="text-red-500">• Missing: {missingPerTab[activeTab].join(', ')}</span>}</p>
             {renderTabContent()}
-            <div className="flex gap-2 pt-4 border-t items-center">
-              <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Create Product</button>
-              <button type="button" onClick={() => setForm(initialForm)} className={modern ? "px-4 py-2.5 rounded-full border text-sm" : "px-3 py-1.5 border text-xs"}>Clear</button>
-              {!isFormValid && <span className="text-[11px] text-red-500">Fill required fields to activate – red dots show tabs with missing</span>}
+            <div className="flex gap-2 pt-4 border-t items-center flex-wrap">
+              <button type="submit" disabled={!isFormValid || isSubmitting} className={modern ? `px-6 py-2.5 rounded-full text-sm font-medium transition flex items-center gap-2 ${isFormValid && !isSubmitting ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs flex items-center gap-2 ${isFormValid && !isSubmitting ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
+                {isSubmitting ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Creating... Please wait – generating number via assignment – atomic update
+                  </>
+                ) : 'Create Product'}
+              </button>
+              <button type="button" onClick={() => setForm(initialForm)} disabled={isSubmitting} className={modern ? "px-4 py-2.5 rounded-full border text-sm disabled:opacity-50" : "px-3 py-1.5 border text-xs disabled:opacity-50"}>Clear</button>
+              {!isFormValid && !isSubmitting && <span className="text-[11px] text-red-500">Fill required fields to activate – red dots show tabs with missing</span>}
+              {isSubmitting && <span className="text-[11px] text-blue-600 animate-pulse">⏳ Server working – generating number – please wait – prevents double click – check header Jobs icon if long – no timeout – background capable</span>}
             </div>
           </form>
         )}

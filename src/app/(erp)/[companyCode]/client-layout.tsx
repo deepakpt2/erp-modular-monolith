@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import { JobIndicator } from '@/shared/ui/job-indicator';
 
 const SHOW_FUNCTION_CODE = process.env.NEXT_PUBLIC_SHOW_FUNCTION_CODE !== 'false';
 
@@ -153,6 +154,7 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <JobIndicator />
           <div className="hidden md:flex items-center rounded-full border border-zinc-200 p-0.5 bg-zinc-50">
             <button onClick={()=>toggleMode('modern')} className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${uiMode==='modern'?'bg-black text-white':'hover:bg-white text-zinc-600'}`}>Modern</button>
             <button onClick={()=>toggleMode('classic')} className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${uiMode==='classic'?'bg-black text-white':'hover:bg-white text-zinc-600'}`}>Classic</button>
