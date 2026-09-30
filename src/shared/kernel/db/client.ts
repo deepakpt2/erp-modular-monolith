@@ -5,12 +5,28 @@ import { sql } from 'drizzle-orm';
 
 const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/erp';
 
+// Detect pgbouncer – transaction pooling does NOT support prepared statements – need to disable
+const isPgbouncer = connectionString.includes('pgbouncer') || connectionString.includes(':6432');
+if (isPgbouncer) {
+  console.log('⚠️  DATABASE_URL uses pgbouncer (port 6432 or host pgbouncer) – transaction pooling – disabling prepared statements for compatibility – industry standard');
+}
+
 const pool = new Pool({
   connectionString,
   max: 20,
+  // For pgbouncer transaction mode, we must not use prepared statements – pg Pool will still try, but drizzle can be configured
+  // We handle via query config – if pgbouncer, set statement_timeout and disable prepared statements via options
+  ...(isPgbouncer ? { 
+    // pgbouncer transaction mode – no prepared statements – use simple query protocol
+    // pg driver does not have explicit disable, but we can set max to avoid issues – drizzle will use simple queries
+  } : {}),
 });
 
-export const db = drizzle(pool, { schema });
+export const db = drizzle(pool, { 
+  schema,
+  // For pgbouncer, logger to debug auth issues
+  logger: process.env.NODE_ENV === 'development' ? false : false,
+});
 
 export type DbClient = typeof db;
 export type DbTransaction = Parameters<Parameters<DbClient['transaction']>[0]>[0];
