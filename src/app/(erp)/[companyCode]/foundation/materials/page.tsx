@@ -7,15 +7,16 @@ import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 type TabKey = 'basic' | 'purchasing' | 'mrp' | 'storage' | 'accounting' | 'costing';
 
 const TABS: { key: TabKey; label: string; desc: string }[] = [
-  { key: 'basic', label: 'Basic Data', desc: 'Client level – item_number, description, type, UoM, category, kit, barcode, HSN, lot/expiry (single source)' },
-  { key: 'purchasing', label: 'Purchasing', desc: 'Plant level – buyer group, procurement division, QM active – no duplicate procurement type' },
-  { key: 'mrp', label: 'MRP', desc: 'MRP type, controller, lot sizing, safety stock, reorder point, procurement + special procurement – single source' },
-  { key: 'storage', label: 'Storage', desc: 'Facility extension MMSC-like – multi-plant create – no duplicate shelf_life/lot_managed (those live in Basic)' },
-  { key: 'accounting', label: 'Accounting', desc: 'Valuation class BSX/WRX, price control, MAP/Standard price, price unit – T0 BLOCKING – single source' },
-  { key: 'costing', label: 'Costing', desc: 'Costing lot size, overhead group – CK40N – no duplicate price fields' },
+  { key: 'basic', label: 'Basic Data', desc: 'Client level – code, name, type, UoM, category, barcode, HSN – single source' },
+  { key: 'purchasing', label: 'Purchasing', desc: 'Plant level – buyer group, procurement division, QM active' },
+  { key: 'mrp', label: 'MRP', desc: 'MRP type, controller, lot sizing, safety stock, reorder point, procurement – single source' },
+  { key: 'storage', label: 'Storage', desc: 'Facility extension MMSC + Kit & Lot/Batch & Expiry – all storage-related – single source' },
+  { key: 'accounting', label: 'Accounting', desc: 'Valuation class BSX/WRX, price control, MAP/Standard, price unit – T0 BLOCKING' },
+  { key: 'costing', label: 'Costing', desc: 'Costing lot size, overhead group – CK40N' },
 ];
 
 const initialForm = {
+  // Basic – client level – single source
   item_number: '',
   description: '',
   description_long: '',
@@ -24,16 +25,12 @@ const initialForm = {
   category_code: '',
   barcode: '',
   hsn_code: '',
-  is_kit: 'false',
-  is_phantom_kit: 'false',
-  landed_cost_scope: '',
-  is_lot_managed: 'true',
-  lot_control: '',
-  shelf_life_days: '',
+  // Purchasing – plant level
   purchasing_group: '',
   buyer_group: '',
   procurement_division: '',
   is_quality_active: 'false',
+  // MRP
   planning_type: '',
   planning_controller: '',
   lot_sizing: '',
@@ -44,15 +41,34 @@ const initialForm = {
   reorder_point: '',
   procurement_method: '',
   special_procurement_method: '',
+  // Storage – includes Kit & Lot/Batch & Expiry moved from Basic (per user)
   facility_codes: [] as string[],
   plant_codes: [] as string[],
+  is_kit: 'false',
+  is_phantom_kit: 'false',
+  landed_cost_scope: '',
+  is_lot_managed: 'true',
+  lot_control: '',
+  shelf_life_days: '',
+  // Accounting – T0 BLOCKING
   inventory_valuation_class: '',
   pricing_method: '',
   moving_avg_price: '',
   standard_price: '',
   price_unit: '',
+  // Costing
   costing_lot_size: '',
   overhead_group: '',
+};
+
+// Required fields per tab for red-dot validation
+const REQUIRED_PER_TAB: Record<TabKey, string[]> = {
+  basic: ['item_number', 'description', 'type', 'base_unit'],
+  purchasing: [],
+  mrp: [],
+  storage: [], // facility optional (defaults to FAC-1000), lot fields have defaults
+  accounting: ['inventory_valuation_class', 'pricing_method', 'moving_avg_price', 'standard_price'],
+  costing: [],
 };
 
 export default function MaterialMasterPage() {
@@ -123,6 +139,9 @@ export default function MaterialMasterPage() {
           moving_avg_price: found.moving_avg_price || '',
           standard_price: found.standard_price || '',
           facility_codes: found.facility_codes || [],
+          is_lot_managed: String(found.is_lot_managed ?? found.is_batch_managed ?? 'true'),
+          is_kit: String(found.is_kit ?? 'false'),
+          is_phantom_kit: String(found.is_phantom_kit ?? 'false'),
         });
       }
     }
@@ -180,8 +199,35 @@ export default function MaterialMasterPage() {
     });
   };
 
+  // Validation – required per tab + overall
+  const missingPerTab = useMemo(() => {
+    const result: Record<TabKey, string[]> = { basic: [], purchasing: [], mrp: [], storage: [], accounting: [], costing: [] };
+    (Object.keys(REQUIRED_PER_TAB) as TabKey[]).forEach(tab => {
+      const req = REQUIRED_PER_TAB[tab];
+      const missing = req.filter(k => {
+        const v = form[k];
+        return !v || (typeof v === 'string' && v.trim() === '') || (Array.isArray(v) && v.length === 0);
+      });
+      result[tab] = missing;
+    });
+    return result;
+  }, [form]);
+
+  const isFormValid = useMemo(() => {
+    // All required across all tabs must be filled
+    return Object.values(missingPerTab).every(arr => arr.length === 0);
+  }, [missingPerTab]);
+
+  const totalMissing = useMemo(() => Object.values(missingPerTab).reduce((acc, arr) => acc + arr.length, 0), [missingPerTab]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormValid) {
+      const firstTabWithMissing = (Object.keys(missingPerTab) as TabKey[]).find(k => missingPerTab[k].length > 0);
+      if (firstTabWithMissing) setActiveTab(firstTabWithMissing);
+      setMessage(`❌ Fill required fields: ${Object.entries(missingPerTab).filter(([_, arr]) => arr.length).map(([tab, arr]) => `${tab.toUpperCase()}: ${arr.join(', ')}`).join(' | ')}`);
+      return;
+    }
     setMessage(null);
     try {
       let payload: any = { ...form, company_code: companyCode };
@@ -228,13 +274,13 @@ export default function MaterialMasterPage() {
   const renderInput = (key: string, label: string, opts?: { required?: boolean; type?: string; options?: string[]; desc?: string }) => {
     const value = form[key] ?? '';
     const isEmpty = !value || (Array.isArray(value) && value.length === 0);
-    const borderColor = opts?.required && isEmpty ? 'border-yellow-300' : value ? 'border-green-400' : 'border-zinc-200';
+    const borderColor = opts?.required && isEmpty ? 'border-red-400 ring-1 ring-red-100' : value ? 'border-green-400' : 'border-zinc-200';
     const selectPlaceholder = `Select ${label}`;
     if (opts?.options) {
       return (
         <div key={key} className="space-y-1">
           <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-          <select value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 bg-white` : `w-full border px-2 py-1.5 text-xs`}>
+          <select value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 bg-white` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`}>
             <option value="">{selectPlaceholder}</option>
             {opts.options.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -246,7 +292,7 @@ export default function MaterialMasterPage() {
       return (
         <div key={key} className="space-y-1">
           <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-          <textarea value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs`} />
+          <textarea value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
           {opts?.desc && <p className="text-[10px] text-zinc-400">{opts.desc}</p>}
         </div>
       );
@@ -254,7 +300,7 @@ export default function MaterialMasterPage() {
     return (
       <div key={key} className="space-y-1">
         <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-        <input value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs`} />
+        <input value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
         {opts?.desc && <p className="text-[10px] text-zinc-400">{opts.desc}</p>}
       </div>
     );
@@ -291,22 +337,6 @@ export default function MaterialMasterPage() {
                 </div>
               )}
             </div>
-            <div className={modern ? "bg-zinc-50 rounded-xl p-4 border" : "border p-3"}>
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse('basic_kit_lot')}>
-                <h3 className={modern ? "font-semibold text-sm" : "font-bold text-xs"}>Kit & Lot / Batch & Expiry – Single Source (removed from Storage duplicate)</h3>
-                <span className="text-xs">{collapsed['basic_kit_lot'] ? '▶' : '▼'}</span>
-              </div>
-              {!collapsed['basic_kit_lot'] && (
-                <div className={modern ? "grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" : "grid grid-cols-3 gap-2 mt-2"}>
-                  {renderInput('is_kit', 'IS_KIT', { options: ['true','false'], desc: 'Is kit – single source' })}
-                  {renderInput('is_phantom_kit', 'IS_PHANTOM_KIT', { options: ['true','false'], desc: 'Phantom kit – single source' })}
-                  {renderInput('landed_cost_scope', 'LANDED_COST_SCOPE', { options: ['NONE','FREIGHT','CUSTOMS','FREIGHT_CUSTOMS','ALL'], desc: 'Landed cost relevance – single source' })}
-                  {renderInput('is_lot_managed', 'IS_LOT_MANAGED', { options: ['true','false'], desc: 'Was is_batch_managed – SINGLE SOURCE only in Basic, removed from Storage duplicate' })}
-                  {renderInput('lot_control', 'LOT_CONTROL', { options: ['BLOCKED','WARN','RESTRICTED'], desc: 'Expiry control – BLOCKED blocks GI – single source' })}
-                  {renderInput('shelf_life_days', 'SHELF_LIFE_DAYS', { desc: 'e.g., 30 – SINGLE SOURCE only in Basic, removed from Storage duplicate' })}
-                </div>
-              )}
-            </div>
           </div>
         );
       case 'purchasing':
@@ -317,7 +347,7 @@ export default function MaterialMasterPage() {
               <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement moved to MRP tab only (SAP MRP2) to remove duplicate.</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                 {renderInput('purchasing_group', 'PURCHASING_GROUP', { desc: 'K01/001 – single source, buyer_group alias removed duplicate – use this only' })}
-                {renderInput('buyer_group', 'BUYER_GROUP (alias)', { desc: 'BUY-001 – same as purchasing_group – kept for backward compat but single source is purchasing_group' })}
+                {renderInput('buyer_group', 'BUYER_GROUP (alias)', { desc: 'BUY-001 – same as purchasing_group – kept for backward compat' })}
                 {renderInput('procurement_division', 'PROCUREMENT_DIVISION', { desc: 'PD-1000 / KPO1 – single source' })}
                 {renderInput('is_quality_active', 'IS_QUALITY_ACTIVE', { options: ['true','false'], desc: 'QM active for GR inspection – single source' })}
               </div>
@@ -331,16 +361,16 @@ export default function MaterialMasterPage() {
               <h3 className={modern ? "font-semibold text-sm text-amber-900" : "font-bold text-xs"}>MRP View – Single Source for procurement</h3>
               <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement now ONLY here (removed from Purchasing duplicate).</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" : "grid grid-cols-3 gap-2 mt-2"}>
-                {renderInput('planning_type', 'MRP_TYPE', { options: ['MRP','MANUAL_REORDER','NO_PLANNING','REORDER_POINT','FORECAST'], desc: 'Single source, removed mrp_type duplicate' })}
-                {renderInput('planning_controller', 'MRP_CONTROLLER', { desc: 'Single source, removed mrp_controller duplicate' })}
-                {renderInput('lot_sizing', 'LOT_SIZING', { options: ['LOT_FOR_LOT','FIXED','MAX_LEVEL','REPLENISH'], desc: 'Single source, removed lot_size duplicate' })}
+                {renderInput('planning_type', 'MRP_TYPE', { options: ['MRP','MANUAL_REORDER','NO_PLANNING','REORDER_POINT','FORECAST'], desc: 'Single source' })}
+                {renderInput('planning_controller', 'MRP_CONTROLLER', { desc: 'Single source' })}
+                {renderInput('lot_sizing', 'LOT_SIZING', { options: ['LOT_FOR_LOT','FIXED','MAX_LEVEL','REPLENISH'], desc: 'Single source' })}
                 {renderInput('min_lot_size', 'MIN_LOT_SIZE', { desc: 'Single source' })}
                 {renderInput('max_lot_size', 'MAX_LOT_SIZE', { desc: 'Single source' })}
                 {renderInput('fixed_lot_size', 'FIXED_LOT_SIZE', { desc: 'Single source' })}
                 {renderInput('safety_stock', 'SAFETY_STOCK', { desc: 'Single source' })}
                 {renderInput('reorder_point', 'REORDER_POINT', { desc: 'Single source' })}
-                {renderInput('procurement_method', 'PROCUREMENT_TYPE *', { options: ['BUY','MAKE','BOTH','TRANSFER'], desc: 'SINGLE SOURCE only in MRP, removed from Purchasing' })}
-                {renderInput('special_procurement_method', 'SPECIAL_PROCUREMENT', { desc: 'SINGLE SOURCE only in MRP, removed from Purchasing' })}
+                {renderInput('procurement_method', 'PROCUREMENT_TYPE', { options: ['BUY','MAKE','BOTH','TRANSFER'], desc: 'SINGLE SOURCE only in MRP' })}
+                {renderInput('special_procurement_method', 'SPECIAL_PROCUREMENT', { desc: 'SINGLE SOURCE only in MRP' })}
               </div>
             </div>
           </div>
@@ -349,22 +379,46 @@ export default function MaterialMasterPage() {
         return (
           <div className="space-y-6">
             <div className={modern ? "bg-emerald-50/50 rounded-xl p-4 border border-emerald-100" : "border p-3"}>
-              <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Storage View + Plant Extension – MMSC-like – No duplicate shelf_life</h3>
-              <p className="text-[11px] text-zinc-500 mt-1">shelf_life_days & is_lot_managed now ONLY in Basic tab – Storage only handles plant extension.</p>
-              <div className="mt-4">
-                <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>FACILITY_CODES / PLANT_CODES * (Multi-select) – Single Source</label>
-                <div className={modern ? "mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-white rounded-xl border max-h-[200px] overflow-auto" : "mt-1 grid grid-cols-3 gap-1 border p-2 max-h-[150px] overflow-auto"}>
-                  {facilities.length === 0 ? (
-                    <span className="text-xs text-zinc-400">No facilities – create via EFCC – default FAC-1000 will be used</span>
-                  ) : facilities.map((f: any) => (
-                    <label key={f.code} className={modern ? "flex items-center gap-2 text-xs p-2 rounded-lg hover:bg-zinc-50 cursor-pointer border" : "flex items-center gap-1 text-[11px] border p-1"}>
-                      <input type="checkbox" checked={(form.facility_codes || []).includes(f.code)} onChange={() => handleFacilityToggle(f.code)} className="rounded" />
-                      <span className="font-mono">{f.code}</span> <span className="truncate">{f.name}</span>
-                    </label>
-                  ))}
-                </div>
-                <p className="text-[10px] text-zinc-400 mt-2">Selected: {(form.facility_codes || []).join(', ') || 'None – default FAC-1000'} – Creates prod_facility_profile per facility – single source</p>
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse('storage_plant')}>
+                <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Plant Extension – MMSC-like – Single Source</h3>
+                <span className="text-xs">{collapsed['storage_plant'] ? '▶' : '▼'}</span>
               </div>
+              {!collapsed['storage_plant'] && (
+                <>
+                  <p className="text-[11px] text-zinc-500 mt-1">Select facilities to extend material to. SAP: MM01 creates for one plant, MMSC extends.</p>
+                  <div className="mt-4">
+                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>FACILITY_CODES / PLANT_CODES * (Multi-select) – Single Source</label>
+                    <div className={modern ? "mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-white rounded-xl border max-h-[200px] overflow-auto" : "mt-1 grid grid-cols-3 gap-1 border p-2 max-h-[150px] overflow-auto"}>
+                      {facilities.length === 0 ? (
+                        <span className="text-xs text-zinc-400">No facilities – create via EFCC – default FAC-1000 will be used</span>
+                      ) : facilities.map((f: any) => (
+                        <label key={f.code} className={modern ? "flex items-center gap-2 text-xs p-2 rounded-lg hover:bg-zinc-50 cursor-pointer border" : "flex items-center gap-1 text-[11px] border p-1"}>
+                          <input type="checkbox" checked={(form.facility_codes || []).includes(f.code)} onChange={() => handleFacilityToggle(f.code)} className="rounded" />
+                          <span className="font-mono">{f.code}</span> <span className="truncate">{f.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-zinc-400 mt-2">Selected: {(form.facility_codes || []).join(', ') || 'None – default FAC-1000'} – Creates prod_facility_profile per facility</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className={modern ? "bg-emerald-50/50 rounded-xl p-4 border border-emerald-100" : "border p-3"}>
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse('storage_kit_lot')}>
+                <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Kit & Lot / Batch & Expiry – Moved from Basic to Storage (per user – storage-related)</h3>
+                <span className="text-xs">{collapsed['storage_kit_lot'] ? '▶' : '▼'}</span>
+              </div>
+              {!collapsed['storage_kit_lot'] && (
+                <div className={modern ? "grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" : "grid grid-cols-3 gap-2 mt-2"}>
+                  {renderInput('is_kit', 'IS_KIT', { options: ['true','false'], desc: 'Is kit – for kitting orders – now in Storage' })}
+                  {renderInput('is_phantom_kit', 'IS_PHANTOM_KIT', { options: ['true','false'], desc: 'Phantom kit – now in Storage' })}
+                  {renderInput('landed_cost_scope', 'LANDED_COST_SCOPE', { options: ['NONE','FREIGHT','CUSTOMS','FREIGHT_CUSTOMS','ALL'], desc: 'Landed cost relevance – now in Storage' })}
+                  {renderInput('is_lot_managed', 'IS_LOT_MANAGED', { options: ['true','false'], desc: 'Was is_batch_managed – MOVED from Basic to Storage per user – storage-related' })}
+                  {renderInput('lot_control', 'LOT_CONTROL', { options: ['BLOCKED','WARN','RESTRICTED'], desc: 'Expiry control – MOVED to Storage' })}
+                  {renderInput('shelf_life_days', 'SHELF_LIFE_DAYS', { desc: 'e.g., 30 – MOVED from Basic to Storage per user' })}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -375,11 +429,11 @@ export default function MaterialMasterPage() {
               <h3 className={modern ? "font-semibold text-sm text-red-900" : "font-bold text-xs text-red-800"}>Accounting View – T0 BLOCKING – Single Source</h3>
               <p className="text-[11px] text-red-600/80 mt-1">price_unit now ONLY here (removed from Costing duplicate).</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
-                {renderInput('inventory_valuation_class', 'VALUATION_CLASS *', { required: true, options: ['RAW','FINISHED','SEMI','TRADING','PACKAGING','CONSUMABLE','SERVICE'], desc: 'Single source, removed valuation_class duplicate' })}
-                {renderInput('pricing_method', 'PRICE_CONTROL *', { required: true, options: ['STANDARD','MOVING_AVG'], desc: 'Single source, removed price_control duplicate' })}
-                {renderInput('moving_avg_price', 'MOVING_AVG_PRICE *', { required: true, desc: 'Single source in Accounting only, removed from Costing duplicate' })}
-                {renderInput('standard_price', 'STANDARD_PRICE *', { required: true, desc: 'Single source in Accounting only, removed from Costing duplicate' })}
-                {renderInput('price_unit', 'PRICE_UNIT *', { desc: 'SINGLE SOURCE only in Accounting, removed from Costing duplicate' })}
+                {renderInput('inventory_valuation_class', 'VALUATION_CLASS *', { required: true, options: ['RAW','FINISHED','SEMI','TRADING','PACKAGING','CONSUMABLE','SERVICE'], desc: 'Single source' })}
+                {renderInput('pricing_method', 'PRICE_CONTROL *', { required: true, options: ['STANDARD','MOVING_AVG'], desc: 'Single source' })}
+                {renderInput('moving_avg_price', 'MOVING_AVG_PRICE *', { required: true, desc: 'Single source in Accounting only' })}
+                {renderInput('standard_price', 'STANDARD_PRICE *', { required: true, desc: 'Single source in Accounting only' })}
+                {renderInput('price_unit', 'PRICE_UNIT *', { desc: 'SINGLE SOURCE only in Accounting' })}
               </div>
             </div>
           </div>
@@ -391,10 +445,9 @@ export default function MaterialMasterPage() {
               <h3 className={modern ? "font-semibold text-sm text-purple-900" : "font-bold text-xs"}>Costing View – Single Source (no price duplicates)</h3>
               <p className="text-[11px] text-zinc-500 mt-1">price fields now ONLY in Accounting – Costing only has lot size & overhead.</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
-                {renderInput('costing_lot_size', 'COSTING_LOT_SIZE', { desc: 'Single source, no duplicate' })}
-                {renderInput('overhead_group', 'OVERHEAD_GROUP', { desc: 'Single source, no duplicate' })}
+                {renderInput('costing_lot_size', 'COSTING_LOT_SIZE', { desc: 'Single source' })}
+                {renderInput('overhead_group', 'OVERHEAD_GROUP', { desc: 'Single source' })}
               </div>
-              <p className="text-[10px] text-zinc-400 mt-3">Note: moving_avg_price, standard_price, price_unit are now only in Accounting tab (T0 BLOCKING) – removed duplicate here. Costing run CK40N reads from Accounting.</p>
             </div>
           </div>
         );
@@ -419,7 +472,7 @@ export default function MaterialMasterPage() {
             </div>
           </div>
           <h1 className={modern ? "text-xl font-bold mt-3 tracking-tight" : "text-lg font-bold mt-2"}>Product Master – Full Accounting & MRP Views</h1>
-          <p className={modern ? "text-xs text-zinc-500 mt-1" : "text-[11px] text-zinc-500"}>Create Product – T0 BLOCKING – valuation_class determines BSX GL via OBYC, price_control determines PRD – NO DANGLING – Auto number from MAT-01 if blank – Single source per field, no duplicates</p>
+          <p className={modern ? "text-xs text-zinc-500 mt-1" : "text-[11px] text-zinc-500"}>Create Product – T0 BLOCKING – valuation_class determines BSX GL via OBYC – NO DANGLING – Auto number from MAT-01 if blank – Single source per field – Kit & Lot moved to Storage per user</p>
           <div className={modern ? "flex gap-2 mt-4" : "flex gap-1 mt-3"}>
             {(['create','list','change'] as const).map(m => (
               <Link key={m} href={`/${companyCode}/foundation/materials?mode=${m}`} className={modern ? `px-4 py-2 rounded-full text-xs font-medium border transition ${mode===m ? 'bg-black text-white border-black' : 'bg-white hover:bg-zinc-50'}` : `px-3 py-1 text-xs border ${mode===m ? 'bg-black text-white' : 'bg-white'}`}>{m.toUpperCase()}</Link>
@@ -432,18 +485,23 @@ export default function MaterialMasterPage() {
         {mode === 'create' && (
           <form onSubmit={handleSubmit} className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 space-y-6" : "border p-4 space-y-4"}>
             <div className={modern ? "flex gap-2 border-b pb-3 overflow-x-auto" : "flex gap-1 border-b pb-2 overflow-x-auto"}>
-              {TABS.map(t => (
-                <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `px-4 py-2 rounded-full text-xs font-medium border whitespace-nowrap transition ${activeTab===t.key ? 'bg-black text-white border-black' : 'bg-zinc-50 hover:bg-zinc-100'}` : `px-3 py-1 text-xs border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white' : 'bg-white'}`}>
-                  {t.label}
-                </button>
-              ))}
+              {TABS.map(t => {
+                const missing = missingPerTab[t.key].length;
+                return (
+                  <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-4 py-2 rounded-full text-xs font-medium border whitespace-nowrap transition ${activeTab===t.key ? 'bg-black text-white border-black' : 'bg-zinc-50 hover:bg-zinc-100'}` : `relative px-3 py-1 text-xs border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white' : 'bg-white'}`}>
+                    {t.label}
+                    {missing > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white" title={`${missing} required missing: ${missingPerTab[t.key].join(', ')}`} />}
+                    {missing > 0 && <span className="ml-1.5 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5">{missing}</span>}
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-[11px] text-zinc-400">{TABS.find(t=>t.key===activeTab)?.desc}</p>
+            <p className="text-[11px] text-zinc-400">{TABS.find(t=>t.key===activeTab)?.desc} {missingPerTab[activeTab].length > 0 && <span className="text-red-500">• Missing: {missingPerTab[activeTab].join(', ')}</span>}</p>
             {renderTabContent()}
-            <div className="flex gap-2 pt-4 border-t">
-              <button type="submit" className={modern ? "px-6 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-zinc-800" : "px-4 py-1.5 bg-black text-white text-xs"}>Create Product – EMTC</button>
+            <div className="flex gap-2 pt-4 border-t items-center">
+              <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Create Product – EMTC {isFormValid ? '' : `(${totalMissing} required)`}</button>
               <button type="button" onClick={() => setForm(initialForm)} className={modern ? "px-4 py-2.5 rounded-full border text-sm" : "px-3 py-1.5 border text-xs"}>Clear</button>
-              <span className="text-[10px] text-zinc-400 self-center">Auto number from MAT-01 if PRODUCT_CODE blank – facilities: {(form.facility_codes||[]).length || 'default FAC-1000'} – no duplicate fields</span>
+              {!isFormValid && <span className="text-[11px] text-red-500">Fill required fields to activate – red dots show tabs with missing</span>}
             </div>
           </form>
         )}
@@ -518,15 +576,23 @@ export default function MaterialMasterPage() {
             </div>
             {selectedCode && (
               <form onSubmit={handleSubmit} className="space-y-6 pt-4 border-t">
-                <h3 className={modern ? "font-semibold text-sm" : "font-bold text-xs"}>Change {selectedCode} – {TABS.find(t=>t.key===activeTab)?.label}</h3>
+                <h3 className={modern ? "font-semibold text-sm" : "font-bold text-xs"}>Change {selectedCode} – {TABS.find(t=>t.key===activeTab)?.label} {missingPerTab[activeTab].length>0 && <span className="text-red-500">({missingPerTab[activeTab].length} required missing)</span>}</h3>
                 <div className={modern ? "flex gap-2 border-b pb-3 overflow-x-auto" : "flex gap-1 border-b pb-2 overflow-x-auto"}>
-                  {TABS.map(t => (
-                    <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `px-4 py-2 rounded-full text-xs font-medium border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white border-black' : 'bg-zinc-50'}` : `px-3 py-1 text-xs border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white' : 'bg-white'}`}>{t.label}</button>
-                  ))}
+                  {TABS.map(t => {
+                    const missing = missingPerTab[t.key].length;
+                    return (
+                      <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-4 py-2 rounded-full text-xs font-medium border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white border-black' : 'bg-zinc-50'}` : `relative px-3 py-1 text-xs border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white' : 'bg-white'}`}>
+                        {t.label}
+                        {missing > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white" />}
+                        {missing > 0 && <span className="ml-1.5 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5">{missing}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
                 {renderTabContent()}
-                <div className="flex gap-2 pt-4 border-t">
-                  <button type="submit" className={modern ? "px-6 py-2.5 rounded-full bg-black text-white text-sm" : "px-4 py-1.5 bg-black text-white text-xs"}>Update Product – {selectedCode}</button>
+                <div className="flex gap-2 pt-4 border-t items-center">
+                  <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm transition ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Update Product – {selectedCode} {isFormValid ? '' : `(${totalMissing} required)`}</button>
+                  {!isFormValid && <span className="text-[11px] text-red-500">Red dots show tabs with missing – fill to activate</span>}
                 </div>
               </form>
             )}
