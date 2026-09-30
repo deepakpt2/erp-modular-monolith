@@ -470,8 +470,8 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                         return (
                           <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-4 py-2 rounded-full text-xs font-medium border whitespace-nowrap ${activeTab === t.key ? 'bg-black text-white border-black' : 'bg-zinc-50 hover:bg-zinc-100'}` : `relative px-3 py-1 text-xs border whitespace-nowrap ${activeTab === t.key ? 'bg-black text-white' : 'bg-white'}`}>
                             {t.label}
-                            {missing > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white" title={`${missing} required missing`} />}
-                            {missing > 0 && <span className="ml-1.5 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5">{missing}</span>}
+                            
+                            {missing > 0 && <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] text-[10px] bg-red-500 text-white rounded-full px-1.5 border border-white shadow-sm" title={`${missing} required missing`}>{missing}</span>}
                           </button>
                         );
                       })}
@@ -516,8 +516,8 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                     return (
                       <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-4 py-2 rounded-full text-xs font-medium border whitespace-nowrap transition ${activeTab === t.key ? 'bg-black text-white border-black' : 'bg-zinc-50 hover:bg-zinc-100'}` : `relative px-3 py-1 text-xs border whitespace-nowrap ${activeTab === t.key ? 'bg-black text-white' : 'bg-white'}`}>
                         {t.label}
-                        {missing > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white" title={`${missing} required missing: ${missingPerTab[t.key].join(', ')}`} />}
-                        {missing > 0 && <span className="ml-1.5 text-[10px] bg-red-500 text-white rounded-full px-1.5 py-0.5">{missing}</span>}
+                        
+                        {missing > 0 && <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] text-[10px] bg-red-500 text-white rounded-full px-1.5 border border-white shadow-sm" title={`${missing} required missing`}>{missing}</span>}
                       </button>
                     );
                   })}
