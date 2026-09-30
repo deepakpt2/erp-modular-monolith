@@ -173,6 +173,9 @@ async function setupFictionalCompany() {
     await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS start_month INTEGER DEFAULT 4`);
     await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS end_month INTEGER DEFAULT 3`);
     await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS year_shift INTEGER DEFAULT 0`);
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()`);
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`);
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()`);
 
     // Robust upsert: SELECT first, then INSERT or UPDATE – avoids ON CONFLICT (code) failing when unique is (tenant_id, code)
     const existingFiscal = await db.execute(sql`SELECT id FROM fin_fiscal_calendar WHERE tenant_id=${tenantId} AND code='K4' LIMIT 1`);
@@ -181,11 +184,13 @@ async function setupFictionalCompany() {
       await db.execute(sql`
         UPDATE fin_fiscal_calendar SET 
           name='April-March Fiscal – India – K4', 
-          description='Fiscal Year Variant K4 – April to March – 12 periods – year_dependent false calendar_year false number_of_periods 12 – TEST ONLY – FIXED',
+          description='Fiscal Year Variant K4 – April to March – 12 periods – year_dependent false calendar_year false number_of_periods 12 – TEST ONLY – FIXED V2',
           year_dependent=false, calendar_year=false, number_of_periods=12, start_month=4, end_month=3, year_shift=0,
-          from_date='2026-04-01'::timestamp, to_date='2027-03-31'::timestamp, updated_at=NOW()
+          from_date='2026-04-01'::timestamp, to_date='2027-03-31'::timestamp
         WHERE id=${fiscalId}
       `);
+      // Try update updated_at if column exists
+      try { await db.execute(sql`UPDATE fin_fiscal_calendar SET updated_at=NOW() WHERE id=${fiscalId}`); } catch {}
       console.log(`✅ Fiscal Calendar K4 updated – year_dependent false calendar_year false number_of_periods 12 – id ${fiscalId}`);
     } else {
       // Try also by code alone for legacy
@@ -197,15 +202,16 @@ async function setupFictionalCompany() {
             tenant_id=COALESCE(tenant_id, ${tenantId}),
             name='April-March Fiscal – India – K4',
             year_dependent=false, calendar_year=false, number_of_periods=12, start_month=4, end_month=3, year_shift=0,
-            from_date='2026-04-01'::timestamp, to_date='2027-03-31'::timestamp, updated_at=NOW()
+            from_date='2026-04-01'::timestamp, to_date='2027-03-31'::timestamp
           WHERE id=${fiscalId}
         `);
+        try { await db.execute(sql`UPDATE fin_fiscal_calendar SET updated_at=NOW() WHERE id=${fiscalId}`); } catch {}
         console.log(`✅ Fiscal Calendar K4 updated (legacy by code) – id ${fiscalId}`);
       } else {
         const ins = await db.execute(sql`
           INSERT INTO fin_fiscal_calendar (tenant_id, code, name, description, year_dependent, calendar_year, number_of_periods, start_month, end_month, year_shift, from_date, to_date)
-          VALUES (${tenantId}, 'K4', 'April-March Fiscal – India – K4', 'Fiscal Year Variant K4 – April to March – 12 periods – year_dependent false calendar_year false number_of_periods 12 – TEST ONLY – FIXED', false, false, 12, 4, 3, 0, '2026-04-01'::timestamp, '2027-03-31'::timestamp)
-          ON CONFLICT (tenant_id, code) DO UPDATE SET name='April-March Fiscal – India – K4', year_dependent=false, calendar_year=false, number_of_periods=12, start_month=4, end_month=3, updated_at=NOW()
+          VALUES (${tenantId}, 'K4', 'April-March Fiscal – India – K4', 'Fiscal Year Variant K4 – April to March – 12 periods – year_dependent false calendar_year false number_of_periods 12 – TEST ONLY – FIXED V2', false, false, 12, 4, 3, 0, '2026-04-01'::timestamp, '2027-03-31'::timestamp)
+          ON CONFLICT (tenant_id, code) DO UPDATE SET name='April-March Fiscal – India – K4', year_dependent=false, calendar_year=false, number_of_periods=12, start_month=4, end_month=3
           RETURNING id
         `);
         fiscalId = (ins.rows[0] as any)?.id || null;
@@ -286,17 +292,42 @@ async function setupFictionalCompany() {
 
     await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_posting_calendar_period (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), posting_calendar_id uuid NOT NULL, legal_entity_id uuid, from_period integer NOT NULL, from_year integer NOT NULL, to_period integer NOT NULL, to_year integer NOT NULL, account_type varchar(20) DEFAULT 'ALL', is_open boolean DEFAULT true, description text, created_at timestamp DEFAULT NOW(), updated_at timestamp DEFAULT NOW())`);
     if (ppvId) {
-      for (const accType of ['ALL','S','K','D','A']) {
-        // Check if period already exists for this account type
-        const exists = await db.execute(sql`SELECT id FROM fin_posting_calendar_period WHERE posting_calendar_id=${ppvId} AND from_period=1 AND from_year=2026 AND to_period=12 AND to_year=2026 AND account_type=${accType} LIMIT 1`);
+      // Map legacy account types S,K,D,A,M,+,V to new enum ALL,ASSET,CUSTOMER,VENDOR,ITEM,GL
+      // S -> GL, K -> VENDOR, D -> CUSTOMER, A -> ASSET, M -> ITEM, + -> ALL, V -> ALL (fallback)
+      const accountTypeMap: Record<string,string> = {
+        'ALL': 'ALL',
+        '+': 'ALL',
+        'S': 'GL',
+        'K': 'VENDOR',
+        'D': 'CUSTOMER',
+        'A': 'ASSET',
+        'M': 'ITEM',
+        'V': 'ALL',
+        'GL': 'GL',
+        'ASSET': 'ASSET',
+        'CUSTOMER': 'CUSTOMER',
+        'VENDOR': 'VENDOR',
+        'ITEM': 'ITEM',
+      };
+      for (const legacyType of ['ALL','S','K','D','A']) {
+        const mappedType = accountTypeMap[legacyType] || 'ALL';
+        // Check if period already exists for this mapped account type
+        const exists = await db.execute(sql`SELECT id FROM fin_posting_calendar_period WHERE posting_calendar_id=${ppvId} AND from_period=1 AND from_year=2026 AND to_period=12 AND to_year=2026 AND account_type=${mappedType}::fin_posting_account_type LIMIT 1`);
         if (exists.rows.length === 0) {
-          await db.execute(sql`
-            INSERT INTO fin_posting_calendar_period (posting_calendar_id, from_period, from_year, to_period, to_year, account_type, is_open)
-            VALUES (${ppvId}, 1, 2026, 12, 2026, ${accType}::fin_posting_account_type, true)
-          `);
+          try {
+            await db.execute(sql`
+              INSERT INTO fin_posting_calendar_period (posting_calendar_id, from_period, from_year, to_period, to_year, account_type, is_open)
+              VALUES (${ppvId}, 1, 2026, 12, 2026, ${mappedType}::fin_posting_account_type, true)
+            `);
+            console.log(`   Inserted posting period ALL/S/K/D/A legacy ${legacyType} -> ${mappedType}`);
+          } catch (e: any) {
+            console.warn(`   Posting period ${legacyType} -> ${mappedType} failed:`, e.message);
+          }
+        } else {
+          console.log(`   Posting period ${legacyType} -> ${mappedType} exists – skip`);
         }
       }
-      console.log('✅ Posting Calendar Periods PPV-1000 – open 01-12/2026 ensured');
+      console.log('✅ Posting Calendar Periods PPV-1000 – open 01-12/2026 ensured – FIXED mapping S->GL K->VENDOR D->CUSTOMER A->ASSET');
     }
   } catch (e: any) { console.warn('Posting Period Variant failed:', e.message, e.cause || ''); }
 
