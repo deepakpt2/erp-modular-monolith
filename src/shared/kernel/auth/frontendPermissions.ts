@@ -30,8 +30,8 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
   { pattern: /\/foundation\/lots/, permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'WAREHOUSE', 'ADMIN', 'OWNER'], code: 'ELTC', description: 'Lots – MATERIAL_VIEW' },
   { pattern: /\/foundation\/partners/, permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER', 'PURCHASER', 'SALES'], code: 'EPAC', description: 'Partner Account – MATERIAL_VIEW' },
   { pattern: /\/foundation\/suppliers/, permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER', 'PURCHASER'], code: 'PSUC', description: 'Supplier – MATERIAL_VIEW' },
-  { pattern: /\/foundation\/customers/, permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER', 'SALES'], code: 'SCUC', description: 'Customer – MATERIAL_VIEW' },
-  { pattern: /\/foundation\/company-groups/, permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER', 'MASTER_DATA_MANAGER'], code: 'ECGC', description: 'Company Group – MATERIAL_CREATE' },
+  { pattern: /\/foundation\/customers/, permission: 'CUSTOMER_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER', 'MASTER_DATA_MANAGER'], code: 'SCUC', description: 'Customer – XD01 – SCUC – CUSTOMER_VIEW – SAP standard V_KNA1 – basic MDM allowed, FULL with Sales Area + Partner + Pricing + Credit requires SALES – SoD' },
+  { pattern: /\/foundation\/company-groups/, permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER'], code: 'ECGC', description: 'Company Group – OX02 – MATERIAL_CREATE – SAP standard IMG – ADMIN only – MDM not allowed' },
   { pattern: /\/foundation\/legal-entities/, permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER'], code: 'ELEC', description: 'Legal Entity – MATERIAL_CREATE' },
   { pattern: /\/foundation\/facilities/, permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER'], code: 'EFCC', description: 'Facility – MATERIAL_CREATE' },
   { pattern: /\/foundation\/inventory-locations/, permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER', 'WAREHOUSE'], code: 'EILC', description: 'Inventory Location – MATERIAL_CREATE' },
@@ -46,7 +46,7 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
 
   // SD
   { pattern: /\/sales/, permission: 'SALES_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], code: 'SSOC', description: 'Sales – SALES_VIEW' },
-  { pattern: /\/sd\/delivery/, permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER'], code: 'SDLC', description: 'Delivery – DELIVERY_CREATE' },
+  { pattern: /\/sd\/delivery/, permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], code: 'SDLC', description: 'Outbound Deliveries – VL01N – SDLC – T0 BLOCKING – PGI 601 + COGS GBB/BSX – DELIVERY_CREATE – SAP standard LE – V_LIKP_VST – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
   { pattern: /\/sd\/billing/, permission: 'BILLING_CREATE', roles: ['ACCOUNTANT', 'SALES', 'ADMIN', 'OWNER'], code: 'SBLC', description: 'Billing – BILLING_CREATE' },
 
   // FICO

@@ -47,7 +47,7 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   // SD – Sales
   { pattern: /^\/api\/sales/, method: ['GET'], permission: 'SALES_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], description: 'Sales View – VA01 – SALES_VIEW' },
   { pattern: /^\/api\/sales/, method: '*', permission: 'SALES_CREATE', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], description: 'Sales Create – VA01 – SALES_CREATE' },
-  { pattern: /^\/api\/delivery/, method: '*', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER'], description: 'Delivery – VL01N – DELIVERY_CREATE' },
+  { pattern: /^\/api\/delivery/, method: '*', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], description: 'Outbound Deliveries – VL01N – SDLC – T0 BLOCKING – PGI 601 + COGS GBB/BSX – DELIVERY_CREATE – SAP standard LE V_LIKP_VST – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
   { pattern: /^\/api\/billing/, method: '*', permission: 'BILLING_CREATE', roles: ['ACCOUNTANT', 'SALES', 'ADMIN', 'OWNER'], description: 'Billing – VF01 – BILLING_CREATE' },
 
   // FICO – Financials – sensitive GL postings
@@ -81,9 +81,9 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   { pattern: /^\/api\/lots/, method: '*', permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'WAREHOUSE', 'ADMIN', 'OWNER'], description: 'Lots – MATERIAL_VIEW' },
   { pattern: /^\/api\/business-partners/, method: '*', permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER', 'PURCHASER', 'SALES'], description: 'Business Partners – MATERIAL_VIEW' },
 
-  { pattern: /^\/api\/company-groups/, method: '*', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER', 'MASTER_DATA_MANAGER'], description: 'Company Groups – ECGC – MATERIAL_CREATE' },
-  { pattern: /^\/api\/legal-entities/, method: '*', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER'], description: 'Legal Entities – ELEC – MATERIAL_CREATE' },
-  { pattern: /^\/api\/facilities/, method: '*', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER'], description: 'Facilities – EFCC – MATERIAL_CREATE' },
+  { pattern: /^\/api\/company-groups/, method: '*', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER'], description: 'Company Groups – OX02 – ECGC – MATERIAL_CREATE – SAP standard IMG – ADMIN only – MDM not allowed – enterprise structure' },
+  { pattern: /^\/api\/legal-entities/, method: '*', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER'], description: 'Legal Entities – OX02 – ELEC – MATERIAL_CREATE – SAP standard IMG – ADMIN only' },
+  { pattern: /^\/api\/facilities/, method: '*', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER'], description: 'Facilities – OX02 – EFCC – MATERIAL_CREATE – SAP standard IMG – ADMIN only' },
   { pattern: /^\/api\/company-codes/, method: '*', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER'], description: 'Company Codes – MATERIAL_CREATE – Admin only' },
   { pattern: /^\/api\/buyer-teams/, method: '*', permission: 'MATERIAL_VIEW', roles: ['ADMIN', 'OWNER', 'PURCHASER', 'MATERIAL_MANAGER'], description: 'Buyer Teams – EBTC – MATERIAL_VIEW' },
   { pattern: /^\/api\/commercial-orgs/, method: '*', permission: 'MATERIAL_VIEW', roles: ['ADMIN', 'OWNER', 'SALES', 'MATERIAL_MANAGER'], description: 'Commercial Orgs – EDPC – MATERIAL_VIEW' },
@@ -97,7 +97,9 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   { pattern: /^\/api\/kitting/, method: '*', permission: 'MATERIAL_CREATE', roles: ['PRODUCTION', 'WAREHOUSE', 'ADMIN', 'OWNER'], description: 'Kitting – MATERIAL_CREATE' },
 
   // Inventory
-  { pattern: /^\/api\/inventory/, method: '*', permission: 'MATERIAL_VIEW', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER'], description: 'Inventory – MATERIAL_VIEW' },
+  { pattern: /^\/api\/customers/, method: '*', permission: 'CUSTOMER_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER', 'MASTER_DATA_MANAGER'], description: 'Customers – XD01 – SCUC – CUSTOMER_VIEW – SAP standard V_KNA1 – basic MDM allowed, FULL Sales Area+Pricing+Credit requires SALES – SoD' },
+  { pattern: /^\/api\/suppliers/, method: '*', permission: 'MATERIAL_VIEW', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER', 'MASTER_DATA_MANAGER'], description: 'Suppliers – XK01 – PSUC – MATERIAL_VIEW – SAP standard – MDM allowed' },
+  { pattern: /^\/api\/inventory/, method: '*', permission: 'MATERIAL_VIEW', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER'], description: 'Inventory – MMBE – ISTV – MATERIAL_VIEW – SAP standard – requires WAREHOUSE,ADMIN,OWNER,MANAGER,MATERIAL_MANAGER – MASTER_DATA_MANAGER alone NOT allowed – per user error' },
 
   // Admin – only ADMIN, OWNER
   { pattern: /^\/api\/roles/, method: '*', permission: 'ROLE_MANAGE', roles: ['ADMIN', 'OWNER'], description: 'Roles – ADMIN only – ROLE_MANAGE' },

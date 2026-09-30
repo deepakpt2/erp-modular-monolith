@@ -23,16 +23,16 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { code: 'EMGC', permission: 'MATERIAL_CREATE', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Product Categories – MATERIAL_CREATE' },
   { code: 'EUOC', permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER', 'PURCHASER', 'WAREHOUSE'], module: 'FOUNDATION', description: 'UoM – MATERIAL_VIEW' },
   { code: 'ELTC', permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'WAREHOUSE', 'ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Lot Management – MATERIAL_VIEW' },
-  { code: 'ISTV', permission: 'MATERIAL_VIEW', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER', 'MASTER_DATA_MANAGER'], module: 'FOUNDATION', description: 'Stock Overview – MATERIAL_VIEW – MDM allowed but WAREHOUSE,ADMIN,OWNER,MANAGER,MATERIAL_MANAGER only – per user request, show unauthorized if MASTER_DATA_MANAGER tries Inventory without MATERIAL_MANAGER' },
+  { code: 'ISTV', permission: 'MATERIAL_VIEW', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Stock Overview – ISTV – MMBE – MATERIAL_VIEW – SAP standard – requires WAREHOUSE,ADMIN,OWNER,MANAGER,MATERIAL_MANAGER – MASTER_DATA_MANAGER alone not enough – SoD – per user error Forbidden' },
   { code: 'EPAC', permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER', 'PURCHASER', 'SALES'], module: 'FOUNDATION', description: 'Partner Account – MATERIAL_VIEW' },
   { code: 'PSUC', permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER', 'PURCHASER'], module: 'FOUNDATION', description: 'Supplier – MATERIAL_VIEW' },
-  { code: 'SCUC', permission: 'MATERIAL_VIEW', roles: ['MATERIAL_MANAGER', 'MASTER_DATA_MANAGER', 'ADMIN', 'OWNER', 'SALES'], module: 'FOUNDATION', description: 'Customer – MATERIAL_VIEW' },
+  { code: 'SCUC', permission: 'CUSTOMER_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER', 'MASTER_DATA_MANAGER'], module: 'FOUNDATION', description: 'Customer – XD01 – CUSTOMER_VIEW – SAP standard – V_KNA1 – basic customer master MDM allowed, but FULL with Sales Area + Partner + Pricing + Credit requires SALES – SoD – MDM can view basic, SALES for pricing/credit' },
 
   // Enterprise Structure – foundation
-  { code: 'ECGC', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER', 'MASTER_DATA_MANAGER'], module: 'FOUNDATION', description: 'Company Group – MATERIAL_CREATE' },
-  { code: 'ELEC', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Legal Entity – MATERIAL_CREATE' },
-  { code: 'EFCC', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Facility – MATERIAL_CREATE' },
-  { code: 'EILC', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER', 'WAREHOUSE'], module: 'FOUNDATION', description: 'Inventory Location – MATERIAL_CREATE' },
+  { code: 'ECGC', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Company Group – OX02 – MATERIAL_CREATE – SAP standard IMG – ADMIN only – MDM not allowed – enterprise structure' },
+  { code: 'ELEC', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Legal Entity – OX02 – MATERIAL_CREATE – SAP standard IMG – ADMIN only' },
+  { code: 'EFCC', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Facility – OX02 – MATERIAL_CREATE – SAP standard IMG – ADMIN only' },
+  { code: 'EILC', permission: 'MATERIAL_CREATE', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER', 'WAREHOUSE'], module: 'FOUNDATION', description: 'Inventory Location – OX09 – MATERIAL_CREATE – SAP standard – ADMIN/WAREHOUSE' },
   { code: 'EPDC', permission: 'MATERIAL_VIEW', roles: ['ADMIN', 'OWNER', 'PURCHASER', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Procurement Division – MATERIAL_VIEW' },
   { code: 'EBTC', permission: 'MATERIAL_VIEW', roles: ['ADMIN', 'OWNER', 'PURCHASER', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Buyer Team – MATERIAL_VIEW' },
   { code: 'ECOC', permission: 'MATERIAL_VIEW', roles: ['ADMIN', 'OWNER', 'SALES', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Commercial Org – MATERIAL_VIEW' },
@@ -52,6 +52,8 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { code: 'IPIC', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER'], module: 'MM', description: 'Physical Inventory – GR_POST' },
 
   // SD
+  { code: 'SDLC', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Outbound Deliveries – VL01N – SDLC – General ERP – T0 BLOCKING – PGI 601 + COGS GBB/BSX – DELIVERY_CREATE – SAP standard LE – V_LIKP – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
+  { code: 'SBLC', permission: 'BILLING_CREATE', roles: ['SALES', 'ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Billing – VF01 – SBLC – BILLING_CREATE – SAP standard – requires SALES,ACCOUNTANT – MDM not allowed – SoD' },
   { code: 'SSOC', permission: 'SALES_CREATE', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Create Sales Order – SALES_CREATE' },
   { code: 'SSOE', permission: 'SALES_CREATE', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Change Sales Order – SALES_CREATE' },
   { code: 'SSOV', permission: 'SALES_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Display Sales Order – SALES_VIEW' },
