@@ -487,7 +487,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                   </div>
                 )}
                 <div className="flex items-center gap-3">
-                  <button type="submit" disabled={!isFormValid} className={modern ? `px-5 py-2.5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `border px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Save {title} {isFormValid ? '' : `(${totalMissing} required)`}</button>
+                  <button type="submit" disabled={!isFormValid} className={modern ? `px-5 py-2.5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `border px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Save</button>
                   {!isFormValid && <span className="text-[11px] text-red-500">Red dots show tabs with missing – fill to activate</span>}
                 </div>
                 {message && <div className={modern ? "text-xs p-3 rounded-xl border bg-zinc-50" : "text-[11px] border p-2"}>{message}</div>}
@@ -533,7 +533,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
               </div>
             )}
             <div className="flex items-center gap-3">
-              <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm font-medium shadow transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `border px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Create {title} {isFormValid ? '' : `(${totalMissing} required)`}</button>
+              <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm font-medium shadow transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `border px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Create</button>
               {!isFormValid && <span className="text-[11px] text-red-500">Fill required fields – red dots show tabs needing attention – submit disabled until valid</span>}
               <span className="text-[11px] text-zinc-400">Code in heading badge – button short – auto number uses FNRC if enabled</span>
             </div>

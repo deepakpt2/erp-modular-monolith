@@ -499,7 +499,7 @@ export default function MaterialMasterPage() {
             <p className="text-[11px] text-zinc-400">{TABS.find(t=>t.key===activeTab)?.desc} {missingPerTab[activeTab].length > 0 && <span className="text-red-500">• Missing: {missingPerTab[activeTab].join(', ')}</span>}</p>
             {renderTabContent()}
             <div className="flex gap-2 pt-4 border-t items-center">
-              <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Create Product – EMTC {isFormValid ? '' : `(${totalMissing} required)`}</button>
+              <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Create Product</button>
               <button type="button" onClick={() => setForm(initialForm)} className={modern ? "px-4 py-2.5 rounded-full border text-sm" : "px-3 py-1.5 border text-xs"}>Clear</button>
               {!isFormValid && <span className="text-[11px] text-red-500">Fill required fields to activate – red dots show tabs with missing</span>}
             </div>
@@ -591,7 +591,7 @@ export default function MaterialMasterPage() {
                 </div>
                 {renderTabContent()}
                 <div className="flex gap-2 pt-4 border-t items-center">
-                  <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm transition ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Update Product – {selectedCode} {isFormValid ? '' : `(${totalMissing} required)`}</button>
+                  <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm transition ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Update Product</button>
                   {!isFormValid && <span className="text-[11px] text-red-500">Red dots show tabs with missing – fill to activate</span>}
                 </div>
               </form>
