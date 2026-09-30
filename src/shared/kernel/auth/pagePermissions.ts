@@ -125,6 +125,15 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { code: 'AFLW', permission: 'AUDIT_VIEW', roles: ['ADMIN', 'OWNER', 'AUDITOR', 'MANAGER', 'ACCOUNTANT', 'PURCHASER', 'WAREHOUSE', 'SALES'], module: 'AUDIT', description: 'Document Flow – AFLW – AUDIT_VIEW – SAP standard – display all – AUDITOR/MANAGER' },
   { code: 'AALG', permission: 'AUDIT_VIEW', roles: ['ADMIN', 'OWNER', 'AUDITOR', 'MANAGER'], module: 'AUDIT', description: 'Audit Log – SM20/SL G1 – AALG – AUDIT_VIEW – SAP standard – ADMIN/AUDITOR only – sensitive' },
   { code: 'FWFL', permission: 'WORKFLOW_VIEW', roles: ['ADMIN', 'OWNER', 'MANAGER', 'PURCHASER', 'ACCOUNTANT', 'SALES', 'HR', 'WAREHOUSE', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Workflow Inbox – SWI1 – FWFL – WORKFLOW_VIEW – SAP standard – all approvers can view' },
+
+  // ========== ADMIN – User/Roles – SU01/PFCG – ADMIN/OWNER/HR/MANAGER – sensitive – S_USER_GRP/S_USER_AGR ==========
+  { code: 'FUSC', permission: 'USER_MANAGE', roles: ['ADMIN', 'OWNER', 'HR', 'MANAGER'], module: 'FOUNDATION', description: 'User Maintenance – SU01 – FUSC – USER_MANAGE – SAP standard – ADMIN/HR/MANAGER only – S_USER_GRP – sensitive – MDM NOT allowed – SoD – Users' },
+  { code: 'FROC', permission: 'ROLE_MANAGE', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Role Maintenance – PFCG – FROC – ROLE_MANAGE – SAP standard – ADMIN only – S_USER_AGR – sensitive' },
+  { code: 'SU01', permission: 'USER_MANAGE', roles: ['ADMIN', 'OWNER', 'HR', 'MANAGER', '*'], module: 'FOUNDATION', description: 'User Profile – SU01 – SU01 – USER_MANAGE – My Profile – allow self – but admin view requires ADMIN/HR/MANAGER' },
+  { code: 'FPRC', permission: 'ROLE_MANAGE', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Permission Maintenance – SU21 – FPRC – ROLE_MANAGE – ADMIN only' },
+  { code: 'FBJM', permission: 'ADMIN_ALL', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'FOUNDATION', description: 'Background Jobs – SM37 – FBJM – ADMIN_ALL – ADMIN/MANAGER – jobs indicator' },
+  { code: 'FELM', permission: 'ADMIN_ALL', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'FOUNDATION', description: 'Locks – SM12 – FELM – ADMIN_ALL – ADMIN/MANAGER' },
+  { code: 'FAUD', permission: 'AUDIT_VIEW', roles: ['ADMIN', 'OWNER', 'AUDITOR', 'MANAGER'], module: 'AUDIT', description: 'Audit Trail – SM20 – FAUD – AUDIT_VIEW – ADMIN/AUDITOR' },
 ];
 
 export function getPagePermission(code: string): PagePermission | null {

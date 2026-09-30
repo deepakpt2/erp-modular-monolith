@@ -27,12 +27,28 @@ export function JobIndicator() {
   const fetchJobs = async () => {
     try {
       const res = await fetch('/api/jobs?status=RUNNING,QUEUED&limit=10');
+      if (!res.ok) {
+        // Handle 403 gracefully – user may not have permission – don't crash – per console error /api/jobs 403
+        if (res.status === 403) {
+          // Silently ignore – user has no permission to view jobs – hide indicator or show 0
+          setJobs([]);
+          setRunningCount(0);
+          setQueuedCount(0);
+          return;
+        }
+        const txt = await res.text();
+        console.warn('Job indicator fetch failed', res.status, txt.slice(0,100));
+        return;
+      }
       const j = await res.json();
       const data = j.data || j.jobs || [];
       setJobs(data);
       setRunningCount(j.running_count || data.filter((x: Job) => x.status === 'RUNNING').length);
       setQueuedCount(j.queued_count || data.filter((x: Job) => x.status === 'QUEUED').length);
-    } catch {}
+    } catch (e) {
+      // Ignore network errors – e.g., ERR_BLOCKED_BY_CLIENT from adblock
+      console.warn('Job indicator fetch error – possibly blocked by client', (e as any)?.message);
+    }
   };
 
   useEffect(() => {

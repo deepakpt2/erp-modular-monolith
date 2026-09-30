@@ -111,6 +111,11 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
   { pattern: /\/workflow\/inbox/, permission: 'WORKFLOW_VIEW', roles: ['ADMIN', 'OWNER', 'MANAGER', 'PURCHASER', 'ACCOUNTANT', 'SALES', 'HR', 'WAREHOUSE', 'MATERIAL_MANAGER'], code: 'FWFL', description: 'Workflow Inbox – SWI1 – FWFL – WORKFLOW_VIEW – all approvers' },
 
   // ========== NAVIGATOR and docs – allow all authenticated – but filters children per RBAC ==========
+  { pattern: /\/foundation\/users/, permission: 'USER_MANAGE', roles: ['ADMIN', 'OWNER', 'HR', 'MANAGER'], code: 'FUSC', description: 'User Maintenance – SU01 – FUSC – USER_MANAGE – ADMIN/HR/MANAGER only – MDM NOT allowed – SoD – Users – per error 403' },
+  { pattern: /\/foundation\/roles/, permission: 'ROLE_MANAGE', roles: ['ADMIN', 'OWNER'], code: 'FROC', description: 'Role Maintenance – PFCG – FROC – ROLE_MANAGE – ADMIN only – S_USER_AGR' },
+  { pattern: /\/foundation\/user-profile/, permission: 'MATERIAL_VIEW', roles: ['*'], code: 'SU01', description: 'User Profile – SU01 – My Profile – allow all authenticated – self' },
+  { pattern: /\/system\/jobs/, permission: 'ADMIN_ALL', roles: ['ADMIN', 'OWNER', 'MANAGER', '*'], code: 'FBJM', description: 'Background Jobs – SM37 – FBJM – ADMIN_ALL – allow all for job indicator GET, but POST restricted – fix 403 for MDM' },
+  { pattern: /\/system\/locks/, permission: 'ADMIN_ALL', roles: ['ADMIN', 'OWNER', 'MANAGER'], code: 'FELM', description: 'Locks – SM12 – FELM – ADMIN_ALL – ADMIN/MANAGER' },
   { pattern: /\/navigator/, permission: 'MATERIAL_VIEW', roles: ['*'], code: 'NAV', description: 'Navigator – allow all authenticated – but filters children via canUserAccessPage – pages without permission removed' },
   { pattern: /\/foundation\/enterprise-structure/, permission: 'MATERIAL_VIEW', roles: ['*'], code: 'ECAC', description: 'Enterprise Structure Overview – ECAC – view only – allow all authenticated' },
 ];

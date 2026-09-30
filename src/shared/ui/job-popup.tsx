@@ -23,6 +23,12 @@ export function JobPopup({ jobId, isOpen, onClose, lastPage, title }: JobPopupPr
       try {
         setLoading(true);
         const res = await fetch(`/api/jobs?limit=100`);
+      if (!res.ok) {
+        if (res.status === 403) {
+          console.warn('Jobs popup fetch 403 – no permission – showing empty');
+          return;
+        }
+      }
         const data = await res.json();
         const found = (data.jobs || data.data || []).find((j: any) => j.id === jobId);
         if (found) setJob(found);

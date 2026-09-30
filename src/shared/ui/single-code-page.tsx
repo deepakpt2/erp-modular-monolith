@@ -323,6 +323,48 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     }
   };
 
+  const filteredListItems = useMemo(() => {
+    if (!listSearch.trim()) return items;
+    const q = listSearch.toLowerCase();
+    return items.filter((it: any) => {
+      const codeVal = (it.code || it.account_number || it.item_number || '').toLowerCase();
+      const nameVal = (it.name || it.description || it.legal_name || '').toLowerCase();
+      return codeVal.includes(q) || nameVal.includes(q);
+    });
+  }, [items, listSearch]);
+
+  const filteredChangeItems = useMemo(() => {
+    if (!changeSearch.trim()) return items.slice(0, 20);
+    const q = changeSearch.toLowerCase();
+    return items.filter((it: any) => {
+      const codeVal = (it.code || it.account_number || it.item_number || '').toLowerCase();
+      const nameVal = (it.name || it.description || it.legal_name || '').toLowerCase();
+      return codeVal.includes(q) || nameVal.includes(q);
+    }).slice(0, 50);
+  }, [items, changeSearch]);
+
+  const listSuggestions = useMemo(() => {
+    if (!listSearch.trim() || listSearch.length < 2) return [];
+    const q = listSearch.toLowerCase();
+    return items.filter((it: any) => {
+      const codeVal = (it.code || it.account_number || it.item_number || '').toLowerCase();
+      const nameVal = (it.name || it.description || it.legal_name || '').toLowerCase();
+      return codeVal.includes(q) || nameVal.includes(q);
+    }).slice(0, 8);
+  }, [items, listSearch]);
+
+  const changeSuggestions = useMemo(() => {
+    if (!changeSearch.trim() || changeSearch.length < 1) return [];
+    const q = changeSearch.toLowerCase();
+    return items.filter((it: any) => {
+      const codeVal = (it.code || it.account_number || it.item_number || '').toLowerCase();
+      const nameVal = (it.name || it.description || it.legal_name || '').toLowerCase();
+      return codeVal.includes(q) || nameVal.includes(q);
+    }).slice(0, 8);
+  }, [items, changeSearch]);
+
+  const showTabs = tabs.length > 1 && (mode === 'create' || (mode === 'change' && selectedCode));
+
   const modern = uiMode === 'modern';
 
   // Sitewide RBAC – completely block view if not allowed – show unauthorized for this transaction, contact administrator
@@ -434,48 +476,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     );
   };
 
-  const filteredListItems = useMemo(() => {
-    if (!listSearch.trim()) return items;
-    const q = listSearch.toLowerCase();
-    return items.filter((it: any) => {
-      const codeVal = (it.code || it.account_number || it.item_number || '').toLowerCase();
-      const nameVal = (it.name || it.description || it.legal_name || '').toLowerCase();
-      return codeVal.includes(q) || nameVal.includes(q);
-    });
-  }, [items, listSearch]);
-
-  const filteredChangeItems = useMemo(() => {
-    if (!changeSearch.trim()) return items.slice(0, 20);
-    const q = changeSearch.toLowerCase();
-    return items.filter((it: any) => {
-      const codeVal = (it.code || it.account_number || it.item_number || '').toLowerCase();
-      const nameVal = (it.name || it.description || it.legal_name || '').toLowerCase();
-      return codeVal.includes(q) || nameVal.includes(q);
-    }).slice(0, 50);
-  }, [items, changeSearch]);
-
-  const listSuggestions = useMemo(() => {
-    if (!listSearch.trim() || listSearch.length < 2) return [];
-    const q = listSearch.toLowerCase();
-    return items.filter((it: any) => {
-      const codeVal = (it.code || it.account_number || it.item_number || '').toLowerCase();
-      const nameVal = (it.name || it.description || it.legal_name || '').toLowerCase();
-      return codeVal.includes(q) || nameVal.includes(q);
-    }).slice(0, 8);
-  }, [items, listSearch]);
-
-  const changeSuggestions = useMemo(() => {
-    if (!changeSearch.trim() || changeSearch.length < 1) return [];
-    const q = changeSearch.toLowerCase();
-    return items.filter((it: any) => {
-      const codeVal = (it.code || it.account_number || it.item_number || '').toLowerCase();
-      const nameVal = (it.name || it.description || it.legal_name || '').toLowerCase();
-      return codeVal.includes(q) || nameVal.includes(q);
-    }).slice(0, 8);
-  }, [items, changeSearch]);
-
-  const showTabs = tabs.length > 1 && (mode === 'create' || (mode === 'change' && selectedCode));
-
+  
   return (
     <div className={modern ? "min-h-screen bg-[#fafaf9] p-6" : "min-h-screen bg-white p-4"}>
       <div className={modern ? "max-w-[1000px] mx-auto space-y-6" : "max-w-[900px] mx-auto space-y-4"}>
