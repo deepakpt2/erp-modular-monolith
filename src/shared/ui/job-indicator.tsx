@@ -85,7 +85,7 @@ export function JobIndicator() {
               <div className="text-[10px] text-zinc-500">{runningCount} running • {queuedCount} queued • Polls every 3s – shows if server working or hung • Auto-promote after 10s for ALL</div>
             </div>
             <div className="flex gap-1">
-              <Link href={`/${companyCode}/system/locks`} className="text-[10px] px-2 py-1 rounded-full border bg-white hover:bg-zinc-50">🔒 SM12</Link>
+              <Link href={`/${companyCode}/system/locks`} className="text-[10px] px-2 py-1 rounded-full border bg-white hover:bg-zinc-50">🔒 FELM</Link>
               <Link href={`/${companyCode}/system/jobs`} className="text-[11px] px-2 py-1 rounded-full bg-black text-white">View All →</Link>
             </div>
           </div>
@@ -95,7 +95,7 @@ export function JobIndicator() {
               <div className="p-6 text-center">
                 <div className="text-xs text-zinc-500">No active jobs – system free</div>
                 <div className="text-[10px] text-zinc-400 mt-1">When you submit payroll for 1000 employees, it runs in background – you can close page – check here or System Jobs page – if server hangs, progress stops – shows hung</div>
-                <Link href={`/${companyCode}/system/jobs`} className="mt-3 inline-block text-[11px] px-3 py-1 rounded-full border hover:bg-zinc-50">Go to System Jobs – SM37</Link>
+                <Link href={`/${companyCode}/system/jobs`} className="mt-3 inline-block text-[11px] px-3 py-1 rounded-full border hover:bg-zinc-50">Go to System Jobs – FBJM own IP</Link>
               </div>
             ) : (
               <div className="divide-y divide-zinc-100">

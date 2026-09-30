@@ -328,7 +328,7 @@ export async function GET(req: NextRequest) {
       count: res.rows.length,
       running_count: parseInt(runningCount.cnt || '0'),
       queued_count: parseInt(queuedCount.cnt || '0'),
-      code: 'SM37',
+      code: 'FBJM', aliasCodes: ['SM37', 'FND-BJM-LS'],
       message: `${res.rows.length} jobs – ${runningCount.cnt} running, ${queuedCount.cnt} queued – background job system – no timeout – user can close page, job continues – header icon shows running`,
     });
   } catch (e: any) {
@@ -366,7 +366,7 @@ export async function POST(req: NextRequest) {
         `);
         if (jobCheck.rows.length > 0) {
           return NextResponse.json({
-            error: `🔒 Locked – ${finalLockObject} ${finalLockObjectId} already has background job ${(jobCheck.rows[0] as any).id} RUNNING/QUEUED by ${lb} – prevents double entry – e.g., GR for same PO – check header Jobs icon or System Jobs page SM37 – try after completion or 5 min inactivity`,
+            error: `🔒 Locked – ${finalLockObject} ${finalLockObjectId} already has background job ${(jobCheck.rows[0] as any).id} RUNNING/QUEUED by ${lb} – prevents double entry – e.g., GR for same PO – check header Jobs icon or System Jobs page FBJM own IP (alias SM37) – try after completion or 5 min inactivity`,
             locked: true,
             locked_by: lb,
             code: 'DOUBLE_ENTRY_LOCKED',

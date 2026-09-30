@@ -145,14 +145,14 @@ export function JobPopup({ jobId, isOpen, onClose, lastPage, title }: JobPopupPr
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-[11px]">
               <p className="font-bold text-red-700">❌ Error – Failed</p>
               <p className="mt-1 whitespace-pre-wrap">{job.error}</p>
-              <p className="mt-2 text-[10px] text-zinc-500">If timeout or hung – check System Jobs page SM37 – progress stuck &gt;5 min indicates hung – you can cancel and retry – number range may have been consumed – check FNRC current</p>
+              <p className="mt-2 text-[10px] text-zinc-500">If timeout or hung – check System Jobs page FBJM own IP (alias SM37) – progress stuck &gt;5 min indicates hung – you can cancel and retry – number range may have been consumed – check FNRC current</p>
             </div>
           )}
 
           {/* Info */}
           <div className="bg-zinc-50 border rounded-xl p-3 text-[10px] text-zinc-600 space-y-1">
             <p><span className="font-bold">How it works:</span> First 10 sec direct with spinner timer – if takes &gt;10 sec auto-moved to background – popup shows steps – you can close → redirect to last page or main – job continues – header Jobs icon shows running/queued – no timeout for background – even minutes for payroll 1000 employees</p>
-            <p><span className="font-bold">Double-entry protection:</span> If one user starts GR for PO 4500000001 and moved to background, lock PO 4500000001 – other users locked out – try after completion or 5 min inactivity – industry standard enqueue SM12</p>
+            <p><span className="font-bold">Double-entry protection:</span> If one user starts GR for PO 4500000001 and moved to background, lock PO 4500000001 – other users locked out – try after completion or 5 min inactivity – industry standard enqueue FELM own IP (alias SM12)</p>
             <p><span className="font-bold">Table locking:</span> Critical settings like number ranges – when editing, lock acquired – other users see 🔒 Locked by user@example.com – can edit after release or 5 min inactivity – heartbeat extends lock while typing</p>
           </div>
         </div>
@@ -163,8 +163,8 @@ export function JobPopup({ jobId, isOpen, onClose, lastPage, title }: JobPopupPr
             <button onClick={handleClose} className="px-4 py-2 rounded-full bg-black text-white text-xs font-medium hover:bg-zinc-800">
               {isCompleted ? '✅ Close → Last Page (Completed)' : isRunning ? 'Close → Last Page – Job Continues in Background' : 'Close → Last Page'}
             </button>
-            <a href={`/${job?.company_code || '1000'}/system/jobs`} className="px-4 py-2 rounded-full border bg-white text-xs hover:bg-zinc-50">📋 System Jobs SM37</a>
-            <a href={`/${job?.company_code || '1000'}/system/locks`} className="px-3 py-2 rounded-full border bg-white text-[11px] hover:bg-zinc-50">🔒 Locks SM12</a>
+            <a href={`/${job?.company_code || '1000'}/system/jobs`} className="px-4 py-2 rounded-full border bg-white text-xs hover:bg-zinc-50">📋 System Jobs FBJM</a>
+            <a href={`/${job?.company_code || '1000'}/system/locks`} className="px-3 py-2 rounded-full border bg-white text-[11px] hover:bg-zinc-50">🔒 Locks FELM</a>
           </div>
           <span className="text-[10px] text-zinc-400">
             {loading ? 'Refreshing...' : `Updated every 2s – ${new Date().toLocaleTimeString()} – ${isRunning ? 'Server working – progress increasing = working, stuck >30s = may be hung' : ''}`}

@@ -46,16 +46,16 @@ export default function LocksPage({ params }: { params: { companyCode: string } 
         <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6" : "border-b pb-3"}>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
-              <span className={modern ? "text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white" : "text-[10px] font-mono border px-2 py-0.5 bg-black text-white"}>SM12</span>
+              <span className={modern ? "text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white" : "text-[10px] font-mono border px-2 py-0.5 bg-black text-white"}>FELM</span>
               <span className={modern ? "text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border" : "text-[9px] font-mono border px-1 bg-zinc-50"}>ENQUEUE</span>
               <span className={modern ? "text-[11px] bg-zinc-100 border rounded-full px-2.5 py-1" : "text-[10px] border px-2 py-0.5"}>{locks.length} locks</span>
             </div>
             <div className="flex items-center gap-2">
-              <Link href={`/${companyCode}/system/jobs`} className={modern ? "px-3 py-1.5 rounded-full border text-xs hover:bg-zinc-50" : "border px-2 py-1 text-xs"}>📋 Jobs SM37</Link>
+              <Link href={`/${companyCode}/system/jobs`} className={modern ? "px-3 py-1.5 rounded-full border text-xs hover:bg-zinc-50" : "border px-2 py-1 text-xs"}>📋 Jobs FBJM</Link>
               <Link href={`/${companyCode}/navigator`} className={modern ? "px-3 py-1.5 rounded-full border text-xs hover:bg-zinc-50" : "border px-2 py-1 text-xs"}>🌳 Navigator</Link>
             </div>
           </div>
-          <h1 className={modern ? "text-xl font-bold mt-3 tracking-tight" : "text-lg font-bold mt-2"}>Enqueue Locks – SM12 – Double-Entry Protection</h1>
+          <h1 className={modern ? "text-xl font-bold mt-3 tracking-tight" : "text-lg font-bold mt-2"}>Enqueue Locks – FELM own IP (alias SM12) – Double-Entry Protection</h1>
           <p className={modern ? "text-xs text-zinc-500 mt-1" : "text-[11px] text-zinc-500"}>
             Prevents double entry – e.g., one user starts GR for PO 4500000001 and moved to background, lock PO 4500000001 – other users locked out – must wait until completion or 5 min inactivity – critical settings like number ranges locked when editing – other users see 🔒 Locked – can edit after release or 5 min expiry – industry standard enqueue/dequeue – heartbeat extends lock while typing – auto-expire after 5 min if user closes browser
           </p>
@@ -118,7 +118,7 @@ export default function LocksPage({ params }: { params: { companyCode: string } 
         </div>
 
         <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6" : "border p-4"}>
-          <h3 className="font-bold text-xs">Industry Standard – SM12 Enqueue – Implementation Details</h3>
+          <h3 className="font-bold text-xs">Industry Standard – FELM own IP (alias SM12) Enqueue – Implementation Details</h3>
           <ul className="text-[11px] text-zinc-600 mt-2 space-y-1 list-disc ml-4">
             <li><span className="font-bold">Table:</span> core_enqueue_lock – lock_object, object_id, table_name, locked_by, locked_at, expires_at (NOW+5min), is_active, job_id, description – indexes on object_id, active, expires, job</li>
             <li><span className="font-bold">Enqueue:</span> POST /api/locks – body lock_object, object_id, locked_by – checks if already locked and not expired – if locked by other → 423 Locked – other users must wait – if same user → extend 5 min</li>

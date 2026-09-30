@@ -105,7 +105,7 @@ export default function SystemJobsPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6">
           <div className="flex flex-wrap justify-between items-center gap-3">
             <div className="flex items-center gap-3">
-              <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white">SM37</span>
+              <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white">FBJM</span>
               <span className="text-[11px] bg-zinc-100 border rounded-full px-2.5 py-1">{jobs.length} jobs • {stats.running} running • {stats.queued} queued</span>
               {stats.running > 0 && <span className="text-[11px] bg-green-100 border border-green-300 rounded-full px-2.5 py-1 text-green-800 animate-pulse">● Server working – {stats.running} running</span>}
               {stats.queued > 0 && <span className="text-[11px] bg-amber-100 border border-amber-300 rounded-full px-2.5 py-1 text-amber-800">○ {stats.queued} queued – will start after current</span>}
@@ -116,7 +116,7 @@ export default function SystemJobsPage() {
               <button onClick={fetchJobs} className="px-3 py-1.5 rounded-full border text-xs hover:bg-zinc-50">Refresh – polls every 2s</button>
             </div>
           </div>
-          <h1 className="text-xl font-bold mt-3">System Jobs – Background Job Queue – SM37</h1>
+          <h1 className="text-xl font-bold mt-3">System Jobs – Background Job Queue – FBJM own IP (alias SM37)</h1>
           <p className="text-sm text-zinc-500 mt-1">Company {companyCode} – background job system for long processes like payroll 1000 employees (minutes) – server does not timeout – user sees if server working or hung – progress steps – can close page, job continues – header Jobs icon shows running – queue keeps jobs in order – if system busy, new jobs stay QUEUED and start after current completes</p>
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -254,7 +254,7 @@ export default function SystemJobsPage() {
             <li><b>Server working vs hung:</b> If progress increases every few seconds → server working – green pulse – if progress stuck at same % for &gt;30 sec → server may be hung – shows warning – you can cancel and retry – header Jobs icon shows running count + green dot if working</li>
             <li><b>Can close page:</b> Job continues even if you close page – background processing – check header Jobs icon (⏳) or System Jobs page for progress – result available when completed</li>
             <li><b>Queue:</b> If system busy (one RUNNING), new jobs stay QUEUED and start after current completes – queue order – e.g., Payroll 1000 running, then Material create queued → will start after payroll – header shows queued count</li>
-            <li><b>System job page:</b> This page – SM37 – shows all jobs – RUNNING, QUEUED, COMPLETED, FAILED – progress, steps, result, error – cancel, delete – separate page per your request</li>
+            <li><b>System job page:</b> This page – FBJM own IP (alias SM37) – shows all jobs – RUNNING, QUEUED, COMPLETED, FAILED – progress, steps, result, error – cancel, delete – separate page per your request</li>
           </ul>
         </div>
       </div>
