@@ -177,11 +177,10 @@ export async function POST(req: NextRequest) {
     let deliveryNumber = body.delivery_number;
     if (!deliveryNumber) {
       try {
-        const nrRes = await db.execute(sql`SELECT current_number, prefix FROM core_number_range WHERE object_type = 'DELIVERY'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
+        const nrRes = await db.execute(sql`SELECT current_number FROM core_number_range WHERE object_type = 'DELIVERY'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
         if (nrRes.rows.length > 0) {
           const current = parseInt((nrRes.rows[0] as any).current_number) + 1;
-          const prefix = (nrRes.rows[0] as any).prefix || 'DN-';
-          deliveryNumber = `${prefix}${current}`;
+                    deliveryNumber = `${current}`;
           await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE object_type = 'DELIVERY'::core_nr_object_type`);
         } else {
           deliveryNumber = `DN-80000001`;

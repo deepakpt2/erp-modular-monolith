@@ -104,7 +104,7 @@ export default function MaterialMasterPage() {
     } catch {}
   }, []);
 
-  // Fetch next number preview for ITEM – shows what will be generated if blank
+  // Fetch next number preview for ITEM – SAP STANDARD numeric – no prefix – shows next available like FBN1
   useEffect(() => {
     if (mode !== 'create') return;
     const fetchNext = async () => {
@@ -112,16 +112,17 @@ export default function MaterialMasterPage() {
         const res = await fetch('/api/number-ranges?limit=100');
         const j = await res.json();
         const ranges = j.data || j.numberRanges || [];
-        const matRange = ranges.find((r: any) => r.object_type === 'ITEM' || r.code === 'MAT-01' || r.code === 'ITEM-01' || r.code?.includes('MAT'));
+        const matRange = ranges.find((r: any) => r.object_type === 'ITEM' || r.code === 'MAT-01' || r.code === 'ITEM-01' || r.code?.includes('MAT') || r.code === 'ITEM-01' || r.object_type === 'MATERIAL');
         if (matRange) {
-          const next = (matRange.current_number || matRange.from_number || 100000) + 1;
-          const prefix = matRange.prefix || 'MAT-';
-          setNextNumberPreview(`${prefix}${next} (from ${matRange.code} ${prefix}${matRange.from_number}-${matRange.to_number})`);
+          const next = (matRange.current_number || matRange.from_number || 10000000) + 1;
+          // SAP STANDARD: purely numeric – no prefix – e.g., 10000001 not MAT-10000001
+          const isLocked = Number(matRange.current_number) > Number(matRange.from_number);
+          setNextNumberPreview(`${next} (from ${matRange.code} ${matRange.from_number}-${matRange.to_number} – current ${matRange.current_number} – next ${next} – ${isLocked ? `🔒 Locked ${Number(matRange.current_number)-Number(matRange.from_number)} used` : '● Editable'} – SAP numeric, no prefix)`);
         } else {
-          setNextNumberPreview('No MAT-01/ITEM range found – will use MAT-{timestamp} fallback – create range via FNRC first for sequential');
+          setNextNumberPreview('No MAT-01/ITEM range found – will use numeric timestamp fallback – create range via FNRC first for sequential – SAP numeric standard');
         }
       } catch {
-        setNextNumberPreview('Unable to fetch range – fallback timestamp will be used');
+        setNextNumberPreview('Unable to fetch range – fallback numeric timestamp will be used – SAP standard');
       }
     };
     fetchNext();
@@ -344,7 +345,7 @@ export default function MaterialMasterPage() {
                 <>
                   {nextNumberPreview && (
                     <div className={modern ? "mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs" : "mb-2 p-2 border bg-blue-50 text-[11px]"}>
-                      <span className="font-medium">Auto-number preview:</span> {nextNumberPreview} – Leave PRODUCT_CODE blank to use this, or type manual like <span className="font-mono">FG-001</span> / <span className="font-mono">RAW-1001</span>. Setup ranges via <Link href={`/${companyCode}/fico/number-ranges`} className="text-blue-600 underline">FNRC Number Ranges</Link> – create MAT-01 with object_type ITEM, prefix MAT-, from 100000.
+                      <span className="font-medium">SAP Auto-number preview – numeric – no prefix:</span> {nextNumberPreview} – Leave PRODUCT_CODE blank to auto-generate purely numeric like <span className="font-mono">10000001</span> (SAP standard, no MAT- prefix). Or enter manual alphanumeric if needed. Setup via <Link href={`/${companyCode}/fico/number-ranges`} className="text-blue-600 underline">FNRC Number Ranges</Link> – create MAT-01 / ITEM-01 with object_type ITEM, from 10000000 to 19999999 – SAP FBN1 style – shows next available + locked 🔒 badge if used.
                     </div>
                   )}
                   <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>

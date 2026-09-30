@@ -188,28 +188,26 @@ export async function POST(req: NextRequest) {
     } = body;
 
     let finalItemNumber = item_number || material_number;
-    // Auto-number from number range if blank – SAP-like MAT-01 range
+    // Auto-number from number range if blank – SAP STANDARD numeric – NO PREFIX – FBN1 style
+    // SAP: Material number is purely numeric e.g., 10000001, not MAT-10000001
     if (!finalItemNumber) {
       try {
-        const nrRes = await db.execute(sql`SELECT code, prefix, current_number, from_number, to_number FROM core_number_range WHERE code IN ('MAT-01','ITEM','MATERIAL','MAT') ORDER BY CASE code WHEN 'MAT-01' THEN 0 WHEN 'ITEM' THEN 1 ELSE 2 END LIMIT 1`);
+        // Try /api/number-ranges/next first via direct DB atomic increment – SAP standard
+        const nrRes = await db.execute(sql`SELECT code, current_number, from_number, to_number FROM core_number_range WHERE object_type = 'ITEM'::core_number_range_object_type OR code IN ('MAT-01','ITEM-01','ITEM','MATERIAL') ORDER BY CASE code WHEN 'MAT-01' THEN 0 WHEN 'ITEM-01' THEN 1 WHEN 'ITEM' THEN 2 ELSE 3 END LIMIT 1`);
         if (nrRes.rows.length > 0) {
           const nr = nrRes.rows[0] as any;
-          const nextNum = (nr.current_number || nr.from_number || 100000) + 1;
-          // Check if exceeds to_number
-          if (nr.to_number && nextNum > nr.to_number) throw new Error('Number range exhausted');
-          await db.execute(sql`UPDATE core_number_range SET current_number = ${nextNum} WHERE code = ${nr.code}`);
-          const prefix = nr.prefix || '';
-          // Format: prefix + padded number e.g., MAT-100001
-          finalItemNumber = `${prefix}${String(nextNum).padStart(6, '0')}`.replace(/--/g, '-');
-          // If prefix already includes dash, keep as is
-          if (prefix && !finalItemNumber.startsWith(prefix)) finalItemNumber = `${prefix}${nextNum}`;
+          const nextNum = Number(nr.current_number || nr.from_number || 10000000) + 1;
+          if (nr.to_number && nextNum > Number(nr.to_number)) throw new Error(`Number range ${nr.code} exhausted – ${nextNum} > ${nr.to_number} – SAP`);
+          await db.execute(sql`UPDATE core_number_range SET current_number = ${nextNum}, prefix = '', updated_at = NOW() WHERE code = ${nr.code}`);
+          // SAP STANDARD: purely numeric – no prefix – e.g., 10000001
+          finalItemNumber = String(nextNum);
         } else {
-          // Fallback: generate from timestamp
-          finalItemNumber = `MAT-${Date.now().toString().slice(-6)}`;
+          // Fallback: numeric timestamp-like – still numeric for SAP compliance
+          finalItemNumber = String(10000000 + Math.floor(Date.now() % 9000000));
         }
       } catch (e: any) {
-        console.warn('Auto-number failed, fallback:', e.message);
-        finalItemNumber = `MAT-${Date.now().toString().slice(-6)}`;
+        console.warn('Auto-number failed, fallback numeric:', e.message);
+        finalItemNumber = String(10000000 + Math.floor(Date.now() % 9000000));
       }
     }
     const finalBaseUnit = base_unit || base_uom || 'KG';

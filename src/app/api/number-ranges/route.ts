@@ -4,15 +4,18 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Number Ranges API – Legal-safe own IP – Module 4 – SAP-like locking
- * New: core_number_range + buffer – objectType ITEM/PARTNER/LOT/PR/PO/GR/IV/PROD_ORDER/FI_DOC etc
- * SAP-like rules (per user confirmation):
- * - Used if current_number > from_number (e.g., MAT-01 from 100000 current 100002 → 2 used)
- * - If used, locked from editing/deleting per code+year (per_code_year)
- * - Edit blocked: code, object_type, from_number, prefix cannot change when used
+ * Number Ranges API – FNRC – SAP STANDARD NUMBERING – NO PREFIX
+ * SAP Standard: Number ranges are purely numeric intervals – NO PREFIX in range itself
+ * Example SAP: PO 4500000000, PR 1000000000, MAT 10000000 – numeric only
+ * In SAP FBN1/SNRO: Interval defined by From Number, To Number, Current Number – all numeric
+ * Prefix handling: REMOVED for SAP compliance – prefix field forced to '' always
+ * SAP-like locking (per user confirmation):
+ * - Used if current_number > from_number
+ * - If used, locked from editing/deleting per code+year
+ * - Edit blocked: code, object_type, from_number cannot change when used
  * - to_number cannot be < current_number
- * - Allow only: description, to_number increase, is_active
- * - Delete blocked if used – keep for audit, like SAP FBN1/SNRO
+ * - Allow only: description, to_number increase
+ * - Delete blocked if used
  */
 
 export async function GET(req: NextRequest) {
@@ -26,6 +29,15 @@ export async function GET(req: NextRequest) {
     try {
       const res = await db.execute(sql`SELECT * FROM core_number_range ORDER BY object_type, code, fiscal_year NULLS LAST`);
       rows = res.rows as any[];
+      // Enrich with SAP standard fields: next_number, used_count, is_locked
+      rows = rows.map((r: any) => ({
+        ...r,
+        prefix: '', // SAP standard – no prefix
+        next_number: Number(r.current_number) + 1,
+        used_count: Number(r.current_number) - Number(r.from_number),
+        is_used: Number(r.current_number) > Number(r.from_number),
+        is_locked: Number(r.current_number) > Number(r.from_number),
+      }));
     } catch (newErr: any) {
       source = 'db-legacy';
       table = 'ent_number_range';
@@ -33,6 +45,14 @@ export async function GET(req: NextRequest) {
       try {
         const res = await db.execute(sql`SELECT * FROM ent_number_range ORDER BY object_type, code`);
         rows = res.rows as any[];
+        rows = rows.map((r: any) => ({
+          ...r,
+          prefix: '',
+          next_number: Number(r.current_number) + 1,
+          used_count: Number(r.current_number) - Number(r.from_number),
+          is_used: Number(r.current_number) > Number(r.from_number),
+          is_locked: Number(r.current_number) > Number(r.from_number),
+        }));
       } catch (e: any) {
         if (e.message?.includes('does not exist')) {
           return NextResponse.json({ data: [], numberRanges: [], count: 0, message: 'Table core_number_range not yet migrated', code: 'FNRC', aliasCodes: ['NRC','FBN1'], helperCode: 'FNRC', table: 'core_number_range', source: 'none', legalSafe: true });
@@ -50,23 +70,32 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Number Ranges – FNRC legal-safe – SAP-like locking: if current>from, range locked from edit/delete – per code+year',
+      functionDescription: 'Number Ranges – FNRC – SAP STANDARD – purely numeric intervals – no prefix – FBN1/SNRO like – shows next available number, locked badge if used',
+      sapStandard: {
+        numbering: 'Purely numeric – no prefix – SAP FBN1/SNRO standard – From/To/Current are numeric – e.g., PO 4500000000, PR 1000000000, MAT 10000000',
+        prefix: 'REMOVED – SAP does not store prefix in number range – prefix field forced to empty for compliance',
+        nextNumber: 'Next available = current_number + 1 – shown in FNRC page like SAP – e.g., current 4500000000 → next 4500000001',
+        locking: 'If current > from, range is used → locked badge 🔒 instead of Edit/Delete – SAP-like',
+      },
       erpDefaults: [
-        { code: 'ITEM-01', objectType: 'ITEM', prefix: 'ITM-', from: 100000, to: 199999, current: 100000, helperCode: 'FNRC', note: 'Material/item numbering – auto if blank' },
-        { code: 'MAT-01', objectType: 'ITEM', prefix: 'MAT-', from: 100000, to: 199999, current: 100000, helperCode: 'FNRC', note: 'Material – MAT- prefix – SAP-like' },
-        { code: 'PARTNER-01', objectType: 'PARTNER', prefix: 'BP-', from: 100000, to: 199999, current: 100000, helperCode: 'FNRC' },
-        { code: 'PO-01', objectType: 'PO', prefix: 'PO-', from: 4500000000, to: 4599999999, current: 4500000000, helperCode: 'FNRC' },
-        { code: 'PR-01', objectType: 'PR', prefix: 'PR-', from: 1000000000, to: 1999999999, current: 1000000000, helperCode: 'FNRC' },
-        { code: 'GR-01', objectType: 'GR', prefix: 'GR-', from: 5000000000, to: 5099999999, current: 5000000000, helperCode: 'FNRC' },
-        { code: 'SO-01', objectType: 'SALES_ORDER', prefix: 'SO-', from: 1000000000, to: 1999999999, current: 1000000000, helperCode: 'FNRC' },
+        { code: 'ITEM-01', objectType: 'ITEM', from: 10000000, to: 19999999, current: 10000000, next: 10000001, helperCode: 'FNRC', note: 'Material – SAP standard numeric 8-digit' },
+        { code: 'MAT-01', objectType: 'ITEM', from: 10000000, to: 19999999, current: 10000000, next: 10000001, helperCode: 'FNRC', note: 'Material – numeric – no MAT- prefix – SAP' },
+        { code: 'PARTNER-01', objectType: 'PARTNER', from: 100000, to: 199999, current: 100000, next: 100001, helperCode: 'FNRC' },
+        { code: 'PO-01', objectType: 'PO', from: 4500000000, to: 4599999999, current: 4500000000, next: 4500000001, helperCode: 'FNRC', note: 'PO – SAP 45* numeric' },
+        { code: 'PR-01', objectType: 'PR', from: 1000000000, to: 1999999999, current: 1000000000, next: 1000000001, helperCode: 'FNRC', note: 'PR – SAP 10-digit numeric' },
+        { code: 'GR-01', objectType: 'GR', from: 5000000000, to: 5099999999, current: 5000000000, next: 5000000001, helperCode: 'FNRC', note: 'GR – SAP 50* numeric' },
+        { code: 'IV-01', objectType: 'IV', from: 5100000000, to: 5199999999, current: 5100000000, next: 5100000001, helperCode: 'FNRC' },
+        { code: 'SO-01', objectType: 'SO', from: 1000000000, to: 1999999999, current: 1000000000, next: 1000000001, helperCode: 'FNRC' },
+        { code: 'FI-01', objectType: 'FI_DOC', from: 1000000000, to: 1999999999, current: 1000000000, next: 1000000001, helperCode: 'FNRC' },
       ],
       lockingRules: {
-        usedCriteria: 'current_number > from_number – e.g., MAT-01 from 100000 current 100002 → 2 used → locked',
-        editBlockedWhenUsed: 'code, object_type, from_number, prefix cannot change; to_number cannot be < current_number; only description, to_number increase, is_active allowed – SAP-like FBN1',
-        deleteBlockedWhenUsed: 'If used, cannot delete – keep for audit – create new range MAT-02 instead – SAP-like',
-        fiscalYear: 'Lock per code+year – e.g., PO-2026 locked only if 2026 used, PO-2025 can still be edited – per_code_year',
+        usedCriteria: 'current_number > from_number – e.g., ITEM-01 from 10000000 current 10000002 → 2 used → locked 🔒',
+        editBlockedWhenUsed: 'code, object_type, from_number cannot change when used; to_number cannot be < current; only description, to_number increase allowed – SAP FBN1',
+        deleteBlockedWhenUsed: 'If used, cannot delete – locked badge shown instead of Edit/Delete – keep for audit – create new range ITEM-02 instead',
+        fiscalYear: 'Lock per code+year – e.g., PO-01 FY 2026 locked only if 2026 used, FY 2025 can still be edited',
+        ui: 'FNRC page shows next available number like SAP – locked badge 🔒 replaces Edit/Delete buttons when used',
       },
-      explanation: 'Number ranges legal-safe core_number_range – SAP-like locking – if used, locked',
+      explanation: 'Number ranges – SAP STANDARD – purely numeric, no prefix – next number displayed – locked badge if used – FBN1/SNRO',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, data: [], numberRanges: [] }, { status: 500 });
@@ -78,23 +107,24 @@ export async function POST(req: NextRequest) {
   if (authCheck) return authCheck;
   try {
     const body = await req.json();
-    const { code, object_type, objectType, prefix, from_number, to_number, current_number, legal_entity_id, fiscal_year, description, year } = body;
+    const { code, object_type, objectType, from_number, to_number, current_number, legal_entity_id, fiscal_year, description, year } = body;
     const finalObjectType = objectType || object_type;
     const finalFiscalYear = fiscal_year ?? year ?? null;
     if (!code || !finalObjectType) return NextResponse.json({ error: 'code and object_type/objectType required' }, { status: 400 });
 
     const upperCode = code.toUpperCase();
     const upperObjType = finalObjectType.toUpperCase();
+    // SAP STANDARD: prefix forced to empty – no prefix in number range
+    const sapPrefix = '';
 
     try {
-      // Check existing for SAP-like locking – per code+year
       let existing: any = null;
       try {
         if (finalFiscalYear) {
-          const exRes = await db.execute(sql`SELECT id, code, object_type, prefix, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${upperCode} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) LIMIT 1`);
+          const exRes = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${upperCode} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) LIMIT 1`);
           if (exRes.rows.length > 0) existing = exRes.rows[0] as any;
         } else {
-          const exRes = await db.execute(sql`SELECT id, code, object_type, prefix, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${upperCode} LIMIT 1`);
+          const exRes = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${upperCode} LIMIT 1`);
           if (exRes.rows.length > 0) existing = exRes.rows[0] as any;
         }
       } catch {}
@@ -103,64 +133,60 @@ export async function POST(req: NextRequest) {
         const isUsed = Number(existing.current_number) > Number(existing.from_number);
         const usedCount = Number(existing.current_number) - Number(existing.from_number);
         if (isUsed) {
-          // SAP strict checks
           if (from_number && Number(from_number) !== Number(existing.from_number)) {
-            return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times (current ${existing.current_number} > from ${existing.from_number}), cannot change from_number ${existing.from_number} → ${from_number} – SAP-like locked – only to_number increase, description allowed. Create new range ${upperCode}-NEW instead.` }, { status: 400 });
-          }
-          if (prefix && prefix !== existing.prefix) {
-            return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times, cannot change prefix ${existing.prefix} → ${prefix} – SAP-like locked – prefix change would break existing docs ${existing.prefix}${existing.from_number}...` }, { status: 400 });
+            return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times (current ${existing.current_number} > from ${existing.from_number}), cannot change from_number – SAP locked – only to_number increase, description allowed. Next available ${Number(existing.current_number)+1}. Create new range ${upperCode}-NEW instead.` }, { status: 400 });
           }
           if (upperObjType !== String(existing.object_type).toUpperCase()) {
-            return NextResponse.json({ error: `Range ${existing.code} already used ${usedCount} times, cannot change object_type ${existing.object_type} → ${upperObjType} – SAP-like locked` }, { status: 400 });
+            return NextResponse.json({ error: `Range ${existing.code} already used ${usedCount} times, cannot change object_type – SAP locked` }, { status: 400 });
           }
           if (to_number && Number(to_number) < Number(existing.current_number)) {
-            return NextResponse.json({ error: `Range ${existing.code} already used ${usedCount} times, cannot reduce to_number ${existing.to_number} → ${to_number} below current_number ${existing.current_number} – would lose generated numbers – SAP-like. Only increase to_number allowed.` }, { status: 400 });
+            return NextResponse.json({ error: `Range ${existing.code} already used ${usedCount} times, cannot reduce to_number ${existing.to_number} → ${to_number} below current ${existing.current_number} – would lose numbers. Only increase allowed. Next ${Number(existing.current_number)+1}` }, { status: 400 });
           }
-          // Allow only description, to_number increase
           const newTo = to_number ? Number(to_number) : Number(existing.to_number);
           const res = await db.execute(sql`
-            UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${description || null}, description), updated_at = NOW()
+            UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${description || null}, description), prefix = '', updated_at = NOW()
             WHERE code = ${upperCode} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1)
-            RETURNING id, code, object_type, current_number, from_number, to_number
+            RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
           `);
-          return NextResponse.json({ success: true, numberRange: res.rows[0], code: 'FNRC', message: `Number range ${upperCode} already used ${usedCount} times – only to_number increase/description updated – SAP-like locked – from/prefix/object_type unchanged`, locked: true, usedCount });
+          const updated = res.rows[0] as any;
+          return NextResponse.json({ success: true, numberRange: { ...updated, next_number: Number(updated.current_number)+1, used_count: usedCount, is_locked: true }, code: 'FNRC', message: `Range ${upperCode} used ${usedCount} times – locked 🔒 – only to_number increase/description updated – SAP standard – next ${Number(updated.current_number)+1}`, locked: true, usedCount, next_number: Number(updated.current_number)+1 });
         }
       }
 
-      // Not used or new – allow full create/upsert
       const res = await db.execute(sql`
         INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number, legal_entity_id, fiscal_year, description)
-        VALUES (${upperCode}, ${upperObjType}::core_number_range_object_type, ${prefix || ''}, ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET object_type = ${upperObjType}::core_number_range_object_type, prefix = ${prefix || ''}, from_number = ${from_number || 1}, to_number = ${to_number || 9999999999}, current_number = ${current_number || from_number || 1}, description = ${description || null}, updated_at = NOW()
+        VALUES (${upperCode}, ${upperObjType}::core_number_range_object_type, '', ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${description || null})
+        ON CONFLICT (code) DO UPDATE SET object_type = ${upperObjType}::core_number_range_object_type, prefix = '', from_number = ${from_number || 1}, to_number = ${to_number || 9999999999}, current_number = ${current_number || from_number || 1}, description = ${description || null}, updated_at = NOW()
         RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
       `);
-      return NextResponse.json({ success: true, numberRange: res.rows[0], code: 'FNRC', message: `Number range ${upperCode}${finalFiscalYear ? ` FY ${finalFiscalYear}` : ''} created – FNRC legal-safe`, legalSafe: true });
+      const row = res.rows[0] as any;
+      return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1, used_count: 0, is_locked: false }, code: 'FNRC', message: `Number range ${upperCode}${finalFiscalYear ? ` FY ${finalFiscalYear}` : ''} created – SAP standard numeric – next ${Number(row.current_number)+1}`, legalSafe: true, sap_standard: true });
     } catch (newErr: any) {
       console.warn('core_number_range insert failed fallback ent_number_range:', newErr.message);
-      // Fallback legacy – still apply locking check for legacy
       try {
-        const exLegacy = await db.execute(sql`SELECT id, code, object_type, prefix, from_number, to_number, current_number FROM ent_number_range WHERE code = ${upperCode} LIMIT 1`);
+        const exLegacy = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number FROM ent_number_range WHERE code = ${upperCode} LIMIT 1`);
         if (exLegacy.rows.length > 0) {
           const existing = exLegacy.rows[0] as any;
           const isUsed = Number(existing.current_number) > Number(existing.from_number);
           if (isUsed) {
             const usedCount = Number(existing.current_number) - Number(existing.from_number);
             if (from_number && Number(from_number) !== Number(existing.from_number)) {
-              return NextResponse.json({ error: `Legacy range ${existing.code} already used ${usedCount} times, cannot change from_number – SAP-like locked` }, { status: 400 });
+              return NextResponse.json({ error: `Legacy range ${existing.code} used ${usedCount} times, cannot change from_number – SAP locked – next ${Number(existing.current_number)+1}` }, { status: 400 });
             }
             if (to_number && Number(to_number) < Number(existing.current_number)) {
-              return NextResponse.json({ error: `Legacy range ${existing.code} already used ${usedCount} times, cannot reduce to_number below current ${existing.current_number}` }, { status: 400 });
+              return NextResponse.json({ error: `Legacy range ${existing.code} used ${usedCount} times, cannot reduce to_number below current ${existing.current_number}` }, { status: 400 });
             }
           }
         }
       } catch {}
       const res = await db.execute(sql`
         INSERT INTO ent_number_range (code, object_type, prefix, from_number, to_number, current_number, company_code_id, year, description)
-        VALUES (${upperCode}, ${upperObjType}, ${prefix || ''}, ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET object_type = ${upperObjType}, prefix = ${prefix || ''}, from_number = ${from_number || 1}, to_number = ${to_number || 9999999999}, current_number = ${current_number || from_number || 1}, description = ${description || null}
-        RETURNING id, code, object_type, current_number
+        VALUES (${upperCode}, ${upperObjType}, '', ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${description || null})
+        ON CONFLICT (code) DO UPDATE SET object_type = ${upperObjType}, prefix = '', from_number = ${from_number || 1}, to_number = ${to_number || 9999999999}, current_number = ${current_number || from_number || 1}, description = ${description || null}
+        RETURNING id, code, object_type, current_number, from_number, to_number
       `);
-      return NextResponse.json({ success: true, numberRange: res.rows[0], code: 'FNRC', aliasCodes: ['FBN1'], message: `Number range ${upperCode} created – FBN1 legacy`, legalSafe: false });
+      const row = res.rows[0] as any;
+      return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1 }, code: 'FNRC', message: `Number range ${upperCode} created – FBN1 legacy – SAP numeric – next ${Number(row.current_number)+1}`, legalSafe: false });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -172,22 +198,21 @@ export async function PUT(req: NextRequest) {
   if (authCheck) return authCheck;
   try {
     const body = await req.json();
-    const { id, code, current_number, from_number, to_number, prefix, object_type, objectType, description, fiscal_year, year } = body;
+    const { id, code, current_number, from_number, to_number, object_type, objectType, description, fiscal_year, year } = body;
     const finalFiscalYear = fiscal_year ?? year ?? null;
     if (!id && !code) return NextResponse.json({ error: 'id or code required' }, { status: 400 });
 
     try {
-      // Fetch existing – per code+year locking
       let existing: any = null;
       if (id) {
-        const exRes = await db.execute(sql`SELECT id, code, object_type, prefix, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE id = ${id} LIMIT 1`);
+        const exRes = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE id = ${id} LIMIT 1`);
         if (exRes.rows.length > 0) existing = exRes.rows[0] as any;
       } else {
         if (finalFiscalYear) {
-          const exRes = await db.execute(sql`SELECT id, code, object_type, prefix, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${code.toUpperCase()} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) LIMIT 1`);
+          const exRes = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${code.toUpperCase()} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) LIMIT 1`);
           if (exRes.rows.length > 0) existing = exRes.rows[0] as any;
         } else {
-          const exRes = await db.execute(sql`SELECT id, code, object_type, prefix, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${code.toUpperCase()} LIMIT 1`);
+          const exRes = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${code.toUpperCase()} LIMIT 1`);
           if (exRes.rows.length > 0) existing = exRes.rows[0] as any;
         }
       }
@@ -197,68 +222,63 @@ export async function PUT(req: NextRequest) {
       const usedCount = Number(existing.current_number) - Number(existing.from_number);
 
       if (isUsed) {
-        // SAP strict – block code, object_type, from_number, prefix change
         if (code && code.toUpperCase() !== String(existing.code).toUpperCase()) {
-          return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times (current ${existing.current_number} > from ${existing.from_number}), cannot change code ${existing.code} → ${code.toUpperCase()} – SAP-like locked. Create new range instead.` }, { status: 400 });
+          return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} used ${usedCount} times (current ${existing.current_number} > from ${existing.from_number}), cannot change code – SAP locked 🔒 – next ${Number(existing.current_number)+1} – create new range instead.` }, { status: 400 });
         }
         const newObjType = (objectType || object_type)?.toUpperCase();
         if (newObjType && newObjType !== String(existing.object_type).toUpperCase()) {
-          return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times, cannot change object_type ${existing.object_type} → ${newObjType} – SAP-like locked` }, { status: 400 });
+          return NextResponse.json({ error: `Range ${existing.code} used ${usedCount} times, cannot change object_type – SAP locked 🔒` }, { status: 400 });
         }
         if (from_number && Number(from_number) !== Number(existing.from_number)) {
-          return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times, cannot change from_number ${existing.from_number} → ${from_number} – SAP-like locked – only to_number increase allowed` }, { status: 400 });
-        }
-        if (prefix && prefix !== existing.prefix) {
-          return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times, cannot change prefix ${existing.prefix} → ${prefix} – would break existing docs like ${existing.prefix}${existing.from_number}` }, { status: 400 });
+          return NextResponse.json({ error: `Range ${existing.code} used ${usedCount} times, cannot change from_number – SAP locked – only to_number increase – next ${Number(existing.current_number)+1}` }, { status: 400 });
         }
         if (to_number && Number(to_number) < Number(existing.current_number)) {
-          return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times, cannot reduce to_number ${existing.to_number} → ${to_number} below current_number ${existing.current_number} – SAP-like` }, { status: 400 });
+          return NextResponse.json({ error: `Range ${existing.code} used ${usedCount} times, cannot reduce to_number ${existing.to_number} → ${to_number} below current ${existing.current_number} – SAP locked – next ${Number(existing.current_number)+1}` }, { status: 400 });
         }
         if (current_number && Number(current_number) < Number(existing.current_number)) {
-          return NextResponse.json({ error: `Range ${existing.code} already used ${usedCount} times, cannot reduce current_number ${existing.current_number} → ${current_number} – current only increases via /api/number-ranges/next` }, { status: 400 });
+          return NextResponse.json({ error: `Range ${existing.code} used ${usedCount} times, cannot reduce current_number – only increases via /api/number-ranges/next – next ${Number(existing.current_number)+1}` }, { status: 400 });
         }
-        // Allow only to_number increase and description
         let res;
         const newTo = to_number ? Number(to_number) : Number(existing.to_number);
         const newDesc = description ?? null;
         if (id) {
-          res = await db.execute(sql`UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${newDesc}, description), updated_at = NOW() WHERE id = ${id} RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
+          res = await db.execute(sql`UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${newDesc}, description), prefix = '', updated_at = NOW() WHERE id = ${id} RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
         } else {
           if (finalFiscalYear) {
-            res = await db.execute(sql`UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${newDesc}, description), updated_at = NOW() WHERE code = ${code.toUpperCase()} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
+            res = await db.execute(sql`UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${newDesc}, description), prefix = '', updated_at = NOW() WHERE code = ${code.toUpperCase()} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
           } else {
-            res = await db.execute(sql`UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${newDesc}, description), updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
+            res = await db.execute(sql`UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${newDesc}, description), prefix = '', updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
           }
         }
-        return NextResponse.json({ success: true, numberRange: res.rows[0], code: 'FNRC', message: `Number range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times – only to_number increase (${existing.to_number}→${newTo}) and description updated – SAP-like locked`, locked: true, usedCount });
+        const updated = res.rows[0] as any;
+        return NextResponse.json({ success: true, numberRange: { ...updated, next_number: Number(updated.current_number)+1, used_count: usedCount, is_locked: true }, code: 'FNRC', message: `Range ${existing.code} used ${usedCount} times – locked 🔒 – only to_number increase (${existing.to_number}→${newTo}) and description updated – SAP – next ${Number(updated.current_number)+1}`, locked: true, usedCount, next_number: Number(updated.current_number)+1 });
       }
 
-      // Not used – allow full edit
       let res;
       if (id) {
-        res = await db.execute(sql`UPDATE core_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = COALESCE(${prefix}, prefix), updated_at = NOW() WHERE id = ${id} RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
+        res = await db.execute(sql`UPDATE core_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '', updated_at = NOW() WHERE id = ${id} RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
       } else {
         if (finalFiscalYear) {
-          res = await db.execute(sql`UPDATE core_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = COALESCE(${prefix}, prefix), updated_at = NOW() WHERE code = ${code.toUpperCase()} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
+          res = await db.execute(sql`UPDATE core_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '', updated_at = NOW() WHERE code = ${code.toUpperCase()} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
         } else {
-          res = await db.execute(sql`UPDATE core_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = COALESCE(${prefix}, prefix), updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
+          res = await db.execute(sql`UPDATE core_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '', updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year`);
         }
       }
       if (res.rows.length === 0) throw new Error('Not found in core_number_range');
-      return NextResponse.json({ success: true, numberRange: res.rows[0], code: 'FNRC', message: `Number range ${res.rows[0].code}${res.rows[0].fiscal_year ? ` FY ${res.rows[0].fiscal_year}` : ''} updated – FNRC legal-safe` });
+      const updated = res.rows[0] as any;
+      return NextResponse.json({ success: true, numberRange: { ...updated, next_number: Number(updated.current_number)+1, used_count: Number(updated.current_number)-Number(updated.from_number), is_locked: false }, code: 'FNRC', message: `Range ${updated.code} updated – SAP numeric – next ${Number(updated.current_number)+1}` });
     } catch (err: any) {
-      if (err.message?.includes('already used') || err.message?.includes('cannot change') || err.message?.includes('cannot reduce')) {
+      if (err.message?.includes('used') || err.message?.includes('cannot') || err.message?.includes('locked')) {
         return NextResponse.json({ error: err.message }, { status: 400 });
       }
-      // Fallback legacy
       let res;
-      if (id) res = await db.execute(sql`UPDATE ent_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = COALESCE(${prefix}, prefix) WHERE id = ${id} RETURNING id, code, object_type, current_number`);
-      else res = await db.execute(sql`UPDATE ent_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = COALESCE(${prefix}, prefix) WHERE code = ${code.toUpperCase()} RETURNING id, code, object_type, current_number`);
+      if (id) res = await db.execute(sql`UPDATE ent_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '' WHERE id = ${id} RETURNING id, code, object_type, current_number`);
+      else res = await db.execute(sql`UPDATE ent_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '' WHERE code = ${code.toUpperCase()} RETURNING id, code, object_type, current_number`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Number range not found' }, { status: 404 });
-      return NextResponse.json({ success: true, numberRange: res.rows[0], message: `Number range ${res.rows[0].code} updated – FBN1 legacy` });
+      return NextResponse.json({ success: true, numberRange: { ...(res.rows[0] as any), next_number: Number((res.rows[0] as any).current_number)+1 }, message: `Range ${(res.rows[0] as any).code} updated – legacy – next ${Number((res.rows[0] as any).current_number)+1}` });
     }
   } catch (e: any) {
-    if (e.message?.includes('already used') || e.message?.includes('cannot')) {
+    if (e.message?.includes('used') || e.message?.includes('cannot') || e.message?.includes('locked')) {
       return NextResponse.json({ error: e.message }, { status: 400 });
     }
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -276,7 +296,6 @@ export async function DELETE(req: NextRequest) {
     if (!code && !id) return NextResponse.json({ error: 'code or id required' }, { status: 400 });
 
     try {
-      // Fetch existing to check used – per code+year
       let existing: any = null;
       if (id) {
         const exRes = await db.execute(sql`SELECT id, code, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE id = ${id} LIMIT 1`);
@@ -296,11 +315,13 @@ export async function DELETE(req: NextRequest) {
         const usedCount = Number(existing.current_number) - Number(existing.from_number);
         if (isUsed) {
           return NextResponse.json({ 
-            error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times (current ${existing.current_number} > from ${existing.from_number}), cannot delete – SAP-like – keep for audit. Existing docs like ${existing.code}-${existing.from_number}...${existing.current_number} already generated (e.g., 2 POs). Create new range ${existing.code}-NEW or ${existing.code}-${Number(existing.fiscal_year || 2026)+1} instead. If you must reset, create new range, do not delete old – audit trail required.`,
+            error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} used ${usedCount} times (current ${existing.current_number} > from ${existing.from_number}) – next ${Number(existing.current_number)+1} – cannot delete – SAP locked 🔒 – keep for audit. Docs ${existing.from_number}...${existing.current_number} already generated. Create new range ${existing.code}-NEW or ${existing.code}-${Number(existing.fiscal_year || 2026)+1} instead.`,
             locked: true,
             usedCount,
             current_number: existing.current_number,
             from_number: existing.from_number,
+            next_number: Number(existing.current_number)+1,
+            is_locked: true,
           }, { status: 400 });
         }
       }
@@ -311,16 +332,15 @@ export async function DELETE(req: NextRequest) {
         else await db.execute(sql`DELETE FROM core_number_range WHERE code = ${code}`);
       }
     } catch (err: any) {
-      if (err.message?.includes('already used') || err.message?.includes('cannot delete')) {
+      if (err.message?.includes('used') || err.message?.includes('cannot delete') || err.message?.includes('locked')) {
         return NextResponse.json({ error: err.message }, { status: 400 });
       }
-      // Fallback legacy
       if (id) await db.execute(sql`DELETE FROM ent_number_range WHERE id = ${id}`);
       else await db.execute(sql`DELETE FROM ent_number_range WHERE code = ${code}`);
     }
-    return NextResponse.json({ success: true, code: 'FNRC', message: `Number range ${code || id}${fiscal_year ? ` FY ${fiscal_year}` : ''} deleted – FNRC legal-safe – was not used yet (current == from)` });
+    return NextResponse.json({ success: true, code: 'FNRC', message: `Range ${code || id}${fiscal_year ? ` FY ${fiscal_year}` : ''} deleted – was not used yet (current == from) – SAP standard` });
   } catch (e: any) {
-    if (e.message?.includes('already used') || e.message?.includes('cannot delete')) {
+    if (e.message?.includes('used') || e.message?.includes('cannot delete') || e.message?.includes('locked')) {
       return NextResponse.json({ error: e.message }, { status: 400 });
     }
     return NextResponse.json({ error: e.message }, { status: 500 });

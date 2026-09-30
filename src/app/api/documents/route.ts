@@ -212,15 +212,14 @@ export async function POST(req: NextRequest) {
             'BOM': 'BOM-', 'ROUTING': 'RT-', 'WC': 'WC-', 'KIT': 'KIT-',
             'MRP': 'MRP-', 'STO': 'STO-', 'PI': 'PI-'
           };
-          const prefix = prefixMap[finalType] || `${finalType}-`;
-          const newRange = await db.execute(sql`
+                    const newRange = await db.execute(sql`
             INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number)
             VALUES (${`${finalType}-01`}, ${finalType}::core_number_range_object_type, ${prefix}, 1000000000, 1999999999, 1000000000)
             ON CONFLICT (code) DO UPDATE SET current_number = core_number_range.current_number + 1
             RETURNING prefix, current_number
           `);
           const row = newRange.rows[0] as any;
-          finalDocNumber = `${row.prefix}${row.current_number}`;
+          finalDocNumber = `${row.current_number}`;
         }
       } catch (nrErr: any) {
         console.warn('Number range generation failed, using timestamp:', nrErr.message);

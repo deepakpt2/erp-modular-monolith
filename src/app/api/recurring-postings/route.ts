@@ -100,11 +100,10 @@ export async function POST(req: NextRequest) {
     let recurringNumber = body.recurring_number;
     if (!recurringNumber) {
       try {
-        const nrRes = await db.execute(sql`SELECT current_number, prefix FROM core_number_range WHERE object_type = 'RECURRING_POSTING'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
+        const nrRes = await db.execute(sql`SELECT current_number FROM core_number_range WHERE object_type = 'RECURRING_POSTING'::core_nr_object_type ORDER BY fiscal_year DESC LIMIT 1`);
         if (nrRes.rows.length > 0) {
           const current = parseInt((nrRes.rows[0] as any).current_number) + 1;
-          const prefix = (nrRes.rows[0] as any).prefix || 'REC-';
-          recurringNumber = `${prefix}${current}`;
+                    recurringNumber = `${current}`;
           await db.execute(sql`UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE object_type = 'RECURRING_POSTING'::core_nr_object_type`);
         } else {
           recurringNumber = `REC-${Date.now()}`;
