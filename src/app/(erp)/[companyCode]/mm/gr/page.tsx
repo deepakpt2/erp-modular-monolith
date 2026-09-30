@@ -213,7 +213,7 @@ export default function Page(){
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">IGRC INVENTORY RECEIPTS – MIGO – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD REQUIRES PO</div>
-        <div className="bg-amber-50 border border-amber-300 p-2 mb-2 text-[10px]">
+        <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
           <div className="font-bold">⚠️ SAP STANDARD – MIGO 101 REQUIRES PO REFERENCE – T0 BLOCKING</div>
           <div>• PO Number required – e.g., 4500000001 – create via PPOC ME21N – PPOC → IGRC → PIVC flow – industry standard</div>
           <div>• Movement Type 101 – Goods Receipt for PO – OMJJ – requires OBYC BSX/WRX auto account – FAUC valuation class</div>
@@ -227,7 +227,7 @@ export default function Page(){
           <div className="col-span-3"><div className="text-[9px] text-zinc-500">HEADER_TEXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="GR for PO 4500000001 – MIGO 101" /></div>
         </div>
         {poDetails && (
-          <div className="mt-3 border-2 border-black p-2 bg-blue-50">
+          <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
             <div className="font-bold">PO {poDetails.po_number} – Vendor {poDetails.vendor_name} – Plant {poDetails.facility_code || poDetails.plant_code} – Status {poDetails.status}</div>
             <div className="mt-2 space-y-1">
               {poLines.map(line=>(
@@ -261,14 +261,14 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       <JobPopupComponent />
-      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
+      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-zinc-50 border border-zinc-200 text-zinc-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
       
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+      <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4">
         <div className="flex gap-2">
           <span className="text-xl">⚠️</span>
           <div>
-            <div className="font-bold text-sm text-amber-800">SAP Standard – MIGO 101 Requires PO Reference – T0 BLOCKING – Fixed per your report</div>
-            <div className="text-xs text-amber-700 mt-1 space-y-1">
+            <div className="font-bold text-sm text-zinc-800">SAP Standard – MIGO 101 Requires PO Reference – T0 BLOCKING – Fixed per your report</div>
+            <div className="text-xs text-zinc-700 mt-1 space-y-1">
               <div>• <b>PO Number required</b> – e.g., 4500000001 – create PO via PPOC ME21N first – flow: PPRC (ME51N PR) → PPOC (ME21N PO) → IGRC (MIGO 101 GR) → PIVC (MIRO IV) → FPYP (F110 Payment) – industry standard MM</div>
               <div>• <b>Movement Type 101</b> – Goods Receipt for Purchase Order – OMJJ – requires auto account OBYC BSX (Inventory) / WRX (GR/IR) – FAUC valuation class – T0 BLOCKING – NO DANGLING</div>
               <div>• <b>Posting Period OB52</b> must be open for account type M – else error: Posting period closed – create via FPPE – OB52 – F_BKPF_BUP</div>
@@ -333,7 +333,7 @@ export default function Page(){
         </div>
 
         {poDetails && (
-          <div className="mt-6 border rounded-2xl p-4 bg-blue-50/50 border-blue-200">
+          <div className="mt-6 border rounded-2xl p-4 bg-zinc-50/50 border-zinc-200">
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-bold text-sm">PO {poDetails.po_number} – {poDetails.vendor_name} – Plant {poDetails.facility_code || poDetails.plant_code} – Status {poDetails.status}</div>
@@ -360,7 +360,7 @@ export default function Page(){
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">Ordered / Received / Open + Tolerance</div>
-                        <div className="text-xs"><span className="font-bold">{line.quantity}</span> / {line.quantity_received} / <span className="text-blue-600 font-bold">{line.quantity_open}</span> {line.uom_code} – Over {line.overdelivery_tolerance_percent || 10}% Under {line.underdelivery_tolerance_percent || 10}% – Max {(line.quantity * (1 + (line.overdelivery_tolerance_percent || 10)/100)).toFixed(2)} Min {(line.quantity * (1 - (line.underdelivery_tolerance_percent || 10)/100)).toFixed(2)}</div>
+                        <div className="text-xs"><span className="font-bold">{line.quantity}</span> / {line.quantity_received} / <span className="text-zinc-900 font-bold">{line.quantity_open}</span> {line.uom_code} – Over {line.overdelivery_tolerance_percent || 10}% Under {line.underdelivery_tolerance_percent || 10}% – Max {(line.quantity * (1 + (line.overdelivery_tolerance_percent || 10)/100)).toFixed(2)} Min {(line.quantity * (1 - (line.underdelivery_tolerance_percent || 10)/100)).toFixed(2)}</div>
                         <div className="text-[10px] text-zinc-400">PO Qty – GR Qty = Open – MIGO shows open – over/under tolerance UEBTO/UNTTO – if GR qty {'>'} maxAllowed {line.quantity}*(1+over/100) block 400 – if final ELIKZ and total {'<'} minAllowed block – partial GR allowed – ELIKZ delivery_completed</div>
                       </div>
                       <div>

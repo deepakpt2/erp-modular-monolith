@@ -81,11 +81,11 @@ export function JobIndicator() {
 
   return (
     <div className="relative" onMouseEnter={showMenu} onMouseLeave={hideMenu}>
-      <button onClick={() => setOpen(!open)} className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${totalActive > 0 ? 'bg-amber-50 border-amber-300 text-amber-800 animate-pulse' : 'bg-white border-zinc-200 hover:bg-zinc-50'}`}>
+      <button onClick={() => setOpen(!open)} className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${totalActive > 0 ? 'bg-zinc-50 border-zinc-300 text-zinc-800 animate-pulse' : 'bg-white border-zinc-200 hover:bg-zinc-50'}`}>
         <span className="text-[14px]">{totalActive > 0 ? '⏳' : '📋'}</span>
         <span className="hidden sm:inline">Jobs</span>
         {totalActive > 0 && (
-          <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] text-[10px] bg-amber-500 text-white rounded-full px-1.5 border border-white shadow-sm">
+          <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] text-[10px] bg-zinc-500 text-white rounded-full px-1.5 border border-white shadow-sm">
             {totalActive}
           </span>
         )}
@@ -120,7 +120,7 @@ export function JobIndicator() {
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${job.status === 'RUNNING' ? 'bg-green-100 border border-green-200 text-green-800' : 'bg-amber-100 border border-amber-200 text-amber-800'}`}>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${job.status === 'RUNNING' ? 'bg-green-100 border border-green-200 text-green-800' : 'bg-zinc-100 border border-zinc-200 text-zinc-800'}`}>
                             {job.status === 'RUNNING' ? '● RUNNING – server working' : '○ QUEUED – waiting, will start after current'}
                           </span>
                           <span className="text-[11px] font-mono font-bold truncate">{job.job_type}</span>
@@ -128,7 +128,7 @@ export function JobIndicator() {
                         <div className="text-[11px] text-zinc-600 mt-1 truncate">{job.step_description || 'Waiting...'}</div>
                         <div className="flex items-center gap-2 mt-1.5">
                           <div className="flex-1 h-[6px] bg-zinc-200 rounded-full overflow-hidden max-w-[180px]">
-                            <div className={`h-full transition-all duration-500 ${job.status === 'RUNNING' ? 'bg-green-500' : 'bg-amber-400'}`} style={{ width: `${job.progress || 0}%` }} />
+                            <div className={`h-full transition-all duration-500 ${job.status === 'RUNNING' ? 'bg-green-500' : 'bg-zinc-400'}`} style={{ width: `${job.progress || 0}%` }} />
                           </div>
                           <span className="text-[10px] font-mono">{job.progress}%</span>
                           {job.current_step && job.total_steps && <span className="text-[10px] text-zinc-400">{job.current_step}/{job.total_steps}</span>}

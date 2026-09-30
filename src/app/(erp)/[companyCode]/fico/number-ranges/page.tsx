@@ -252,7 +252,7 @@ export default function NumberRangesPage() {
               <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white">FNRC</span>
               <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border text-zinc-500">FBN1</span>
               <span className="text-[11px] bg-zinc-100 border rounded-full px-2.5 py-1 text-zinc-600">{ranges.length} ranges • {lockedCount} locked 🔒 • {totalUsed} used • {assignments.length} assignments</span>
-              {warningRanges.length > 0 && <span className="text-[11px] bg-amber-100 border border-amber-300 rounded-full px-2.5 py-1 text-amber-800">⚠️ {warningRanges.length} ranges ≥80% used</span>}
+              {warningRanges.length > 0 && <span className="text-[11px] bg-zinc-100 border border-zinc-300 rounded-full px-2.5 py-1 text-zinc-800">⚠️ {warningRanges.length} ranges ≥80% used</span>}
             </div>
             <div className="flex items-center gap-2">
               <Link href={`/${companyCode}/navigator`} className="px-3 py-1.5 rounded-full border text-xs hover:bg-zinc-50">Navigator</Link>
@@ -270,12 +270,12 @@ export default function NumberRangesPage() {
               <div className="text-[10px] uppercase text-zinc-500">Numbering</div>
               <div className="text-xs font-medium mt-1">Purely numeric – no prefix – e.g., PO 4500000000, Material 10000001</div>
             </div>
-            <div className="bg-blue-50 rounded-xl border border-blue-200 p-3">
-              <div className="text-[10px] uppercase text-blue-600">Next Available</div>
+            <div className="bg-zinc-50 rounded-xl border border-zinc-200 p-3">
+              <div className="text-[10px] uppercase text-zinc-900">Next Available</div>
               <div className="text-xs font-medium mt-1">Current+1 – e.g., current 4500000000 → next 4500000001 – shown in blue badge</div>
             </div>
-            <div className="bg-amber-50 rounded-xl border border-amber-200 p-3">
-              <div className="text-[10px] uppercase text-amber-700">Locked 🔒</div>
+            <div className="bg-zinc-50 rounded-xl border border-zinc-200 p-3">
+              <div className="text-[10px] uppercase text-zinc-700">Locked 🔒</div>
               <div className="text-xs font-medium mt-1">If used (current &gt; from), show 🔒 Locked + used count + % – no delete, only to_number increase</div>
             </div>
             <div className="bg-green-50 rounded-xl border border-green-200 p-3">
@@ -285,11 +285,11 @@ export default function NumberRangesPage() {
           </div>
 
           {warningRanges.length > 0 && (
-            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3">
-              <div className="text-xs font-bold text-amber-800">⚠️ Usage Warning – {warningRanges.length} ranges ≥80% used – consider increasing to_number or creating new range</div>
+            <div className="mt-4 bg-zinc-50 border border-zinc-200 rounded-xl p-3">
+              <div className="text-xs font-bold text-zinc-800">⚠️ Usage Warning – {warningRanges.length} ranges ≥80% used – consider increasing to_number or creating new range</div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {warningRanges.map(r => (
-                  <span key={r.code} className={`text-[11px] px-2 py-1 rounded-full border ${ (r.usage_percent||0) >= 90 ? 'bg-red-100 border-red-300 text-red-800' : 'bg-amber-100 border-amber-300 text-amber-800'}`}>
+                  <span key={r.code} className={`text-[11px] px-2 py-1 rounded-full border ${ (r.usage_percent||0) >= 90 ? 'bg-red-100 border-red-300 text-red-800' : 'bg-zinc-100 border-zinc-300 text-zinc-800'}`}>
                     {r.code}: {r.usage_percent}% used – {r.current_number}/{r.to_number} – next {r.next_number} {r.is_locked ? '🔒' : ''}
                   </span>
                 ))}
@@ -301,12 +301,12 @@ export default function NumberRangesPage() {
         {/* Search */}
         <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-4 flex flex-wrap gap-3 justify-between items-center">
           <div className="flex items-center gap-2">
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search code, object_type, fiscal_year..." className="w-[320px] border-2 border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search code, object_type, fiscal_year..." className="w-[320px] border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-2 focus:ring-black/10" />
             <span className="text-[11px] text-zinc-500">{activeTab==='ranges' ? `${filtered.length} of ${ranges.length}` : `${assignments.length} assignments`}</span>
           </div>
           <div className="flex items-center gap-2 text-[11px]">
             <span className="px-2 py-1 rounded-full bg-green-100 border text-green-700">● Editable – not used</span>
-            <span className="px-2 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800">🔒 Locked – used – only to↑</span>
+            <span className="px-2 py-1 rounded-full bg-zinc-100 border border-zinc-300 text-zinc-800">🔒 Locked – used – only to↑</span>
             <span className="px-2 py-1 rounded-full bg-red-100 border border-red-300 text-red-800">≥90% – nearly exhausted</span>
           </div>
         </div>
@@ -317,49 +317,49 @@ export default function NumberRangesPage() {
               <div className="bg-white rounded-2xl shadow-lg border border-zinc-200 p-6 space-y-4">
                 <h3 className="font-semibold text-sm">{editing ? `Change ${editing.code}${editing.fiscal_year ? ` FY ${editing.fiscal_year}` : ''} ${editing.is_locked ? `– 🔒 Locked ${editing.usage_percent}% – only to_number increase` : ''}` : 'Create Number Range – Numeric Only – No Prefix – 5-digit to 12-digit configurable'}</h3>
                 {editing?.is_locked && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs">
-                    <div className="font-medium text-amber-800">🔒 Locked – used {editing.used_count} times (current {editing.current_number} &gt; from {editing.from_number}) – {editing.usage_percent}% used – Next {editing.next_number}</div>
-                    <div className="text-amber-700 mt-1">Cannot change code, object_type, from_number – only to_number increase and description allowed. Existing docs {editing.from_number}…{editing.current_number} already generated. To handle exhaustion, increase to_number (e.g., {editing.to_number} → {editing.to_number+10000}) or create new range {editing.code}-NEW and update assignment.</div>
+                  <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-xs">
+                    <div className="font-medium text-zinc-800">🔒 Locked – used {editing.used_count} times (current {editing.current_number} &gt; from {editing.from_number}) – {editing.usage_percent}% used – Next {editing.next_number}</div>
+                    <div className="text-zinc-700 mt-1">Cannot change code, object_type, from_number – only to_number increase and description allowed. Existing docs {editing.from_number}…{editing.current_number} already generated. To handle exhaustion, increase to_number (e.g., {editing.to_number} → {editing.to_number+10000}) or create new range {editing.code}-NEW and update assignment.</div>
                   </div>
                 )}
                 <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">CODE * {editing?.is_locked && <span className="text-amber-600">– locked</span>}</label>
-                    <input value={form.code || ''} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} disabled={!!editing} placeholder="e.g., MAT-RAW-01, PO-01, ITEM-5DIGIT" className={`w-full border-2 rounded-xl px-3 py-2.5 text-sm ${editing ? 'bg-zinc-100 border-zinc-200' : 'border-zinc-200'}`} required={!editing} />
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">CODE * {editing?.is_locked && <span className="text-amber-600">– locked</span>}</label>
+                    <input value={form.code || ''} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} disabled={!!editing} placeholder="e.g., MAT-RAW-01, PO-01, ITEM-5DIGIT" className={`w-full border-2 rounded-lg px-2.5 py-2 text-[13px] h-[32px] ${editing ? 'bg-zinc-100 border-zinc-200' : 'border-zinc-200'}`} required={!editing} />
                     <p className="text-[10px] text-zinc-400">Unique code – e.g., MAT-RAW-01 for RAW 10000-19999, PO-01 for PO 4500000000-4599999999 – 5 to 12 digit via FROM/TO</p>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">OBJECT_TYPE * {editing?.is_locked && <span className="text-amber-600">– locked</span>}</label>
-                    <select value={form.object_type || ''} onChange={e => setForm({ ...form, object_type: e.target.value })} disabled={!!editing} className={`w-full border-2 rounded-xl px-3 py-2.5 text-sm ${editing ? 'bg-zinc-100' : 'border-zinc-200 bg-white'}`} required>
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">OBJECT_TYPE * {editing?.is_locked && <span className="text-amber-600">– locked</span>}</label>
+                    <select value={form.object_type || ''} onChange={e => setForm({ ...form, object_type: e.target.value })} disabled={!!editing} className={`w-full border-2 rounded-lg px-2.5 py-2 text-[13px] h-[32px] ${editing ? 'bg-zinc-100' : 'border-zinc-200 bg-white'}`} required>
                       <option value="">Select</option>
                       {OBJECT_TYPES.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                     <p className="text-[10px] text-zinc-400">ITEM for material, PO/PR/GR/IV etc – purely numeric range</p>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">FROM_NUMBER * {editing?.is_locked && <span className="text-amber-600">– locked</span>}</label>
-                    <input type="number" value={form.from_number || ''} onChange={e => setForm({ ...form, from_number: Number(e.target.value) })} disabled={!!editing?.is_locked} placeholder="e.g., 10000 for 5-digit, 100000000000 for 12-digit" className={`w-full border-2 rounded-xl px-3 py-2.5 text-sm ${editing?.is_locked ? 'bg-zinc-100' : 'border-zinc-200'}`} required />
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">FROM_NUMBER * {editing?.is_locked && <span className="text-amber-600">– locked</span>}</label>
+                    <input type="number" value={form.from_number || ''} onChange={e => setForm({ ...form, from_number: Number(e.target.value) })} disabled={!!editing?.is_locked} placeholder="e.g., 10000 for 5-digit, 100000000000 for 12-digit" className={`w-full border-2 rounded-lg px-2.5 py-2 text-[13px] h-[32px] ${editing?.is_locked ? 'bg-zinc-100' : 'border-zinc-200'}`} required />
                     <p className="text-[10px] text-zinc-400">Start – numeric – 5-digit: 10000, 12-digit: 100000000000 – you set</p>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">TO_NUMBER * – {editing?.is_locked ? 'only increase allowed' : 'end'}</label>
-                    <input type="number" value={form.to_number || ''} onChange={e => setForm({ ...form, to_number: Number(e.target.value) })} placeholder="e.g., 99999 for 5-digit, 999999999999 for 12-digit" className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" required />
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">TO_NUMBER * – {editing?.is_locked ? 'only increase allowed' : 'end'}</label>
+                    <input type="number" value={form.to_number || ''} onChange={e => setForm({ ...form, to_number: Number(e.target.value) })} placeholder="e.g., 99999 for 5-digit, 999999999999 for 12-digit" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" required />
                     <p className="text-[10px] text-zinc-400">End – must be ≥ current – only increase if locked – 5-digit: 99999, 12-digit: 999999999999 – next {editing ? editing.next_number : (form.current_number || 0)+1}</p>
                   </div>
                   {!editing && (
                     <div className="space-y-1">
-                      <label className="text-xs font-medium">CURRENT_NUMBER – starts at FROM</label>
-                      <input type="number" value={form.current_number || ''} onChange={e => setForm({ ...form, current_number: Number(e.target.value) })} placeholder="e.g., 10000" className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" />
+                      <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">CURRENT_NUMBER – starts at FROM</label>
+                      <input type="number" value={form.current_number || ''} onChange={e => setForm({ ...form, current_number: Number(e.target.value) })} placeholder="e.g., 10000" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                       <p className="text-[10px] text-zinc-400">Current = from initially – next = current+1</p>
                     </div>
                   )}
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">FISCAL_YEAR – optional – per code+year locking</label>
-                    <input type="number" value={form.fiscal_year || ''} onChange={e => setForm({ ...form, fiscal_year: e.target.value ? Number(e.target.value) : undefined })} placeholder="e.g., 2026 – blank for year-independent" className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" />
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">FISCAL_YEAR – optional – per code+year locking</label>
+                    <input type="number" value={form.fiscal_year || ''} onChange={e => setForm({ ...form, fiscal_year: e.target.value ? Number(e.target.value) : undefined })} placeholder="e.g., 2026 – blank for year-independent" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="space-y-1 md:col-span-2">
-                    <label className="text-xs font-medium">DESCRIPTION</label>
-                    <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="e.g., RAW materials 5-digit 10000-19999" rows={2} className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" />
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DESCRIPTION</label>
+                    <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="e.g., RAW materials 5-digit 10000-19999" rows={2} className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="md:col-span-2 flex items-center gap-3">
                     <button type="submit" className="px-6 py-2.5 rounded-full bg-black text-white text-sm">{editing ? (editing.is_locked ? 'Save – only to_number increase 🔒' : 'Save') : 'Create Range – 5 to 12 digit configurable'}</button>
@@ -382,7 +382,7 @@ export default function NumberRangesPage() {
                         <th className="text-left py-2">From</th>
                         <th className="text-left py-2">To</th>
                         <th className="text-left py-2">Current</th>
-                        <th className="text-left py-2 bg-blue-50 px-2">Next</th>
+                        <th className="text-left py-2 bg-zinc-50 px-2">Next</th>
                         <th className="text-left py-2">FY</th>
                         <th className="text-left py-2">Used</th>
                         <th className="text-left py-2">Usage %</th>
@@ -392,13 +392,13 @@ export default function NumberRangesPage() {
                     </thead>
                     <tbody>
                       {filtered.map((r, i) => (
-                        <tr key={i} className={`border-b hover:bg-zinc-50 ${r.is_locked ? 'bg-amber-50/30' : ''} ${(r.usage_percent||0) >= 90 ? 'bg-red-50/50' : (r.usage_percent||0) >= 80 ? 'bg-amber-50/50' : ''}`}>
+                        <tr key={i} className={`border-b hover:bg-zinc-50 ${r.is_locked ? 'bg-zinc-50/30' : ''} ${(r.usage_percent||0) >= 90 ? 'bg-red-50/50' : (r.usage_percent||0) >= 80 ? 'bg-zinc-50/50' : ''}`}>
                           <td className="py-2 font-mono text-xs font-bold">{r.code}</td>
                           <td className="py-2"><span className="text-[11px] bg-black text-white rounded-full px-2 py-0.5">{r.object_type}</span></td>
                           <td className="py-2 font-mono text-xs">{r.from_number}</td>
                           <td className="py-2 font-mono text-xs">{r.to_number}</td>
                           <td className="py-2 font-mono text-xs">{r.current_number}</td>
-                          <td className="py-2 font-mono text-xs font-bold bg-blue-50 px-2 rounded">
+                          <td className="py-2 font-mono text-xs font-bold bg-zinc-50 px-2 rounded">
                             <span className="bg-blue-600 text-white rounded-full px-2 py-0.5 text-[11px]">{r.next_number}</span>
                           </td>
                           <td className="py-2 text-xs">{r.fiscal_year || '-'}</td>
@@ -406,25 +406,25 @@ export default function NumberRangesPage() {
                           <td className="py-2">
                             <div className="flex items-center gap-1">
                               <div className="w-[40px] h-[6px] bg-zinc-200 rounded-full overflow-hidden">
-                                <div className={`h-full ${(r.usage_percent||0) >= 90 ? 'bg-red-500' : (r.usage_percent||0) >= 80 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${Math.min(100, r.usage_percent||0)}%` }} />
+                                <div className={`h-full ${(r.usage_percent||0) >= 90 ? 'bg-red-500' : (r.usage_percent||0) >= 80 ? 'bg-zinc-500' : 'bg-green-500'}`} style={{ width: `${Math.min(100, r.usage_percent||0)}%` }} />
                               </div>
-                              <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ (r.usage_percent||0) >= 90 ? 'bg-red-100 text-red-800 border border-red-200' : (r.usage_percent||0) >= 80 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-zinc-100 text-zinc-600'}`}>{r.usage_percent}%</span>
+                              <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ (r.usage_percent||0) >= 90 ? 'bg-red-100 text-red-800 border border-red-200' : (r.usage_percent||0) >= 80 ? 'bg-zinc-100 text-zinc-800 border border-zinc-200' : 'bg-zinc-100 text-zinc-600'}`}>{r.usage_percent}%</span>
                             </div>
                           </td>
                           <td className="py-2">
                             {r.is_locked ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-[11px]">🔒 Locked – {r.used_count} used</span>
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-100 border border-zinc-300 text-zinc-800 text-[11px]">🔒 Locked – {r.used_count} used</span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 border text-green-700 text-[11px]">● Editable</span>
                             )}
                             {(r.usage_percent||0) >= 90 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 border border-red-300 text-red-700">⚠️ ≥90% – nearly exhausted</span>}
-                            {(r.usage_percent||0) >= 80 && (r.usage_percent||0) < 90 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-700">⚠️ ≥80%</span>}
+                            {(r.usage_percent||0) >= 80 && (r.usage_percent||0) < 90 && <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-100 border border-zinc-300 text-zinc-700">⚠️ ≥80%</span>}
                           </td>
                           <td className="py-2">
                             {r.is_locked ? (
                               <div className="flex items-center gap-1">
-                                <span className="text-[10px] px-2 py-1 rounded-full bg-amber-50 border text-amber-700">No Delete – only to↑</span>
-                                <button onClick={() => handleEdit(r)} className="text-[11px] px-2 py-1 rounded-full border bg-white hover:bg-amber-50">Edit to↑</button>
+                                <span className="text-[10px] px-2 py-1 rounded-full bg-zinc-50 border text-zinc-700">No Delete – only to↑</span>
+                                <button onClick={() => handleEdit(r)} className="text-[11px] px-2 py-1 rounded-full border bg-white hover:bg-zinc-50">Edit to↑</button>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1">
@@ -447,7 +447,7 @@ export default function NumberRangesPage() {
             {showAssignForm && (
               <div className="bg-white rounded-2xl shadow-lg border border-zinc-200 p-6 space-y-4">
                 <h3 className="font-semibold text-sm">Create Assignment – Explicit XYZ to Material / YZX to PO – e.g., RAW → MAT-RAW-01 (10000-19999)</h3>
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs">
+                <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-xs">
                   <div className="font-medium">How assignment works:</div>
                   <ul className="list-disc pl-4 mt-1 space-y-1 text-[11px] text-zinc-700">
                     <li><b>Material:</b> object_type=ITEM, assignment_key=RAW (material type), number_range_code=MAT-RAW-01 (10000-19999) → when creating material of type RAW, system uses MAT-RAW-01 range → 10001, 10002…</li>
@@ -458,21 +458,21 @@ export default function NumberRangesPage() {
                 </div>
                 <form onSubmit={handleCreateAssignment} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">OBJECT_TYPE *</label>
-                    <select value={assignForm.object_type || ''} onChange={e => setAssignForm({ ...assignForm, object_type: e.target.value })} className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white" required>
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">OBJECT_TYPE *</label>
+                    <select value={assignForm.object_type || ''} onChange={e => setAssignForm({ ...assignForm, object_type: e.target.value })} className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] bg-white" required>
                       <option value="">Select</option>
                       {OBJECT_TYPES.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">ASSIGNMENT_TYPE</label>
-                    <select value={assignForm.assignment_type || ''} onChange={e => setAssignForm({ ...assignForm, assignment_type: e.target.value })} className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white">
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">ASSIGNMENT_TYPE</label>
+                    <select value={assignForm.assignment_type || ''} onChange={e => setAssignForm({ ...assignForm, assignment_type: e.target.value })} className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] bg-white">
                       {ASSIGNMENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">ASSIGNMENT_KEY * – e.g., RAW, FINISHED, 1000, NB</label>
-                    <input value={assignForm.assignment_key || ''} onChange={e => setAssignForm({ ...assignForm, assignment_key: e.target.value.toUpperCase() })} placeholder="e.g., RAW for material type, 1000 for company, NB for doc type" className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" required list="assign-keys" />
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">ASSIGNMENT_KEY * – e.g., RAW, FINISHED, 1000, NB</label>
+                    <input value={assignForm.assignment_key || ''} onChange={e => setAssignForm({ ...assignForm, assignment_key: e.target.value.toUpperCase() })} placeholder="e.g., RAW for material type, 1000 for company, NB for doc type" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" required list="assign-keys" />
                     <datalist id="assign-keys">
                       {MATERIAL_TYPES.map(m => <option key={m} value={m} />)}
                       <option value="1000" />
@@ -481,19 +481,19 @@ export default function NumberRangesPage() {
                     </datalist>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">NUMBER_RANGE_CODE * – must exist in Ranges tab</label>
-                    <select value={assignForm.number_range_code || ''} onChange={e => setAssignForm({ ...assignForm, number_range_code: e.target.value })} className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white" required>
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">NUMBER_RANGE_CODE * – must exist in Ranges tab</label>
+                    <select value={assignForm.number_range_code || ''} onChange={e => setAssignForm({ ...assignForm, number_range_code: e.target.value })} className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] bg-white" required>
                       <option value="">Select range code – e.g., MAT-RAW-01</option>
                       {ranges.map(r => <option key={r.code} value={r.code}>{r.code} – {r.object_type} {r.from_number}-{r.to_number} next {r.next_number} {r.usage_percent}% used</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">FISCAL_YEAR – optional</label>
-                    <input type="number" value={assignForm.fiscal_year || ''} onChange={e => setAssignForm({ ...assignForm, fiscal_year: e.target.value ? Number(e.target.value) : undefined })} placeholder="e.g., 2026 – blank for all years" className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" />
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">FISCAL_YEAR – optional</label>
+                    <input type="number" value={assignForm.fiscal_year || ''} onChange={e => setAssignForm({ ...assignForm, fiscal_year: e.target.value ? Number(e.target.value) : undefined })} placeholder="e.g., 2026 – blank for all years" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-medium">DESCRIPTION</label>
-                    <input value={assignForm.description || ''} onChange={e => setAssignForm({ ...assignForm, description: e.target.value })} placeholder="e.g., RAW materials use 10000-19999" className="w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" />
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DESCRIPTION</label>
+                    <input value={assignForm.description || ''} onChange={e => setAssignForm({ ...assignForm, description: e.target.value })} placeholder="e.g., RAW materials use 10000-19999" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="md:col-span-2 flex gap-2">
                     <button type="submit" className="px-6 py-2.5 rounded-full bg-black text-white text-sm">Create Assignment – XYZ→Material</button>
@@ -526,11 +526,11 @@ export default function NumberRangesPage() {
                     </thead>
                     <tbody>
                       {assignments.map((a, i) => (
-                        <tr key={i} className={`border-b hover:bg-zinc-50 ${(a.usage_percent||0) >= 90 ? 'bg-red-50/50' : (a.usage_percent||0) >= 80 ? 'bg-amber-50/50' : ''}`}>
+                        <tr key={i} className={`border-b hover:bg-zinc-50 ${(a.usage_percent||0) >= 90 ? 'bg-red-50/50' : (a.usage_percent||0) >= 80 ? 'bg-zinc-50/50' : ''}`}>
                           <td className="py-2"><span className="text-[11px] bg-black text-white rounded-full px-2 py-0.5">{a.object_type}</span></td>
                           <td className="py-2 font-mono text-xs font-bold">{a.assignment_key}</td>
                           <td className="py-2 text-[11px]">{a.assignment_type}</td>
-                          <td className="py-2 font-mono text-xs font-bold bg-blue-50 px-2 rounded">{a.number_range_code}</td>
+                          <td className="py-2 font-mono text-xs font-bold bg-zinc-50 px-2 rounded">{a.number_range_code}</td>
                           <td className="py-2 font-mono text-xs">{a.from_number ? `${a.from_number}-${a.to_number}` : '-'}</td>
                           <td className="py-2 font-mono text-xs">{a.current_number || '-'}</td>
                           <td className="py-2 font-mono text-xs"><span className="bg-blue-600 text-white rounded-full px-2 py-0.5 text-[11px]">{a.next_number || '-'}</span></td>
@@ -538,15 +538,15 @@ export default function NumberRangesPage() {
                             {a.usage_percent !== undefined ? (
                               <div className="flex items-center gap-1">
                                 <div className="w-[40px] h-[6px] bg-zinc-200 rounded-full overflow-hidden">
-                                  <div className={`h-full ${(a.usage_percent||0) >= 90 ? 'bg-red-500' : (a.usage_percent||0) >= 80 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${Math.min(100, a.usage_percent||0)}%` }} />
+                                  <div className={`h-full ${(a.usage_percent||0) >= 90 ? 'bg-red-500' : (a.usage_percent||0) >= 80 ? 'bg-zinc-500' : 'bg-green-500'}`} style={{ width: `${Math.min(100, a.usage_percent||0)}%` }} />
                                 </div>
-                                <span className={`text-[11px] px-1 py-0.5 rounded-full ${ (a.usage_percent||0) >= 90 ? 'bg-red-100 text-red-800 border' : (a.usage_percent||0) >= 80 ? 'bg-amber-100 text-amber-800 border' : 'bg-zinc-100'}`}>{a.usage_percent}%</span>
+                                <span className={`text-[11px] px-1 py-0.5 rounded-full ${ (a.usage_percent||0) >= 90 ? 'bg-red-100 text-red-800 border' : (a.usage_percent||0) >= 80 ? 'bg-zinc-100 text-zinc-800 border' : 'bg-zinc-100'}`}>{a.usage_percent}%</span>
                               </div>
                             ) : '-'}
                           </td>
                           <td className="py-2 text-xs">{a.fiscal_year || '-'}</td>
                           <td className="py-2">
-                            {a.is_locked ? <span className="text-[11px] px-2 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800">🔒 Locked – {a.used_count} used</span> : <span className="text-[11px] px-2 py-1 rounded-full bg-green-100 border text-green-700">● Active</span>}
+                            {a.is_locked ? <span className="text-[11px] px-2 py-1 rounded-full bg-zinc-100 border border-zinc-300 text-zinc-800">🔒 Locked – {a.used_count} used</span> : <span className="text-[11px] px-2 py-1 rounded-full bg-green-100 border text-green-700">● Active</span>}
                             {(a.usage_percent||0) >= 90 && <span className="ml-1 text-[10px] px-1 py-0.5 rounded-full bg-red-100 border border-red-300 text-red-700">⚠️ Exhausted soon</span>}
                           </td>
                           <td className="py-2">

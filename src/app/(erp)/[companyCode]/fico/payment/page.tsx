@@ -134,7 +134,7 @@ export default function Page(){
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">F-53 PAYMENT PROCESSING – KZ 53* – {payments.length} PAYMENTS – {apOpenItems.length} AP OPEN ITEMS – SAP STANDARD – VENDOR PAYMENT Dr VENDOR RECON Cr BANK – TOLERANCE OBA0/OBA4 – OPEN-ITEM CLEARING – T1</div>
-        <div className="bg-amber-50 border border-amber-300 p-2 mb-2 text-[10px]">
+        <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
           <div className="font-bold">⚠️ SAP STANDARD – F-53 KZ 53* 5300000000-5399999999 – T1 REQUIRED – VENDOR PAYMENT – OPEN-ITEM CLEARING – TOLERANCE OBA0/OBA4</div>
           <div>• Company Code ELEC OX02 required – e.g., {companyCode} – company code – T0 – chart CA-IN-01 fiscal K4 posting PPV-1000</div>
           <div>• Vendor PSUC XK01 required – e.g., VEND-1000 – partner_account – vendor master – currency_code FCYC INR payment_term_code FAPT NT30 recon_account FGLC 2000000000 procurement_division EPDC buyer_team EBTC – T0</div>
@@ -158,7 +158,7 @@ export default function Page(){
           <div className="col-span-3"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT – KZ Payment Vendor Amount Method</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder={`KZ Payment ${vendorNumber} ${amount} ${paymentMethod} – F-53 – ${companyCode}`} /></div>
         </div>
         {apOpenItems.length>0 && (
-          <div className="mt-3 border-2 border-black p-2 bg-blue-50">
+          <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
             <div className="font-bold">AP OPEN ITEMS – {apOpenItems.length} – fi_ap_invoice status OPEN – SELECT INVOICES TO CLEAR – OPEN-ITEM CLEARING FB05 F-44 – T1</div>
             <div className="mt-2 space-y-1 max-h-[200px] overflow-auto">
               {apOpenItems.slice(0,20).map((it:any)=>(
@@ -191,14 +191,14 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       <JobPopupComponent />
-      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
+      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-zinc-50 border border-zinc-200 text-zinc-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
       
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+      <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4">
         <div className="flex gap-2">
           <span className="text-xl">⚠️</span>
           <div>
-            <div className="font-bold text-sm text-amber-800">SAP Standard – F-53 KZ 53* Vendor Payment – Dr Vendor Recon Cr Bank – Tolerance OBA0/OBA4 – Open-Item Clearing FB05 F-44 – Fixed from dummy API</div>
-            <div className="text-xs text-amber-700 mt-1 space-y-1">
+            <div className="font-bold text-sm text-zinc-800">SAP Standard – F-53 KZ 53* Vendor Payment – Dr Vendor Recon Cr Bank – Tolerance OBA0/OBA4 – Open-Item Clearing FB05 F-44 – Fixed from dummy API</div>
+            <div className="text-xs text-zinc-700 mt-1 space-y-1">
               <div>• <b>Company Code ELEC OX02</b> required – e.g., {companyCode} – company code – chart CA-IN-01 fiscal K4 posting PPV-1000 – T0 – was missing in old page that only asked VENDOR, AMOUNT, GL_ACCOUNT, DOCUMENT_NUMBER, COMPANY_CODE – now fixed with full org wiring + open items</div>
               <div>• <b>Vendor PSUC XK01</b> required – e.g., VEND-1000 – partner_account – vendor master – currency_code FCYC INR payment_term_code FAPT NT30 recon_account FGLC 2000000000 – T0 – supplier master with currency payment terms recon account procurement division buyer team</div>
               <div>• <b>Amount required</b> – e.g., 83500 INR – total payment amount – FCYC OY03 – decimal_places 2 – e.g., INR 83500.00 – totalAmt parseFloat amount</div>
@@ -279,7 +279,7 @@ export default function Page(){
         </div>
 
         {apOpenItems.length>0 && (
-          <div className="mt-6 border rounded-2xl p-4 bg-blue-50/50 border-blue-200">
+          <div className="mt-6 border rounded-2xl p-4 bg-zinc-50/50 border-zinc-200">
             <div className="font-bold text-sm mb-3">AP Open Items – {apOpenItems.length} – fi_ap_invoice status OPEN – SELECT INVOICES TO CLEAR – OPEN-ITEM CLEARING FB05 F-44 – T1 REQUIRED – NO DANGLING</div>
             <div className="space-y-2 max-h-[300px] overflow-auto">
               {apOpenItems.slice(0,20).map((it:any)=>(

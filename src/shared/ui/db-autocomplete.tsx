@@ -129,14 +129,14 @@ export function DbAutocomplete({
   const isEmpty = !inputValue || inputValue.trim() === '';
   const isInvalid = !isEmpty && !exactMatch;
 
-  // Border color logic: green valid, red invalid, yellow required empty, default zinc
-  let borderClass = 'border-zinc-200 bg-white';
+  // Border color logic – modern minimal compact Design A – 32px, no SAP amber, monochrome + red for invalid only
+  let borderClass = 'border-zinc-200 bg-white focus:border-black focus:ring-1 focus:ring-black';
   if (isEmpty && required) {
-    borderClass = 'border-amber-300 bg-amber-50/30 focus:border-amber-400 focus:ring-amber-200';
+    borderClass = 'border-zinc-300 bg-zinc-50 focus:border-black focus:ring-1 focus:ring-black';
   } else if (isInvalid) {
-    borderClass = 'border-red-400 bg-red-50/50 focus:border-red-500 focus:ring-red-200';
+    borderClass = 'border-red-400 bg-red-50/50 focus:border-red-500 focus:ring-1 focus:ring-red-200';
   } else if (exactMatch && !isEmpty) {
-    borderClass = 'border-emerald-400 bg-emerald-50/20 focus:border-emerald-500 focus:ring-emerald-200';
+    borderClass = 'border-zinc-900 bg-white focus:border-black focus:ring-1 focus:ring-black';
   }
 
   // Label badge shows createCode instead of count
@@ -144,13 +144,13 @@ export function DbAutocomplete({
 
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
-      <label className="text-[11px] font-medium tracking-widest flex items-center gap-1.5">
-        <span className="text-zinc-700 uppercase">{label}</span>
+      <label className="text-[11px] font-medium tracking-widest flex items-center gap-1.5 uppercase">
+        <span className="text-zinc-600 tracking-widest">{label}</span>
         {required && <span className="text-red-500">*</span>}
         <span className="text-[9px] font-mono bg-zinc-900 text-white rounded-full px-1.5 py-0.5">{codeBadge}</span>
-        {loading && <span className="text-[9px] text-zinc-400 font-normal">loading</span>}
+        {loading && <span className="text-[9px] text-zinc-400 font-normal normal-case">loading</span>}
       </label>
-      <div className="relative mt-1.5">
+      <div className="relative mt-1">
         <input
           value={inputValue}
           onChange={e => {
@@ -161,19 +161,19 @@ export function DbAutocomplete({
           }}
           onFocus={() => setShowDropdown(true)}
           placeholder="" // Per rule: if form has label, dont use placeholder – never sample value – label exists, so placeholder empty
-          className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 uppercase pr-8 transition-colors ${borderClass}`}
+          className={`w-full border rounded-lg px-2.5 py-2 text-[13px] h-[32px] leading-none focus:outline-none uppercase pr-7 transition-all placeholder:text-zinc-400 ${borderClass}`}
         />
         <button
           type="button"
           onClick={() => setShowDropdown(!showDropdown)}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-black text-[10px]"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-black text-[10px] w-5 h-5 flex items-center justify-center"
         >
           ▼
         </button>
       </div>
 
       {showDropdown && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-zinc-200 rounded-xl shadow-xl max-h-[220px] overflow-auto">
+        <div className="absolute z-50 mt-1 w-full bg-white border border-zinc-200 rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] max-h-[200px] overflow-auto">
           {filtered.length > 0 ? (
             filtered.map((it, idx) => {
               const code = it[codeField] || '';
@@ -188,21 +188,21 @@ export function DbAutocomplete({
                     onChange(code.toUpperCase());
                     setShowDropdown(false);
                   }}
-                  className={`w-full text-left px-3 py-2 text-xs hover:bg-zinc-900 hover:text-white flex justify-between items-center transition-colors ${isSelected ? 'bg-zinc-900 text-white' : 'bg-white'}`}
+                  className={`w-full text-left px-2.5 py-1.5 text-[12px] hover:bg-zinc-900 hover:text-white flex justify-between items-center transition-colors ${isSelected ? 'bg-zinc-900 text-white' : 'bg-white'}`}
                 >
-                  <span className="font-mono font-bold">{code}</span>
+                  <span className="font-mono font-bold text-[11px]">{code}</span>
                   <span className="text-[11px] truncate ml-2 opacity-70">{name}</span>
                 </button>
               );
             })
           ) : (
-            <div className="p-3 text-center">
-              <div className="text-xs text-zinc-600 font-medium">Use {createCode || codeBadge} to add new {label.replace(' *','')}</div>
-              <div className="text-[11px] text-zinc-400 mt-1">No existing {label.replace(' *','')} matches "{inputValue}"</div>
+            <div className="p-2.5 text-center">
+              <div className="text-[11px] text-zinc-600 font-medium">Use {createCode || codeBadge} to add new {label.replace(' *','')}</div>
+              <div className="text-[10px] text-zinc-400 mt-1">No existing {label.replace(' *','')} matches "{inputValue}"</div>
               {createUrl && (
                 <Link
                   href={createUrl}
-                  className="mt-2 inline-flex text-[11px] bg-black text-white rounded-full px-3 py-1.5 items-center gap-1 hover:bg-zinc-800"
+                  className="mt-2 inline-flex text-[10px] bg-black text-white rounded-full px-2.5 py-1 items-center gap-1 hover:bg-zinc-800"
                   onClick={() => setShowDropdown(false)}
                 >
                   + Create via {createCode || codeBadge} ↗
@@ -212,13 +212,13 @@ export function DbAutocomplete({
           )}
 
           {isInvalid && (
-            <div className="border-t border-red-100 p-2.5 bg-red-50/80">
-              <div className="text-[11px] text-red-700 font-medium">Invalid – "{inputValue}" not found in DB</div>
-              <div className="text-[10px] text-red-600/80 mt-0.5">Will be rejected on save – use {createCode || codeBadge} to add new {label.replace(' *','')}</div>
+            <div className="border-t border-zinc-200 p-2 bg-zinc-50">
+              <div className="text-[11px] text-zinc-700 font-medium">Invalid – "{inputValue}" not found</div>
+              <div className="text-[10px] text-zinc-500 mt-0.5">Will be rejected – use {createCode || codeBadge} to add new</div>
               {createUrl && (
                 <Link
                   href={createUrl}
-                  className="mt-1.5 inline-flex text-[11px] bg-red-600 text-white rounded-full px-3 py-1 items-center gap-1 hover:bg-red-700"
+                  className="mt-1.5 inline-flex text-[10px] bg-black text-white rounded-full px-2.5 py-1 items-center gap-1 hover:bg-zinc-800"
                   onClick={() => setShowDropdown(false)}
                 >
                   + Add "{inputValue}" via {createCode || codeBadge} ↗
@@ -227,7 +227,7 @@ export function DbAutocomplete({
             </div>
           )}
 
-          <div className="border-t border-zinc-100 p-2 bg-zinc-50 text-[10px] text-zinc-400 flex justify-between">
+          <div className="border-t border-zinc-100 p-1.5 bg-zinc-50 text-[9px] text-zinc-400 flex justify-between uppercase tracking-widest">
             <span>{items.length} in DB • {filtered.length} filtered</span>
             <span className="font-mono">{codeBadge}</span>
           </div>

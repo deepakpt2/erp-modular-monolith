@@ -108,11 +108,11 @@ export default function SystemJobsPage() {
               <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white">FBJM</span>
               <span className="text-[11px] bg-zinc-100 border rounded-full px-2.5 py-1">{jobs.length} jobs • {stats.running} running • {stats.queued} queued</span>
               {stats.running > 0 && <span className="text-[11px] bg-green-100 border border-green-300 rounded-full px-2.5 py-1 text-green-800 animate-pulse">● Server working – {stats.running} running</span>}
-              {stats.queued > 0 && <span className="text-[11px] bg-amber-100 border border-amber-300 rounded-full px-2.5 py-1 text-amber-800">○ {stats.queued} queued – will start after current</span>}
+              {stats.queued > 0 && <span className="text-[11px] bg-zinc-100 border border-zinc-300 rounded-full px-2.5 py-1 text-zinc-800">○ {stats.queued} queued – will start after current</span>}
             </div>
             <div className="flex items-center gap-2">
               <Link href={`/${companyCode}/navigator`} className="px-3 py-1.5 rounded-full border text-xs hover:bg-zinc-50">Navigator</Link>
-              <button onClick={handleCreateTestPayroll} className="px-3 py-1.5 rounded-full bg-amber-500 text-white text-xs">Test: Payroll 1000 employees (10-15 sec)</button>
+              <button onClick={handleCreateTestPayroll} className="px-3 py-1.5 rounded-full bg-zinc-500 text-white text-xs">Test: Payroll 1000 employees (10-15 sec)</button>
               <button onClick={fetchJobs} className="px-3 py-1.5 rounded-full border text-xs hover:bg-zinc-50">Refresh – polls every 2s</button>
             </div>
           </div>
@@ -125,9 +125,9 @@ export default function SystemJobsPage() {
               <div className="text-lg font-bold text-green-800">{stats.running}</div>
               <div className="text-[11px] text-green-600">Progress updating every 2-3 sec – if stuck, server may be hung</div>
             </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-              <div className="text-[10px] uppercase text-amber-700">Queued – Waiting</div>
-              <div className="text-lg font-bold text-amber-800">{stats.queued}</div>
+            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3">
+              <div className="text-[10px] uppercase text-zinc-700">Queued – Waiting</div>
+              <div className="text-lg font-bold text-zinc-800">{stats.queued}</div>
               <div className="text-[11px] text-amber-600">System busy – will start after running completes – queue order</div>
             </div>
             <div className="bg-zinc-50 border rounded-xl p-3">
@@ -140,7 +140,7 @@ export default function SystemJobsPage() {
               <div className="text-lg font-bold text-red-800">{stats.failed}</div>
               <div className="text-[11px] text-red-600">Server hung or error – shows error – can retry</div>
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3">
               <div className="text-[10px] uppercase text-blue-700">No Timeout – Background</div>
               <div className="text-xs font-medium mt-1">Large payroll 1000 employees may take minutes – runs in background – no server timeout – user can close page – header Jobs icon shows progress – separate system job page shows queue</div>
             </div>
@@ -162,11 +162,11 @@ export default function SystemJobsPage() {
           {loading ? <p className="text-sm text-zinc-500">Loading…</p> : (
             <div className="space-y-3 max-h-[800px] overflow-auto">
               {jobs.map((job) => (
-                <div key={job.id} className={`border rounded-xl p-4 ${job.status==='RUNNING' ? 'bg-green-50/50 border-green-200' : job.status==='QUEUED' ? 'bg-amber-50/50 border-amber-200' : job.status==='FAILED' ? 'bg-red-50/50 border-red-200' : 'bg-white'}`}>
+                <div key={job.id} className={`border rounded-xl p-4 ${job.status==='RUNNING' ? 'bg-green-50/50 border-green-200' : job.status==='QUEUED' ? 'bg-zinc-50/50 border-zinc-200' : job.status==='FAILED' ? 'bg-red-50/50 border-red-200' : 'bg-white'}`}>
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-[11px] px-2 py-1 rounded-full font-bold border ${job.status==='RUNNING' ? 'bg-green-100 border-green-300 text-green-800 animate-pulse' : job.status==='QUEUED' ? 'bg-amber-100 border-amber-300 text-amber-800' : job.status==='COMPLETED' ? 'bg-zinc-900 text-white' : 'bg-red-100 border-red-300 text-red-800'}`}>
+                        <span className={`text-[11px] px-2 py-1 rounded-full font-bold border ${job.status==='RUNNING' ? 'bg-green-100 border-green-300 text-green-800 animate-pulse' : job.status==='QUEUED' ? 'bg-zinc-100 border-zinc-300 text-zinc-800' : job.status==='COMPLETED' ? 'bg-zinc-900 text-white' : 'bg-red-100 border-red-300 text-red-800'}`}>
                           {job.status === 'RUNNING' ? '● RUNNING – server working – progress updating' : job.status === 'QUEUED' ? '○ QUEUED – system busy – will start after current – you can close page' : job.status}
                         </span>
                         <span className="font-mono text-xs font-bold">{job.job_type}</span>
@@ -201,7 +201,7 @@ export default function SystemJobsPage() {
                           </div>
                         )}
                         {job.status==='QUEUED' && (
-                          <div className="mt-1 text-[11px] text-amber-700">
+                          <div className="mt-1 text-[11px] text-zinc-700">
                             Queued – system busy – will start after current RUNNING job completes – queue order – you can close page – job will start automatically – check header Jobs icon (⏳ {stats.running+stats.queued})
                           </div>
                         )}

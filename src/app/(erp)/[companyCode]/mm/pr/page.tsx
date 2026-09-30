@@ -149,7 +149,7 @@ export default function Page(){
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">PPRC PURCHASE REQUISITIONS – ME51N – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – ORG WIRED</div>
-        <div className="bg-amber-50 border border-amber-300 p-2 mb-2 text-[10px]">
+        <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
           <div className="font-bold">⚠️ SAP STANDARD – PPRC ME51N – T0 BLOCKING – ORG WIRED</div>
           <div>• Facility EFCC OX10 required – e.g., 1000 – plant – org_facility – T0</div>
           <div>• Legal Entity ELEC OX02 required – e.g., {companyCode} – company code – org_legal_entity – T0</div>
@@ -165,7 +165,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC OY03 – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INR" /></div>
           <div className="col-span-2"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder={`PR for ${facilityCode} – PPRC ME51N – ${companyCode}`} /></div>
         </div>
-        <div className="mt-3 border-2 border-black p-2 bg-blue-50">
+        <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
           <div className="font-bold">LINES – {lines.length} – Material + Qty + UoM + Price + SLOC + Delivery Date – EMTC + EUOC + EILC + FCOC + FTXC – ORG WIRED</div>
           {lines.map((line, idx)=>(
             <div key={idx} className="flex gap-1 items-center border bg-white p-1 mt-1">
@@ -198,14 +198,14 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       <JobPopupComponent />
-      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
+      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-zinc-50 border border-zinc-200 text-zinc-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
       
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+      <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4">
         <div className="flex gap-2">
           <span className="text-xl">⚠️</span>
           <div>
-            <div className="font-bold text-sm text-amber-800">SAP Standard – PPRC ME51N – T0 BLOCKING – Org Wired – Workflow ME54N – Fixed from dummy API</div>
-            <div className="text-xs text-amber-700 mt-1 space-y-1">
+            <div className="font-bold text-sm text-zinc-800">SAP Standard – PPRC ME51N – T0 BLOCKING – Org Wired – Workflow ME54N – Fixed from dummy API</div>
+            <div className="text-xs text-zinc-700 mt-1 space-y-1">
               <div>• <b>Facility EFCC OX10</b> required – e.g., 1000 – plant – org_facility – T0 – was missing in old page that only asked PRODUCT, QUANTITY, FACILITY, COMPANY_CODE – now fixed with full org wiring</div>
               <div>• <b>Legal Entity ELEC OX02</b> required – e.g., {companyCode} – company code – org_legal_entity – chart CA-IN-01 fiscal K4 posting PPV-1000 credit CRED-1000 – T0</div>
               <div>• <b>Material EMTC MM01</b> required – e.g., 10000001 MAT-SPICE-001 – prod_item – valuation_class RAW→1400000001 BSX – T0 – determines BSX in GR</div>
@@ -276,7 +276,7 @@ export default function Page(){
           </div>
         </div>
 
-        <div className="mt-6 border rounded-2xl p-4 bg-blue-50/50 border-blue-200">
+        <div className="mt-6 border rounded-2xl p-4 bg-zinc-50/50 border-zinc-200">
           <div className="flex justify-between items-center mb-3">
             <div className="font-bold text-sm">Lines – {lines.length} – Material + Qty + UoM + Price + SLOC + Delivery Date – EMTC + EUOC + EILC + FCOC + FTXC – Org Wired – T0</div>
             <button onClick={addLine} className="px-3 py-1 rounded-full border bg-white text-xs hover:bg-zinc-50">+ Add Line</button>

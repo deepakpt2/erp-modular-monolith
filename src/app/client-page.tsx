@@ -70,11 +70,11 @@ export default function Home() {
         const firstCompany = companies[0]?.code || '1000';
         const dynamicEnterprise = [
           { href: `/${firstCompany}/foundation/enterprise-structure`, icon: '🏢', title: 'Enterprise Structure', desc: `Company, Company Code, Plant, SLoc`, color: 'bg-slate-50 border-slate-300', count: `${companyCount} Companies`, code: 'OX15/OX02/OX10', company: 'ALL' },
-          { href: `/${firstCompany}/fico/company-master`, icon: '🏛️', title: 'Company Master Data', desc: `Company Code Legal Details`, color: 'bg-blue-50 border-blue-300', count: `${companyCount} Companies`, code: 'OX02', company: 'ALL' },
+          { href: `/${firstCompany}/fico/company-master`, icon: '🏛️', title: 'Company Master Data', desc: `Company Code Legal Details`, color: 'bg-zinc-50 border-zinc-300', count: `${companyCount} Companies`, code: 'OX02', company: 'ALL' },
           { href: `/${firstCompany}/fico/chart-of-accounts`, icon: '📚', title: 'Chart of Accounts', desc: `General CoA – Accounts`, color: 'bg-indigo-50 border-indigo-300', count: 'OB13', code: 'OB13/FS00', company: 'ALL' },
           { href: `/${firstCompany}/fico/gl-accounts`, icon: '📒', title: 'G/L Accounts', desc: `G/L Accounts – Configurable`, color: 'bg-purple-50 border-purple-300', count: 'FS00', code: 'FS00', company: 'ALL' },
           { href: `/${firstCompany}/fico/cost-centers`, icon: '🎯', title: 'Cost Centers', desc: `Cost Centers – Configurable`, color: 'bg-cyan-50 border-cyan-300', count: 'KS01', code: 'KS01', company: 'ALL' },
-          { href: `/${firstCompany}/fico/tax-codes`, icon: '🧾', title: 'Tax Codes', desc: `Tax Codes – VAT/GST`, color: 'bg-amber-50 border-amber-300', count: 'FTXP', code: 'FTXP', company: 'ALL' },
+          { href: `/${firstCompany}/fico/tax-codes`, icon: '🧾', title: 'Tax Codes', desc: `Tax Codes – VAT/GST`, color: 'bg-zinc-50 border-zinc-300', count: 'FTXP', code: 'FTXP', company: 'ALL' },
           { href: `/${firstCompany}/foundation/enterprise-config`, icon: '⚙️', title: 'Enterprise Config', desc: `Fiscal, Posting Periods, Currencies`, color: 'bg-zinc-50 border-zinc-300', count: 'Config', code: 'OB29/OY03', company: 'ALL' },
         ];
         setEnterpriseModules(dynamicEnterprise);
@@ -236,7 +236,7 @@ export default function Home() {
               <div className="text-xs text-zinc-500 mt-0.5">{kpis[3]?.value}</div>
             </div>
           </div>
-          {companyList.length===0 && <div className="mt-3 text-xs bg-yellow-50 border border-yellow-200 rounded-xl p-3">Fresh deployment – No companies yet – Create your first company code via Enterprise Structure.</div>}
+          {companyList.length===0 && <div className="mt-3 text-xs bg-zinc-50 border border-yellow-200 rounded-xl p-3">Fresh deployment – No companies yet – Create your first company code via Enterprise Structure.</div>}
         </div>
 
         <div className="grid grid-cols-12 gap-6">

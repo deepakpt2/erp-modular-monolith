@@ -75,12 +75,12 @@ export default function LocksPage({ params }: { params: { companyCode: string } 
               <p className="text-[11px] text-zinc-500 mt-1">Prevent double entry – GR for PO, number range edit, etc. – other users blocked – 5 min expiry</p>
               <p className="text-lg font-mono font-bold mt-2">{locks.filter((l:any)=>l.is_active && new Date(l.expires_at) > new Date()).length}</p>
             </div>
-            <div className="border rounded-xl p-3 bg-amber-50">
+            <div className="border rounded-xl p-3 bg-zinc-50">
               <p className="font-bold">Queued Jobs with Locks</p>
               <p className="text-[11px] text-zinc-500 mt-1">Background jobs with locks – e.g., GR for PO – lock released on COMPLETED/FAILED</p>
               <p className="text-lg font-mono font-bold mt-2">{locks.filter((l:any)=>l.job_id && l.is_active).length}</p>
             </div>
-            <div className="border rounded-xl p-3 bg-blue-50">
+            <div className="border rounded-xl p-3 bg-zinc-50">
               <p className="font-bold">How Lock Works</p>
               <p className="text-[10px] text-zinc-600 mt-1">1. User starts edit → POST /api/locks → acquire lock expires 5 min<br/>2. Other user tries same → 423 Locked by X – try after 5 min<br/>3. Heartbeat PUT every 1 min extends while typing<br/>4. On Save/Cancel/Close or job completion → DELETE lock → table released</p>
             </div>
@@ -95,14 +95,14 @@ export default function LocksPage({ params }: { params: { companyCode: string } 
               const isActive = lock.is_active && new Date(lock.expires_at) > new Date();
               const expiresIn = Math.max(0, Math.round((new Date(lock.expires_at).getTime() - Date.now())/1000));
               return (
-                <div key={lock.id} className={modern ? `border rounded-xl p-3 ${isActive ? 'bg-white border-amber-200' : 'bg-zinc-50 opacity-60'}` : `border p-2 ${isActive ? 'bg-white' : 'bg-zinc-50 opacity-60'}`}>
+                <div key={lock.id} className={modern ? `border rounded-xl p-3 ${isActive ? 'bg-white border-zinc-200' : 'bg-zinc-50 opacity-60'}` : `border p-2 ${isActive ? 'bg-white' : 'bg-zinc-50 opacity-60'}`}>
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isActive ? 'bg-amber-500 text-white' : 'bg-zinc-200'}`}>{isActive ? '🔒 ACTIVE' : '🔓 EXPIRED/RELEASED'}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isActive ? 'bg-zinc-500 text-white' : 'bg-zinc-200'}`}>{isActive ? '🔒 ACTIVE' : '🔓 EXPIRED/RELEASED'}</span>
                         <span className="font-mono text-xs font-bold">{lock.lock_object} {lock.object_id}</span>
                         {lock.table_name && <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 border">{lock.table_name}</span>}
-                        {lock.job_id && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 border text-blue-700">Job {lock.job_id.slice(0,8)}</span>}
+                        {lock.job_id && <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-50 border text-blue-700">Job {lock.job_id.slice(0,8)}</span>}
                       </div>
                       <p className="text-[11px] mt-1">Locked by <span className="font-bold">{lock.locked_by}</span> since {new Date(lock.locked_at).toLocaleString()} – expires {new Date(lock.expires_at).toLocaleString()} – in {expiresIn}s ({Math.floor(expiresIn/60)}m {expiresIn%60}s) – 5 min inactivity auto-expire</p>
                       {lock.description && <p className="text-[10px] text-zinc-500 mt-1 truncate">{lock.description}</p>}

@@ -375,8 +375,8 @@ export default function MaterialMasterPage() {
     if (opts?.options) {
       return (
         <div key={key} className="space-y-1">
-          <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-          <select value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10 bg-white` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`}>
+          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
+          <select value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} className={modern ? `w-full border-2 ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-2 focus:ring-black/10 bg-white` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`}>
             <option value="">{selectPlaceholder}</option>
             {opts.options.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -387,16 +387,16 @@ export default function MaterialMasterPage() {
     if (opts?.type === 'textarea') {
       return (
         <div key={key} className="space-y-1">
-          <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-          <textarea value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
+          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
+          <textarea value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border-2 ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
           {opts?.desc && <p className="text-[10px] text-zinc-400">{opts.desc}</p>}
         </div>
       );
     }
     return (
       <div key={key} className="space-y-1">
-        <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-        <input value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" className={modern ? `w-full border-2 ${borderColor} rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
+        <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
+        <input value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" className={modern ? `w-full border-2 ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
         {opts?.desc && <p className="text-[10px] text-zinc-400">{opts.desc}</p>}
       </div>
     );
@@ -415,7 +415,7 @@ export default function MaterialMasterPage() {
               {!collapsed['basic_general'] && (
                 <>
                   {nextNumberPreview && (
-                    <div className={modern ? "mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs" : "mb-2 p-2 border bg-blue-50 text-[11px]"}>
+                    <div className={modern ? "mb-4 p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs" : "mb-2 p-2 border bg-zinc-50 text-[11px]"}>
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold">SAP AUTO – INTERNAL – NO MANUAL</span>
                         <span className="font-medium">Material Number – Always Auto – Numeric – No Manual Entry – Blocked per your confirmation</span>
@@ -424,38 +424,38 @@ export default function MaterialMasterPage() {
                         Next: {nextNumberPreview}
                       </div>
                       <div className="mt-2 text-[11px] text-zinc-600">
-                        • SAP standard: Material number purely numeric (e.g., 10000001) – no MAT- prefix – random 10 digits like 1234567890 are <b>BLOCKED</b> – system generates via <Link href={`/${companyCode}/fico/number-ranges`} className="text-blue-600 underline">FNRC</Link> MAT-01/ITEM – internal numbering – MM01 style – always auto – per your selection block_manual. If you type random number, backend will ignore and still auto-generate next sequential – audit safe.
+                        • SAP standard: Material number purely numeric (e.g., 10000001) – no MAT- prefix – random 10 digits like 1234567890 are <b>BLOCKED</b> – system generates via <Link href={`/${companyCode}/fico/number-ranges`} className="text-zinc-900 underline">FNRC</Link> MAT-01/ITEM – internal numbering – MM01 style – always auto – per your selection block_manual. If you type random number, backend will ignore and still auto-generate next sequential – audit safe.
                       </div>
                     </div>
                   )}
                   <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
-                    <div className={modern ? "col-span-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs" : "col-span-2 p-2 border bg-amber-50 text-[11px]"}>
+                    <div className={modern ? "col-span-2 p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs" : "col-span-2 p-2 border bg-zinc-50 text-[11px]"}>
                       <span className="font-bold">PRODUCT_CODE – Auto Only – SAP Internal – Blocked Manual</span> – System will generate purely numeric like 10000001 via number range MAT-01/ITEM – no manual entry – random 10 digits like 1234567890 are BLOCKED – always auto – per your selection block_manual – PO/PR/GR also always auto – SAP standard – field removed from UI.
                     </div>
                   {renderInput('description', 'PRODUCT_NAME / DESCRIPTION', { required: true, desc: 'Short description – single source – wired from foundation as in industry standard – MARA' })}
                   <div className="space-y-1">
-                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PRODUCT_TYPE * – Material Type – EMTP – RAW/FINISHED – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PRODUCT_TYPE * – Material Type – EMTP – RAW/FINISHED – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/material-types" dataKey="materialTypes" codeField="code" value={form.type} onChange={v => setForm({ ...form, type: v })} placeholder="" required createUrl="/foundation/material-types" createCode="EMTP" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">Product Type FK – EMTP own IP alias OMS2 – RAW=ROH, FINISHED=FERT, SEMI=HALB, SERVICE – single source – wired from foundation as in industry standard – MARA material type – determines number range assignment RAW→MAT-RAW-01 – industry standard</p>
                   </div>
                   <div className="space-y-1">
-                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>BASE_UNIT * – Base UoM – EUOC – KG/PC/BOX – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>BASE_UNIT * – Base UoM – EUOC – KG/PC/BOX – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/uom" dataKey="uom" codeField="code" value={form.base_unit} onChange={v => setForm({ ...form, base_unit: v })} placeholder="" required createUrl="/foundation/uom" createCode="EUOC" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">Base unit FK – EUOC own IP alias CUNI – KG/PC/BOX – core_unit_measure – single source – wired from foundation as in industry standard – MARA base UoM – used in GR, PGI, stock ledger quantity</p>
                   </div>
                   <div className="space-y-1">
-                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PRODUCT_CATEGORY – Category – EMGC – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PRODUCT_CATEGORY – Category – EMGC – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/material-categories" dataKey="materialCategories" codeField="code" value={form.category_code} onChange={v => setForm({ ...form, category_code: v })} placeholder="" createUrl="/foundation/material-categories" createCode="EMGC" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">Category FK – EMGC own IP alias OMSF – spices, oils, packs – prod_category – single source – wired from foundation as in industry standard – MARA material group – used in FRAD revenue account determination and pricing</p>
                   </div>
                   {renderInput('barcode', 'BARCODE / EAN', { desc: 'For POS, GR scanning – single source in Basic only – EAN/UPC – industry standard' })}
                   <div className="space-y-1">
-                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>HSN_CODE – HSN/SAC – Tax Classification – FTXC – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>HSN_CODE – HSN/SAC – Tax Classification – FTXC – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/hsn-codes" dataKey="hsnCodes" codeField="code" value={form.hsn_code} onChange={v => setForm({ ...form, hsn_code: v })} placeholder="" createUrl="/fico/hsn-codes" createCode="FTXC" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">HSN Code FK – FTXC own IP – India GST HSN – e.g., 09041110 pepper – single source in Basic only – wired from foundation as in industry standard – used in tax determination, billing, GR – tax classification</p>
                   </div>
                   <div className="space-y-1">
-                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>TAX_CLASSIFICATION – Tax Class – FTXC – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>TAX_CLASSIFICATION – Tax Class – FTXC – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/tax-codes" dataKey="taxCodes" codeField="code" value={form.tax_classification} onChange={v => setForm({ ...form, tax_classification: v })} placeholder="" createUrl="/fico/tax-codes" createCode="FTXC" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">Tax Classification FK – FTXC – e.g., GST 18%, GST 12% – wired from foundation – used in tax determination – industry standard</p>
                   </div>
@@ -469,22 +469,22 @@ export default function MaterialMasterPage() {
       case 'purchasing':
         return (
           <div className="space-y-6">
-            <div className={modern ? "bg-blue-50/50 rounded-xl p-4 border border-blue-100" : "border p-3"}>
+            <div className={modern ? "bg-zinc-50/50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
               <h3 className={modern ? "font-semibold text-sm text-blue-900" : "font-bold text-xs"}>Purchasing View – Plant Dependent – Single Source</h3>
               <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement moved to MRP tab only (SAP MRP2) to remove duplicate.</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                 <div className="space-y-1">
-                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PURCHASING_GROUP – Buyer Team – EBTC – wired from foundation</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PURCHASING_GROUP – Buyer Team – EBTC – wired from foundation</label>
                   <DbAutocomplete label="" apiUrl="/api/buyer-teams" dataKey="buyerTeams" codeField="code" value={form.purchasing_group} onChange={v => setForm({ ...form, purchasing_group: v, buyer_group: v })} placeholder="" createUrl="/foundation/buyer-teams" createCode="EBTC" companyCode={companyCode} />
                   <p className="text-[10px] text-zinc-400">Purchasing Group FK – EBTC own IP – K01/001 – buyer team – single source – wired from foundation as in industry standard – MARC purchasing group – used in PR/PO – buyer determination</p>
                 </div>
                 <div className="space-y-1">
-                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PROCUREMENT_DIVISION – Division – EDPC – wired from foundation</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PROCUREMENT_DIVISION – Division – EDPC – wired from foundation</label>
                   <DbAutocomplete label="" apiUrl="/api/commercial-orgs" dataKey="commercialOrgs" codeField="code" value={form.procurement_division} onChange={v => setForm({ ...form, procurement_division: v })} placeholder="" createUrl="/foundation/commercial-orgs" createCode="EDPC" companyCode={companyCode} />
                   <p className="text-[10px] text-zinc-400">Procurement Division FK – EDPC – PD-1000 / KPO1 – division – single source – wired from foundation – used in purchasing – industry standard</p>
                 </div>
                 <div className="space-y-1">
-                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PURCHASING_ORG – Purchasing Org – fin_purchasing_org – wired from foundation – FCRL</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PURCHASING_ORG – Purchasing Org – fin_purchasing_org – wired from foundation – FCRL</label>
                   <DbAutocomplete label="" apiUrl="/api/company-relationships?type=purchasing_org" dataKey="purchasing_orgs" codeField="code" value={form.purchasing_org_code} onChange={v => setForm({ ...form, purchasing_org_code: v })} placeholder="" createUrl="/foundation/enterprise-structure" createCode="FCRL" companyCode={companyCode} />
                   <p className="text-[10px] text-zinc-400">Purchasing Org FK – FCRL – PO01 Spices Purchasing – wired from foundation – company relationships – for large org multi-sector – plant assignment</p>
                 </div>
@@ -496,7 +496,7 @@ export default function MaterialMasterPage() {
       case 'mrp':
         return (
           <div className="space-y-6">
-            <div className={modern ? "bg-amber-50/50 rounded-xl p-4 border border-amber-100" : "border p-3"}>
+            <div className={modern ? "bg-zinc-50/50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
               <h3 className={modern ? "font-semibold text-sm text-amber-900" : "font-bold text-xs"}>MRP View – Single Source for procurement</h3>
               <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement now ONLY here (removed from Purchasing duplicate).</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" : "grid grid-cols-3 gap-2 mt-2"}>
@@ -526,7 +526,7 @@ export default function MaterialMasterPage() {
                 <>
                   <p className="text-[11px] text-zinc-500 mt-1">Select facilities to extend material to. SAP: MM01 creates for one plant, MMSC extends.</p>
                   <div className="mt-4">
-                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>FACILITY_CODES / PLANT_CODES * (Multi-select) – Single Source</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>FACILITY_CODES / PLANT_CODES * (Multi-select) – Single Source</label>
                     <div className={modern ? "mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-white rounded-xl border max-h-[200px] overflow-auto" : "mt-1 grid grid-cols-3 gap-1 border p-2 max-h-[150px] overflow-auto"}>
                       {facilities.length === 0 ? (
                         <span className="text-xs text-zinc-400">No facilities – create via EFCC – default FAC-1000 will be used</span>
@@ -567,11 +567,11 @@ export default function MaterialMasterPage() {
               <p className="text-[11px] text-zinc-500 mt-1">Plant extension creates prod_facility_profile per facility – storage/facility extension includes MRP, purchasing, accounting, costing per plant – MMSC extend material to plant – storage view holds batch/lot/expiry/shelf_life/kit – industry standard – wired from foundation as in industry standard – T0 BLOCKING</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                 <div className="space-y-1">
-                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>FACILITY_CODES extended – prod_facility_profile per facility – MMSC-like</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>FACILITY_CODES extended – prod_facility_profile per facility – MMSC-like</label>
                   <p className="text-[10px] text-zinc-400">Selected facilities: {(form.facility_codes || []).join(', ') || 'None – default FAC-1000'} – Each facility gets own prod_facility_profile with MRP (safety_stock, reorder_point, planning_type MRP, lot_sizing LOT_FOR_LOT, procurement_method BUY), purchasing (buyer_group via EBTC, procurement_division via EDPC, purchasing_org via FCRL PO01), accounting (moving_avg_price, standard_price, valuation_class via FAUC BSX), costing (costing_lot_size, overhead_group, price_unit), quality (is_quality_active QM) – wired from foundation as in industry standard MARC plant extension – T0 BLOCKING</p>
                 </div>
                 <div className="space-y-1">
-                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>Batch/Lot Capability – where required – industry standard</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>Batch/Lot Capability – where required – industry standard</label>
                   <p className="text-[10px] text-zinc-400">If is_lot_managed=true, system creates inv_lot on GR (MIGO) with lot_number, manufacturing_date, expiry_date = manufacturing + shelf_life_days, supplier_lot_number, vendor_id – batch determination in sales/delivery – batch where-used list – expiry check BLOCKED/WARN/RESTRICTED – e.g., spice raw material with 365 days shelf life, batch managed, expiry control BLOCKED – packaging material not batch managed – batch/lot capability where required – wired from foundation – MCH1/MCHB batch stock – industry standard – single source – T0 BLOCKING</p>
                 </div>
               </div>
@@ -586,13 +586,13 @@ export default function MaterialMasterPage() {
               <p className="text-[11px] text-red-600/80 mt-1">price_unit now ONLY here (removed from Costing duplicate).</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                 <div className="space-y-1">
-                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>VALUATION_CLASS * – Valuation Class – FAUC – wired from foundation – BSX</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>VALUATION_CLASS * – Valuation Class – FAUC – wired from foundation – BSX</label>
                   <DbAutocomplete label="" apiUrl="/api/auto-account-determination" dataKey="autoAccounts" codeField="valuation_class" value={form.inventory_valuation_class} onChange={v => setForm({ ...form, inventory_valuation_class: v, valuation_class: v })} placeholder="" required createUrl="/fico/auto-account-determination" createCode="FAUC" companyCode={companyCode} />
                   <p className="text-[10px] text-zinc-400">Valuation Class FK – FAUC own IP alias OBYC – RAW/FINISHED/SEMI – valuation_class determines BSX GL via OBYC – e.g., RAW→1400000001 – single source – wired from foundation as in industry standard – MBEW – T0 BLOCKING</p>
                 </div>
                 <div className="space-y-1">
-                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PRICE_CONTROL * – S/V – Price Control – wired from foundation</label>
-                  <select value={form.pricing_method || form.price_control || ''} onChange={e => setForm({ ...form, pricing_method: e.target.value, price_control: e.target.value })} className={modern ? "w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white" : "w-full border px-2 py-1.5 text-xs"}>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PRICE_CONTROL * – S/V – Price Control – wired from foundation</label>
+                  <select value={form.pricing_method || form.price_control || ''} onChange={e => setForm({ ...form, pricing_method: e.target.value, price_control: e.target.value })} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] bg-white" : "w-full border px-2 py-1.5 text-xs"}>
                     <option value="">Select PRICE_CONTROL</option>
                     <option value="STANDARD">S – Standard Price – with price diff PRD</option>
                     <option value="MOVING_AVG">V – Moving Average Price – MAP recalc</option>
@@ -646,7 +646,7 @@ export default function MaterialMasterPage() {
           <p className={modern ? "text-xs text-zinc-500 mt-1" : "text-[11px] text-zinc-500"}>Create Product – T0 BLOCKING – valuation_class determines BSX GL via OBYC – NO DANGLING – Auto number from MAT-01 if blank – Single source per field – Kit & Lot moved to Storage per user</p>
           <div className={modern ? "flex gap-2 mt-4" : "flex gap-1 mt-3"}>
             {(['create','list','change'] as const).map(m => (
-              <Link key={m} href={`/${companyCode}/foundation/materials?mode=${m}`} className={modern ? `px-4 py-2 rounded-full text-xs font-medium border transition ${mode===m ? 'bg-black text-white border-black' : 'bg-white hover:bg-zinc-50'}` : `px-3 py-1 text-xs border ${mode===m ? 'bg-black text-white' : 'bg-white'}`}>{m.toUpperCase()}</Link>
+              <Link key={m} href={`/${companyCode}/foundation/materials?mode=${m}`} className={modern ? `h-[28px] px-3 rounded-full text-[11px] font-medium border transition ${mode===m ? 'bg-black text-white border-black' : 'bg-white hover:bg-zinc-50'}` : `px-3 py-1 text-xs border ${mode===m ? 'bg-black text-white' : 'bg-white'}`}>{m.toUpperCase()}</Link>
             ))}
           </div>
         </div>
@@ -659,7 +659,7 @@ export default function MaterialMasterPage() {
               {TABS.map(t => {
                 const missing = missingPerTab[t.key].length;
                 return (
-                  <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-4 py-2 rounded-full text-xs font-medium border whitespace-nowrap transition ${activeTab===t.key ? 'bg-black text-white border-black' : 'bg-zinc-50 hover:bg-zinc-100'}` : `relative px-3 py-1 text-xs border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white' : 'bg-white'}`}>
+                  <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative h-[28px] px-3 rounded-full text-[11px] font-medium border whitespace-nowrap transition ${activeTab===t.key ? 'bg-black text-white border-black' : 'bg-zinc-50 hover:bg-zinc-100'}` : `relative px-3 py-1 text-xs border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white' : 'bg-white'}`}>
                     {t.label}
                     
                     {missing > 0 && <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] text-[10px] bg-red-500 text-white rounded-full px-1.5 border border-white shadow-sm" title={`Missing: ${missingPerTab[t.key].join(", ")}`}>{missing}</span>}
@@ -670,7 +670,7 @@ export default function MaterialMasterPage() {
             <p className="text-[11px] text-zinc-400">{TABS.find(t=>t.key===activeTab)?.desc} {missingPerTab[activeTab].length > 0 && <span className="text-red-500">• Missing: {missingPerTab[activeTab].join(', ')}</span>}</p>
             {renderTabContent()}
             <div className="flex gap-2 pt-4 border-t items-center flex-wrap">
-              <button type="submit" disabled={!isFormValid || isSubmitting} className={modern ? `px-6 py-2.5 rounded-full text-sm font-medium transition flex items-center gap-2 ${isFormValid && !isSubmitting ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs flex items-center gap-2 ${isFormValid && !isSubmitting ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
+              <button type="submit" disabled={!isFormValid || isSubmitting} className={modern ? `h-[32px] px-5 rounded-full text-[13px] font-medium transition flex items-center gap-2 ${isFormValid && !isSubmitting ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs flex items-center gap-2 ${isFormValid && !isSubmitting ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
                 {isSubmitting ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -680,7 +680,7 @@ export default function MaterialMasterPage() {
               </button>
               <button type="button" onClick={() => setForm(initialForm)} disabled={isSubmitting} className={modern ? "px-4 py-2.5 rounded-full border text-sm disabled:opacity-50" : "px-3 py-1.5 border text-xs disabled:opacity-50"}>Clear</button>
               {!isFormValid && !isSubmitting && <span className="text-[11px] text-red-500">Fill required fields to activate – red dots show tabs with missing</span>}
-              {isSubmitting && <span className="text-[11px] text-blue-600 animate-pulse">⏳ Server working – {elapsed}s elapsed – generating number – please wait – prevents double click – after 10s auto-moves to background – popup shows steps – you can close → last page – check header Jobs icon if long – no timeout – background capable – lock prevents double entry</span>}
+              {isSubmitting && <span className="text-[11px] text-zinc-900 animate-pulse">⏳ Server working – {elapsed}s elapsed – generating number – please wait – prevents double click – after 10s auto-moves to background – popup shows steps – you can close → last page – check header Jobs icon if long – no timeout – background capable – lock prevents double entry</span>}
             </div>
           </form>
         )}
@@ -710,7 +710,7 @@ export default function MaterialMasterPage() {
                       <span className="font-mono text-xs font-bold">{it.item_number || it.material_number || it.code}</span>
                       <span className="text-xs truncate">{it.description}</span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 border">{it.type || it.material_type}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 border">{it.valuation_class || it.inventory_valuation_class}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-50 border">{it.valuation_class || it.inventory_valuation_class}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] text-zinc-400">{it.base_unit || it.base_uom}</span>
@@ -760,7 +760,7 @@ export default function MaterialMasterPage() {
                   {TABS.map(t => {
                     const missing = missingPerTab[t.key].length;
                     return (
-                      <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-4 py-2 rounded-full text-xs font-medium border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white border-black' : 'bg-zinc-50'}` : `relative px-3 py-1 text-xs border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white' : 'bg-white'}`}>
+                      <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative h-[28px] px-3 rounded-full text-[11px] font-medium border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white border-black' : 'bg-zinc-50'}` : `relative px-3 py-1 text-xs border whitespace-nowrap ${activeTab===t.key ? 'bg-black text-white' : 'bg-white'}`}>
                         {t.label}
                         
                         {missing > 0 && <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] text-[10px] bg-red-500 text-white rounded-full px-1.5 border border-white shadow-sm" title={`Missing: ${missingPerTab[t.key].join(", ")}`}>{missing}</span>}
@@ -770,7 +770,7 @@ export default function MaterialMasterPage() {
                 </div>
                 {renderTabContent()}
                 <div className="flex gap-2 pt-4 border-t items-center">
-                  <button type="submit" disabled={!isFormValid} className={modern ? `px-6 py-2.5 rounded-full text-sm transition ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Update Product</button>
+                  <button type="submit" disabled={!isFormValid} className={modern ? `h-[32px] px-5 rounded-full text-[13px] transition ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Update Product</button>
                   {!isFormValid && <span className="text-[11px] text-red-500">Red dots show tabs with missing – fill to activate</span>}
                 </div>
               </form>

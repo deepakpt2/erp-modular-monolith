@@ -161,7 +161,7 @@ export function VirtualDataGrid<T>({
                 key={row.id}
                 className={`
                   absolute top-0 left-0 w-full flex border-b border-gray-200 cursor-pointer
-                  ${isSelected ? 'bg-blue-100 border-blue-300' : isFocused ? 'bg-yellow-50' : 'bg-white hover:bg-gray-50'}
+                  ${isSelected ? 'bg-zinc-100 border-zinc-300' : isFocused ? 'bg-zinc-50' : 'bg-white hover:bg-gray-50'}
                   ${isFocused ? 'ring-1 ring-black ring-inset' : ''}
                 `}
                 style={{
@@ -309,7 +309,7 @@ export function KittingPreview({
 
           <div>
             <div className="font-bold mb-1">K02 - PRODUCTION (Receipt Kit)</div>
-            <div className="border-2 border-black bg-yellow-50 p-2">
+            <div className="border-2 border-black bg-zinc-50 p-2">
               <div className="space-y-1">
                 <div>Kit Qty: <b>{kitQuantity}</b></div>
                 <div>Min Expiry (inherited): <ExpiryBadge expiryDate={minExpiry} /></div>

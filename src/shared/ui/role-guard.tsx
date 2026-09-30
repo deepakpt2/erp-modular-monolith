@@ -110,7 +110,7 @@ export function RoleGuard({ requiredPermission, requiredRoles, children, fallbac
           </div>
           <p className="text-sm text-zinc-600">User <b>{me?.email}</b> role <b>{me?.simpleRole}</b> roles [{me?.roles?.join(', ')}] does not have permission <b>{requiredPermission}</b> {requiredRoles ? `or roles [${requiredRoles.join(', ')}]` : ''}</p>
           <p className="text-xs text-zinc-500 mt-3">Master Data Manager (MATERIAL_CREATE, MATERIAL_VIEW) cannot access HR Payroll – industry standard – payroll requires PAYROLL_RUN permission and HR role – FRPC own IP alias PFCG – authorization objects F_BKPF_BUK company code, etc.</p>
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px]">
+          <div className="mt-4 p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[11px]">
             <div className="font-semibold">Why master data manager cannot access /1000/hr/payroll?</div>
             <div className="mt-1">Payroll contains sensitive salary data – basic_salary, gross/net pay, deductions – only HR, ADMIN, OWNER roles with PAYROLL_RUN permission can access – master data manager role has only FOUNDATION permissions (MATERIAL_CREATE) – not HR – industry standard segregation of duties – SoD – prevents fraud – master data manager should not see payroll.</div>
           </div>

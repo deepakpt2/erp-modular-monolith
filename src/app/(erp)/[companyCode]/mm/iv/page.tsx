@@ -254,7 +254,7 @@ export default function Page(){
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
         <div className="font-bold border-b-2 border-black pb-1 mb-2">PIVC INVOICE VERIFICATION – MIRO – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD REQUIRES PO – T0 – WRX CLEARING – PRD – TAX – VENDOR INVOICE ACCOUNTING RE</div>
-        <div className="bg-amber-50 border border-amber-300 p-2 mb-2 text-[10px]">
+        <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
           <div className="font-bold">⚠️ SAP STANDARD – PIVC MIRO 51 RE – T0 BLOCKING – WRX CLEARING – PRD – TAX – VENDOR INVOICE ACCOUNTING – TOLERANCE OBA0/OBA4</div>
           <div>• PO Number required – e.g., 4500000001 – create via PPOC ME21N – PIVC → FPYP flow – industry standard – PO must have GR qty – e.g., PO 4500000001 GR 5000000001 qty 10</div>
           <div>• GR Number optional – e.g., 5000000001 – GR reference – proc_goods_receipt – GR 101 – MIGO – creates WRX – IV clears WRX – GR/IR clearing F.13 where GR qty = IV qty</div>
@@ -279,7 +279,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">TAX_CODE – FTXC – GST18 – tax handling – rate lookup</div><input value={taxCode} onChange={e=>setTaxCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="GST18" /></div>
         </div>
         {poDetails && (
-          <div className="mt-3 border-2 border-black p-2 bg-blue-50">
+          <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
             <div className="font-bold">PO {poDetails.po_number} – Vendor {poDetails.vendor_name} – Total {poDetails.total_amount} – for IV – PIVC MIRO – WRX clearing – PRD – tax</div>
             <div className="mt-2 space-y-1">
               {poLines.map(line=>(
@@ -315,14 +315,14 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       <JobPopupComponent />
-      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-amber-50 border border-amber-200 text-amber-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
+      {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : msg.startsWith('⏳') ? 'bg-zinc-50 border border-zinc-200 text-zinc-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
       
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+      <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4">
         <div className="flex gap-2">
           <span className="text-xl">⚠️</span>
           <div>
-            <div className="font-bold text-sm text-amber-800">SAP Standard – PIVC MIRO 51 RE – T0 BLOCKING – WRX Clearing – PRD Price Variance – Tax FTXC – Vendor Invoice Accounting RE – Tolerance OBA0/OBA4 – Fixed from dummy API</div>
-            <div className="text-xs text-amber-700 mt-1 space-y-1">
+            <div className="font-bold text-sm text-zinc-800">SAP Standard – PIVC MIRO 51 RE – T0 BLOCKING – WRX Clearing – PRD Price Variance – Tax FTXC – Vendor Invoice Accounting RE – Tolerance OBA0/OBA4 – Fixed from dummy API</div>
+            <div className="text-xs text-zinc-700 mt-1 space-y-1">
               <div>• <b>PO Number required</b> – e.g., 4500000001 – create via PPOC ME21N – PO must have GR qty – e.g., PO 4500000001 GR 5000000001 qty 10 – PIVC MIRO requires PO reference – T0 – SAP standard MIRO 51 RE requires PO – was missing in old page that only asked VENDOR, INVOICE_NUMBER, AMOUNT, COMPANY_CODE – now fixed</div>
               <div>• <b>GR Number optional</b> – e.g., 5000000001 – GR reference – proc_goods_receipt – GR 101 MIGO – creates WRX – IV clears WRX – GR/IR clearing F.13 where GR qty = IV qty – WRX balance zero after clearing – T1 REQUIRED</div>
               <div>• <b>Vendor Invoice Number required</b> – e.g., INV-VEND-2026-001 – vendor_invoice_number – T0 – vendor invoice – unique per vendor</div>
@@ -425,7 +425,7 @@ export default function Page(){
         </div>
 
         {poDetails && (
-          <div className="mt-6 border rounded-2xl p-4 bg-blue-50/50 border-blue-200">
+          <div className="mt-6 border rounded-2xl p-4 bg-zinc-50/50 border-zinc-200">
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-bold text-sm">PO {poDetails.po_number} – {poDetails.vendor_name} – Total {poDetails.total_amount} – for IV – PIVC MIRO – WRX clearing – PRD – tax – RE</div>

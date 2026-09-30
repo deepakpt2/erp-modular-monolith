@@ -287,7 +287,7 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
                   <div className="mt-2 text-[11px] text-zinc-500">If code is used show error message instead of formdata per your request – completely block view – master data manager cannot access HR payroll or Inventory if requires WAREHOUSE/MATERIAL_MANAGER – SoD – payroll sensitive salary data, inventory sensitive stock – only allowed roles can access – contact administrator to grant role via /admin/roles and /admin/authorizations – FRPC own IP alias PFCG/SU01 – industry standard</div>
                 </div>
               </div>
-              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px]">
+              <div className="mt-4 p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[11px]">
                 <div className="font-semibold">Why this transaction is blocked?</div>
                 <div className="mt-1">• Transaction {rbacDenied.code} – {pathname} – requires permission {rbacDenied.requiredPermission} – user {me?.simpleRole} roles [{me?.roles?.join(', ')}] does not have it</div>
                 <div>• Master data manager (MASTER_DATA_MANAGER) has only FOUNDATION permissions MATERIAL_CREATE/MATERIAL_VIEW – cannot access HR payroll (PAYROLL_RUN) or Inventory if requires WAREHOUSE/MATERIAL_MANAGER – SoD</div>

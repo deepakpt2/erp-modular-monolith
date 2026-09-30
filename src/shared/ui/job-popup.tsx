@@ -87,8 +87,8 @@ export function JobPopup({ jobId, isOpen, onClose, lastPage, title }: JobPopupPr
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-sm flex items-center gap-2">
               {isRunning && <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />}
-              {isQueued && <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />}
-              {isCompleted && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+              {isQueued && <span className="w-2 h-2 bg-zinc-500 rounded-full animate-pulse" />}
+              {isCompleted && <span className="w-2 h-2 bg-zinc-500 rounded-full" />}
               {isFailed && <span className="w-2 h-2 bg-red-500 rounded-full" />}
               {title || `${job?.job_type || 'Background Job'} – ${job?.id?.slice(0,8) || ''}`}
             </h3>
@@ -107,7 +107,7 @@ export function JobPopup({ jobId, isOpen, onClose, lastPage, title }: JobPopupPr
               <span className="font-mono">{progress}%</span>
             </div>
             <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden">
-              <div className={`h-2.5 rounded-full transition-all duration-500 ${isFailed ? 'bg-red-500' : isCompleted ? 'bg-blue-500' : 'bg-black'}`} style={{ width: `${progress}%` }} />
+              <div className={`h-2.5 rounded-full transition-all duration-500 ${isFailed ? 'bg-red-500' : isCompleted ? 'bg-zinc-500' : 'bg-black'}`} style={{ width: `${progress}%` }} />
             </div>
             <p className="text-[11px] text-zinc-600 bg-zinc-50 border rounded-xl p-2.5">
               <span className="font-medium">Current:</span> {stepDesc} {currentStep > 0 && job?.total_steps ? `(${currentStep}/${job.total_steps})` : ''}
@@ -139,7 +139,7 @@ export function JobPopup({ jobId, isOpen, onClose, lastPage, title }: JobPopupPr
 
           {/* Result */}
           {job?.result && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-[11px]">
+            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-3 text-[11px]">
               <p className="font-bold text-blue-700">✅ Result – Document Created</p>
               <pre className="mt-1 whitespace-pre-wrap break-all text-[11px] bg-white border rounded-lg p-2">{JSON.stringify(job.result, null, 2)}</pre>
               {job.result.document_number && <p className="mt-2 font-mono font-bold">Doc: {job.result.document_number} – Next: {(parseInt(job.result.document_number)+1) || 'auto'} – Usage: check FNRC page</p>}
