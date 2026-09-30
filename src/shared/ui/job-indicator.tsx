@@ -82,9 +82,12 @@ export function JobIndicator() {
           <div className="p-3 border-b border-zinc-100 flex justify-between items-center">
             <div>
               <div className="text-xs font-semibold">Background Jobs – System Busy Indicator</div>
-              <div className="text-[10px] text-zinc-500">{runningCount} running • {queuedCount} queued • Polls every 3s – shows if server working or hung</div>
+              <div className="text-[10px] text-zinc-500">{runningCount} running • {queuedCount} queued • Polls every 3s – shows if server working or hung • Auto-promote after 10s for ALL</div>
             </div>
-            <Link href={`/${companyCode}/system/jobs`} className="text-[11px] px-2 py-1 rounded-full bg-black text-white">View All →</Link>
+            <div className="flex gap-1">
+              <Link href={`/${companyCode}/system/locks`} className="text-[10px] px-2 py-1 rounded-full border bg-white hover:bg-zinc-50">🔒 SM12</Link>
+              <Link href={`/${companyCode}/system/jobs`} className="text-[11px] px-2 py-1 rounded-full bg-black text-white">View All →</Link>
+            </div>
           </div>
 
           <div className="max-h-[320px] overflow-auto">

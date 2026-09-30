@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { cacheGet, cacheSet, CacheKeys, invalidateNumberRangeCache } from '@/shared/kernel/cache/client';
 
 /**
  * Number Range Next – Atomic next number generation – Industry standard numbering
@@ -157,6 +158,9 @@ export async function GET(req: NextRequest) {
             const totalRange = Number(row.to_number) - Number(row.from_number);
             const usagePercent = totalRange > 0 ? Math.round((usedCount / totalRange) * 100) : 0;
 
+            // Invalidate cache after increment – industry standard – cache must be updated on number consumption
+            try { await invalidateNumberRangeCache(row.code); } catch {}
+
             return NextResponse.json({
               success: true,
               object_type: upperType,
@@ -174,7 +178,7 @@ export async function GET(req: NextRequest) {
               usage_warning: usagePercent >= 90 ? `Range ${row.code} ${usagePercent}% used – nearly exhausted – consider increasing to_number or creating new range` : usagePercent >= 80 ? `Range ${row.code} ${usagePercent}% used – consider planning new interval` : null,
               is_used: usedCount > 0,
               is_locked: usedCount > 0,
-              source: 'core_number_range via assignment table',
+              source: 'core_number_range via assignment table + dragonfly cache invalidated',
               assignment_found: true,
               message: `Next number ${docNumber} for ${upperType} ${upperAssignKey || ''} via assigned range ${row.code} – next ${nextAvailable} – ${usagePercent}% used`
             });
@@ -238,6 +242,8 @@ export async function GET(req: NextRequest) {
         const totalRange = Number(row.to_number) - Number(row.from_number);
         const usagePercent = totalRange > 0 ? Math.round((usedCount / totalRange) * 100) : 0;
 
+        try { await invalidateNumberRangeCache(row.code); } catch {}
+
         return NextResponse.json({
           success: true,
           object_type: upperType,
@@ -253,7 +259,7 @@ export async function GET(req: NextRequest) {
           usage_warning: usagePercent >= 90 ? `Range ${row.code} ${usagePercent}% used – nearly exhausted` : usagePercent >= 80 ? `Range ${row.code} ${usagePercent}% used` : null,
           is_used: usedCount > 0,
           is_locked: usedCount > 0,
-          source: 'core_number_range',
+          source: 'core_number_range + cache invalidated',
           assignment_found: false,
           message: `Next number ${docNumber} for ${upperType} – next ${nextAvailable} – ${usagePercent}% used – via object_type (no explicit assignment, using default)`
         });

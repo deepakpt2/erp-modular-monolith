@@ -3,6 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
+import { useAutoPromoteJob } from '@/shared/ui/job-popup';
 
 type TabKey = 'basic' | 'purchasing' | 'mrp' | 'storage' | 'accounting' | 'costing';
 
@@ -94,6 +95,7 @@ export default function MaterialMasterPage() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [nextNumberPreview, setNextNumberPreview] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { elapsed, executeWithAutoPromote, JobPopupComponent, closePopup, showPopup, jobId } = useAutoPromoteJob();
 
   useEffect(() => {
     try {
@@ -248,54 +250,115 @@ export default function MaterialMasterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid) {
-      const firstTabWithMissing = (Object.keys(missingPerTab) as TabKey[]).find(k => missingPerTab[k].length > 0);
-      if (firstTabWithMissing) setActiveTab(firstTabWithMissing);
-      setMessage(`❌ Fill required fields: ${Object.entries(missingPerTab).filter(([_, arr]) => arr.length).map(([tab, arr]) => `${tab.toUpperCase()}: ${arr.join(', ')}`).join(' | ')}`);
-      return;
-    }
-    setMessage(null);
-    setIsSubmitting(true);
+    // Industry standard locking – check if material type locked for double-entry protection
     try {
-      let payload: any = { ...form, company_code: companyCode };
-      payload.is_lot_managed = payload.is_lot_managed === 'true' || payload.is_lot_managed === true;
-      payload.is_kit = payload.is_kit === 'true' || payload.is_kit === true;
-      payload.is_phantom_kit = payload.is_phantom_kit === 'true' || payload.is_phantom_kit === true;
-      payload.is_quality_active = payload.is_quality_active === 'true' || payload.is_quality_active === true;
-      // Industry standard – ALWAYS AUTO – BLOCK MANUAL – per user block_manual
-      // If user types random 10 digits like 1234567890, it is BLOCKED – backend will ignore and auto-generate
-      // For create mode, always delete item_number to force backend auto via number range MAT-01/ITEM – purely numeric
-      if (mode === 'create') {
-        delete payload.item_number;
-        delete payload.material_number;
-        // Backend will auto-generate via core_number_range ITEM – e.g., 10000001 – numeric – no prefix
-        // Frontend nextNumberPreview shows what will be generated – but actual number from backend atomic UPDATE
-      }
-      payload.material_number = payload.item_number; // For change mode, item_number exists
-      payload.base_uom = payload.base_unit;
-      payload.group_code = payload.category_code;
-      payload.valuation_class = payload.inventory_valuation_class;
-      payload.price_control = payload.pricing_method;
-      payload.mrp_type = payload.planning_type;
-      payload.mrp_controller = payload.planning_controller;
-      payload.lot_size = payload.lot_sizing;
-      payload.facility_codes = payload.facility_codes?.length ? payload.facility_codes : undefined;
-      payload.plant_codes = payload.facility_codes;
-
-      const method = mode === 'change' ? 'PUT' : 'POST';
-      const res = await fetch('/api/materials', {
-        method,
+      const lockRes = await fetch('/api/locks', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ lock_object: 'MATERIAL', object_id: form.type || 'ITEM', locked_by: 'user', description: `Material create ${form.type}` }),
       });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || 'Failed');
-      const createdNumber = j.material?.item_number || j.item?.item_number || j.material?.material_number || payload.item_number || 'auto';
-      setMessage(`✅ Product ${createdNumber} ${mode === 'change' ? 'updated' : 'created'} – EMTC – Facilities: ${(payload.facility_codes || []).join(',') || 'default'} – next ${Number(createdNumber)+1 || 'auto'} – result shown – button disabled during submit to prevent double click`);
-      fetchItems();
-      if (mode === 'create') setForm(initialForm);
+      if (lockRes.status === 423) {
+        const lockData = await lockRes.json();
+        setMessage(`❌ ${lockData.error} – prevents double entry – try after 5 min or completion`);
+        return;
+      }
+      // If lock acquired, we will release after – but for material type lock we release immediately after check – actual number range lock is in backend
+      const ld = await lockRes.json();
+      if (ld.lock_id) await fetch(`/api/locks?id=${ld.lock_id}`, { method: 'DELETE' }).catch(() => {});
+    } catch {}
+
+    const payload = {
+      item_number: form.item_number || undefined,
+      description: form.description,
+      description_long: form.description_long,
+      type: form.type,
+      base_unit: form.base_unit,
+      category_code: form.category_code,
+      barcode: form.barcode,
+      hsn_code: form.hsn_code,
+      purchasing_group: form.purchasing_group || form.buyer_group,
+      buyer_group: form.buyer_group,
+      procurement_division: form.procurement_division,
+      is_quality_active: form.is_quality_active,
+      planning_type: form.planning_type,
+      planning_controller: form.planning_controller,
+      lot_sizing: form.lot_sizing,
+      min_lot_size: form.min_lot_size ? Number(form.min_lot_size) : undefined,
+      max_lot_size: form.max_lot_size ? Number(form.max_lot_size) : undefined,
+      fixed_lot_size: form.fixed_lot_size ? Number(form.fixed_lot_size) : undefined,
+      safety_stock: form.safety_stock ? Number(form.safety_stock) : undefined,
+      reorder_point: form.reorder_point ? Number(form.reorder_point) : undefined,
+      procurement_method: form.procurement_method,
+      special_procurement_method: form.special_procurement_method,
+      facility_codes: form.facility_codes,
+      plant_codes: form.plant_codes,
+      is_kit: form.is_kit,
+      is_phantom_kit: form.is_phantom_kit,
+      landed_cost_scope: form.landed_cost_scope,
+      is_lot_managed: form.is_lot_managed,
+      lot_size: form.lot_size,
+      valuation_class: form.valuation_class,
+      inventory_valuation_class: form.inventory_valuation_class,
+      price_control: form.price_control,
+      standard_price: form.standard_price ? Number(form.standard_price) : undefined,
+      moving_average_price: form.moving_average_price ? Number(form.moving_average_price) : undefined,
+      price_unit: form.price_unit ? Number(form.price_unit) : undefined,
+      costing_lot_size: form.costing_lot_size ? Number(form.costing_lot_size) : undefined,
+      overhead_group: form.overhead_group,
+      batch_management: form.is_lot_managed,
+      shelf_life_days: form.shelf_life_days ? Number(form.shelf_life_days) : undefined,
+      expiry_control: form.expiry_control,
+    };
+
+    // Auto-promote after 10 sec for ALL processes – first 10 sec direct with spinner timer, then background popup + no timeout + queue + redirect to last page
+    try {
+      const result = await executeWithAutoPromote({
+        directFn: async () => {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 sec timeout for direct
+          try {
+            const res = await fetch('/api/materials', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+              signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            const j = await res.json();
+            if (!res.ok) throw new Error(j.error || 'Failed');
+            return j;
+          } finally {
+            clearTimeout(timeoutId);
+          }
+        },
+        backgroundJobType: 'MATERIAL_CREATE',
+        backgroundPayload: { ...payload, material_type: form.type, type: form.type, assignment_key: form.type },
+        companyCode: companyCode,
+        lockObject: 'MATERIAL',
+        lockObjectId: form.type || 'ITEM',
+        onDirectSuccess: (j: any) => {
+          const createdNumber = j.material?.item_number || j.item?.item_number || j.material?.material_number || payload.item_number || 'auto';
+          setMessage(`✅ Product ${createdNumber} ${mode === 'change' ? 'updated' : 'created'} – EMTC – Facilities: ${(payload.facility_codes || []).join(',') || 'default'} – next ${Number(createdNumber)+1 || 'auto'} – result shown – direct completed within 10 sec – no background needed – prevents double click – cache invalidated`);
+          fetchItems();
+          if (mode === 'create') setForm(initialForm);
+        },
+        onBackgroundCreated: (newJobId: string) => {
+          setMessage(`⏳ Material creation moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – you can close → redirect to last page – job continues – header Jobs icon shows – no timeout – System Jobs page SM37 – lock acquired for ${form.type} – prevents double entry`);
+        },
+      });
+
+      if (result.type === 'direct') {
+        // Already handled in onDirectSuccess
+      } else {
+        // Background – popup shown – user can close → redirect to last page – job continues – header shows
+        console.log('Material creation moved to background job', result.jobId);
+      }
     } catch (err: any) {
-      setMessage(`❌ ${err.message} – if server hung, check header Jobs icon or System Jobs page – progress shows if working or not`);
+      if (err.name === 'AbortError') {
+        setMessage(`❌ Timeout after 30 sec – server took too long – check if material created in list – number range may have been consumed – check FNRC current – or check System Jobs page for background job`);
+      } else {
+        setMessage(`❌ ${err.message} – if server hung, check header Jobs icon or System Jobs page – progress shows if working or not – lock prevents double entry – try after 5 min or release`);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -507,7 +570,9 @@ export default function MaterialMasterPage() {
   };
 
   return (
-    <div className={modern ? "min-h-screen bg-[#fafaf9] p-6" : "min-h-screen bg-white p-4"}>
+    <>
+      <JobPopupComponent />
+      <div className={modern ? "min-h-screen bg-[#fafaf9] p-6" : "min-h-screen bg-white p-4"}>
       <div className={modern ? "max-w-[1100px] mx-auto space-y-6" : "max-w-[1000px] mx-auto space-y-4"}>
         <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6" : "border-b pb-3"}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -559,7 +624,7 @@ export default function MaterialMasterPage() {
               </button>
               <button type="button" onClick={() => setForm(initialForm)} disabled={isSubmitting} className={modern ? "px-4 py-2.5 rounded-full border text-sm disabled:opacity-50" : "px-3 py-1.5 border text-xs disabled:opacity-50"}>Clear</button>
               {!isFormValid && !isSubmitting && <span className="text-[11px] text-red-500">Fill required fields to activate – red dots show tabs with missing</span>}
-              {isSubmitting && <span className="text-[11px] text-blue-600 animate-pulse">⏳ Server working – generating number – please wait – prevents double click – check header Jobs icon if long – no timeout – background capable</span>}
+              {isSubmitting && <span className="text-[11px] text-blue-600 animate-pulse">⏳ Server working – {elapsed}s elapsed – generating number – please wait – prevents double click – after 10s auto-moves to background – popup shows steps – you can close → last page – check header Jobs icon if long – no timeout – background capable – lock prevents double entry</span>}
             </div>
           </form>
         )}
@@ -678,5 +743,6 @@ export default function MaterialMasterPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -18,6 +18,50 @@ services:
     networks:
       - internal
 
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    restart: unless-stopped
+    command: ["--proactor_threads=1", "--maxmemory=256mb"]
+    volumes:
+      - dragonfly_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - internal
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASES_HOST: postgres
+      DATABASES_PORT: 5432
+      DATABASES_USER: ${POSTGRES_USER:-postgres}
+      DATABASES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required in .env}
+      DATABASES_DBNAME: ${POSTGRES_DB:-erp}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 25
+      RESERVE_POOL_SIZE: 5
+      RESERVE_POOL_TIMEOUT: 3
+      MAX_DB_CONNECTIONS: 50
+      IGNORE_STARTUP_PARAMETERS: extra_float_digits
+      AUTH_TYPE: md5
+      AUTH_USER: ${POSTGRES_USER:-postgres}
+    ports:
+      - "6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
   # Auto Migrate - runs automatically on docker compose up, reads .env for preferences
   # No manual steps needed: does db:push + init-prod + optional FMCG seed based on env
   # FIX: docker compose up --build should NOT delete entries on each build – only critical DB errors should trigger migration that deletes – per user report
@@ -121,6 +165,7 @@ services:
 volumes:
   postgres_data:
   dms_data:
+  dragonfly_data:
 
 networks:
   proxy:

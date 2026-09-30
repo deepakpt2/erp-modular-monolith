@@ -105,6 +105,17 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
     } catch {}
   }, []);
 
+  useEffect(()=>{
+    // Track last page for redirect after background job popup close – as per user request, closing redirects to last page as usual
+    try {
+      if (pathname && !pathname.includes('/system/jobs') && !pathname.includes('/system/locks')) {
+        const last = localStorage.getItem('current_page');
+        if (last && last !== pathname) localStorage.setItem('last_page', last);
+        localStorage.setItem('current_page', pathname);
+      }
+    } catch {}
+  }, [pathname]);
+
   const toggleMode = (m: 'modern'|'classic') => {
     setUiMode(m);
     try { localStorage.setItem('erp-ui-mode', m); } catch {}

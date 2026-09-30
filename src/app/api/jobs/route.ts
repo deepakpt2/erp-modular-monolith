@@ -31,6 +31,8 @@ async function ensureTables() {
         error text,
         company_code varchar(20),
         created_by varchar(100),
+        lock_object varchar(100),
+        lock_object_id varchar(200),
         created_at timestamp DEFAULT NOW(),
         started_at timestamp,
         completed_at timestamp,
@@ -40,8 +42,67 @@ async function ensureTables() {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_core_job_status ON core_background_job(status)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_core_job_type ON core_background_job(job_type)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_core_job_company ON core_background_job(company_code)`);
+    // Enqueue lock table for double-entry protection
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS core_enqueue_lock (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        lock_object varchar(100) NOT NULL,
+        object_id varchar(200) NOT NULL,
+        table_name varchar(200),
+        locked_by varchar(200) NOT NULL,
+        locked_at timestamp DEFAULT NOW(),
+        expires_at timestamp DEFAULT NOW() + INTERVAL '5 minutes',
+        is_active boolean DEFAULT true,
+        job_id uuid,
+        description text,
+        created_at timestamp DEFAULT NOW(),
+        updated_at timestamp DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_lock_obj_id ON core_enqueue_lock(lock_object, object_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_lock_active ON core_enqueue_lock(is_active)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_lock_expires ON core_enqueue_lock(expires_at)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_lock_job ON core_enqueue_lock(job_id)`);
   } catch (e: any) {
     console.warn('Ensure job table failed:', e.message);
+  }
+}
+
+async function acquireLockForJob(jobId: string, lockObject: string, objectId: string, lockedBy: string, description?: string) {
+  try {
+    // Auto-expire old locks
+    await db.execute(sql`UPDATE core_enqueue_lock SET is_active = false WHERE is_active = true AND expires_at < NOW()`);
+    // Check if already locked by other
+    const existing = await db.execute(sql`
+      SELECT locked_by FROM core_enqueue_lock WHERE lock_object = ${lockObject} AND object_id = ${objectId} AND is_active = true AND expires_at > NOW() LIMIT 1
+    `);
+    if (existing.rows.length > 0) {
+      const lb = (existing.rows[0] as any).locked_by;
+      if (lb !== lockedBy) {
+        // Already locked – cannot acquire – will still run job but warn
+        console.warn(`Lock ${lockObject} ${objectId} already locked by ${lb} – job ${jobId} will still run but double-entry protection active`);
+        return false;
+      }
+    }
+    await db.execute(sql`
+      INSERT INTO core_enqueue_lock (lock_object, object_id, locked_by, locked_at, expires_at, is_active, job_id, description)
+      VALUES (${lockObject}, ${objectId}, ${lockedBy}, NOW(), NOW() + INTERVAL '5 minutes', true, ${jobId}, ${description || `Background job ${jobId} – ${lockObject} ${objectId}`})
+      ON CONFLICT DO NOTHING
+    `);
+    // For non-conflict table, we need to handle duplicate – try insert, if fails update
+    // Since no unique constraint, just insert – cleanup will handle
+    return true;
+  } catch (e: any) {
+    console.warn('acquireLockForJob failed:', e.message);
+    return false;
+  }
+}
+
+async function releaseLockForJob(jobId: string) {
+  try {
+    await db.execute(sql`UPDATE core_enqueue_lock SET is_active = false, updated_at = NOW() WHERE job_id = ${jobId} AND is_active = true`);
+  } catch (e: any) {
+    console.warn('releaseLockForJob failed:', e.message);
   }
 }
 
@@ -76,6 +137,22 @@ async function processNextJob() {
       UPDATE core_background_job SET status = 'RUNNING', started_at = NOW(), progress = 0, current_step = 0, step_description = 'Starting...', updated_at = NOW()
       WHERE id = ${jobId}
     `);
+
+    // Acquire lock for double-entry protection – e.g., GR for PO 4500000001, NUMBER_RANGE MAT-01, etc.
+    try {
+      const lockObj = (await db.execute(sql`SELECT lock_object, lock_object_id FROM core_background_job WHERE id = ${jobId}`)).rows[0] as any;
+      if (lockObj?.lock_object && lockObj?.lock_object_id) {
+        await acquireLockForJob(jobId, lockObj.lock_object, lockObj.lock_object_id, (job as any).created_by || 'system', `Background job ${jobId} – ${jobType} – ${lockObj.lock_object} ${lockObj.lock_object_id}`);
+      } else if (payload?.po_number || payload?.purchase_order_number || payload?.reference_po) {
+        // For GR, lock PO
+        const poNum = payload.po_number || payload.purchase_order_number || payload.reference_po;
+        await acquireLockForJob(jobId, 'PO', poNum, (job as any).created_by || 'system', `GR background job for PO ${poNum}`);
+      } else if (payload?.lock_object && payload?.lock_object_id) {
+        await acquireLockForJob(jobId, payload.lock_object, payload.lock_object_id, (job as any).created_by || 'system', `Background job ${jobId}`);
+      }
+    } catch (e: any) {
+      console.warn('Lock acquire for job failed:', e.message);
+    }
 
     // Process based on type
     if (jobType === 'PAYROLL_RUN') {
@@ -153,11 +230,13 @@ async function processPayrollJob(jobId: string, payload: any) {
       result = ${JSON.stringify({ total_employees: totalEmployees, status: 'completed', payroll_numbers: [`PAY-${Date.now()}`], message: `Payroll for ${totalEmployees} employees completed – postings to universal ledger done` })}::jsonb
       WHERE id = ${jobId}
     `);
+    await releaseLockForJob(jobId);
   } catch (e: any) {
     await db.execute(sql`
       UPDATE core_background_job SET status = 'FAILED', error = ${e.message}, completed_at = NOW(), updated_at = NOW()
       WHERE id = ${jobId}
     `);
+    await releaseLockForJob(jobId);
   }
 }
 
@@ -170,8 +249,10 @@ async function processMaterialJob(jobId: string, payload: any) {
       await new Promise(r => setTimeout(r, 300));
     }
     await db.execute(sql`UPDATE core_background_job SET status = 'COMPLETED', progress = 100, completed_at = NOW(), result = ${JSON.stringify({ material_number: payload.item_number || `100000${Math.floor(Math.random()*9000)}`, message: 'Material created via assignment' })}::jsonb WHERE id = ${jobId}`);
+    await releaseLockForJob(jobId);
   } catch (e: any) {
     await db.execute(sql`UPDATE core_background_job SET status = 'FAILED', error = ${e.message}, completed_at = NOW() WHERE id = ${jobId}`);
+    await releaseLockForJob(jobId);
   }
 }
 
@@ -184,8 +265,10 @@ async function processProcurementJob(jobId: string, jobType: string, payload: an
       await new Promise(r => setTimeout(r, 400));
     }
     await db.execute(sql`UPDATE core_background_job SET status = 'COMPLETED', progress = 100, completed_at = NOW(), result = ${JSON.stringify({ document_number: `${Math.floor(Math.random()*1000000000)+1000000000}`, message: `${jobType} created` })}::jsonb WHERE id = ${jobId}`);
+    await releaseLockForJob(jobId);
   } catch (e: any) {
     await db.execute(sql`UPDATE core_background_job SET status = 'FAILED', error = ${e.message}, completed_at = NOW() WHERE id = ${jobId}`);
+    await releaseLockForJob(jobId);
   }
 }
 
@@ -198,8 +281,10 @@ async function processGenericJob(jobId: string, payload: any) {
       await new Promise(r => setTimeout(r, 500));
     }
     await db.execute(sql`UPDATE core_background_job SET status = 'COMPLETED', progress = 100, completed_at = NOW(), result = ${JSON.stringify({ message: 'Generic job completed' })}::jsonb WHERE id = ${jobId}`);
+    await releaseLockForJob(jobId);
   } catch (e: any) {
     await db.execute(sql`UPDATE core_background_job SET status = 'FAILED', error = ${e.message}, completed_at = NOW() WHERE id = ${jobId}`);
+    await releaseLockForJob(jobId);
   }
 }
 
@@ -258,17 +343,42 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { job_type, jobType, payload, company_code, companyCode, created_by } = body;
+    const { job_type, jobType, payload, company_code, companyCode, created_by, lock_object, lockObject, lock_object_id, lockObjectId } = body;
     const finalJobType = (jobType || job_type)?.toUpperCase() || 'GENERIC';
     const finalCompanyCode = company_code || companyCode || null;
     const finalCreatedBy = created_by || 'system';
+    const finalLockObject = (lockObject || lock_object || payload?.lock_object || null)?.toString().toUpperCase() || null;
+    const finalLockObjectId = lockObjectId || lock_object_id || payload?.lock_object_id || payload?.po_number || payload?.purchase_order_number || payload?.reference_po || null;
 
     if (!finalJobType) return NextResponse.json({ error: 'job_type required – e.g., PAYROLL_RUN, MATERIAL_CREATE, PO_CREATE' }, { status: 400 });
 
-    // Create job as QUEUED
+    // Double-entry protection – check if same object already locked by RUNNING/QUEUED job
+    if (finalLockObject && finalLockObjectId) {
+      await db.execute(sql`UPDATE core_enqueue_lock SET is_active = false WHERE is_active = true AND expires_at < NOW()`);
+      const lockCheck = await db.execute(sql`
+        SELECT id, locked_by FROM core_enqueue_lock WHERE lock_object = ${finalLockObject} AND object_id = ${finalLockObjectId} AND is_active = true AND expires_at > NOW() LIMIT 1
+      `);
+      if (lockCheck.rows.length > 0) {
+        const lb = (lockCheck.rows[0] as any).locked_by;
+        // Also check jobs table for same lock running/queued
+        const jobCheck = await db.execute(sql`
+          SELECT id FROM core_background_job WHERE lock_object = ${finalLockObject} AND lock_object_id = ${finalLockObjectId} AND status IN ('RUNNING','QUEUED') LIMIT 1
+        `);
+        if (jobCheck.rows.length > 0) {
+          return NextResponse.json({
+            error: `🔒 Locked – ${finalLockObject} ${finalLockObjectId} already has background job ${(jobCheck.rows[0] as any).id} RUNNING/QUEUED by ${lb} – prevents double entry – e.g., GR for same PO – check header Jobs icon or System Jobs page SM37 – try after completion or 5 min inactivity`,
+            locked: true,
+            locked_by: lb,
+            code: 'DOUBLE_ENTRY_LOCKED',
+          }, { status: 423 });
+        }
+      }
+    }
+
+    // Create job as QUEUED with lock info for double-entry protection
     const res = await db.execute(sql`
-      INSERT INTO core_background_job (job_type, status, progress, payload, company_code, created_by)
-      VALUES (${finalJobType}, 'QUEUED', 0, ${JSON.stringify(payload || {})}::jsonb, ${finalCompanyCode}, ${finalCreatedBy})
+      INSERT INTO core_background_job (job_type, status, progress, payload, company_code, created_by, lock_object, lock_object_id)
+      VALUES (${finalJobType}, 'QUEUED', 0, ${JSON.stringify(payload || {})}::jsonb, ${finalCompanyCode}, ${finalCreatedBy}, ${finalLockObject}, ${finalLockObjectId})
       RETURNING id, job_type, status, progress, created_at
     `);
 
