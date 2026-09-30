@@ -731,7 +731,7 @@ export default function MaterialMasterPage() {
               { code: "EMGC", label: "Categories", route: "/foundation/material-categories" },
               { code: "EFCC", label: "Facilities / Plants", route: "/foundation/facilities" },
               { code: "FAUC", label: "Auto Account OBYC", route: "/fico/auto-account-determination" },
-              { code: "OMJJ", label: "Movement Types", route: "/fico/movement-types" },
+              { code: "FMTM", label: "Movement Types", route: "/fico/movement-types" },
               { code: "FNRC", label: "Number Ranges MAT-01", route: "/fico/number-ranges" },
               { code: "ISTV", label: "Stock Overview", route: "/foundation/stock" },
             ].map(l => (

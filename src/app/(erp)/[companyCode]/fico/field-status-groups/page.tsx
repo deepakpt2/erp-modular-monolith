@@ -116,17 +116,17 @@ export default function FieldStatusGroupsPage() {
       <div className={modern ? "max-w-[1100px] mx-auto space-y-6" : "max-w-[1000px] mx-auto space-y-4"}>
         <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6" : "border-b pb-3"}>
           <div className="flex items-center gap-3">
-            <span className={modern ? "text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white" : "text-[10px] font-mono border px-2 py-0.5 bg-black text-white"}>OBC5</span>
-            <span className={modern ? "text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border text-zinc-500" : "text-[9px] font-mono border px-1 bg-zinc-50"}>FSSV</span>
+            <span className={modern ? "text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white" : "text-[10px] font-mono border px-2 py-0.5 bg-black text-white"}>FFSG</span>
+            <span className={modern ? "text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border text-zinc-500" : "text-[9px] font-mono border px-1 bg-zinc-50"}>FFSV</span>
             <span className={modern ? "text-[11px] bg-zinc-100 border rounded-full px-2.5 py-1 text-zinc-600" : "text-[10px] border px-2 py-0.5"}>{existing.length} records</span>
           </div>
-          <h1 className={modern ? "text-xl font-bold mt-3 tracking-tight" : "text-lg font-bold mt-2"}>Field Status Groups – OBC5 – SAP Structure – Multiple Fields per Group</h1>
-          <p className={modern ? "text-sm text-zinc-500 mt-1" : "text-xs text-zinc-500 mt-1"}>Define Field Status Groups – same structure as SAP – one group has multiple FIELD_NAME with status R/S/O/D – e.g., G001 expense: cost_center R, profit_center O, tax_code S – strict usage: cost center required for expense GL, suppressed for cash – per guide FSSV-1000 must exist before ELEC – Company: <b>{companyCode}</b></p>
+          <h1 className={modern ? "text-xl font-bold mt-3 tracking-tight" : "text-lg font-bold mt-2"}>Field Status Groups – FFSG own IP – SAP Structure – Multiple Fields per Group</h1>
+          <p className={modern ? "text-sm text-zinc-500 mt-1" : "text-xs text-zinc-500 mt-1"}>Define Field Status Groups – same structure as SAP – one group has multiple FIELD_NAME with status R/S/O/D – e.g., G001 expense: cost_center R, profit_center O, tax_code S – strict usage: cost center required for expense GL, suppressed for cash – per guide FFSV-1000 must exist before ELEC – Company: <b>{companyCode}</b></p>
         </div>
 
         <div className={modern ? "bg-white rounded-2xl shadow-lg border border-zinc-200 p-6 space-y-5" : "border p-4 space-y-3 bg-white"}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <DbAutocomplete label="FIELD_STATUS_VARIANT_CODE * – FSSV – must exist" value={variantCode} onChange={setVariantCode} apiUrl="/api/field-status-variants" dataKey="fieldStatusVariants" codeField="code" placeholder="" required createUrl={`/${companyCode}/fico/field-status-variants`} createCode="FSSV" companyCode={companyCode} />
+            <DbAutocomplete label="FIELD_STATUS_VARIANT_CODE * – FFSV own IP – must exist" value={variantCode} onChange={setVariantCode} apiUrl="/api/field-status-variants" dataKey="fieldStatusVariants" codeField="code" placeholder="" required createUrl={`/${companyCode}/fico/field-status-variants`} createCode="FFSV" companyCode={companyCode} />
             <div className="space-y-1">
               <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>FIELD_STATUS_GROUP_CODE *</label>
               <input value={groupCode} onChange={e=>setGroupCode(e.target.value.toUpperCase())} placeholder="" className={modern ? "w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" : "w-full border px-2 py-1.5 text-xs"} />
@@ -178,7 +178,7 @@ export default function FieldStatusGroupsPage() {
 
           <div className="flex items-center gap-3">
             <button onClick={handleSave} disabled={loading} className={modern ? "px-6 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-zinc-800 shadow disabled:opacity-50" : "border px-4 py-1.5 text-xs bg-black text-white disabled:opacity-50"}>
-              {loading ? 'Saving...' : `Save Field Status Group ${variantCode}/${groupCode} – ${ALL_FIELDS.length} Fields – OBC5`}
+              {loading ? 'Saving...' : `Save Field Status Group ${variantCode}/${groupCode} – ${ALL_FIELDS.length} Fields – FFSG own IP (alias OBC5)`}
             </button>
             <span className="text-[11px] text-zinc-400">Same structure as SAP – one group multiple FIELD_NAME – saves all fields at once – no need to add multiple times</span>
           </div>
@@ -188,9 +188,9 @@ export default function FieldStatusGroupsPage() {
         <div className={modern ? "bg-zinc-50 rounded-2xl border border-zinc-200 p-4" : "border p-3 bg-zinc-50"}>
           <h4 className={modern ? "text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2" : "text-[10px] uppercase text-zinc-500 mb-1"}>Related Masters – auto from dependencies – low importance</h4>
           <div className="flex flex-wrap gap-2">
-            <Link href={`/${companyCode}/fico/field-status-variants`} className={modern ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300" : "inline-flex items-center gap-1 border px-2 py-1 text-[10px] bg-white"}><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FSSV</span><span>Field Status Variant – required – FSSV-1000 must exist before ELEC</span><span className="text-zinc-400">→</span></Link>
+            <Link href={`/${companyCode}/fico/field-status-variants`} className={modern ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300" : "inline-flex items-center gap-1 border px-2 py-1 text-[10px] bg-white"}><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FFSV</span><span>Field Status Variant – required – FFSV-1000 own IP must exist before ELEC</span><span className="text-zinc-400">→</span></Link>
             <Link href={`/${companyCode}/fico/gl-accounts`} className={modern ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300" : "inline-flex items-center gap-1 border px-2 py-1 text-[10px] bg-white"}><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FGLC</span><span>GL Account uses Field Status – G001/G002</span><span className="text-zinc-400">→</span></Link>
-            <Link href={`/${companyCode}/foundation/legal-entities`} className={modern ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300" : "inline-flex items-center gap-1 border px-2 py-1 text-[10px] bg-white"}><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">ELEC</span><span>Legal Entity uses FSSV-1000</span><span className="text-zinc-400">→</span></Link>
+            <Link href={`/${companyCode}/foundation/legal-entities`} className={modern ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300" : "inline-flex items-center gap-1 border px-2 py-1 text-[10px] bg-white"}><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">ELEC</span><span>Legal Entity uses FFSV-1000</span><span className="text-zinc-400">→</span></Link>
           </div>
         </div>
 

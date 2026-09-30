@@ -84,7 +84,7 @@ export default function EnterpriseConfigPage() {
       icon: '🛡️',
       items: [
         { code: 'OBC4', label: 'Field Status Variant', route: '/fico/field-status-variants', desc: 'Code name – groups field status groups – e.g., 1000 Standard – strict: assigned to company code controls required/suppressed fields per GL' },
-        { code: 'OBC5', label: 'Field Status Groups', route: '/fico/field-status-groups', desc: 'Variant_code group_code field_name cost_center/profit_center/tax_code status R/S/O/D – strict: cost center required for expense G001 suppressed for cash G002' },
+        { code: 'FFSG', label: 'Field Status Groups', route: '/fico/field-status-groups', desc: 'Variant_code group_code field_name cost_center/profit_center/tax_code status R/S/O/D – strict: cost center required for expense G001 suppressed for cash G002' },
         { code: 'OBA0', label: 'Tolerance Groups – GL', route: '/fico/tolerance-groups-gl', desc: 'Code name type GL lower_limit upper_limit – strict: allows small differences within tolerance' },
         { code: 'OBA4', label: 'Tolerance Groups – CV', route: '/fico/tolerance-groups-cv', desc: 'Code name type CUSTOMER/VENDOR – strict: if invoice 100 payment 99.90 within 100 allowed clearing' },
         { code: 'OBA7', label: 'Document Types', route: '/fico/document-types', desc: 'Code SA/KA/KG/RV/RE name number_range_code FK FNRC – strict: assigns number range per doc type' },

@@ -132,8 +132,8 @@ export default function NavigatorPage() {
       icon: '🛡️',
       module: 'FICO',
       children: [
-        { label: 'Field Status Variant', code: 'FSSV', route: `/fico/field-status-variants` },
-        { label: 'Field Status Groups', code: 'OBC5', route: `/fico/field-status-groups` },
+        { label: 'Field Status Variant', code: 'FFSV', route: `/fico/field-status-variants` },
+        { label: 'Field Status Groups', code: 'FFSG', route: `/fico/field-status-groups` },
         { label: 'Tolerance Groups – General Ledger', code: 'OBA0', route: `/fico/tolerance-groups-gl` },
         { label: 'Tolerance Groups – Customers/Vendors', code: 'OBA4', route: `/fico/tolerance-groups-cv` },
         { label: 'Document Types', code: 'OBA7', route: `/fico/document-types` },

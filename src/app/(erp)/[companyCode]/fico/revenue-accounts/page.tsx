@@ -4,10 +4,10 @@ import { SingleCodePage } from '@/shared/ui/single-code-page';
 export default function Page() {
   return (
     <SingleCodePage
-      code="VKOA"
+      code="FRAD"
       sapAlias="VKOA"
       title="Revenue Account Determination – Sales"
-      description="Define Revenue Account Determination – VKOA – T0 BLOCKING – Condition technique: chart + sales org + customer group + material group + account assignment group → GL (KOFI/KOFK) – strict usage: Billing VF01 needs to find revenue GL, otherwise cannot post Dr AR Cr Revenue – NO DANGLING – used in POST /api/billing – determineRevenueAccount() – fallback logic exact→sales org→chart→default"
+      description="Define Revenue Account Determination – FRAD own IP (alias VKOA) – T0 BLOCKING – Condition technique: chart + sales org + customer group + material group + account assignment group → GL (KOFI/KOFK) – strict usage: Billing VF01 needs to find revenue GL, otherwise cannot post Dr AR Cr Revenue – NO DANGLING – used in POST /api/billing – determineRevenueAccount() – fallback logic exact→sales org→chart→default"
       apiEndpoint="/api/revenue-accounts"
       initialForm={{
         chart_of_accounts: 'KSCA',

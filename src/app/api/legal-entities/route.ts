@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS country_code VARCHAR(2) DEFAULT 'IN'`);
       await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS fiscal_year_variant VARCHAR(20) DEFAULT 'K4'`);
       await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS chart_of_accounts_code VARCHAR(20) DEFAULT 'CA-IN-01'`);
-      await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS field_status_variant VARCHAR(20) DEFAULT 'FSSV-1000'`);
+      await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS field_status_variant VARCHAR(20) DEFAULT 'FFSV-1000'`);
       await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS posting_period_variant VARCHAR(20) DEFAULT 'PPV-1000'`);
       await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS posting_period_variant_code VARCHAR(20) DEFAULT 'PPV-1000'`);
       await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS credit_control_area VARCHAR(20) DEFAULT 'CRED-1000'`);
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     const finalFiscal = (fiscal_calendar_code || fiscal_year_variant || 'K4').toUpperCase();
     const finalChart = (chart_of_accounts_code || 'CA-IN-01').toUpperCase();
-    const finalFieldStatus = (field_status_variant || 'FSSV-1000').toUpperCase();
+    const finalFieldStatus = (field_status_variant || 'FFSV-1000').toUpperCase();
     const finalPostingVariant = (posting_period_variant || posting_period_variant_code || 'PPV-1000').toUpperCase();
     const finalCredit = (credit_control_area || credit_policy_area_code || 'CRED-1000').toUpperCase();
     const finalCountry = (country_code || country || 'IN').toUpperCase();

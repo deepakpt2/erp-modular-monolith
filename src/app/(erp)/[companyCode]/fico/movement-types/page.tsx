@@ -4,10 +4,10 @@ import { SingleCodePage } from '@/shared/ui/single-code-page';
 export default function Page() {
   return (
     <SingleCodePage
-      code="OMJJ"
+      code="FMTM"
       sapAlias="OMJJ"
       title="Movement Types – Goods Movements Config"
-      description="Define Movement Types – OMJJ – T0 BLOCKING – 101 GR, 102 reversal, 122 return, 261 GI prod order (CO11N), 601 PGI sales (VL02N), 602 reversal PGI (VL09), 701/702 PI diff – determines stock +/- value +/- account modifier BSX/WRX/GBB/PRD/BSV – strict usage: every goods movement must have movement type – NO DANGLING – used in GR, GI, PGI, PI, Scrap, Transfer"
+      description="Define Movement Types – FMTM own IP (alias OMJJ) – T0 BLOCKING – 101 GR, 102 reversal, 122 return, 261 GI prod order (CO11N), 601 PGI sales (VL02N), 602 reversal PGI (VL09), 701/702 PI diff – determines stock +/- value +/- account modifier BSX/WRX/GBB/PRD/BSV – strict usage: every goods movement must have movement type – NO DANGLING – used in GR, GI, PGI, PI, Scrap, Transfer"
       apiEndpoint="/api/movement-types"
       initialForm={{
         code: '',

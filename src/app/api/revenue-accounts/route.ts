@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       data: rows,
       revenueAccounts: rows,
       count: rows.length,
-      code: 'VKOA',
+      code: 'FRAD',
       aliasCodes: ['VKOA', 'FIN-REV-CR'],
       table: 'fin_revenue_account',
       functionDescription: 'Revenue Account Determination – VKOA – T0 BLOCKING – chart + sales org + customer group + material group + account assignment → GL (KOFI/KOFK) – used in billing VF01 – NO DANGLING',

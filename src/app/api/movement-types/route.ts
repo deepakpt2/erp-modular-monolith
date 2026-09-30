@@ -4,7 +4,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Movement Types – OMJJ – T0 BLOCKING – No Dangling
+ * Movement Types – FMTM own IP – T0 BLOCKING – No Dangling
  * Defines 101 GR, 102 GR reversal, 122 return to vendor, 161 returns, 261 GI to order, 262 reversal, 309 transfer material to material, 551 scrap, 601 GI for sales (PGI), 602 reversal, 701/702 PI diff
  * Strict usage: Every goods movement must have movement type, determines + / - stock, + / - value, account modifier BSX/WRX/GBB/PRD, reversal movement, allowed transactions
  * Used in: GR 101, GR reversal 102, Production GI 261, Sales PGI 601, Scrap 551, Transfer 309, PI 701/702
@@ -65,10 +65,10 @@ export async function GET(req: NextRequest) {
       data: rows,
       movementTypes: rows,
       count: rows.length,
-      code: 'OMJJ',
+      code: 'FMTM',
       aliasCodes: ['OMJJ', 'FIN-MV-CR'],
       table: 'fin_movement_type',
-      functionDescription: 'Movement Types – OMJJ – T0 BLOCKING – defines 101/102/122/161/261/262/309/551/601/602/701/702 – determines stock +/- value +/- account modifier BSX/WRX/GBB/PRD/BSV – used in GR, GI, PGI, PI, Scrap, Transfer – NO DANGLING',
+      functionDescription: 'Movement Types – FMTM own IP – T0 BLOCKING – defines 101/102/122/161/261/262/309/551/601/602/701/702 – determines stock +/- value +/- account modifier BSX/WRX/GBB/PRD/BSV – used in GR, GI, PGI, PI, Scrap, Transfer – NO DANGLING',
       usage: {
         '101': 'GR for PO – stock + value + – posts BSX inventory debit, WRX GR/IR credit – used in POST /api/gr',
         '102': 'Reversal 101 – stock - value - – reverses BSX/WRX – used in PUT /api/gr?action=REVERSE',

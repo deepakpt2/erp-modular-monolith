@@ -22,7 +22,7 @@ export default function Page() {
         { code: "FGLC", label: "GL Account – required – BSX/WRX/GBB/KOFI", route: "/fico/gl-accounts", description: "GL Account – BSX inventory, WRX GR/IR, GBB COGS, KOFI revenue" },
         { code: "FCOA", label: "Chart of Accounts – KSCA", route: "/fico/chart-of-accounts", description: "Chart KSCA" },
         { code: "EMTC", label: "Product Master – valuation_class → BSX", route: "/foundation/materials", description: "Material – valuation_class used in OBYC lookup" },
-        { code: "OMJJ", label: "Movement Types – 101/261/601 – uses transaction_key", route: "/fico/movement-types", description: "OMJJ – movement → transaction_key → GL" },
+        { code: "FMTM", label: "Movement Types – 101/261/601 – uses transaction_key", route: "/fico/movement-types", description: "OMJJ – movement → transaction_key → GL" },
         { code: "IGRC", label: "Goods Receipt MIGO 101 – uses BSX/WRX", route: "/mm/gr", description: "GR 101 – BSX/WRX via OBYC" },
         { code: "SDLC", label: "Delivery VL01N – PGI 601 – uses GBB/BSX", route: "/sd/delivery", description: "Delivery PGI 601 – GBB COGS + BSX" },
         { code: "SBLC", label: "Billing VF01 – uses KOFI/KOFK revenue", route: "/sd/billing", description: "Billing – KOFI/KOFK revenue via VKOA" },

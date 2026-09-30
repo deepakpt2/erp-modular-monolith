@@ -20,7 +20,7 @@ export default function Page() {
       relatedLinks={[
         { code: "FCOA", label: "Chart of Accounts – required", route: "/fico/chart-of-accounts", description: "Chart" },
         { code: "OBYC", label: "Auto Account uses GL", route: "/fico/auto-account-determination", description: "Auto Account Determination" },
-        { code: "OBC5", label: "Field Status Groups uses GL", route: "/fico/field-status-groups", description: "Field Status" },
+        { code: "FFSG", label: "Field Status Groups uses GL", route: "/fico/field-status-groups", description: "Field Status" },
       ]}
     />
   );

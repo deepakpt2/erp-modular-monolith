@@ -20,10 +20,10 @@ export default function CompanyGroupsPage() {
         { key: 'tenant_code', label: 'TENANT_CODE', required: true, placeholder: 'TEN-100', description: 'Tenant code – default TEN-100' },
       ]}
       relatedLinks={[
-        { code: 'ELEC', label: 'Legal Entity uses ECGC', route: '/foundation/legal-entities', description: 'Legal Entity requires Company Group – needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FSSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000' },
+        { code: 'ELEC', label: 'Legal Entity uses ECGC', route: '/foundation/legal-entities', description: 'Legal Entity requires Company Group – needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FFSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000' },
         { code: 'FCOA', label: 'Chart of Accounts uses – CA-IN-01 must exist before ELEC', route: '/fico/chart-of-accounts', description: 'Create CA-IN-01 first – OB13' },
         { code: 'FFYC', label: 'Fiscal Year Variant K4 must exist before ELEC', route: '/fico/fiscal-calendars', description: 'Create K4 first' },
-        { code: 'FSSV', label: 'Field Status Variant FSSV-1000', route: '/fico/field-status-variants', description: 'Create FSSV-1000 first' },
+        { code: 'FFSV', label: 'Field Status Variant FFSV-1000', route: '/fico/field-status-variants', description: 'Create FFSV-1000 first' },
         { code: 'FPPC', label: 'Posting Period Variant PPV-1000', route: '/fico/posting-period-variants', description: 'Create PPV-1000 first' },
         { code: 'FCPC', label: 'Credit Control Area CRED-1000 – OB45', route: '/foundation/credit-policy-areas', description: 'Create CRED-1000 first – credit_control_area didnt create before OB13' },
         { code: 'ECAC', label: 'Enterprise Config', route: '/foundation/enterprise-structure', description: 'Overview hub' },

@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       data: rows,
       fieldStatusGroups: rows,
       count: rows.length,
-      code: 'OBC5',
+      code: 'FFSG',
       table: 'fin_field_status_group',
       functionDescription: 'Field Status Groups – defines field requirements per GL group – strict usage: validates cost_center required/suppressed per GL posting',
     });
