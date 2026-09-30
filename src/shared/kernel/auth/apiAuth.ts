@@ -1,13 +1,15 @@
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { getRequiredPermissionForRoute } from './routePermissions';
 
 /**
- * Enterprise API Auth Guard - Defense in Depth
+ * Enterprise API Auth Guard - Defense in Depth – Sitewide RBAC – FRPC
  * Even if middleware is bypassed, API routes enforce auth when MVP_NO_AUTH != 'true'
+ * Now also enforces sitewide RBAC via routePermissions mapping – master data manager cannot access HR payroll – SoD
  * 
  * Usage in API route:
  *   const authCheck = await requireApiAuth(req);
- *   if (authCheck) return authCheck; // returns 401 response if unauthorized
+ *   if (authCheck) return authCheck; // returns 401/403 response if unauthorized/forbidden
  */
 
 export async function requireApiAuth(req?: NextRequest): Promise<NextResponse | null> {
@@ -43,6 +45,84 @@ export async function requireApiAuth(req?: NextRequest): Promise<NextResponse | 
         },
         { status: 401 }
       );
+    }
+
+    // Session valid – now check sitewide RBAC via routePermissions – industry standard FRPC
+    if (req) {
+      try {
+        const url = new URL(req.url);
+        const pathname = url.pathname;
+        const method = req.method || 'GET';
+
+        const required = getRequiredPermissionForRoute(pathname, method);
+        if (required) {
+          // Skip if roles contains '*' – allow all authenticated
+          if (required.roles && required.roles.includes('*')) {
+            // Allow all authenticated – no further check
+          } else {
+            const userRole = (session.user as any)?.role;
+            const userId = (session.user as any)?.id;
+
+            // ADMIN, OWNER always allowed
+            if (userRole === 'ADMIN' || userRole === 'OWNER') {
+              // Allow
+            } else {
+              // Check detailed roles and permissions via RBAC
+              try {
+                const { hasPermission, getUserRoles } = await import('./rbac');
+                if (userId) {
+                  const hasPerm = await hasPermission(userId, required.permission);
+                  const roles = await getUserRoles(userId);
+
+                  const isAdmin = roles.includes('ADMIN') || roles.includes('OWNER') || roles.includes('ADMIN_ALL');
+                  if (isAdmin) {
+                    // Allow
+                  } else if (hasPerm) {
+                    // Has explicit permission – allow
+                  } else {
+                    // Check if user has required role
+                    const requiredRoles = required.roles || [];
+                    const hasRequiredRole = requiredRoles.some(r => roles.includes(r) || userRole === r);
+
+                    if (!hasRequiredRole) {
+                      // For sensitive perms, deny – master data manager cannot access payroll, etc.
+                      const sensitivePerms = ['PAYROLL_RUN', 'PAYROLL_APPROVE', 'EMPLOYEE_VIEW', 'EMPLOYEE_CREATE', 'GL_POST', 'ROLE_MANAGE', 'USER_MANAGE', 'ADMIN_ALL'];
+                      if (sensitivePerms.includes(required.permission) || (required.roles && !required.roles.includes('*'))) {
+                        return NextResponse.json(
+                          {
+                            error: `Forbidden – requires permission ${required.permission} – roles [${required.roles?.join(',')}] – current role ${userRole} roles [${roles.join(',')}] – ${required.description}`,
+                            code: 'FORBIDDEN',
+                            requiredPermission: required.permission,
+                            requiredRoles: required.roles,
+                            currentRole: userRole,
+                            currentRoles: roles,
+                            pathname,
+                            method,
+                            explanation: required.description + ' – SoD segregation of duties – master data manager cannot access HR payroll – industry standard FRPC',
+                          },
+                          { status: 403 }
+                        );
+                      }
+                    }
+                  }
+                }
+              } catch (e: any) {
+                console.warn(`RBAC sitewide check failed for ${pathname} ${method}:`, e.message);
+                // For sensitive, deny on error – secure by default
+                const sensitivePerms = ['PAYROLL_RUN', 'PAYROLL_APPROVE', 'EMPLOYEE_VIEW', 'EMPLOYEE_CREATE', 'GL_POST', 'ROLE_MANAGE', 'USER_MANAGE', 'ADMIN_ALL'];
+                if (sensitivePerms.includes(required.permission)) {
+                  return NextResponse.json(
+                    { error: `Forbidden – RBAC check failed for ${required.permission} – secure by default`, code: 'FORBIDDEN', details: e.message },
+                    { status: 403 }
+                  );
+                }
+              }
+            }
+          }
+        }
+      } catch (e: any) {
+        console.warn('Sitewide RBAC pathname check failed (non-fatal):', e.message);
+      }
     }
 
     // Session valid - allow
@@ -105,14 +185,6 @@ export async function requirePermission(permissionCode: string): Promise<NextRes
     }
   }
 
-  if (permissionCode === 'EMPLOYEE_VIEW' || permissionCode === 'EMPLOYEE_CREATE') {
-    // Employee master also HR sensitive, but allow MANAGER as well for view
-    if (materialOnlyRoles.includes(userRole) && !['HR','HR_MANAGER','ADMIN','OWNER','MANAGER','PAYROLL_MANAGER'].includes(userRole)) {
-      // Still check detailed permissions – maybe user has HR permission via ent_user_role
-      // Fall through to detailed check below – don't deny yet
-    }
-  }
-
   // Check detailed permissions via ent_user_role / ent_role_permission – FRPC
   try {
     const { hasPermission, getUserRoles } = await import('./rbac');
@@ -148,10 +220,7 @@ export async function requirePermission(permissionCode: string): Promise<NextRes
         );
       }
 
-      // For other perms, allow if ADMIN_ALL or hasPerm, else deny if strict?
-      // For backward compat, allow non-sensitive perms if no roles assigned (MVP) – but log
-      // For sensitive, we already denied above
-      // For non-sensitive, check if user has no roles – allow for MVP
+      // For other perms, check if user has no roles – allow for MVP
       if (roles.length === 0) {
         console.warn(`RBAC: User ${userId} has no roles – allowing ${permissionCode} for MVP – in production should deny`);
         return null;
@@ -174,7 +243,6 @@ export async function requirePermission(permissionCode: string): Promise<NextRes
         { status: 403 }
       );
     }
-    // For non-sensitive, allow to avoid lockout
   }
 
   return null;

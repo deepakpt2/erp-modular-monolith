@@ -22,6 +22,22 @@ export default function NavigatorPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [uiMode, setUiMode] = useState<'modern'|'classic'>('modern');
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [me, setMe] = useState<any>(null);
+  const [meLoading, setMeLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchMe() {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const j = await res.json();
+          setMe(j);
+        }
+      } catch {}
+      setMeLoading(false);
+    }
+    fetchMe();
+  }, []);
 
   useEffect(()=>{
     try {
@@ -68,7 +84,29 @@ export default function NavigatorPage() {
   };
 
   // Build tree structure – strict ERP terminology, no SAP jargon in labels, but keep aliases for search
-  const tree: TreeNode[] = useMemo(()=>[
+  // Sitewide RBAC – filter based on role – master data manager cannot see HR payroll – SoD – FRPC
+  const tree: TreeNode[] = useMemo(()=>{
+    const isAdmin = me?.isAdmin;
+    const isHR = me?.isHR;
+    const canAccessPayroll = me?.canAccessPayroll ?? true; // default true while loading
+    const canAccessMaterial = me?.canAccessMaterial ?? true;
+    const roles = me?.roles || [];
+    const simpleRole = me?.simpleRole || '';
+
+    // Helper to check if user can access module
+    const canAccessModule = (module: string) => {
+      if (meLoading) return true; // show all while loading
+      if (isAdmin) return true;
+      if (module === 'HR') return canAccessPayroll || isHR || roles.includes('HR') || roles.includes('HR_MANAGER');
+      if (module === 'FOUNDATION') return true; // foundation allowed for all authenticated – MDM needs it
+      if (module === 'MM') return canAccessMaterial || roles.includes('PURCHASER') || roles.includes('WAREHOUSE') || roles.includes('MATERIAL_MANAGER') || roles.includes('MASTER_DATA_MANAGER') || simpleRole === 'MASTER_DATA_MANAGER';
+      if (module === 'FICO') return roles.includes('ACCOUNTANT') || roles.includes('ADMIN') || isAdmin || simpleRole === 'ACCOUNTANT';
+      if (module === 'SD') return roles.includes('SALES') || isAdmin;
+      if (module === 'PP') return roles.includes('PRODUCTION') || roles.includes('MATERIAL_MANAGER') || isAdmin;
+      return true;
+    };
+
+    return [
     {
       label: 'Foundation – Enterprise Structure',
       icon: '🏢',
@@ -197,12 +235,26 @@ export default function NavigatorPage() {
         { label: 'Workflow Inbox', code: 'FWFL', route: `/workflow/inbox` },
       ]
     },
-  ], [counts]);
+  ]; }, [counts, me, meLoading]);
 
   const filteredTree = useMemo(()=>{
-    if (!search.trim()) return tree;
+    // First filter by RBAC module access
+    let rbacFiltered = tree.filter(group => {
+      if (meLoading) return true;
+      if (me?.isAdmin) return true;
+      const module = group.module || 'FOUNDATION';
+      // HR module only for HR/Admin
+      if (module === 'HR' && !me?.canAccessPayroll && !me?.isHR && !me?.isAdmin) {
+        // Check if any child is accessible? For HR, if cannot access payroll, hide entire HR group for MDM
+        // But still show Employee Master for HR roles only – for MDM, hide HR entirely
+        return false;
+      }
+      return true;
+    });
+
+    if (!search.trim()) return rbacFiltered;
     const q = search.toLowerCase();
-    return tree.map(group=>{
+    return rbacFiltered.map(group=>{
       const matchedChildren = group.children?.filter(c=>
         c.label.toLowerCase().includes(q) ||
         c.code?.toLowerCase().includes(q) ||
@@ -215,7 +267,7 @@ export default function NavigatorPage() {
       if (group.label.toLowerCase().includes(q)) return group;
       return null;
     }).filter(Boolean) as TreeNode[];
-  }, [tree, search]);
+  }, [tree, search, me]);
 
   const modern = uiMode==='modern';
 
