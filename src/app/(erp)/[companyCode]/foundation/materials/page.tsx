@@ -61,9 +61,9 @@ const initialForm = {
   overhead_group: '',
 };
 
-// Required fields per tab for red-dot validation
+// Required fields per tab for red-dot validation – item_number optional for auto-number from MAT-01
 const REQUIRED_PER_TAB: Record<TabKey, string[]> = {
-  basic: ['item_number', 'description', 'type', 'base_unit'],
+  basic: ['description', 'type', 'base_unit'],
   purchasing: [],
   mrp: [],
   storage: [], // facility optional (defaults to FAC-1000), lot fields have defaults
@@ -92,6 +92,7 @@ export default function MaterialMasterPage() {
   const [showListSuggestions, setShowListSuggestions] = useState(false);
   const [showChangeSuggestions, setShowChangeSuggestions] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [nextNumberPreview, setNextNumberPreview] = useState<string>('');
 
   useEffect(() => {
     try {
@@ -102,6 +103,29 @@ export default function MaterialMasterPage() {
       return () => window.removeEventListener('erp-ui-mode-change', handler as any);
     } catch {}
   }, []);
+
+  // Fetch next number preview for ITEM – shows what will be generated if blank
+  useEffect(() => {
+    if (mode !== 'create') return;
+    const fetchNext = async () => {
+      try {
+        const res = await fetch('/api/number-ranges?limit=100');
+        const j = await res.json();
+        const ranges = j.data || j.numberRanges || [];
+        const matRange = ranges.find((r: any) => r.object_type === 'ITEM' || r.code === 'MAT-01' || r.code === 'ITEM-01' || r.code?.includes('MAT'));
+        if (matRange) {
+          const next = (matRange.current_number || matRange.from_number || 100000) + 1;
+          const prefix = matRange.prefix || 'MAT-';
+          setNextNumberPreview(`${prefix}${next} (from ${matRange.code} ${prefix}${matRange.from_number}-${matRange.to_number})`);
+        } else {
+          setNextNumberPreview('No MAT-01/ITEM range found – will use MAT-{timestamp} fallback – create range via FNRC first for sequential');
+        }
+      } catch {
+        setNextNumberPreview('Unable to fetch range – fallback timestamp will be used');
+      }
+    };
+    fetchNext();
+  }, [mode]);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -317,8 +341,14 @@ export default function MaterialMasterPage() {
                 <span className="text-xs">{collapsed['basic_general'] ? '▶' : '▼'}</span>
               </div>
               {!collapsed['basic_general'] && (
-                <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
-                  {renderInput('item_number', 'PRODUCT_CODE', { required: true, desc: 'item_number – auto from MAT-01 / ITEM range if blank – single source' })}
+                <>
+                  {nextNumberPreview && (
+                    <div className={modern ? "mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs" : "mb-2 p-2 border bg-blue-50 text-[11px]"}>
+                      <span className="font-medium">Auto-number preview:</span> {nextNumberPreview} – Leave PRODUCT_CODE blank to use this, or type manual like <span className="font-mono">FG-001</span> / <span className="font-mono">RAW-1001</span>. Setup ranges via <Link href={`/${companyCode}/fico/number-ranges`} className="text-blue-600 underline">FNRC Number Ranges</Link> – create MAT-01 with object_type ITEM, prefix MAT-, from 100000.
+                    </div>
+                  )}
+                  <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
+                    {renderInput('item_number', 'PRODUCT_CODE (Optional – auto if blank)', { desc: 'Leave blank → auto from MAT-01 / ITEM range (e.g., MAT-100001) – SAP-like – or enter manual FG-001 – optional, not required' })}
                   {renderInput('description', 'PRODUCT_NAME / DESCRIPTION', { required: true, desc: 'Short description – single source' })}
                   {renderInput('type', 'PRODUCT_TYPE', { required: true, options: ['RAW','FINISHED','SEMI','TRADING','PACKAGING','CONSUMABLE','SERVICE'], desc: 'RAW=ROH, FINISHED=FERT – single source' })}
                   <div className="space-y-1">
@@ -335,6 +365,7 @@ export default function MaterialMasterPage() {
                   {renderInput('hsn_code', 'HSN_CODE', { desc: 'India GST HSN – FTXC – single source in Basic only' })}
                   {renderInput('description_long', 'DESCRIPTION_LONG', { type: 'textarea', desc: 'Long text for SO/PO print – single source' })}
                 </div>
+                </>
               )}
             </div>
           </div>
