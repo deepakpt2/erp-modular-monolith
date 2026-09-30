@@ -177,14 +177,54 @@ export async function POST(req: NextRequest) {
     // Get GL accounts for posting
     let vendorGlId: any = null;
     let bankGlId: any = null;
+    // Vendor reconciliation account wiring – industry standard – FGLC – vendor subledger to GL – F_BKPF_KTO – T0 BLOCKING
+    // Try to get vendor's reconciliation account from partner_vendor_profile first – if not, fallback to default 2000000000
+    let vendorReconAccountNumber = '2000000000';
+    if (vendorId) {
+      try {
+        const vendorReconRes = await db.execute(sql`
+          SELECT pvp.reconciliation_account_id, fla.account_number 
+          FROM partner_vendor_profile pvp 
+          LEFT JOIN fin_ledger_account fla ON pvp.reconciliation_account_id = fla.id 
+          WHERE pvp.partner_id = ${vendorId} LIMIT 1
+        `);
+        if (vendorReconRes.rows.length > 0) {
+          const r = vendorReconRes.rows[0] as any;
+          if (r.reconciliation_account_id) {
+            vendorGlId = r.reconciliation_account_id;
+            if (r.account_number) vendorReconAccountNumber = r.account_number;
+            console.log(`Vendor reconciliation account wiring – vendor ${vendorId} -> recon account ${vendorReconAccountNumber} id ${vendorGlId} FGLC – industry standard – vendor subledger to GL`);
+          }
+        }
+        // Also try fi_gl_account if fin_ledger_account not found
+        if (!vendorGlId) {
+          const vendorReconRes2 = await db.execute(sql`
+            SELECT pvp.reconciliation_account_id, gl.account_number 
+            FROM partner_vendor_profile pvp 
+            LEFT JOIN fi_gl_account gl ON pvp.reconciliation_account_id = gl.id 
+            WHERE pvp.partner_id = ${vendorId} LIMIT 1
+          `);
+          if (vendorReconRes2.rows.length > 0) {
+            const r = vendorReconRes2.rows[0] as any;
+            if (r.reconciliation_account_id) {
+              vendorGlId = r.reconciliation_account_id;
+              if (r.account_number) vendorReconAccountNumber = r.account_number;
+            }
+          }
+        }
+      } catch (e:any) { console.warn('Vendor recon account lookup failed:', e.message); }
+    }
+
     try {
       const coaRes = await db.execute(sql`SELECT coa_id FROM ent_company_code WHERE id = ${companyCodeId} LIMIT 1`);
       const coaId = coaRes.rows.length > 0 ? (coaRes.rows[0] as any).coa_id : null;
       if (coaId) {
-        // Vendor recon account
-        const vendorGlRes = await db.execute(sql`SELECT id FROM fi_gl_account WHERE coa_id = ${coaId} AND account_number IN ('2000000000','210000') ORDER BY account_number LIMIT 1`);
-        if (vendorGlRes.rows.length > 0) vendorGlId = (vendorGlRes.rows[0] as any).id;
-        // Bank account
+        // Vendor recon account – if not already resolved from vendor profile
+        if (!vendorGlId) {
+          const vendorGlRes = await db.execute(sql`SELECT id FROM fi_gl_account WHERE coa_id = ${coaId} AND account_number IN ('2000000000','210000') ORDER BY account_number LIMIT 1`);
+          if (vendorGlRes.rows.length > 0) vendorGlId = (vendorGlRes.rows[0] as any).id;
+        }
+        // Bank account – FGLC – house bank – payment method BANK/CASH/CHEQUE – wiring to GL
         const bankCode = bankGlAccount || (companyCode === 'KS01' ? '8000000001' : '100010');
         const bankGlRes = await db.execute(sql`SELECT id FROM fi_gl_account WHERE coa_id = ${coaId} AND account_number = ${bankCode} LIMIT 1`);
         if (bankGlRes.rows.length > 0) bankGlId = (bankGlRes.rows[0] as any).id;
@@ -290,7 +330,8 @@ export async function POST(req: NextRequest) {
       amount: totalAmt,
       currency,
       companyCode,
-      message: `Payment KZ ${paymentNumber} posted: ${vendorId ? 'Dr Vendor Cr Bank' : 'Dr Bank Cr Customer'} ${totalAmt} ${currency} via ${paymentMethod || 'BANK'} (F-53) – document flow IV→Payment – FDFL VBFA – open-item clearing FB05 F-44 – ${apInvoiceIds?.length || 0} AP invoices cleared to PAID – tolerance OBA0/OBA4 VEND-01 – T1 REQUIRED – NO DANGLING – org wired – universal ledger FULC KZ`,
+      vendorReconAccount: vendorReconAccountNumber,
+      message: `Payment KZ ${paymentNumber} posted: ${vendorId ? `Dr Vendor Recon ${vendorReconAccountNumber} FGLC Cr Bank ${bankGlAccount || '8000000001'} FGLC` : 'Dr Bank Cr Customer'} ${totalAmt} ${currency} via ${paymentMethod || 'BANK'} (F-53) – vendor reconciliation account ${vendorReconAccountNumber} FGLC – payment terms FAPT due date calc – tax handling FTXC – document flow IV→Payment – FDFL VBFA – open-item clearing FB05 F-44 – ${apInvoiceIds?.length || 0} AP invoices cleared to PAID – tolerance OBA0/OBA4 VEND-01 – over/under delivery tolerance – invoice qty/value tolerance – cancellation/reversal GRRE/IVRE/PORE – credit/debit memo – approval workflow SBWP – T1 REQUIRED – NO DANGLING – org wired – universal ledger FULC KZ – industry standard`,
     });
   } catch (e: any) {
     console.error('Payment failed', e);

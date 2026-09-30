@@ -19,6 +19,10 @@ interface POLine {
   unit_price: number;
   uom_code?: string;
   delivery_completed?: boolean;
+  overdelivery_tolerance_percent?: number;
+  underdelivery_tolerance_percent?: number;
+  over_tolerance?: number;
+  under_tolerance?: number;
 }
 
 interface PO {
@@ -355,13 +359,14 @@ export default function Page(){
                         <div className="text-[11px] truncate">{line.description || ''}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-zinc-500 uppercase">Ordered / Received / Open</div>
-                        <div className="text-xs"><span className="font-bold">{line.quantity}</span> / {line.quantity_received} / <span className="text-blue-600 font-bold">{line.quantity_open}</span> {line.uom_code}</div>
-                        <div className="text-[10px] text-zinc-400">PO Qty – GR Qty = Open – MIGO shows open</div>
+                        <div className="text-[10px] text-zinc-500 uppercase">Ordered / Received / Open + Tolerance</div>
+                        <div className="text-xs"><span className="font-bold">{line.quantity}</span> / {line.quantity_received} / <span className="text-blue-600 font-bold">{line.quantity_open}</span> {line.uom_code} – Over {line.overdelivery_tolerance_percent || 10}% Under {line.underdelivery_tolerance_percent || 10}% – Max {(line.quantity * (1 + (line.overdelivery_tolerance_percent || 10)/100)).toFixed(2)} Min {(line.quantity * (1 - (line.underdelivery_tolerance_percent || 10)/100)).toFixed(2)}</div>
+                        <div className="text-[10px] text-zinc-400">PO Qty – GR Qty = Open – MIGO shows open – over/under tolerance UEBTO/UNTTO – if GR qty {'>'} maxAllowed {line.quantity}*(1+over/100) block 400 – if final ELIKZ and total {'<'} minAllowed block – partial GR allowed – ELIKZ delivery_completed</div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-zinc-500 uppercase">GR Qty *</div>
+                        <div className="text-[10px] text-zinc-500 uppercase">GR Qty * – tolerance check – over {line.overdelivery_tolerance_percent || 10}%</div>
                         <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder={String(line.quantity_open)} />
+                        <div className="text-[9px] text-amber-600">Max {(line.quantity * (1 + (line.overdelivery_tolerance_percent || 10)/100)).toFixed(2)} – tolerance OBA0/OBA4 VEND-01 – overdelivery</div>
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">SLOC – EILC</div>

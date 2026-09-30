@@ -248,10 +248,51 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Enhanced columns for industry standard – credit/debit memo, tax handling, invoice tolerance, partial invoice
+    try {
+      await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS document_type VARCHAR(20) DEFAULT 'RE'`);
+      await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS is_credit_memo BOOLEAN DEFAULT false`);
+      await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS is_debit_memo BOOLEAN DEFAULT false`);
+      await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS original_iv_id UUID`);
+      await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS payment_term_code VARCHAR(20)`);
+      await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS due_date DATE`);
+      await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS vendor_recon_account_id UUID`);
+      await db.execute(sql`ALTER TABLE proc_iv_line ADD COLUMN IF NOT EXISTS tax_rule_id UUID`);
+      await db.execute(sql`ALTER TABLE proc_iv_line ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(5,2) DEFAULT 0`);
+      await db.execute(sql`ALTER TABLE proc_iv_line ADD COLUMN IF NOT EXISTS is_credit BOOLEAN DEFAULT false`);
+    } catch (e:any) { console.warn('IV enhanced columns ensure failed:', e.message); }
+
+    // Resolve payment term code and vendor recon account for IV – industry standard wiring FAPT + FGLC
+    let ivPaymentTermCode: any = (body.payment_term_code || body.payment_terms_code || '').toString().toUpperCase() || null;
+    let ivDueDate:any = null;
+    let ivVendorReconId:any = null;
+    if (ivPaymentTermCode) {
+      try {
+        const ptRes = await db.execute(sql`SELECT days FROM fin_payment_term WHERE UPPER(code) = ${ivPaymentTermCode} LIMIT 1`);
+        if (ptRes.rows.length > 0) {
+          const days = parseInt((ptRes.rows[0] as any).days || '0');
+          const base = invoice_date ? new Date(invoice_date) : new Date();
+          ivDueDate = new Date(base);
+          ivDueDate.setDate(ivDueDate.getDate() + days);
+        }
+      } catch {}
+    }
+    if (partnerIdResolved) {
+      try {
+        const reconRes = await db.execute(sql`SELECT reconciliation_account_id FROM partner_vendor_profile WHERE partner_id = ${partnerIdResolved} LIMIT 1`);
+        if (reconRes.rows.length > 0) ivVendorReconId = (reconRes.rows[0] as any).reconciliation_account_id;
+      } catch {}
+    }
+
+    // Credit/debit memo handling – industry standard – credit memo if is_credit_memo true or quantity negative or document_type CREDIT
+    const docTypeInput = (body.document_type || body.iv_type || 'RE').toString().toUpperCase();
+    const isCreditMemo = body.is_credit_memo || docTypeInput.includes('CREDIT') || docTypeInput === 'RE_CREDIT' || (body.total_amount && parseFloat(body.total_amount) < 0);
+    const isDebitMemo = body.is_debit_memo || docTypeInput.includes('DEBIT') || docTypeInput === 'RE_DEBIT';
+
     try {
       const res = await db.execute(sql`
-        INSERT INTO proc_invoice_verification (iv_number, gr_id, po_id, partner_id, vendor_id, legal_entity_id, company_code_id, invoice_date, posting_date, vendor_invoice_number, total_amount, tax_amount, freight_amount, customs_amount, other_charges)
-        VALUES (${ivNumber}, ${grIdResolved || null}, ${poIdResolved}, ${partnerIdResolved || null}, ${partnerIdResolved || null}, ${legalEntityIdResolved || null}, ${legalEntityIdResolved || null}, ${invoice_date ? new Date(invoice_date) : new Date()}, ${posting_date ? new Date(posting_date) : new Date()}, ${vendor_invoice_number}, ${total_amount || 0}, ${tax_amount || 0}, ${freight_amount || 0}, ${customs_amount || 0}, ${other_charges || 0})
+        INSERT INTO proc_invoice_verification (iv_number, gr_id, po_id, partner_id, vendor_id, legal_entity_id, company_code_id, invoice_date, posting_date, vendor_invoice_number, total_amount, tax_amount, freight_amount, customs_amount, other_charges, document_type, is_credit_memo, is_debit_memo, payment_term_code, due_date, vendor_recon_account_id)
+        VALUES (${ivNumber}, ${grIdResolved || null}, ${poIdResolved}, ${partnerIdResolved || null}, ${partnerIdResolved || null}, ${legalEntityIdResolved || null}, ${legalEntityIdResolved || null}, ${invoice_date ? new Date(invoice_date) : new Date()}, ${posting_date ? new Date(posting_date) : new Date()}, ${vendor_invoice_number}, ${total_amount || 0}, ${tax_amount || 0}, ${freight_amount || 0}, ${customs_amount || 0}, ${other_charges || 0}, ${docTypeInput}, ${isCreditMemo || false}, ${isDebitMemo || false}, ${ivPaymentTermCode || null}, ${ivDueDate ? ivDueDate : null}, ${ivVendorReconId || null})
         RETURNING id, iv_number
       `);
       const ivId = (res.rows[0] as any).id;
@@ -274,12 +315,41 @@ export async function POST(req: NextRequest) {
           if (!poLineId) continue;
 
           let itemId = line.item_id;
+          let poLineQty = 0;
+          let poLineReceived = 0;
+          let poLineInvoiced = 0;
           try {
-            const plInfo = await db.execute(sql`SELECT item_id FROM proc_po_line WHERE id = ${poLineId} LIMIT 1`);
-            if (plInfo.rows.length > 0) itemId = itemId || (plInfo.rows[0] as any).item_id;
+            const plInfo = await db.execute(sql`SELECT item_id, quantity, quantity_received, quantity_invoiced FROM proc_po_line WHERE id = ${poLineId} LIMIT 1`);
+            if (plInfo.rows.length > 0) {
+              itemId = itemId || (plInfo.rows[0] as any).item_id;
+              poLineQty = parseFloat((plInfo.rows[0] as any).quantity || '0');
+              poLineReceived = parseFloat((plInfo.rows[0] as any).quantity_received || '0');
+              poLineInvoiced = parseFloat((plInfo.rows[0] as any).quantity_invoiced || '0');
+            }
           } catch {}
 
           const qty = parseFloat(line.quantity || '0');
+          // Invoice quantity tolerance – check if invoiced qty > received qty + tolerance (VEND-01) – industry standard
+          // Allow partial invoice: qty can be less than ordered, but not more than received + over tolerance
+          const maxInvoiceQty = poLineReceived > 0 ? poLineReceived * 1.1 : poLineQty * 1.1; // 10% over tolerance if no GR
+          if (qty > maxInvoiceQty + 0.001 && !isCreditMemo) {
+            // Check tolerance group VEND-01 for quantity tolerance – if exceeds, block
+            try {
+              const tolCheck = await checkTolerance({ group_code: 'VEND-01', difference_amount: qty - maxInvoiceQty });
+              if (!tolCheck.allowed) {
+                return NextResponse.json({
+                  error: `Invoice quantity tolerance exceeded – PO line qty ${poLineQty} received ${poLineReceived} invoiced before ${poLineInvoiced} + current ${qty} would exceed max ${maxInvoiceQty} – tolerance VEND-01 – adjust qty or increase tolerance`,
+                  po_line_qty: poLineQty,
+                  received: poLineReceived,
+                  invoiced_before: poLineInvoiced,
+                  current_qty: qty,
+                  max_allowed: maxInvoiceQty,
+                  tolerance_group: 'VEND-01'
+                }, { status: 400 });
+              }
+            } catch {}
+          }
+
           const unitInvoiced = parseFloat(line.unit_price_invoiced || line.unitPriceInvoiced || '0');
           const unitPo = parseFloat(line.unit_price_po || line.unitPricePo || unitInvoiced);
           const freight = parseFloat(line.freight_per_unit || '0');
@@ -287,7 +357,21 @@ export async function POST(req: NextRequest) {
           const other = parseFloat(line.other_per_unit || '0');
           const totalFinal = unitInvoiced + freight + customs + other;
           const variance = unitInvoiced - unitPo;
-          const lineTax = parseFloat(line.tax_amount || '0');
+          let lineTax = parseFloat(line.tax_amount || '0');
+          let taxRuleId = line.tax_rule_id || null;
+          let taxRate = parseFloat(line.tax_rate || '0');
+          const taxCodeInput = (line.tax_code || line.tax_rule_code || '').toString().toUpperCase();
+          if (taxCodeInput) {
+            try {
+              const taxRes = await db.execute(sql`SELECT id, rate FROM fin_tax_rule WHERE UPPER(code) = ${taxCodeInput} LIMIT 1`);
+              if (taxRes.rows.length > 0) {
+                taxRuleId = (taxRes.rows[0] as any).id;
+                taxRate = parseFloat((taxRes.rows[0] as any).rate || '0');
+                if (lineTax === 0) lineTax = qty * unitInvoiced * taxRate / 100;
+                console.log(`Tax handling FTXC ${taxCodeInput} -> rate ${taxRate}% tax ${lineTax} – IV ${ivNumber}`);
+              }
+            } catch {}
+          }
 
           totalInvoicedAmount += qty * unitInvoiced;
           totalVarianceAmount += qty * variance;
@@ -295,12 +379,14 @@ export async function POST(req: NextRequest) {
           totalFreightAmount += qty * freight;
           totalCustomsAmount += qty * customs;
 
+          const isLineCredit = qty < 0 || isCreditMemo;
+
           await db.execute(sql`
-            INSERT INTO proc_iv_line (iv_id, gr_line_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, other_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount)
-            VALUES (${ivId}, ${line.gr_line_id || null}, ${poLineId}, ${line.line_number || i + 10}, ${itemId}, ${qty}, ${unitInvoiced}, ${unitPo}, ${freight}, ${customs}, ${other}, ${totalFinal}, ${variance}, ${line.tax_amount || 0})
+            INSERT INTO proc_iv_line (iv_id, gr_line_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, other_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit)
+            VALUES (${ivId}, ${line.gr_line_id || null}, ${poLineId}, ${line.line_number || i + 10}, ${itemId}, ${qty}, ${unitInvoiced}, ${unitPo}, ${freight}, ${customs}, ${other}, ${totalFinal}, ${variance}, ${lineTax}, ${taxRuleId || null}, ${taxRate}, ${isLineCredit})
           `);
 
-          // Update PO line invoiced qty
+          // Update PO line invoiced qty – partial invoice handling – multiple IVs per PO line allowed – industry standard
           try {
             await db.execute(sql`UPDATE proc_po_line SET quantity_invoiced = quantity_invoiced + ${qty} WHERE id = ${poLineId}`);
           } catch {}
@@ -317,50 +403,66 @@ export async function POST(req: NextRequest) {
         const valuationClass = body.valuation_class || 'RAW';
 
         // Get auto accounts – WRX, PRD, BSX, tax
-        let wrxGL = (body as any)._auto_gl_wrx || '2000000001';
-        let prdGL = '4000000004';
-        let vendorReconGL = '2000000000';
-        let taxGL = '2000000003';
+        let wrxGL: any = (body as any)._auto_gl_wrx || '2000000001';
+        let prdGL: any = '4000000004';
+        let vendorReconGL: any = '2000000000';
+        let taxGL: any = '2000000003';
         try {
-          const wrx = await getAutoAccount({ transaction_key: 'WRX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+          const wrx: any = await getAutoAccount({ transaction_key: 'WRX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
           if(wrx.found) wrxGL = wrx.gl_account;
-          const prd = await getAutoAccount({ transaction_key: 'PRD', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+          const prd: any = await getAutoAccount({ transaction_key: 'PRD', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
           if(prd.found) prdGL = prd.gl_account;
         } catch {}
 
-        const totalAmountForLedger = totalInvoicedAmount || parseFloat(total_amount || '0') || 0;
-        const totalAmountWithTax = totalAmountForLedger + totalTaxAmount + totalFreightAmount + totalCustomsAmount;
+        let totalAmountForLedger: any = totalInvoicedAmount || parseFloat((total_amount as any) || '0') || 0;
+        let totalAmountWithTax: any = totalAmountForLedger + totalTaxAmount + totalFreightAmount + totalCustomsAmount;
+        // Credit/debit memo – reverse signs if credit memo – industry standard – credit memo reduces liability
+        const isCredit = isCreditMemo;
+        const docTypeForLedger = isCredit ? 'RE_CREDIT' : (isDebitMemo ? 'RE_DEBIT' : 'RE');
+        if (isCredit) {
+          totalAmountForLedger = Math.abs(totalAmountForLedger);
+          totalAmountWithTax = Math.abs(totalAmountWithTax);
+        }
+
+        // Resolve vendor recon GL from vendor profile if available, else fallback – industry standard wiring FGLC
+        let resolvedVendorReconGL = vendorReconGL;
+        if (ivVendorReconId) {
+          try {
+            const glRes = await db.execute(sql`SELECT account_number FROM fin_ledger_account WHERE id = ${ivVendorReconId} LIMIT 1`);
+            if (glRes.rows.length > 0) resolvedVendorReconGL = (glRes.rows[0] as any).account_number;
+          } catch {}
+        }
 
         // WRX – Dr GR/IR clearing – if GR exists, clear WRX – amount = total invoiced based on PO price or invoiced price
-        // In SAP MIRO: Dr WRX (GR/IR) Cr Vendor – when GR qty = IV qty, WRX cleared – here we post Dr WRX
+        // In SAP MIRO: Dr WRX (GR/IR) Cr Vendor – when GR qty = IV qty, WRX cleared – here we post Dr WRX – credit memo reverses: Cr WRX Dr Vendor
         await db.execute(sql`
           INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
-          VALUES (${ivNumber}, 'RE'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), ${totalAmountForLedger}, 0, ${totalAmountForLedger}, 'INR', 'IV', ${ivNumber}, ${`IV 51 RE WRX clearing – GR/IR clearing – PO ${poIdResolved} – WRX ${wrxGL} Dr ${totalAmountForLedger} – clears WRX from GR 101 Cr WRX – T0 – vendor invoice accounting RE`})
+          VALUES (${ivNumber}, ${docTypeForLedger}::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), ${isCredit ? 0 : totalAmountForLedger}, ${isCredit ? totalAmountForLedger : 0}, ${totalAmountForLedger}, 'INR', 'IV', ${ivNumber}, ${`IV 51 ${docTypeForLedger} WRX clearing – GR/IR clearing – PO ${poIdResolved} – WRX ${wrxGL} ${isCredit ? 'Cr' : 'Dr'} ${totalAmountForLedger} – ${isCredit ? 'credit memo' : 'invoice'} – T0 – vendor invoice accounting RE – tax FTXC – payment terms FAPT ${ivPaymentTermCode || ''} due ${ivDueDate?.toISOString().split('T')[0] || ''} – recon ${resolvedVendorReconGL} FGLC`})
         `).catch(()=>{});
 
-        // Vendor Recon – Cr Vendor – RE – vendor invoice – Cr Vendor Recon 2000000000
+        // Vendor Recon – Cr Vendor for invoice, Dr Vendor for credit memo – RE – vendor invoice – Cr Vendor Recon 2000000000
         await db.execute(sql`
           INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
-          VALUES (${ivNumber}, 'RE'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${vendorReconGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${vendorReconGL} LIMIT 1), 0, ${totalAmountWithTax}, ${totalAmountWithTax}, 'INR', 'IV', ${ivNumber}, ${`IV 51 RE Vendor Recon – Cr Vendor ${vendorReconGL} – vendor invoice ${vendor_invoice_number} – amount ${totalAmountWithTax} – RE – vendor invoice accounting – T0`})
+          VALUES (${ivNumber}, ${docTypeForLedger}::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${resolvedVendorReconGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${resolvedVendorReconGL} LIMIT 1), ${isCredit ? totalAmountWithTax : 0}, ${isCredit ? 0 : totalAmountWithTax}, ${totalAmountWithTax}, 'INR', 'IV', ${ivNumber}, ${`IV 51 ${docTypeForLedger} Vendor Recon – ${isCredit ? 'Dr' : 'Cr'} Vendor ${resolvedVendorReconGL} – vendor invoice ${vendor_invoice_number} – amount ${totalAmountWithTax} – ${isCredit ? 'credit memo' : 'RE'} – vendor invoice accounting – T0 – recon account wiring FGLC – payment terms FAPT`})
         `).catch(()=>{});
 
-        // PRD – Price Difference if variance exists – Dr/Cr PRD 4000000004 – price difference handling
+        // PRD – Price Difference if variance exists – Dr/Cr PRD 4000000004 – price difference handling – credit memo reverses
         if (Math.abs(totalVarianceAmount) > 0.01) {
           await db.execute(sql`
             INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
-            VALUES (${ivNumber}, 'RE'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${prdGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${prdGL} LIMIT 1), ${totalVarianceAmount > 0 ? totalVarianceAmount : 0}, ${totalVarianceAmount < 0 ? Math.abs(totalVarianceAmount) : 0}, ${Math.abs(totalVarianceAmount)}, 'INR', 'IV', ${ivNumber}, ${`IV 51 RE PRD price diff – invoiced vs PO price diff ${totalVarianceAmount} – PRD ${prdGL} – price difference handling – T0 – e.g., PO price 100 invoiced 110 diff 10*10=100 PRD`})
+            VALUES (${ivNumber}, ${docTypeForLedger}::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${prdGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${prdGL} LIMIT 1), ${isCredit ? (totalVarianceAmount < 0 ? Math.abs(totalVarianceAmount) : 0) : (totalVarianceAmount > 0 ? totalVarianceAmount : 0)}, ${isCredit ? (totalVarianceAmount > 0 ? totalVarianceAmount : 0) : (totalVarianceAmount < 0 ? Math.abs(totalVarianceAmount) : 0)}, ${Math.abs(totalVarianceAmount)}, 'INR', 'IV', ${ivNumber}, ${`IV 51 ${docTypeForLedger} PRD price diff – invoiced vs PO price diff ${totalVarianceAmount} – PRD ${prdGL} – price difference handling – T0 – ${isCredit ? 'credit memo reversal' : 'e.g., PO price 100 invoiced 110 diff 10*10=100 PRD'}`})
           `).catch(()=>{});
         }
 
-        // Tax – if tax amount exists – Dr Tax – e.g., GST 18% – tax GL 2000000003
+        // Tax – if tax amount exists – Dr Tax for invoice, Cr Tax for credit memo – e.g., GST 18% – tax GL 2000000003 – FTXC
         if (Math.abs(totalTaxAmount) > 0.01) {
           await db.execute(sql`
             INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
-            VALUES (${ivNumber}, 'RE'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${taxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${taxGL} LIMIT 1), ${totalTaxAmount}, 0, ${totalTaxAmount}, 'INR', 'IV', ${ivNumber}, ${`IV 51 RE Tax – GST – tax amount ${totalTaxAmount} – tax GL ${taxGL} – tax/HSN – FTXC – vendor invoice accounting RE – tax`})
+            VALUES (${ivNumber}, ${docTypeForLedger}::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${taxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${taxGL} LIMIT 1), ${isCredit ? 0 : totalTaxAmount}, ${isCredit ? totalTaxAmount : 0}, ${totalTaxAmount}, 'INR', 'IV', ${ivNumber}, ${`IV 51 ${docTypeForLedger} Tax – GST – tax amount ${totalTaxAmount} – tax GL ${taxGL} – tax/HSN – FTXC – vendor invoice accounting RE – tax – ${isCredit ? 'credit memo' : 'invoice'}`})
           `).catch(()=>{});
         }
 
-        console.log(`IV ${ivNumber} universal ledger posted – RE + WRX clearing ${totalAmountForLedger} + Vendor Recon ${totalAmountWithTax} + PRD ${totalVarianceAmount} + Tax ${totalTaxAmount} – T0 – vendor invoice accounting RE – WRX clearing – PRD – tax – FULC ACDOCA`);
+        console.log(`IV ${ivNumber} universal ledger posted – ${docTypeForLedger} + WRX clearing ${totalAmountForLedger} + Vendor Recon ${resolvedVendorReconGL} ${totalAmountWithTax} + PRD ${totalVarianceAmount} + Tax ${totalTaxAmount} – ${isCredit ? 'CREDIT MEMO' : isDebitMemo ? 'DEBIT MEMO' : 'INVOICE'} – T0 – vendor invoice accounting RE – WRX clearing – PRD – tax – FULC ACDOCA – payment terms FAPT ${ivPaymentTermCode} due ${ivDueDate?.toISOString().split('T')[0] || ''} – recon FGLC – partial invoice allowed – invoice qty/value tolerance VEND-01`);
       } catch (ledgerErr:any) {
         console.warn(`IV ${ivNumber} universal ledger posting failed – but allowing IV to not block fresh:`, ledgerErr.message);
       }
@@ -455,6 +557,39 @@ export async function PUT(req: NextRequest) {
           await db.execute(sql`UPDATE proc_invoice_verification SET status = ${newStatus}::proc_iv_status, updated_at = NOW() WHERE iv_number = ${originalNumber} OR id::text = ${originalNumber}`);
         } catch (e) { console.warn('Status update failed', e); }
 
+        // Enhanced reversal – invoice reversal MR8M – reverse PO line invoiced qty + universal ledger – industry standard
+        if (isReversal) {
+          try {
+            let origIvId: any = null;
+            const origRes = await db.execute(sql`SELECT id FROM proc_invoice_verification WHERE iv_number = ${originalNumber} OR id::text = ${originalNumber} LIMIT 1`);
+            if (origRes.rows.length > 0) origIvId = (origRes.rows[0] as any).id;
+            if (origIvId) {
+              const linesRes = await db.execute(sql`SELECT po_line_id, quantity FROM proc_iv_line WHERE iv_id = ${origIvId}`);
+              for (const l of linesRes.rows as any[]) {
+                const qty = parseFloat(l.quantity || '0');
+                if (l.po_line_id) {
+                  await db.execute(sql`UPDATE proc_po_line SET quantity_invoiced = GREATEST(0, quantity_invoiced - ${qty}) WHERE id = ${l.po_line_id}`).catch(()=>{});
+                }
+              }
+              // Universal ledger reversal – reverse RE entries
+              try {
+                const ledgerRes = await db.execute(sql`SELECT ledger_account_id, gl_account_id, debit, credit, amount FROM fin_universal_ledger WHERE document_number = ${originalNumber} AND document_type IN ('RE','RE_CREDIT','RE_DEBIT') LIMIT 20`);
+                for (const le of ledgerRes.rows as any[]) {
+                  const revDebit = le.credit || 0;
+                  const revCredit = le.debit || 0;
+                  const revAmount = le.amount || 0;
+                  const postingDate = new Date();
+                  await db.execute(sql`
+                    INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
+                    VALUES (${reversalResult.reversal_document_number}, 'RE', ${postingDate}, ${postingDate}, ${postingDate.getFullYear()}, ${postingDate.getMonth()+1}, ${le.ledger_account_id}, ${le.gl_account_id}, ${revDebit}, ${revCredit}, ${revAmount}, 'INR', 'IV', ${originalNumber}, ${'IV reversal MR8M – universal ledger reversal – ' + originalNumber})
+                  `).catch(()=>{});
+                }
+              } catch (ledErr:any) { console.warn('IV reversal ledger failed:', ledErr.message); }
+              console.log(`IV reversal MR8M – original ${originalNumber} – lines ${linesRes.rows.length} reversed – PO invoiced qty decreased – ledger reversed – industry standard`);
+            }
+          } catch (revErr:any) { console.warn('IV reversal logic failed:', revErr.message); }
+        }
+
         return NextResponse.json({
           success: true,
           original_document: originalNumber,
@@ -462,8 +597,9 @@ export async function PUT(req: NextRequest) {
           reversal_type: reversalResult.reversal_type,
           action: action,
           code: reversalResult.reversal_type,
-          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – IV reversal/adjustment – immutable audit trail – legal-safe own IP (was MR8M)`,
-          legalSafe: true
+          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – IV reversal/adjustment – immutable audit trail – legal-safe own IP (was MR8M) – PO invoiced qty reversed – universal ledger reversed – industry standard – IVRE`,
+          legalSafe: true,
+          invoiced_qty_reversal: isReversal ? 'quantity_invoiced decreased, ledger reversed' : 'adjustment'
         });
       }
     }

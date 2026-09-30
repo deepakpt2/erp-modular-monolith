@@ -15,6 +15,9 @@ interface POLine {
   freight_per_unit: string;
   customs_per_unit: string;
   tax_per_unit: string;
+  tax_code: string;
+  overdelivery_tolerance_percent: string;
+  underdelivery_tolerance_percent: string;
   inventory_location_code: string;
   item_text: string;
   delivery_text: string;
@@ -34,9 +37,10 @@ export default function Page(){
   const [headerText, setHeaderText] = useState('');
   const [currencyCode, setCurrencyCode] = useState('INR');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
+  const [paymentTermCode, setPaymentTermCode] = useState('NT30');
   const [incoterms, setIncoterms] = useState('EXW');
   const [lines, setLines] = useState<POLine[]>([
-    { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }
+    { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }
   ]);
   const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
 
@@ -51,7 +55,7 @@ export default function Page(){
   useEffect(()=>{load();},[companyCode]);
 
   function addLine(){
-    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }]);
+    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }]);
   }
   function updateLine(idx:number, field:keyof POLine, value:string){
     const newLines = [...lines];
@@ -91,6 +95,8 @@ export default function Page(){
       currency_code: currencyCode,
       currency: currencyCode,
       payment_terms_days: Number(paymentTermsDays) || 30,
+      payment_term_code: paymentTermCode,
+      payment_terms_code: paymentTermCode,
       incoterms: incoterms,
       lines: filteredLines.map((l,i)=>({
         item_number: l.item_number,
@@ -101,6 +107,12 @@ export default function Page(){
         freight_per_unit: Number(l.freight_per_unit) || 0,
         customs_per_unit: Number(l.customs_per_unit) || 0,
         tax_per_unit: Number(l.tax_per_unit) || 0,
+        tax_code: l.tax_code,
+        tax_rule_code: l.tax_code,
+        overdelivery_tolerance_percent: Number(l.overdelivery_tolerance_percent) || 10,
+        underdelivery_tolerance_percent: Number(l.underdelivery_tolerance_percent) || 10,
+        over_tolerance: Number(l.overdelivery_tolerance_percent) || 10,
+        under_tolerance: Number(l.underdelivery_tolerance_percent) || 10,
         inventory_location_code: l.inventory_location_code,
         sloc_id: l.inventory_location_code,
         item_text: l.item_text,
@@ -164,7 +176,7 @@ export default function Page(){
               }).catch(()=>{});
             }catch{}
           }
-          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }]);
+          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }]);
           setHeaderText('');
           setPrNumber('');
         },
@@ -204,29 +216,33 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">PR_NUMBER – PPRC – optional – PR-10000001</div><input value={prNumber} onChange={e=>setPrNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PR-10000001" /></div>
           <div><div className="text-[9px] text-zinc-500">DELIVERY_DATE * – OB52</div><input type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
           <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INR" /></div>
-          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERMS_DAYS – FAPT – 30 – NT30</div><input value={paymentTermsDays} onChange={e=>setPaymentTermsDays(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="30" /></div>
+          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERM_CODE – FAPT – NT30 – due calc – wiring</div><input value={paymentTermCode} onChange={e=>setPaymentTermCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="NT30" /></div>
+          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERMS_DAYS – FAPT – 30 – derived from code NT30</div><input value={paymentTermsDays} onChange={e=>setPaymentTermsDays(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="30" /></div>
           <div><div className="text-[9px] text-zinc-500">INCOTERMS – EXW/FOB/CIF</div><input value={incoterms} onChange={e=>setIncoterms(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="EXW" /></div>
           <div className="col-span-1"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder={`PO for ${partnerNumber} – ME21N – ${companyCode}`} /></div>
         </div>
         <div className="mt-3 border-2 border-black p-2 bg-blue-50">
-          <div className="font-bold">LINES – {lines.length} – Material + Qty + UoM + Price + Freight + Customs + Tax + SLOC + Item Text + Delivery Text – EMTC + EUOC + EILC + FCOC + FTXC – INFO RECORD ME11 – ORG WIRED</div>
+          <div className="font-bold">LINES – {lines.length} – Material + Qty + UoM + Price + Freight + Customs + Tax + TaxCode + OverTol + UnderTol + SLOC + Item Text – EMTC + EUOC + EILC + FCOC + FTXC – INFO RECORD ME11 – ORG WIRED – VERSION HISTORY</div>
           {lines.map((line, idx)=>(
             <div key={idx} className="flex gap-1 items-center border bg-white p-1 mt-1">
               <span className="font-bold">{(idx+1)*10}</span>
-              <input value={line.item_number} onChange={e=>updateLine(idx,'item_number',e.target.value.toUpperCase())} className="w-[90px] border px-1 uppercase" placeholder="10000001" />
-              <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-[45px] border px-1" placeholder="Qty" />
-              <input value={line.uom_code} onChange={e=>updateLine(idx,'uom_code',e.target.value.toUpperCase())} className="w-[35px] border px-1 uppercase" placeholder="PC" />
-              <input value={line.unit_price} onChange={e=>updateLine(idx,'unit_price',e.target.value)} className="w-[55px] border px-1" placeholder="Price" />
-              <input value={line.freight_per_unit} onChange={e=>updateLine(idx,'freight_per_unit',e.target.value)} className="w-[45px] border px-1" placeholder="Freight" />
-              <input value={line.customs_per_unit} onChange={e=>updateLine(idx,'customs_per_unit',e.target.value)} className="w-[45px] border px-1" placeholder="Customs" />
-              <input value={line.tax_per_unit} onChange={e=>updateLine(idx,'tax_per_unit',e.target.value)} className="w-[35px] border px-1" placeholder="Tax" />
-              <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[50px] border px-1 uppercase" placeholder="SL01" />
+              <input value={line.item_number} onChange={e=>updateLine(idx,'item_number',e.target.value.toUpperCase())} className="w-[80px] border px-1 uppercase" placeholder="10000001" />
+              <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-[40px] border px-1" placeholder="Qty" />
+              <input value={line.uom_code} onChange={e=>updateLine(idx,'uom_code',e.target.value.toUpperCase())} className="w-[30px] border px-1 uppercase" placeholder="PC" />
+              <input value={line.unit_price} onChange={e=>updateLine(idx,'unit_price',e.target.value)} className="w-[50px] border px-1" placeholder="Price" />
+              <input value={line.freight_per_unit} onChange={e=>updateLine(idx,'freight_per_unit',e.target.value)} className="w-[40px] border px-1" placeholder="Freight" />
+              <input value={line.customs_per_unit} onChange={e=>updateLine(idx,'customs_per_unit',e.target.value)} className="w-[40px] border px-1" placeholder="Customs" />
+              <input value={line.tax_per_unit} onChange={e=>updateLine(idx,'tax_per_unit',e.target.value)} className="w-[30px] border px-1" placeholder="Tax" />
+              <input value={line.tax_code} onChange={e=>updateLine(idx,'tax_code',e.target.value.toUpperCase())} className="w-[50px] border px-1 uppercase" placeholder="GST18" />
+              <input value={line.overdelivery_tolerance_percent} onChange={e=>updateLine(idx,'overdelivery_tolerance_percent',e.target.value)} className="w-[35px] border px-1" placeholder="Over10%" />
+              <input value={line.underdelivery_tolerance_percent} onChange={e=>updateLine(idx,'underdelivery_tolerance_percent',e.target.value)} className="w-[35px] border px-1" placeholder="Under10%" />
+              <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[40px] border px-1 uppercase" placeholder="SL01" />
               <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border px-1" placeholder="Item text" />
               <button onClick={()=>removeLine(idx)} className="border bg-red-50 px-1">X</button>
             </div>
           ))}
           <button onClick={addLine} className="mt-1 border-2 border-black px-2 py-0.5 bg-white">+ ADD LINE</button>
-          <div className="text-[9px] text-zinc-500 mt-1">Info Record ME11 – if unit_price 0, auto lookup proc_info_record vendor-material valid_from valid_to → price – T2 – e.g., VEND-1000 + 10000001 → 100 – used in PO {facilityCode} – landed cost relevant – total_per_unit = unit_price + freight + customs + tax</div>
+          <div className="text-[9px] text-zinc-500 mt-1">Info Record ME11 – if unit_price 0, auto lookup proc_info_record vendor-material → price – T2 – e.g., VEND-1000 + 10000001 → 100 – landed cost total_per_unit = unit_price + freight + customs + tax – tax FTXC code GST18 rate lookup – overdelivery_tolerance_percent 10% underdelivery_tolerance_percent 10% – over/under delivery tolerance – version history CDHDR/CDPOS – purchasing conditions BASE/FREIGHT/CUSTOMS/TAX – payment terms FAPT NT30 due calc – recon account FGLC – PO changes/version history – partial GR/IV allowed – invoice qty/value tolerance OBA0/OBA4 VEND-01 – cancellation/reversal PORE/GRRE/IVRE – credit/debit memo RE_CREDIT – approval workflow SBWP ME28 – ELIKZ</div>
         </div>
         <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE PO – ME21N – PPOC – T0 BLOCKING – POSTING PERIOD K – NUMBER RANGE PO 4500000000 – INFO RECORD ME11 – PAYMENT TERMS FAPT – WORKFLOW ME28 – ELIKZ – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}</button>
       </div>
@@ -343,13 +359,25 @@ export default function Page(){
             createCode="FCYC"
             companyCode={companyCode}
           />
+          <DbAutocomplete
+            label="PAYMENT_TERM_CODE – FAPT – NT30 – due date calc – payment terms – wiring to supplier + PO + IV + F110 – T0"
+            value={paymentTermCode}
+            onChange={v=>setPaymentTermCode(v)}
+            apiUrl="/api/payment-terms"
+            codeField="code"
+            nameField="name"
+            placeholder="NT30"
+            createUrl={`/${companyCode}/fico/payment-terms`}
+            createCode="FAPT"
+            companyCode={companyCode}
+          />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PAYMENT_TERMS_DAYS – FAPT – 30 – NT30 – due calc</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PAYMENT_TERMS_DAYS – FAPT – 30 – derived from code NT30 – due calc</label>
             <input value={paymentTermsDays} onChange={e=>setPaymentTermsDays(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="30" />
-            <p className="text-[10px] text-zinc-400 mt-1">FAPT – calculate due date from posting date + days – e.g., NT30 30 days</p>
+            <p className="text-[10px] text-zinc-400 mt-1">FAPT – days derived from payment_term_code NT30 – due = posting + days – e.g., NT30 30 days due = posting +30 – discount if 2-10-N30 – wiring to fin_payment_term</p>
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">INCOTERMS – EXW/FOB/CIF</label>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">INCOTERMS – EXW/FOB/CIF – delivery terms – incoterms</label>
             <select value={incoterms} onChange={e=>setIncoterms(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black">
               <option value="EXW">EXW – Ex Works</option>
               <option value="FOB">FOB – Free On Board</option>
@@ -415,12 +443,28 @@ export default function Page(){
                       <label className="text-[10px] text-zinc-500 uppercase">Customs /unit</label>
                       <input value={line.customs_per_unit} onChange={e=>updateLine(idx,'customs_per_unit',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="0" />
                     </div>
+                    <DbAutocomplete
+                      label="Tax Code – FTXC – GST18"
+                      value={line.tax_code}
+                      onChange={v=>updateLine(idx,'tax_code',v)}
+                      apiUrl="/api/tax-codes"
+                      codeField="code"
+                      nameField="description"
+                      placeholder="GST18"
+                      createUrl={`/${companyCode}/fico/tax-codes`}
+                      createCode="FTXC"
+                      companyCode={companyCode}
+                    />
                     <div>
-                      <label className="text-[10px] text-zinc-500 uppercase">Tax /unit – FTXC</label>
-                      <input value={line.tax_per_unit} onChange={e=>updateLine(idx,'tax_per_unit',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="0" />
+                      <label className="text-[10px] text-zinc-500 uppercase">Over Tol % – overdelivery</label>
+                      <input value={line.overdelivery_tolerance_percent} onChange={e=>updateLine(idx,'overdelivery_tolerance_percent',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="10" />
                     </div>
                     <div>
-                      <label className="text-[10px] text-zinc-500 uppercase">SLOC + Texts</label>
+                      <label className="text-[10px] text-zinc-500 uppercase">Under Tol % – underdelivery</label>
+                      <input value={line.underdelivery_tolerance_percent} onChange={e=>updateLine(idx,'underdelivery_tolerance_percent',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="10" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">SLOC + Texts + Version History</label>
                       <div className="flex gap-1">
                         <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[60px] border rounded-lg px-2 py-1.5 text-sm uppercase" placeholder="SL01" />
                         <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border rounded-lg px-2 py-1.5 text-sm" placeholder="Item text" />
@@ -448,11 +492,13 @@ export default function Page(){
               <div className="font-semibold text-sm">{it.po_number || it.code} – {it.status} – Vendor {it.vendor_name} – Facility {it.facility_code || it.plant_code} – {it.company_code}</div>
               <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">ME21N</span>
             </div>
-            <div className="mt-2 text-xs text-zinc-500">Lines {it.line_count} – Ordered {it.total_ordered_qty} Received {it.total_received_qty} – Total {it.total_amount} {it.currency} – Delivery {it.delivery_date} – All ELIKZ {String(it.all_elikz)} – PR Ref {it.pr_ref}</div>
-            <div className="mt-2 flex gap-2">
-              <Link href={`/${companyCode}/mm/gr`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">IGRC GR for PO {it.po_number} →</Link>
-              <Link href={`/${companyCode}/workflow/inbox`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">SBWP Release PO ME28 →</Link>
-              <Link href={`/${companyCode}/audit/document-flow?type=PO&id=${it.id}`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">FDFL Doc Flow VBFA →</Link>
+            <div className="mt-2 text-xs text-zinc-500">Lines {it.line_count} – Ordered {it.total_ordered_qty} Received {it.total_received_qty} Invoiced {it.total_invoiced_qty || 0} Open {(it.total_ordered_qty - (it.total_received_qty || 0))} – Total {it.total_amount} {it.currency} – Delivery {it.delivery_date} – All ELIKZ {String(it.all_elikz)} – PR Ref {it.pr_ref} – Payment Term {it.payment_term_code || 'NT30'} – Recon FGLC {it.vendor_recon_account_id ? 'wired' : 'default'} – Tax FTXC {it.tax_code || 'GST18'} – Version {it.version || 1}</div>
+            <div className="mt-1 text-[10px] text-zinc-400">Version History ME22N CDHDR/CDPOS WORM-lite – {it.version ? `v${it.version}` : 'v1'} – {it.change_history ? JSON.stringify(it.change_history).slice(0,250) : 'Initial CREATE – change_history JSONB – version increment on change – audit trail – purchasing conditions BASE/FREIGHT/CUSTOMS/TAX – partial GR/IV – over/under tolerance 10%/10% – invoice tolerance OBA0/OBA4 VEND-01 – cancellation/reversal PORE/GRRE/IVRE – credit/debit memo RE_CREDIT – approval workflow SBWP'} – Partial GR MIGO 101 – Partial IV MIRO 51 RE – Over/Under Tolerance UEBTO/UNTTO – Invoice Qty/Value Tolerance OBA0/OBA4 – Cancellation/Reversal GRRE/IVRE/PORE – Credit/Debit Memo RE_CREDIT – Approval Workflow SBWP ME28</div>
+            <div className="mt-2 flex gap-2 flex-wrap">
+              <Link href={`/${companyCode}/mm/gr`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">IGRC GR for PO {it.po_number} → MIGO 101 – partial GR – over/under tolerance – ELIKZ</Link>
+              <Link href={`/${companyCode}/mm/iv`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">PIVC IV for PO {it.po_number} → MIRO 51 RE – partial IV – qty/value tolerance – credit memo</Link>
+              <Link href={`/${companyCode}/workflow/inbox`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">SBWP Release PO ME28 → Manager &lt;10000 Owner &gt;=10000 dual</Link>
+              <Link href={`/${companyCode}/audit/document-flow?type=PO&id=${it.id}`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">FDFL Doc Flow VBFA → PR→PO→GR→IV→Payment – ALB – WORM-lite</Link>
             </div>
           </div>
         ))}

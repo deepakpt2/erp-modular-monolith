@@ -271,8 +271,9 @@ export async function POST(req: NextRequest) {
       `);
       const prId = (res.rows[0] as any).id;
 
+      let total = 0;
+      let facilityCodeForMsg = facility_code || plant_code || '';
       if (lines && Array.isArray(lines)) {
-        let total = 0;
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
           let itemId = line.item_id || line.material_id;
@@ -439,7 +440,7 @@ export async function POST(req: NextRequest) {
         console.warn(`Workflow auto-start failed for PR ${prNumber}:`, wfErr.message);
       }
 
-      return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC legal-safe – total ${total} – facility ${facilityCode} – posting period M OB52 – number range PR 1000000000 numeric only – workflow auto-started ME54N SBWP – document flow PR root – T0 BLOCKING – NO DANGLING – org wired`, legalSafe: true, document_number: prNumber, total_amount: total });
+      return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC legal-safe – total ${total} – facility ${facilityCodeForMsg} – posting period M OB52 – number range PR 1000000000 numeric only – workflow auto-started ME54N SBWP – document flow PR root – T0 BLOCKING – NO DANGLING – org wired`, legalSafe: true, document_number: prNumber, total_amount: total });
     } catch (newErr: any) {
       console.warn('proc_purchase_requisition insert failed fallback mm_purchase_requisition:', newErr.message);
       // Fallback legacy

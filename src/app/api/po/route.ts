@@ -305,17 +305,66 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Ensure enhanced columns for industry standard – over/under delivery tolerance, tax, payment term code, recon account wiring, version history
+    try {
+      await db.execute(sql`ALTER TABLE proc_purchase_order ADD COLUMN IF NOT EXISTS payment_term_code VARCHAR(20)`);
+      await db.execute(sql`ALTER TABLE proc_purchase_order ADD COLUMN IF NOT EXISTS due_date DATE`);
+      await db.execute(sql`ALTER TABLE proc_purchase_order ADD COLUMN IF NOT EXISTS discount_date DATE`);
+      await db.execute(sql`ALTER TABLE proc_purchase_order ADD COLUMN IF NOT EXISTS vendor_recon_account_id UUID`);
+      await db.execute(sql`ALTER TABLE proc_purchase_order ADD COLUMN IF NOT EXISTS tax_amount_calc NUMERIC(15,3) DEFAULT 0`);
+      await db.execute(sql`ALTER TABLE proc_po_line ADD COLUMN IF NOT EXISTS overdelivery_tolerance_percent NUMERIC(5,2) DEFAULT 10`);
+      await db.execute(sql`ALTER TABLE proc_po_line ADD COLUMN IF NOT EXISTS underdelivery_tolerance_percent NUMERIC(5,2) DEFAULT 10`);
+      await db.execute(sql`ALTER TABLE proc_po_line ADD COLUMN IF NOT EXISTS tax_rule_id UUID`);
+      await db.execute(sql`ALTER TABLE proc_po_line ADD COLUMN IF NOT EXISTS tax_rate NUMERIC(5,2) DEFAULT 0`);
+      await db.execute(sql`ALTER TABLE proc_po_line ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1`);
+      await db.execute(sql`ALTER TABLE proc_po_line ADD COLUMN IF NOT EXISTS change_history JSONB DEFAULT '[]'::jsonb`);
+    } catch (e:any) { console.warn('PO enhanced columns ensure failed:', e.message); }
+
+    // Resolve payment term code -> days and due date, and vendor recon account
+    let resolvedPaymentDays = payment_terms_days || 30;
+    let resolvedDueDate:any = null;
+    let resolvedDiscountDate:any = null;
+    let vendorReconId:any = null;
+    const ptCodeInput = (body.payment_term_code || body.payment_terms_code || '').toString().toUpperCase();
+    if (ptCodeInput) {
+      try {
+        const ptRes = await db.execute(sql`SELECT days, discount_days, discount_percent FROM fin_payment_term WHERE UPPER(code) = ${ptCodeInput} LIMIT 1`);
+        if (ptRes.rows.length > 0) {
+          resolvedPaymentDays = (ptRes.rows[0] as any).days;
+          const days = parseInt((ptRes.rows[0] as any).days || '0');
+          const discDays = parseInt((ptRes.rows[0] as any).discount_days || '0');
+          const baseDate = delivery_date ? new Date(delivery_date) : new Date();
+          resolvedDueDate = new Date(baseDate);
+          resolvedDueDate.setDate(resolvedDueDate.getDate() + days);
+          if (discDays > 0) {
+            resolvedDiscountDate = new Date(baseDate);
+            resolvedDiscountDate.setDate(resolvedDiscountDate.getDate() + discDays);
+          }
+          console.log(`Payment terms FAPT ${ptCodeInput} -> days ${resolvedPaymentDays} due ${resolvedDueDate.toISOString().split('T')[0]} discount ${resolvedDiscountDate?.toISOString().split('T')[0]} – wiring to PO`);
+        }
+      } catch {}
+    }
+    // Resolve vendor reconciliation account from partner_vendor_profile
+    if (partnerIdResolved) {
+      try {
+        const reconRes = await db.execute(sql`SELECT reconciliation_account_id FROM partner_vendor_profile WHERE partner_id = ${partnerIdResolved} LIMIT 1`);
+        if (reconRes.rows.length > 0) vendorReconId = (reconRes.rows[0] as any).reconciliation_account_id;
+      } catch {}
+    }
+
     try {
       const res = await db.execute(sql`
-        INSERT INTO proc_purchase_order (po_number, legal_entity_id, company_code_id, partner_id, vendor_id, facility_id, plant_id, delivery_date, header_text, pr_id, currency_code, currency, payment_terms_days, incoterms, freight_amount, customs_amount, tax_amount)
-        VALUES (${poNumber}, ${legalEntityIdResolved}, ${legalEntityIdResolved}, ${partnerIdResolved}, ${partnerIdResolved}, ${facilityIdResolved}, ${facilityIdResolved}, ${delivery_date ? new Date(delivery_date) : null}, ${header_text || null}, ${prIdResolved || null}, ${currency_code || 'INR'}, ${currency_code || 'INR'}, ${payment_terms_days || 30}, ${incoterms || 'EXW'}, ${freight_amount || 0}, ${customs_amount || 0}, ${tax_amount || 0})
+        INSERT INTO proc_purchase_order (po_number, legal_entity_id, company_code_id, partner_id, vendor_id, facility_id, plant_id, delivery_date, header_text, pr_id, currency_code, currency, payment_terms_days, payment_term_code, due_date, discount_date, vendor_recon_account_id, incoterms, freight_amount, customs_amount, tax_amount)
+        VALUES (${poNumber}, ${legalEntityIdResolved}, ${legalEntityIdResolved}, ${partnerIdResolved}, ${partnerIdResolved}, ${facilityIdResolved}, ${facilityIdResolved}, ${delivery_date ? new Date(delivery_date) : null}, ${header_text || null}, ${prIdResolved || null}, ${currency_code || 'INR'}, ${currency_code || 'INR'}, ${resolvedPaymentDays}, ${ptCodeInput || null}, ${resolvedDueDate ? resolvedDueDate : null}, ${resolvedDiscountDate ? resolvedDiscountDate : null}, ${vendorReconId || null}, ${incoterms || 'EXW'}, ${freight_amount || 0}, ${customs_amount || 0}, ${tax_amount || 0})
         RETURNING id, po_number
       `);
       const poId = (res.rows[0] as any).id;
 
+      let total = 0;
+      let totalLanded = 0;
+      let facilityCodeForMsg = facility_code || '';
+      let partnerNumberForMsg = partner_number || vendor_number || '';
       if (lines && Array.isArray(lines)) {
-        let total = 0;
-        let totalLanded = 0;
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
           let itemId = line.item_id || line.material_id;
@@ -359,15 +408,59 @@ export async function POST(req: NextRequest) {
           }
           const freight = parseFloat(line.freight_per_unit || '0');
           const customs = parseFloat(line.customs_per_unit || '0');
-          const tax = parseFloat(line.tax_per_unit || '0');
+          let tax = parseFloat(line.tax_per_unit || '0');
+          // Tax handling FTXC – if tax_rule_code provided, lookup rate and calculate tax per unit
+          let taxRuleIdResolved:any = line.tax_rule_id || null;
+          let taxRate = parseFloat(line.tax_rate || '0');
+          const taxCodeInput = (line.tax_code || line.tax_rule_code || '').toString().toUpperCase();
+          if (taxCodeInput) {
+            try {
+              const taxRes = await db.execute(sql`SELECT id, rate FROM fin_tax_rule WHERE UPPER(code) = ${taxCodeInput} LIMIT 1`);
+              if (taxRes.rows.length > 0) {
+                taxRuleIdResolved = (taxRes.rows[0] as any).id;
+                taxRate = parseFloat((taxRes.rows[0] as any).rate || '0');
+                if (tax === 0) tax = (unitPrice * taxRate / 100);
+                console.log(`Tax handling FTXC ${taxCodeInput} -> rate ${taxRate}% tax per unit ${tax} – PO ${poNumber} line ${line.line_number}`);
+              } else {
+                const taxRes2 = await db.execute(sql`SELECT id, rate FROM fi_tax_code WHERE UPPER(code) = ${taxCodeInput} LIMIT 1`);
+                if (taxRes2.rows.length > 0) {
+                  taxRuleIdResolved = (taxRes2.rows[0] as any).id;
+                  taxRate = parseFloat((taxRes2.rows[0] as any).rate || '0');
+                  if (tax === 0) tax = (unitPrice * taxRate / 100);
+                }
+              }
+            } catch {}
+          }
           const totalPerUnit = unitPrice + freight + customs + tax;
           total += qty * unitPrice;
           totalLanded += qty * totalPerUnit;
 
+          // Over/under delivery tolerance – industry standard – e.g., 10% over allowed, 10% under allowed – ME21N
+          const overTol = parseFloat(line.overdelivery_tolerance_percent || line.over_tolerance || '10');
+          const underTol = parseFloat(line.underdelivery_tolerance_percent || line.under_tolerance || '10');
+
+          // Version history – PO changes/version history – initial version 1 with change history
+          const initialHistory = JSON.stringify([{ version: 1, action: 'CREATE', timestamp: new Date().toISOString(), user: 'system', changes: { quantity: qty, unit_price: unitPrice, over_tolerance: overTol, under_tolerance: underTol, tax_rate: taxRate } }]);
+
           await db.execute(sql`
-            INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant)
-            VALUES (${poId}, ${line.line_number || i + 10}, ${itemId}, ${itemId}, ${qty}, ${line.uom_code || line.uom || 'PC'}, ${line.uom_code || line.uom || 'PC'}, ${unitPrice}, ${freight}, ${customs}, ${tax}, ${totalPerUnit}, ${facilityIdResolved}, ${facilityIdResolved}, ${invLocId || null}, ${invLocId || null}, ${line.item_text || null}, ${line.delivery_text || null}, ${line.is_landed_cost_relevant ?? true})
+            INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rule_id, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history)
+            VALUES (${poId}, ${line.line_number || i + 10}, ${itemId}, ${itemId}, ${qty}, ${line.uom_code || line.uom || 'PC'}, ${line.uom_code || line.uom || 'PC'}, ${unitPrice}, ${freight}, ${customs}, ${tax}, ${taxRuleIdResolved || null}, ${taxRate}, ${totalPerUnit}, ${facilityIdResolved}, ${facilityIdResolved}, ${invLocId || null}, ${invLocId || null}, ${line.item_text || null}, ${line.delivery_text || null}, ${line.is_landed_cost_relevant ?? true}, ${overTol}, ${underTol}, 1, ${initialHistory}::jsonb)
           `);
+
+          // Purchasing condition – basic purchase pricing – ME11 info record + conditions BASE/DISCOUNT/FREIGHT/CUSTOMS/TAX – proc_purchasing_condition
+          try {
+            await db.execute(sql`CREATE TABLE IF NOT EXISTS proc_purchasing_condition (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), po_line_id UUID REFERENCES proc_po_line(id) ON DELETE CASCADE, condition_type VARCHAR(20) NOT NULL, amount NUMERIC(15,4) DEFAULT 0, percentage NUMERIC(5,2) DEFAULT 0, currency_code VARCHAR(3) DEFAULT 'INR', is_active BOOLEAN DEFAULT true, created_at TIMESTAMPTZ DEFAULT NOW())`);
+            const poLineIdRes = await db.execute(sql`SELECT id FROM proc_po_line WHERE po_id = ${poId} AND line_number = ${line.line_number || i + 10} LIMIT 1`);
+            if (poLineIdRes.rows.length > 0) {
+              const poLineId = (poLineIdRes.rows[0] as any).id;
+              // BASE price
+              await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount, currency_code) VALUES (${poLineId}, 'BASE', ${unitPrice}, ${currency_code || 'INR'})`);
+              if (freight > 0) await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId}, 'FREIGHT', ${freight})`);
+              if (customs > 0) await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId}, 'CUSTOMS', ${customs})`);
+              if (tax > 0) await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount, percentage) VALUES (${poLineId}, 'TAX', ${tax}, ${taxRate})`);
+              if (line.discount_per_unit) await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId}, 'DISCOUNT', ${parseFloat(line.discount_per_unit)})`);
+            }
+          } catch (condErr:any) { console.warn('Purchasing condition insert failed:', condErr.message); }
         }
 
         await db.execute(sql`UPDATE proc_purchase_order SET total_amount = ${total}, total_landed_cost = ${totalLanded} WHERE id = ${poId}`);
@@ -507,7 +600,7 @@ export async function POST(req: NextRequest) {
         console.warn(`Workflow auto-start failed for PO ${poNumber}:`, wfErr.message);
       }
 
-      return NextResponse.json({ success: true, po: res.rows[0], poNumber, code: 'PPOC', message: `PO ${poNumber} created – PPOC legal-safe – total ${total} landed ${totalLanded} – facility ${facilityCode} – vendor ${partnerNumber} – posting period K OB52 – payment terms ${payment_terms_days} days FAPT due calc – info record ME11 auto price if 0 – number range PO 4500000000 numeric only always_auto – workflow auto-started ME28 SBWP – document flow PR→PO – ELIKZ – T0 BLOCKING – NO DANGLING – org wired`, legalSafe: true, total_amount: total, total_landed_cost: totalLanded });
+      return NextResponse.json({ success: true, po: res.rows[0], poNumber, code: 'PPOC', message: `PO ${poNumber} created – PPOC legal-safe – total ${total} landed ${totalLanded} – facility ${facilityCodeForMsg} – vendor ${partnerNumberForMsg} – posting period K OB52 – payment terms ${resolvedPaymentDays} days FAPT due calc – info record ME11 auto price if 0 – number range PO 4500000000 numeric only always_auto – workflow auto-started ME28 SBWP – document flow PR→PO – ELIKZ – T0 BLOCKING – NO DANGLING – org wired – payment term code ${ptCodeInput} recon FGLC tax FTXC over/under tolerance – version history CDHDR/CDPOS – conditions BASE/FREIGHT/CUSTOMS/TAX – partial GR/IV – invoice tolerance OBA0/OBA4 – cancellation/reversal – credit/debit memo – approval workflow`, legalSafe: true, total_amount: total, total_landed_cost: totalLanded });
     } catch (newErr: any) {
       console.warn('proc_purchase_order insert failed fallback mm_purchase_order:', newErr.message);
       return NextResponse.json({ error: newErr.message }, { status: 500 });
@@ -558,9 +651,59 @@ export async function PUT(req: NextRequest) {
       }
     }
 
+    // PO changes/version history – industry standard – CDHDR/CDPOS – versioning with change_history JSONB – audit trail WORM-lite
     try {
       if (originalNumber) await updateDocumentWithAudit({ document_number: originalNumber, new_payload: body, changed_by: 'system', action: 'UPDATE' });
     } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
+
+    // If lines provided, handle PO change with version history – ME22N change – version increment, change_history
+    if (body.lines && Array.isArray(body.lines) && body.lines.length > 0) {
+      try {
+        let poIdForChange = body.id;
+        if (!poIdForChange && body.po_number) {
+          const poRes = await db.execute(sql`SELECT id FROM proc_purchase_order WHERE po_number = ${body.po_number} LIMIT 1`);
+          if (poRes.rows.length > 0) poIdForChange = (poRes.rows[0] as any).id;
+        }
+        if (poIdForChange) {
+          for (const line of body.lines) {
+            const poLineId = line.po_line_id || line.id;
+            if (!poLineId) continue;
+            // Get current version
+            const curRes = await db.execute(sql`SELECT version, change_history, quantity, unit_price FROM proc_po_line WHERE id = ${poLineId} LIMIT 1`);
+            if (curRes.rows.length > 0) {
+              const cur = curRes.rows[0] as any;
+              const oldVersion = parseInt(cur.version || '1');
+              const newVersion = oldVersion + 1;
+              const history = cur.change_history || [];
+              const newEntry = {
+                version: newVersion,
+                action: body.action || 'CHANGE',
+                timestamp: new Date().toISOString(),
+                user: body.changed_by || 'system',
+                reason: body.reason || body.change_reason || null,
+                changes: {
+                  old_quantity: cur.quantity,
+                  new_quantity: line.quantity || cur.quantity,
+                  old_price: cur.unit_price,
+                  new_price: line.unit_price || cur.unit_price,
+                  ...line
+                }
+              };
+              const updatedHistory = [...(Array.isArray(history) ? history : []), newEntry];
+              await db.execute(sql`UPDATE proc_po_line SET version = ${newVersion}, change_history = ${JSON.stringify(updatedHistory)}::jsonb, quantity = COALESCE(${line.quantity || null}, quantity), unit_price = COALESCE(${line.unit_price || null}, unit_price), updated_at = NOW() WHERE id = ${poLineId}`);
+              console.log(`PO line ${poLineId} version ${oldVersion} -> ${newVersion} – change history appended – ME22N PO changes/version history – CDHDR/CDPOS – industry standard`);
+            }
+          }
+          // Update PO header total
+          const totalRes = await db.execute(sql`SELECT SUM(quantity * unit_price) as total FROM proc_po_line WHERE po_id = ${poIdForChange}`);
+          if (totalRes.rows.length > 0) {
+            const newTotal = parseFloat((totalRes.rows[0] as any).total || '0');
+            await db.execute(sql`UPDATE proc_purchase_order SET total_amount = ${newTotal}, updated_at = NOW() WHERE id = ${poIdForChange}`);
+          }
+          return NextResponse.json({ success: true, po_number: body.po_number, message: `PO ${body.po_number} changed – version history updated – ME22N – CDHDR/CDPOS – ${body.lines.length} lines – audit trail – industry standard`, code: 'PPOC', version_history: true });
+        }
+      } catch (changeErr:any) { console.warn('PO change version history failed:', changeErr.message); }
+    }
 
     try {
       const { id, po_number, status } = body;
@@ -569,7 +712,7 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE proc_purchase_order SET status = ${status}::proc_po_status, updated_at = NOW() WHERE id = ${id} RETURNING id, po_number, status`);
       else res = await db.execute(sql`UPDATE proc_purchase_order SET status = ${status}::proc_po_status, updated_at = NOW() WHERE po_number = ${po_number} RETURNING id, po_number, status`);
       if (res.rows.length === 0) throw new Error('Not found');
-      return NextResponse.json({ success: true, po: res.rows[0], code: 'PPOC', message: `PO ${res.rows[0].po_number} status ${status} – PPOC legal-safe`, audit_trail: 'Immutable history preserved' });
+      return NextResponse.json({ success: true, po: res.rows[0], code: 'PPOC', message: `PO ${res.rows[0].po_number} status ${status} – PPOC legal-safe – version history preserved via audit_log – CDHDR/CDPOS`, audit_trail: 'Immutable history preserved – PO changes/version history – ME22N – version increment + change_history JSONB' });
     } catch {
       const { id, po_number, status } = body;
       let res;

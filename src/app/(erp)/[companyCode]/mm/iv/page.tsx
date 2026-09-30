@@ -43,6 +43,10 @@ export default function Page(){
   const [vendorInvoiceNumber, setVendorInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
   const [postingDate, setPostingDate] = useState(new Date().toISOString().split('T')[0]);
+  const [documentType, setDocumentType] = useState('RE');
+  const [isCreditMemo, setIsCreditMemo] = useState(false);
+  const [paymentTermCode, setPaymentTermCode] = useState('NT30');
+  const [taxCode, setTaxCode] = useState('GST18');
   const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
 
   async function load(){
@@ -163,8 +167,16 @@ export default function Page(){
       posting_date: postingDate,
       company_code: companyCode,
       legal_entity_code: companyCode,
-      total_amount: linesToPost.reduce((sum,l)=>sum + l.quantity * (l.unit_price_invoiced + (l.freight_per_unit||0) + (l.customs_per_unit||0)),0),
-      lines: linesToPost,
+      document_type: isCreditMemo ? 'RE_CREDIT' : documentType,
+      iv_type: isCreditMemo ? 'RE_CREDIT' : documentType,
+      is_credit_memo: isCreditMemo,
+      is_debit_memo: documentType.includes('DEBIT'),
+      payment_term_code: paymentTermCode,
+      payment_terms_code: paymentTermCode,
+      tax_code: taxCode,
+      tax_rule_code: taxCode,
+      total_amount: linesToPost.reduce((sum,l)=>sum + l.quantity * (l.unit_price_invoiced + (l.freight_per_unit||0) + (l.customs_per_unit||0)),0) * (isCreditMemo ? -1 : 1),
+      lines: linesToPost.map(l=>({ ...l, tax_code: taxCode, tax_rule_code: taxCode, is_credit: isCreditMemo })),
       tolerance_group_code: 'VEND-01',
     };
 
@@ -186,7 +198,7 @@ export default function Page(){
         lockObject: 'IV',
         lockObjectId: poNumber,
         onDirectSuccess: (j:any)=>{
-          setMsg(`✅ IV ${j.ivNumber || j.iv?.iv_number || 'created'} created for PO ${poNumber} – ${linesToPost.length} lines – Vendor Invoice ${vendorInvoiceNumber} – PIVC MIRO 51 RE – WRX clearing – PRD price variance – tax FTXC – vendor invoice accounting RE – T0 BLOCKING – GR/IR clearing candidate for F.13 – document flow PR→PO→GR→IV`);
+          setMsg(`✅ IV ${j.ivNumber || j.iv?.iv_number || 'created'} created for PO ${poNumber} – ${linesToPost.length} lines – Vendor Invoice ${vendorInvoiceNumber} – PIVC MIRO 51 ${isCreditMemo ? 'RE_CREDIT credit memo Dr Vendor Recon FGLC Cr WRX – credit memo reduces liability – industry standard' : 'RE'} – WRX clearing – PRD price variance – tax FTXC ${taxCode} – payment terms FAPT ${paymentTermCode} – vendor invoice accounting RE – vendor recon account FGLC – over/under delivery tolerance – invoice qty/value tolerance OBA0/OBA4 VEND-01 – partial invoice allowed – T0 BLOCKING – GR/IR clearing candidate for F.13 – document flow PR→PO→GR→IV – credit/debit memo – cancellation/reversal GRRE/IVRE/PORE – approval workflow SBWP`);
           load();
           // Auto document flow PO→IV and GR→IV
           try{
@@ -261,6 +273,10 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">VENDOR_INVOICE_NUMBER * – INV-VEND-2026-001</div><input value={vendorInvoiceNumber} onChange={e=>setVendorInvoiceNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INV-VEND-2026-001" /></div>
           <div><div className="text-[9px] text-zinc-500">INVOICE_DATE *</div><input type="date" value={invoiceDate} onChange={e=>setInvoiceDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
           <div><div className="text-[9px] text-zinc-500">POSTING_DATE * – OB52 K</div><input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
+          <div><div className="text-[9px] text-zinc-500">DOCUMENT_TYPE – RE/RE_CREDIT/RE_DEBIT – credit/debit memo</div><select value={documentType} onChange={e=>setDocumentType(e.target.value)} className="w-full border-2 border-black px-1 py-1"><option value="RE">RE – Invoice</option><option value="RE_CREDIT">RE_CREDIT – Credit Memo</option><option value="RE_DEBIT">RE_DEBIT – Debit Memo</option></select></div>
+          <div><div className="text-[9px] text-zinc-500">IS_CREDIT_MEMO – checkbox – credit memo reduces liability</div><input type="checkbox" checked={isCreditMemo} onChange={e=>setIsCreditMemo(e.target.checked)} /> {isCreditMemo ? 'Credit Memo – Dr Vendor Recon FGLC Cr WRX' : 'Invoice – Dr WRX Cr Vendor'}</div>
+          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERM_CODE – FAPT – NT30 – due calc</div><input value={paymentTermCode} onChange={e=>setPaymentTermCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="NT30" /></div>
+          <div><div className="text-[9px] text-zinc-500">TAX_CODE – FTXC – GST18 – tax handling – rate lookup</div><input value={taxCode} onChange={e=>setTaxCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="GST18" /></div>
         </div>
         {poDetails && (
           <div className="mt-3 border-2 border-black p-2 bg-blue-50">
@@ -370,6 +386,42 @@ export default function Page(){
             <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
             <p className="text-[10px] text-zinc-400 mt-1">K Vendors – must be open – FPPE</p>
           </div>
+          <DbAutocomplete
+            label="PAYMENT_TERM_CODE – FAPT – NT30 – due calc – payment terms – wiring to supplier + PO + IV + F110 – recon FGLC"
+            value={paymentTermCode}
+            onChange={v=>setPaymentTermCode(v)}
+            apiUrl="/api/payment-terms"
+            codeField="code"
+            nameField="name"
+            placeholder="NT30"
+            createUrl={`/${companyCode}/fico/payment-terms`}
+            createCode="FAPT"
+            companyCode={companyCode}
+          />
+          <DbAutocomplete
+            label="TAX_CODE – FTXC – GST18 – tax handling – rate lookup – tax/HSN – wiring to PO line + IV line + GL"
+            value={taxCode}
+            onChange={v=>setTaxCode(v)}
+            apiUrl="/api/tax-codes"
+            codeField="code"
+            nameField="description"
+            placeholder="GST18"
+            createUrl={`/${companyCode}/fico/tax-codes`}
+            createCode="FTXC"
+            companyCode={companyCode}
+          />
+          <div>
+            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DOCUMENT_TYPE – RE/RE_CREDIT/RE_DEBIT – credit/debit memo – industry standard</label>
+            <select value={documentType} onChange={e=>setDocumentType(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black">
+              <option value="RE">RE – Invoice</option>
+              <option value="RE_CREDIT">RE_CREDIT – Credit Memo – Dr Vendor Recon FGLC Cr WRX – reduces liability</option>
+              <option value="RE_DEBIT">RE_DEBIT – Debit Memo – additional charges</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2 mt-6">
+            <input type="checkbox" checked={isCreditMemo} onChange={e=>setIsCreditMemo(e.target.checked)} className="w-4 h-4" />
+            <label className="text-[11px] font-medium">IS_CREDIT_MEMO – credit memo – Dr Vendor Recon FGLC Cr WRX – credit memo reduces liability – industry standard – RE_CREDIT</label>
+          </div>
         </div>
 
         {poDetails && (
@@ -428,7 +480,7 @@ export default function Page(){
         )}
 
         <button onClick={create} disabled={!poNumber || !vendorInvoiceNumber} className={`mt-6 w-full rounded-full px-5 py-3 text-sm font-medium transition-colors ${poNumber && vendorInvoiceNumber ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
-          {poNumber && vendorInvoiceNumber ? `Create IV for PO ${poNumber} – MIRO 51 RE – Vendor Inv ${vendorInvoiceNumber} – T0 – WRX Clearing – PRD – Tax – RE – Tolerance OBA0/OBA4 – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}` : 'Select PO + Vendor Invoice Number first – PIVC MIRO requires PO reference + vendor invoice – T0 – SAP standard MIRO 51 RE'}
+          {poNumber && vendorInvoiceNumber ? `Create IV for PO ${poNumber} – MIRO 51 RE – Vendor Inv ${vendorInvoiceNumber} – T0 – WRX Clearing – PRD – Tax – RE – Tolerance OBA0/OBA4 – ${elapsed>0? elapsed+'s elapsed – after 10s auto background':''}` : 'Select PO + Vendor Invoice Number first – PIVC MIRO requires PO reference + vendor invoice – T0 – SAP standard MIRO 51 RE'}
         </button>
         <p className="text-[10px] text-zinc-400 mt-2 text-center">IV requires PO_NUMBER * + VENDOR_INVOICE_NUMBER * + INVOICE_DATE + POSTING_DATE – posting period K OB52 must be open – tolerance OBA0/OBA4 VEND-01 T1 REQUIRED – auto account OBYC WRX – price variance PRD 4000000004 – vendor invoice accounting RE Dr WRX Cr Vendor Recon – tax FTXC GST – number range IV 5100000001 – document flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC</p>
       </div>

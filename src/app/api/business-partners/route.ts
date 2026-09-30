@@ -106,10 +106,13 @@ export async function POST(req: NextRequest) {
       bp_number, account_number, name1, display_name, name2, legal_name, role, email, phone, alternate_phone, address, address_line1, city, region, postal_code, country,
       gst_number, pan_number, tax_id, website,
       is_blocked, is_one_time,
-      // Vendor profile
-      payment_terms_days, vendor_payment_terms_days, currency_code, vendor_currency_code, is_qm_relevant, is_quality_relevant, procurement_division_id, buyer_team_id,
+      // Vendor profile – enhanced with industry standard wiring
+      payment_terms_days, vendor_payment_terms_days, payment_term_code, payment_terms_code, reconciliation_account_code, reconciliation_account_id,
+      currency_code, vendor_currency_code, is_qm_relevant, is_quality_relevant, procurement_division_id, procurement_division_code, buyer_team_id, buyer_team_code,
+      tax_classification, incoterms,
       // Customer profile
       customer_payment_terms_days, customer_currency_code, commercial_org_id, sales_channel_id, product_line_id, credit_policy_area_id, price_group,
+      commercial_org_code, sales_channel_code, product_line_code,
       // Contacts
       contacts,
       // Facility assigns
@@ -135,24 +138,128 @@ export async function POST(req: NextRequest) {
 
       const partnerId = (res.rows[0] as any).id;
 
-      // Vendor profile if role VENDOR or BOTH
+      // Vendor profile if role VENDOR or BOTH – enhanced industry standard wiring: payment_term_code FAPT -> days, reconciliation_account_code FGLC -> recon id, procurement_division EPDC, buyer_team EBTC, currency FCYC, tax_classification FTXC, incoterms
       if (finalRole === 'VENDOR' || finalRole === 'BOTH') {
         try {
+          // Resolve payment_term_code -> days via fin_payment_term
+          let resolvedPaymentDays = payment_terms_days || vendor_payment_terms_days || 30;
+          const ptCode = (payment_term_code || payment_terms_code || '').toString().toUpperCase();
+          if (ptCode) {
+            try {
+              const ptRes = await db.execute(sql`SELECT days FROM fin_payment_term WHERE UPPER(code) = ${ptCode} LIMIT 1`);
+              if (ptRes.rows.length > 0) resolvedPaymentDays = (ptRes.rows[0] as any).days;
+            } catch {}
+          }
+          // Resolve reconciliation_account_code -> id via fin_ledger_account / fi_gl_account
+          let resolvedReconId = reconciliation_account_id || null;
+          const reconCode = (reconciliation_account_code || '').toString();
+          if (!resolvedReconId && reconCode) {
+            try {
+              const glRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${reconCode} LIMIT 1`);
+              if (glRes.rows.length > 0) resolvedReconId = (glRes.rows[0] as any).id;
+              else {
+                const glRes2 = await db.execute(sql`SELECT id FROM fi_gl_account WHERE account_number = ${reconCode} LIMIT 1`);
+                if (glRes2.rows.length > 0) resolvedReconId = (glRes2.rows[0] as any).id;
+              }
+            } catch {}
+          }
+          // Resolve procurement_division_code -> id
+          let resolvedProcDivId = procurement_division_id || null;
+          const procDivCode = (procurement_division_code || '').toString().toUpperCase();
+          if (!resolvedProcDivId && procDivCode) {
+            try {
+              const pdRes = await db.execute(sql`SELECT id FROM org_procurement_division WHERE UPPER(code) = ${procDivCode} LIMIT 1`);
+              if (pdRes.rows.length > 0) resolvedProcDivId = (pdRes.rows[0] as any).id;
+              else {
+                const pdRes2 = await db.execute(sql`SELECT id FROM ent_purchasing_org WHERE UPPER(code) = ${procDivCode} OR UPPER(purchasing_org_code) = ${procDivCode} LIMIT 1`);
+                if (pdRes2.rows.length > 0) resolvedProcDivId = (pdRes2.rows[0] as any).id;
+              }
+            } catch {}
+          }
+          // Resolve buyer_team_code -> id
+          let resolvedBuyerTeamId = buyer_team_id || null;
+          const buyerTeamCode = (buyer_team_code || '').toString().toUpperCase();
+          if (!resolvedBuyerTeamId && buyerTeamCode) {
+            try {
+              const btRes = await db.execute(sql`SELECT id FROM org_buyer_team WHERE UPPER(code) = ${buyerTeamCode} LIMIT 1`);
+              if (btRes.rows.length > 0) resolvedBuyerTeamId = (btRes.rows[0] as any).id;
+              else {
+                const btRes2 = await db.execute(sql`SELECT id FROM ent_purchasing_group WHERE UPPER(code) = ${buyerTeamCode} LIMIT 1`);
+                if (btRes2.rows.length > 0) resolvedBuyerTeamId = (btRes2.rows[0] as any).id;
+              }
+            } catch {}
+          }
+
           await db.execute(sql`
-            INSERT INTO partner_vendor_profile (partner_id, payment_terms_days, currency_code, is_quality_relevant, procurement_division_id, buyer_team_id)
-            VALUES (${partnerId}, ${payment_terms_days || vendor_payment_terms_days || 30}, ${currency_code || vendor_currency_code || 'INR'}, ${is_quality_relevant ?? is_qm_relevant ?? false}, ${procurement_division_id||null}, ${buyer_team_id||null})
-            ON CONFLICT (partner_id) DO UPDATE SET payment_terms_days = COALESCE(${payment_terms_days || vendor_payment_terms_days || 30}, partner_vendor_profile.payment_terms_days), is_quality_relevant = COALESCE(${is_quality_relevant ?? is_qm_relevant ?? false}, partner_vendor_profile.is_quality_relevant), updated_at = NOW()
+            INSERT INTO partner_vendor_profile (partner_id, payment_terms_days, currency_code, is_quality_relevant, procurement_division_id, buyer_team_id, reconciliation_account_id, tax_classification, incoterms)
+            VALUES (${partnerId}, ${resolvedPaymentDays}, ${currency_code || vendor_currency_code || 'INR'}, ${is_quality_relevant ?? is_qm_relevant ?? false}, ${resolvedProcDivId || null}, ${resolvedBuyerTeamId || null}, ${resolvedReconId || null}, ${tax_classification || 'TAXABLE'}, ${incoterms || 'EXW'})
+            ON CONFLICT (partner_id) DO UPDATE SET 
+              payment_terms_days = COALESCE(${resolvedPaymentDays}, partner_vendor_profile.payment_terms_days), 
+              currency_code = COALESCE(${currency_code || vendor_currency_code || 'INR'}, partner_vendor_profile.currency_code),
+              is_quality_relevant = COALESCE(${is_quality_relevant ?? is_qm_relevant ?? false}, partner_vendor_profile.is_quality_relevant),
+              procurement_division_id = COALESCE(${resolvedProcDivId || null}, partner_vendor_profile.procurement_division_id),
+              buyer_team_id = COALESCE(${resolvedBuyerTeamId || null}, partner_vendor_profile.buyer_team_id),
+              reconciliation_account_id = COALESCE(${resolvedReconId || null}, partner_vendor_profile.reconciliation_account_id),
+              tax_classification = COALESCE(${tax_classification || 'TAXABLE'}, partner_vendor_profile.tax_classification),
+              incoterms = COALESCE(${incoterms || 'EXW'}, partner_vendor_profile.incoterms),
+              updated_at = NOW()
           `);
+          console.log(`Vendor profile wired – payment_term_code ${ptCode} -> days ${resolvedPaymentDays} FAPT, recon_account ${reconCode} -> id ${resolvedReconId} FGLC, proc_div ${procDivCode} -> ${resolvedProcDivId} EPDC, buyer_team ${buyerTeamCode} -> ${resolvedBuyerTeamId} EBTC, tax ${tax_classification} FTXC, incoterms ${incoterms} – PSUC XK01 – T0`);
         } catch (e: any) { console.warn('vendor profile insert failed', e.message); }
       }
 
-      // Customer profile if role CUSTOMER or BOTH
+      // Customer profile if role CUSTOMER or BOTH – enhanced wiring payment_term_code FAPT, recon_account FGLC, commercial_org ECOC, sales_channel ESCC, product_line EPLC
       if (finalRole === 'CUSTOMER' || finalRole === 'BOTH') {
         try {
+          let resolvedCustPaymentDays = customer_payment_terms_days || payment_terms_days || 0;
+          const custPtCode = (payment_term_code || payment_terms_code || '').toString().toUpperCase();
+          if (custPtCode) {
+            try {
+              const ptRes = await db.execute(sql`SELECT days FROM fin_payment_term WHERE UPPER(code) = ${custPtCode} LIMIT 1`);
+              if (ptRes.rows.length > 0) resolvedCustPaymentDays = (ptRes.rows[0] as any).days;
+            } catch {}
+          }
+          let resolvedCustReconId = reconciliation_account_id || null;
+          const custReconCode = (reconciliation_account_code || '').toString();
+          if (!resolvedCustReconId && custReconCode) {
+            try {
+              const glRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${custReconCode} LIMIT 1`);
+              if (glRes.rows.length > 0) resolvedCustReconId = (glRes.rows[0] as any).id;
+              else {
+                const glRes2 = await db.execute(sql`SELECT id FROM fi_gl_account WHERE account_number = ${custReconCode} LIMIT 1`);
+                if (glRes2.rows.length > 0) resolvedCustReconId = (glRes2.rows[0] as any).id;
+              }
+            } catch {}
+          }
+          let resolvedCommercialOrgId = commercial_org_id || null;
+          const commOrgCode = (commercial_org_code || '').toString().toUpperCase();
+          if (!resolvedCommercialOrgId && commOrgCode) {
+            try {
+              const coRes = await db.execute(sql`SELECT id FROM org_commercial_org WHERE UPPER(code) = ${commOrgCode} LIMIT 1`);
+              if (coRes.rows.length > 0) resolvedCommercialOrgId = (coRes.rows[0] as any).id;
+            } catch {}
+          }
+          let resolvedSalesChannelId = sales_channel_id || null;
+          const salesChannelCode = (sales_channel_code || '').toString().toUpperCase();
+          if (!resolvedSalesChannelId && salesChannelCode) {
+            try {
+              const scRes = await db.execute(sql`SELECT id FROM org_sales_channel WHERE UPPER(code) = ${salesChannelCode} LIMIT 1`);
+              if (scRes.rows.length > 0) resolvedSalesChannelId = (scRes.rows[0] as any).id;
+            } catch {}
+          }
+          let resolvedProductLineId = product_line_id || null;
+          const prodLineCode = (product_line_code || '').toString().toUpperCase();
+          if (!resolvedProductLineId && prodLineCode) {
+            try {
+              const plRes = await db.execute(sql`SELECT id FROM org_product_line WHERE UPPER(code) = ${prodLineCode} LIMIT 1`);
+              if (plRes.rows.length > 0) resolvedProductLineId = (plRes.rows[0] as any).id;
+            } catch {}
+          }
+
           await db.execute(sql`
-            INSERT INTO partner_customer_profile (partner_id, payment_terms_days, currency_code, commercial_org_id, sales_channel_id, product_line_id, credit_policy_area_id, price_group)
-            VALUES (${partnerId}, ${customer_payment_terms_days || payment_terms_days || 0}, ${customer_currency_code || currency_code || 'INR'}, ${commercial_org_id||null}, ${sales_channel_id||null}, ${product_line_id||null}, ${credit_policy_area_id||null}, ${price_group||null})
-            ON CONFLICT (partner_id) DO UPDATE SET payment_terms_days = COALESCE(${customer_payment_terms_days || payment_terms_days || 0}, partner_customer_profile.payment_terms_days), updated_at = NOW()
+            INSERT INTO partner_customer_profile (partner_id, payment_terms_days, currency_code, commercial_org_id, sales_channel_id, product_line_id, credit_policy_area_id, price_group, reconciliation_account_id)
+            VALUES (${partnerId}, ${resolvedCustPaymentDays}, ${customer_currency_code || currency_code || 'INR'}, ${resolvedCommercialOrgId || null}, ${resolvedSalesChannelId || null}, ${resolvedProductLineId || null}, ${credit_policy_area_id||null}, ${price_group||null}, ${resolvedCustReconId || null})
+            ON CONFLICT (partner_id) DO UPDATE SET payment_terms_days = COALESCE(${resolvedCustPaymentDays}, partner_customer_profile.payment_terms_days), reconciliation_account_id = COALESCE(${resolvedCustReconId || null}, partner_customer_profile.reconciliation_account_id), updated_at = NOW()
           `);
         } catch (e: any) { console.warn('customer profile insert failed', e.message); }
       }
