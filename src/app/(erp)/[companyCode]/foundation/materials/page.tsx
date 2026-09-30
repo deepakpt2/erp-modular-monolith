@@ -431,21 +431,34 @@ export default function MaterialMasterPage() {
                     <div className={modern ? "col-span-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs" : "col-span-2 p-2 border bg-amber-50 text-[11px]"}>
                       <span className="font-bold">PRODUCT_CODE – Auto Only – SAP Internal – Blocked Manual</span> – System will generate purely numeric like 10000001 via number range MAT-01/ITEM – no manual entry – random 10 digits like 1234567890 are BLOCKED – always auto – per your selection block_manual – PO/PR/GR also always auto – SAP standard – field removed from UI.
                     </div>
-                  {renderInput('description', 'PRODUCT_NAME / DESCRIPTION', { required: true, desc: 'Short description – single source' })}
-                  {renderInput('type', 'PRODUCT_TYPE', { required: true, options: ['RAW','FINISHED','SEMI','TRADING','PACKAGING','CONSUMABLE','SERVICE'], desc: 'RAW=ROH, FINISHED=FERT – single source' })}
+                  {renderInput('description', 'PRODUCT_NAME / DESCRIPTION', { required: true, desc: 'Short description – single source – wired from foundation as in industry standard – MARA' })}
                   <div className="space-y-1">
-                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>BASE_UNIT *</label>
+                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PRODUCT_TYPE * – Material Type – EMTP – RAW/FINISHED – wired from foundation</label>
+                    <DbAutocomplete label="" apiUrl="/api/material-types" dataKey="materialTypes" codeField="code" value={form.type} onChange={v => setForm({ ...form, type: v })} placeholder="" required createUrl="/foundation/material-types" createCode="EMTP" companyCode={companyCode} />
+                    <p className="text-[10px] text-zinc-400">Product Type FK – EMTP own IP alias OMS2 – RAW=ROH, FINISHED=FERT, SEMI=HALB, SERVICE – single source – wired from foundation as in industry standard – MARA material type – determines number range assignment RAW→MAT-RAW-01 – industry standard</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>BASE_UNIT * – Base UoM – EUOC – KG/PC/BOX – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/uom" dataKey="uom" codeField="code" value={form.base_unit} onChange={v => setForm({ ...form, base_unit: v })} placeholder="" required createUrl="/foundation/uom" createCode="EUOC" companyCode={companyCode} />
-                    <p className="text-[10px] text-zinc-400">Base unit FK – KG/PC/BOX via EUOC – single source</p>
+                    <p className="text-[10px] text-zinc-400">Base unit FK – EUOC own IP alias CUNI – KG/PC/BOX – core_unit_measure – single source – wired from foundation as in industry standard – MARA base UoM – used in GR, PGI, stock ledger quantity</p>
                   </div>
                   <div className="space-y-1">
-                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PRODUCT_CATEGORY</label>
+                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PRODUCT_CATEGORY – Category – EMGC – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/material-categories" dataKey="materialCategories" codeField="code" value={form.category_code} onChange={v => setForm({ ...form, category_code: v })} placeholder="" createUrl="/foundation/material-categories" createCode="EMGC" companyCode={companyCode} />
-                    <p className="text-[10px] text-zinc-400">Category FK – EMGC – single source</p>
+                    <p className="text-[10px] text-zinc-400">Category FK – EMGC own IP alias OMSF – spices, oils, packs – prod_category – single source – wired from foundation as in industry standard – MARA material group – used in FRAD revenue account determination and pricing</p>
                   </div>
-                  {renderInput('barcode', 'BARCODE / EAN', { desc: 'For POS, GR scanning – single source in Basic only' })}
-                  {renderInput('hsn_code', 'HSN_CODE', { desc: 'India GST HSN – FTXC – single source in Basic only' })}
-                  {renderInput('description_long', 'DESCRIPTION_LONG', { type: 'textarea', desc: 'Long text for SO/PO print – single source' })}
+                  {renderInput('barcode', 'BARCODE / EAN', { desc: 'For POS, GR scanning – single source in Basic only – EAN/UPC – industry standard' })}
+                  <div className="space-y-1">
+                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>HSN_CODE – HSN/SAC – Tax Classification – FTXC – wired from foundation</label>
+                    <DbAutocomplete label="" apiUrl="/api/hsn-codes" dataKey="hsnCodes" codeField="code" value={form.hsn_code} onChange={v => setForm({ ...form, hsn_code: v })} placeholder="" createUrl="/fico/hsn-codes" createCode="FTXC" companyCode={companyCode} />
+                    <p className="text-[10px] text-zinc-400">HSN Code FK – FTXC own IP – India GST HSN – e.g., 09041110 pepper – single source in Basic only – wired from foundation as in industry standard – used in tax determination, billing, GR – tax classification</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>TAX_CLASSIFICATION – Tax Class – FTXC – wired from foundation</label>
+                    <DbAutocomplete label="" apiUrl="/api/tax-codes" dataKey="taxCodes" codeField="code" value={form.tax_classification} onChange={v => setForm({ ...form, tax_classification: v })} placeholder="" createUrl="/fico/tax-codes" createCode="FTXC" companyCode={companyCode} />
+                    <p className="text-[10px] text-zinc-400">Tax Classification FK – FTXC – e.g., GST 18%, GST 12% – wired from foundation – used in tax determination – industry standard</p>
+                  </div>
+                  {renderInput('description_long', 'DESCRIPTION_LONG', { type: 'textarea', desc: 'Long text for SO/PO print – single source – MARA long text' })}
                 </div>
                 </>
               )}
@@ -459,10 +472,22 @@ export default function MaterialMasterPage() {
               <h3 className={modern ? "font-semibold text-sm text-blue-900" : "font-bold text-xs"}>Purchasing View – Plant Dependent – Single Source</h3>
               <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement moved to MRP tab only (SAP MRP2) to remove duplicate.</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
-                {renderInput('purchasing_group', 'PURCHASING_GROUP', { desc: 'K01/001 – single source, buyer_group alias removed duplicate – use this only' })}
-                {renderInput('buyer_group', 'BUYER_GROUP (alias)', { desc: 'BUY-001 – same as purchasing_group – kept for backward compat' })}
-                {renderInput('procurement_division', 'PROCUREMENT_DIVISION', { desc: 'PD-1000 / KPO1 – single source' })}
-                {renderInput('is_quality_active', 'IS_QUALITY_ACTIVE', { options: ['true','false'], desc: 'QM active for GR inspection – single source' })}
+                <div className="space-y-1">
+                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PURCHASING_GROUP – Buyer Team – EBTC – wired from foundation</label>
+                  <DbAutocomplete label="" apiUrl="/api/buyer-teams" dataKey="buyerTeams" codeField="code" value={form.purchasing_group} onChange={v => setForm({ ...form, purchasing_group: v, buyer_group: v })} placeholder="" createUrl="/foundation/buyer-teams" createCode="EBTC" companyCode={companyCode} />
+                  <p className="text-[10px] text-zinc-400">Purchasing Group FK – EBTC own IP – K01/001 – buyer team – single source – wired from foundation as in industry standard – MARC purchasing group – used in PR/PO – buyer determination</p>
+                </div>
+                <div className="space-y-1">
+                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PROCUREMENT_DIVISION – Division – EDPC – wired from foundation</label>
+                  <DbAutocomplete label="" apiUrl="/api/commercial-orgs" dataKey="commercialOrgs" codeField="code" value={form.procurement_division} onChange={v => setForm({ ...form, procurement_division: v })} placeholder="" createUrl="/foundation/commercial-orgs" createCode="EDPC" companyCode={companyCode} />
+                  <p className="text-[10px] text-zinc-400">Procurement Division FK – EDPC – PD-1000 / KPO1 – division – single source – wired from foundation – used in purchasing – industry standard</p>
+                </div>
+                <div className="space-y-1">
+                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PURCHASING_ORG – Purchasing Org – fin_purchasing_org – wired from foundation – FCRL</label>
+                  <DbAutocomplete label="" apiUrl="/api/company-relationships?type=purchasing_org" dataKey="purchasing_orgs" codeField="code" value={form.purchasing_org_code} onChange={v => setForm({ ...form, purchasing_org_code: v })} placeholder="" createUrl="/foundation/enterprise-structure" createCode="FCRL" companyCode={companyCode} />
+                  <p className="text-[10px] text-zinc-400">Purchasing Org FK – FCRL – PO01 Spices Purchasing – wired from foundation – company relationships – for large org multi-sector – plant assignment</p>
+                </div>
+                {renderInput('is_quality_active', 'IS_QUALITY_ACTIVE', { options: ['true','false'], desc: 'QM active for GR inspection – single source – MARC QM – wired from foundation' })}
               </div>
             </div>
           </div>
@@ -519,19 +544,36 @@ export default function MaterialMasterPage() {
 
             <div className={modern ? "bg-emerald-50/50 rounded-xl p-4 border border-emerald-100" : "border p-3"}>
               <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse('storage_kit_lot')}>
-                <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Kit & Lot / Batch & Expiry – Moved from Basic to Storage (per user – storage-related)</h3>
+                <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Storage Extension – Batch/Lot Capability where required – EMTC Storage View – Single Source</h3>
                 <span className="text-xs">{collapsed['storage_kit_lot'] ? '▶' : '▼'}</span>
               </div>
               {!collapsed['storage_kit_lot'] && (
                 <div className={modern ? "grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" : "grid grid-cols-3 gap-2 mt-2"}>
-                  {renderInput('is_kit', 'IS_KIT', { options: ['true','false'], desc: 'Is kit – for kitting orders – now in Storage' })}
-                  {renderInput('is_phantom_kit', 'IS_PHANTOM_KIT', { options: ['true','false'], desc: 'Phantom kit – now in Storage' })}
-                  {renderInput('landed_cost_scope', 'LANDED_COST_SCOPE', { options: ['NONE','FREIGHT','CUSTOMS','FREIGHT_CUSTOMS','ALL'], desc: 'Landed cost relevance – now in Storage' })}
-                  {renderInput('is_lot_managed', 'IS_LOT_MANAGED', { options: ['true','false'], desc: 'Was is_batch_managed – MOVED from Basic to Storage per user – storage-related' })}
-                  {renderInput('lot_control', 'LOT_CONTROL', { options: ['BLOCKED','WARN','RESTRICTED'], desc: 'Expiry control – MOVED to Storage' })}
-                  {renderInput('shelf_life_days', 'SHELF_LIFE_DAYS', { desc: 'e.g., 30 – MOVED from Basic to Storage per user' })}
+                  {renderInput('is_lot_managed', 'IS_LOT_MANAGED / BATCH_MANAGEMENT *', { options: ['true','false'], desc: 'Batch/lot capability where required – e.g., spices with expiry true, packaging false – MARA XCHPF – wired from foundation – inv_lot table – batch determination – industry standard – if true creates inv_lot on GR – MCH1 batch stock' })}
+                  {renderInput('lot_control', 'LOT_CONTROL / EXPIRY_CONTROL *', { options: ['BLOCKED','WARN','RESTRICTED'], desc: 'Expiry control – BLOCKED=block if expired, WARN=warn, RESTRICTED=restricted use – wired from foundation – MCHA batch check – used in GR/MIGO – industry standard – batch/lot capability where required' })}
+                  {renderInput('shelf_life_days', 'SHELF_LIFE_DAYS / MIN_SHELF_LIFE *', { desc: 'Shelf life in days – e.g., 30, 180, 365 – expiry = manufacturing + shelf_life – e.g., pepper 365 days, oil 180 – wired from foundation – MARA MHDHB – used in batch expiry calculation – industry standard – batch/lot capability' })}
+                  {renderInput('is_kit', 'IS_KIT', { options: ['true','false'], desc: 'Is kit – for kitting orders – now in Storage per user constraint – storage-related – kit & lot moved to storage – Basic only General' })}
+                  {renderInput('is_phantom_kit', 'IS_PHANTOM_KIT', { options: ['true','false'], desc: 'Phantom kit – explodes in sales order not stock – now in Storage per user' })}
+                  {renderInput('landed_cost_scope', 'LANDED_COST_SCOPE', { options: ['NONE','FREIGHT','CUSTOMS','FREIGHT_CUSTOMS','ALL'], desc: 'Landed cost relevance – now in Storage per user – storage-related – e.g., spices ALL with freight+customs' })}
+                  {renderInput('is_hazardous', 'IS_HAZARDOUS / HAZMAT', { options: ['true','false'], desc: 'Hazardous material – storage condition – e.g., chemicals true – wired from foundation – used in storage location determination – industry standard' })}
+                  {renderInput('weight', 'WEIGHT', { desc: 'Gross weight – e.g., 1.5 – wired from foundation – MARA BRGEW – used in shipping' })}
+                  {renderInput('weight_unit', 'WEIGHT_UNIT', { desc: 'Weight unit – FK EUOC CUNI – e.g., KG – wired from foundation – MARA GEWEI' })}
                 </div>
               )}
+            </div>
+            <div className={modern ? "bg-emerald-50/30 rounded-xl p-4 border border-emerald-100" : "border p-3"}>
+              <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Storage/Facility Extension – Additional – Facility-specific storage data – MMSC-like – Single Source</h3>
+              <p className="text-[11px] text-zinc-500 mt-1">Plant extension creates prod_facility_profile per facility – storage/facility extension includes MRP, purchasing, accounting, costing per plant – MMSC extend material to plant – storage view holds batch/lot/expiry/shelf_life/kit – industry standard – wired from foundation as in industry standard – T0 BLOCKING</p>
+              <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
+                <div className="space-y-1">
+                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>FACILITY_CODES extended – prod_facility_profile per facility – MMSC-like</label>
+                  <p className="text-[10px] text-zinc-400">Selected facilities: {(form.facility_codes || []).join(', ') || 'None – default FAC-1000'} – Each facility gets own prod_facility_profile with MRP (safety_stock, reorder_point, planning_type MRP, lot_sizing LOT_FOR_LOT, procurement_method BUY), purchasing (buyer_group via EBTC, procurement_division via EDPC, purchasing_org via FCRL PO01), accounting (moving_avg_price, standard_price, valuation_class via FAUC BSX), costing (costing_lot_size, overhead_group, price_unit), quality (is_quality_active QM) – wired from foundation as in industry standard MARC plant extension – T0 BLOCKING</p>
+                </div>
+                <div className="space-y-1">
+                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>Batch/Lot Capability – where required – industry standard</label>
+                  <p className="text-[10px] text-zinc-400">If is_lot_managed=true, system creates inv_lot on GR (MIGO) with lot_number, manufacturing_date, expiry_date = manufacturing + shelf_life_days, supplier_lot_number, vendor_id – batch determination in sales/delivery – batch where-used list – expiry check BLOCKED/WARN/RESTRICTED – e.g., spice raw material with 365 days shelf life, batch managed, expiry control BLOCKED – packaging material not batch managed – batch/lot capability where required – wired from foundation – MCH1/MCHB batch stock – industry standard – single source – T0 BLOCKING</p>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -542,8 +584,20 @@ export default function MaterialMasterPage() {
               <h3 className={modern ? "font-semibold text-sm text-red-900" : "font-bold text-xs text-red-800"}>Accounting View – T0 BLOCKING – Single Source</h3>
               <p className="text-[11px] text-red-600/80 mt-1">price_unit now ONLY here (removed from Costing duplicate).</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
-                {renderInput('inventory_valuation_class', 'VALUATION_CLASS *', { required: true, options: ['RAW','FINISHED','SEMI','TRADING','PACKAGING','CONSUMABLE','SERVICE'], desc: 'Single source' })}
-                {renderInput('pricing_method', 'PRICE_CONTROL *', { required: true, options: ['STANDARD','MOVING_AVG'], desc: 'Single source' })}
+                <div className="space-y-1">
+                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>VALUATION_CLASS * – Valuation Class – FAUC – wired from foundation – BSX</label>
+                  <DbAutocomplete label="" apiUrl="/api/auto-account-determination" dataKey="autoAccounts" codeField="valuation_class" value={form.inventory_valuation_class} onChange={v => setForm({ ...form, inventory_valuation_class: v, valuation_class: v })} placeholder="" required createUrl="/fico/auto-account-determination" createCode="FAUC" companyCode={companyCode} />
+                  <p className="text-[10px] text-zinc-400">Valuation Class FK – FAUC own IP alias OBYC – RAW/FINISHED/SEMI – valuation_class determines BSX GL via OBYC – e.g., RAW→1400000001 – single source – wired from foundation as in industry standard – MBEW – T0 BLOCKING</p>
+                </div>
+                <div className="space-y-1">
+                  <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>PRICE_CONTROL * – S/V – Price Control – wired from foundation</label>
+                  <select value={form.pricing_method || form.price_control || ''} onChange={e => setForm({ ...form, pricing_method: e.target.value, price_control: e.target.value })} className={modern ? "w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm bg-white" : "w-full border px-2 py-1.5 text-xs"}>
+                    <option value="">Select PRICE_CONTROL</option>
+                    <option value="STANDARD">S – Standard Price – with price diff PRD</option>
+                    <option value="MOVING_AVG">V – Moving Average Price – MAP recalc</option>
+                  </select>
+                  <p className="text-[10px] text-zinc-400">Price Control – S Standard with PRD, V Moving Average with MAP – single source – wired from foundation – MBEW – used in stock ledger FSTL actual costing</p>
+                </div>
                 {renderInput('moving_avg_price', 'MOVING_AVG_PRICE *', { required: true, desc: 'Single source in Accounting only' })}
                 {renderInput('standard_price', 'STANDARD_PRICE *', { required: true, desc: 'Single source in Accounting only' })}
                 {renderInput('price_unit', 'PRICE_UNIT *', { desc: 'SINGLE SOURCE only in Accounting' })}

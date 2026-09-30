@@ -57,13 +57,39 @@ export function DbAutocomplete({
         if (Array.isArray(res)) data = res;
         else if (res.data && Array.isArray(res.data)) data = res.data;
         else if (dataKey && res[dataKey] && Array.isArray(res[dataKey])) data = res[dataKey];
+        else if (dataKey && res.data && res.data[dataKey] && Array.isArray(res.data[dataKey])) data = res.data[dataKey];
         else if (res.fiscalCalendars) data = res.fiscalCalendars;
         else if (res.currencies) data = res.currencies;
         else if (res.companyGroups) data = res.companyGroups;
         else if (res.items) data = res.items;
+        else if (res.purchasing_orgs) data = res.purchasing_orgs;
+        else if (res.data && res.data.purchasing_orgs) data = res.data.purchasing_orgs;
+        else if (res.data && typeof res.data === 'object') {
+          // Search for first array inside res.data object – e.g., {purchasing_orgs: [...]} or {business_areas: [...]}
+          const nestedArray = Object.values(res.data).find(v => Array.isArray(v));
+          if (nestedArray) data = nestedArray as any[];
+          else {
+            // Also check one level deeper – data contains object that contains array
+            for (const v of Object.values(res.data)) {
+              if (v && typeof v === 'object') {
+                const inner = Object.values(v as any).find(x => Array.isArray(x));
+                if (inner) { data = inner as any[]; break; }
+              }
+            }
+          }
+        }
         else {
           const firstArray = Object.values(res).find(v => Array.isArray(v));
           if (firstArray) data = firstArray as any[];
+          else {
+            // Deep search for any array in res
+            for (const v of Object.values(res)) {
+              if (v && typeof v === 'object') {
+                const inner = Object.values(v as any).find(x => Array.isArray(x));
+                if (inner) { data = inner as any[]; break; }
+              }
+            }
+          }
         }
         setItems(data);
         setFiltered(data);

@@ -170,8 +170,10 @@ export async function POST(req: NextRequest) {
       is_batch_managed, is_lot_managed,
       // Sales view
       sales_org, commercial_org, distribution_channel, sales_channel, division, product_line, sales_uom, commercial_unit, tax_classification, account_assignment_group, item_category_group,
-      // Purchasing view
-      purchasing_group, buyer_group, purchasing_org, procurement_division,
+      // Purchasing view – wired from foundation EBTC EDPC FCRL
+      purchasing_group, buyer_group, purchasing_org, procurement_division, purchasing_org_code,
+      // Tax/HSN – wired from foundation FTXC
+      tax_code, hsn_code_fk,
       // MRP view
       mrp_type, planning_type, mrp_controller, planning_controller, lot_size, lot_sizing, min_lot_size, max_lot_size, fixed_lot_size, procurement_type, procurement_method, special_procurement, special_procurement_method, safety_stock, reorder_point,
       // Plant view
@@ -327,7 +329,7 @@ export async function POST(req: NextRequest) {
         VALUES (
           ${finalItemNumber}, ${finalType}::prod_item_type_enum, ${categoryId}, ${finalBaseUnit}, ${description}, ${description_long || null},
           ${finalIsLotManaged}, ${shelf_life_days || 30}, ${finalLotControl}::prod_lot_control,
-          ${is_kit || false}, ${is_phantom_kit || false}, ${finalValuationClass}, ${is_hazardous || false}, ${finalLandedScope}::prod_landed_cost_scope, true, ${hsn_code || null}, ${barcode || null}
+          ${is_kit || false}, ${is_phantom_kit || false}, ${finalValuationClass}, ${is_hazardous || false}, ${finalLandedScope}::prod_landed_cost_scope, true, ${hsn_code || hsn_code_fk || null}, ${barcode || null}
         )
         ON CONFLICT (item_number) DO UPDATE SET
           description = ${description},
@@ -360,7 +362,7 @@ export async function POST(req: NextRequest) {
             ${safety_stock || 0}, ${reorder_point || 0},
             ${finalPlanningType}::prod_planning_type, ${planning_controller || mrp_controller || 'CTRL-001'}, ${finalLotSizing}::prod_lot_sizing, ${min_lot_size || 0}, ${max_lot_size || 0}, ${fixed_lot_size || 0},
             ${finalProcMethod}::prod_procurement_method, ${special_procurement_method || special_procurement || null},
-            ${buyer_group || purchasing_group || 'BUY-001'}, ${procurement_division || purchasing_org || 'PD-1000'},
+            ${buyer_group || purchasing_group || 'BUY-001'}, ${procurement_division || purchasing_org || purchasing_org_code || 'PD-1000'},
             ${costing_lot_size || 1}, ${overhead_group || null},
             ${finalValuationClass}, ${price_unit || 1},
             ${finalIsQualityActive}
@@ -397,10 +399,10 @@ export async function POST(req: NextRequest) {
           const delFacilityId = facilityIds.length > 0 ? facilityIds[0] : null;
           await db.execute(sql`
             INSERT INTO prod_commercial_profile (item_id, commercial_org, sales_channel, product_line, commercial_unit, tax_classification, account_assignment_group, item_category_group, fulfilling_facility_id)
-            VALUES (${itemId}, ${finalCommercialOrg}, ${finalSalesChannel}, ${finalProductLine}, ${commercial_unit || sales_uom || finalBaseUnit}, ${tax_classification || 'FULL'}, ${account_assignment_group || '01'}, ${item_category_group || 'STANDARD'}, ${delFacilityId})
+            VALUES (${itemId}, ${finalCommercialOrg}, ${finalSalesChannel}, ${finalProductLine}, ${commercial_unit || sales_uom || finalBaseUnit}, ${tax_classification || tax_code || 'FULL'}, ${account_assignment_group || '01'}, ${item_category_group || 'STANDARD'}, ${delFacilityId})
             ON CONFLICT (item_id, commercial_org, sales_channel, product_line) DO UPDATE SET
               commercial_unit = ${commercial_unit || sales_uom || finalBaseUnit},
-              tax_classification = ${tax_classification || 'FULL'}
+              tax_classification = ${tax_classification || tax_code || 'FULL'}
           `);
         } catch (e: any) {
           console.warn('Commercial view insert failed', e);
@@ -562,10 +564,10 @@ export async function POST(req: NextRequest) {
           const delPlantId = plantIds.length > 0 ? plantIds[0] : null;
           await db.execute(sql`
             INSERT INTO ent_material_sales (material_id, sales_org, distribution_channel, division, sales_uom, tax_classification, account_assignment_group, item_category_group, delivering_plant_id)
-            VALUES (${materialId}, ${salesOrg}, ${distChannel}, ${div}, ${commercial_unit || sales_uom || finalBaseUnit}, ${tax_classification || '1'}, ${account_assignment_group || '01'}, ${item_category_group || 'NORM'}, ${delPlantId})
+            VALUES (${materialId}, ${salesOrg}, ${distChannel}, ${div}, ${commercial_unit || sales_uom || finalBaseUnit}, ${tax_classification || tax_code || '1'}, ${account_assignment_group || '01'}, ${item_category_group || 'NORM'}, ${delPlantId})
             ON CONFLICT (material_id, sales_org, distribution_channel, division) DO UPDATE SET
               sales_uom = ${commercial_unit || sales_uom || finalBaseUnit},
-              tax_classification = ${tax_classification || '1'}
+              tax_classification = ${tax_classification || tax_code || '1'}
           `);
         } catch (e: any) {
           console.warn('Sales view insert failed', e);
