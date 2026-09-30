@@ -1,9 +1,18 @@
-# Fictional Company Setup – 1000 FMCG India Pvt Ltd
+# Fictional Company Setup – 1000 FMCG India Pvt Ltd – TEST ONLY – MANUAL
+
+> ⚠️ MOVED – Now in `manual-migrations/001_fictional_company_1000_fmcg_test_only.ts` – TEST ONLY – MANUAL AFTER BUILD – NOT PART OF PRODUCTION AUTO-MIGRATION
 
 ## Purpose
-Auto-create **all admin/master data** needed to safely test day-to-day operations (PR→IV, SD, PP, FICO, HR, Audit) without manual foundation setup.
+Auto-create **all admin/master data** needed to safely test day-to-day operations (PR→IV, SD, PP, FICO, HR, Audit) without manual foundation setup – **FOR TESTING PURPOSE ONLY**.
 
-**Script:** `scripts/setupFictionalCompany.ts` (TSX migrator, idempotent)
+**Real Script:** `manual-migrations/001_fictional_company_1000_fmcg_test_only.ts` (TSX migrator, idempotent, MANUAL ONLY)
+**Shim:** `scripts/setupFictionalCompany.ts` – deprecated wrapper that delegates to manual-migrations – kept for backward compat
+**Docs:** `manual-migrations/README.md` – explains manual after build usage
+
+**NOT part of main migration:**
+- NOT called by `src/shared/kernel/db/autoMigrate.ts` / `initProduction.ts`
+- NOT run on `docker compose up --build` – only `npm run db:auto-migrate` runs on build
+- Must be run MANUALLY AFTER actual build: `docker compose run --rm migrator npm run db:seed:fictional:test`
 
 ## What it creates (per guide defaults)
 
