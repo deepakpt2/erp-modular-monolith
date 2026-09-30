@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
+import { requireApiAuth, requirePermission } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
@@ -13,6 +13,8 @@ import { sql } from 'drizzle-orm';
 export async function GET(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+  const permCheck = await requirePermission('PAYROLL_RUN');
+  if (permCheck) return permCheck;
 
   const { searchParams } = new URL(req.url);
   const limit = parseInt(searchParams.get('limit') || '100');
@@ -99,6 +101,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+  const permCheck = await requirePermission('PAYROLL_RUN');
+  if (permCheck) return permCheck;
 
   try {
     const body = await req.json();
@@ -173,6 +177,8 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+  const permCheck = await requirePermission('PAYROLL_RUN');
+  if (permCheck) return permCheck;
 
   try {
     const body = await req.json();

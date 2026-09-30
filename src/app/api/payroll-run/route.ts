@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
+import { requireApiAuth, requirePermission } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 import { getAutoAccount } from '@/shared/kernel/db/postingPeriodHelpers';
@@ -21,6 +21,8 @@ import { createDocumentEntry } from '@/shared/kernel/db/documentHelpers';
 export async function GET(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+  const permCheck = await requirePermission('PAYROLL_RUN');
+  if (permCheck) return permCheck;
 
   try {
     let rows: any[] = [];
@@ -43,6 +45,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+  const permCheck = await requirePermission('PAYROLL_RUN');
+  if (permCheck) return permCheck;
 
   try {
     const body = await req.json();

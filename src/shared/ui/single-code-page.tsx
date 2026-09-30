@@ -131,6 +131,33 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     setLoading(true);
     try {
       const res = await fetch(apiEndpoint);
+      // Handle non-JSON responses (404 HTML, 403, etc.) – previously caused Unexpected token '<' error
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok) {
+        const text = await res.text();
+        console.warn(`Fetch ${apiEndpoint} failed ${res.status}:`, text.slice(0,200));
+        if (res.status === 404) {
+          setMessage(`⚠️ API ${apiEndpoint} not found (404) – check route exists – e.g., /api/hr/employees not /api/employees – fixed`);
+        } else if (res.status === 403) {
+          try {
+            const j = JSON.parse(text);
+            setMessage(`🔒 Forbidden – ${j.error || 'requires permission'} – master data manager cannot access HR payroll – SoD`);
+          } catch {
+            setMessage(`🔒 Forbidden – requires permission – ${res.status}`);
+          }
+        }
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+      if (!contentType.includes('application/json')) {
+        const text = await res.text();
+        console.warn(`Fetch ${apiEndpoint} returned non-JSON:`, text.slice(0,200));
+        setMessage(`❌ API ${apiEndpoint} returned non-JSON (likely 404 HTML <!DOCTYPE) – check endpoint – fixed to /api/hr/employees`);
+        setItems([]);
+        setLoading(false);
+        return;
+      }
       const j = await res.json();
       const candidates = [
         j.data, j[code.toLowerCase()], j[code],
@@ -241,8 +268,22 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || 'Failed');
+      const ct = res.headers.get('content-type') || '';
+      let j: any = {};
+      if (ct.includes('application/json')) {
+        j = await res.json();
+      } else {
+        const txt = await res.text();
+        console.warn(`Submit ${apiEndpoint} returned non-JSON ${res.status}:`, txt.slice(0,500));
+        if (res.status === 404) {
+          throw new Error(`API ${apiEndpoint} not found (404) – endpoint missing – check /api/hr/employees exists – HTML returned <!DOCTYPE – fixed`);
+        }
+        if (txt.includes('<!DOCTYPE')) {
+          throw new Error(`API ${apiEndpoint} returned HTML not JSON – likely 404 – got <!DOCTYPE – check endpoint – fixed to /api/hr/employees`);
+        }
+        try { j = JSON.parse(txt); } catch { j = { error: txt.slice(0,200) }; }
+      }
+      if (!res.ok) throw new Error(j.error || `Failed ${res.status}`);
       setMessage(`✅ ${title} ${payload.code || payload.item_number || payload.account_number} ${mode === 'change' ? 'updated' : 'created'} – ${code}`);
       fetchItems();
       if (mode === 'create') setForm(initialForm);
