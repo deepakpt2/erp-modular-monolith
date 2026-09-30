@@ -343,6 +343,13 @@
 - **Verification:** `find . -type f -name "*.md"` now only PROJECT_LOG.md + README.md minimal – `ls archive/` 266K zip – `find . -type f -not -path "./src/*" -not -path "./node_modules/*" -not -path "./.next/*" -not -path "./.git/*" -not -path "./archive/*"` = 32 files – much cleaner – build still works – git status shows changes
 - **Status:** DONE – Single file policy active – From now on every change will append concise details to PROJECT_LOG.md Section 6 per standing instruction
 
+#### 2026-09-30 – Standing Instruction – Workspace Limit Cleanup Priority
+- **What:** User instruction: Keep git files for now and when workspace limit reached, first remove git files before actual codes
+- **Why:** User asked about 4700 files breakdown – explained 4298 are .git objects (92%), 323 are actual src code (4.0M), 363 persisted files total excluding node_modules/.next/.git – user wants to keep git for now but prioritize removal of git files over actual code when workspace limit (128 MB or 10,000 files per snapshot) reached
+- **Files:** PROJECT_LOG.md updated with this standing instruction – no code files removed – .git folder 4298 files 17M kept for now
+- **Verification:** `find . -type f | wc -l` = 4661 total (4298 .git + 323 src + 14 drizzle + 17 root + 4 scripts + 1 manual-migrations + 1 archive + etc) – persisted files = 363 – workspace snapshot limit 128 MB / 10,000 files per system prompt – currently under limit – when limit reached, cleanup priority: 1) .git objects (git gc, remove archive zip, remove tsconfig.tsbuildinfo, .config, uploads/.keep), 2) build artifacts, 3) test/seed data, 4) last resort actual src code – never remove src/ or drizzle/ unless explicitly approved
+- **Status:** DONE – Standing instruction recorded – will follow cleanup priority when limit reached
+
 #### (Add new entries below this line – keep reverse chronological or chronological – your choice – but maintain concise details)
 
 ---
