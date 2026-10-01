@@ -73,7 +73,7 @@ const REQUIRED_PER_TAB: Record<TabKey, string[]> = {
   costing: [],
 };
 
-export default function MaterialMasterPage({ defaultMode }: { defaultMode?: any } = {}) {
+export default function MaterialMasterPage({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
   const params = useParams();
   const searchParams = useSearchParams();
   const companyCode = params.companyCode as string;

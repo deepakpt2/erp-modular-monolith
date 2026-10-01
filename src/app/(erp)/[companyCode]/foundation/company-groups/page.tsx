@@ -1,12 +1,12 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function CompanyGroupsPage({ defaultMode }: { defaultMode?: any } = {}) {
+export default function CompanyGroupsPage({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
   return (
     <SingleCodePage
-      code="ECGC"
+      code={codeOverride || "ECGC"}
       sapAlias="OX15"
-      title="Company Group"
+      title={titleOverride || "Company Group"}
       description="Define Company Group – enterprise holding umbrella corporation group structure – root parent, used by Legal Entity – per real guide needs currency_code INR, country_code IN, language EN"
       apiEndpoint="/api/company-groups"
       defaultMode={defaultMode || "list"}

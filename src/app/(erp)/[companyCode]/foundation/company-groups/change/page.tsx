@@ -1,5 +1,5 @@
 "use client";
-import CompanyGroupsPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <CompanyGroupsPage defaultMode="change" />;
+  return <MasterPage defaultMode="change" codeOverride="ECGE" titleOverride="Change Company Group" />;
 }

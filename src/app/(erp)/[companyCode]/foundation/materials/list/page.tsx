@@ -1,5 +1,5 @@
 "use client";
-import MaterialsPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <MaterialsPage defaultMode="list" />;
+  return <MasterPage defaultMode="list" codeOverride="EMTL" titleOverride="Product Master List" />;
 }

@@ -1,13 +1,13 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function Page({ defaultMode }: { defaultMode?: any } = {}) {
+export default function Page({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
   return (
     <SingleCodePage
       defaultMode={defaultMode}
-      code="FCCA"
+      code={codeOverride || "FCCA"}
       sapAlias="KS01"
-      title="Cost Units – Cost Centers"
+      title={titleOverride || "Cost Units – Cost Centers"}
       description="Create Cost Unit – General ERP term Cost Unit, alias Cost Center KS01 – code + legal entity – e.g., CC-1000 – strict usage: cost unit required for expense GL via field status OBC5, actuals via CCA report KSB1, production order cost, payroll posting – T0 BLOCKING – NO DANGLING"
       apiEndpoint="/api/cost-centers"
       initialForm={{ code: '', name: '', company_code: '', legal_entity_code: '', control_area_code: '', description: '' }}

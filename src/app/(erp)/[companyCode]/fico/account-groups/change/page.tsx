@@ -1,5 +1,5 @@
 "use client";
-import AccountGroupsPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <AccountGroupsPage defaultMode="change" />;
+  return <MasterPage defaultMode="change" codeOverride="FAGE" titleOverride="Change Account Group" />;
 }

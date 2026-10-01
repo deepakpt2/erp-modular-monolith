@@ -1,5 +1,5 @@
 "use client";
-import ChartOfAccountsPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <ChartOfAccountsPage defaultMode="list" />;
+  return <MasterPage defaultMode="list" codeOverride="FCOL" titleOverride="Chart of Accounts List" />;
 }

@@ -1,12 +1,12 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function AccountGroupsPage({ defaultMode }: { defaultMode?: any } = {}) {
+export default function AccountGroupsPage({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
   return (
     <SingleCodePage
-      code="FAGC"
+      code={codeOverride || "FAGC"}
       sapAlias="OBD4"
-      title="Account Groups – GL Account Categories"
+      title={titleOverride || "Account Groups – GL Account Categories"}
       description="Define Account Groups – classify GL accounts by category, specify number ranges (from_account to to_account), and assign field status controls. Groups include Balance Sheet, Non-operating P&L, Operating P&L, Primary & Secondary Cost Elements, Retained Earnings, Reconciliation, GR/IR, and Bank Clearing."
       apiEndpoint="/api/account-groups"
       defaultMode={defaultMode || "list"}

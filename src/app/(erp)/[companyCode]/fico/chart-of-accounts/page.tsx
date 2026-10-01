@@ -1,13 +1,13 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function Page({ defaultMode }: { defaultMode?: any } = {}) {
+export default function Page({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
   return (
     <SingleCodePage
       defaultMode={defaultMode}
-      code="FCOA"
+      code={codeOverride || "FCOA"}
       sapAlias="OB13"
-      title="Chart of Accounts"
+      title={titleOverride || "Chart of Accounts"}
       description="Define Chart of Accounts – KSCA / CA-IN-01 – general CoA – strict usage: groups GL accounts – e.g., KSCA India – per guide needs language EN, chart_of_accounts_code CA-IN-01 is example code"
       apiEndpoint="/api/chart-of-accounts"
       initialForm={{ code: '', name: '', description: '', language: 'EN' }}

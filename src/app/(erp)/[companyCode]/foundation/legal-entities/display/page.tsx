@@ -1,5 +1,5 @@
 "use client";
-import LegalEntitiesPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <LegalEntitiesPage defaultMode="display" />;
+  return <MasterPage defaultMode="display" codeOverride="ELEV" titleOverride="Display Legal Entity" />;
 }

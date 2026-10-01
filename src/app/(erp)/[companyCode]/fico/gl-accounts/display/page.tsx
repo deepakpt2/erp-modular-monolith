@@ -1,5 +1,5 @@
 "use client";
-import GLAccountsPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <GLAccountsPage defaultMode="display" />;
+  return <MasterPage defaultMode="display" codeOverride="FGLV" titleOverride="Display GL Account" />;
 }

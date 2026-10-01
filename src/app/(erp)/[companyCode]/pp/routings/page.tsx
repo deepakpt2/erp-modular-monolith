@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
-export default function Page({ defaultMode }: { defaultMode?: any } = {}){
+export default function Page({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}){
   const params = useParams();
   const companyCode = params.companyCode as string;
   const [data,setData]=useState<any>(null);
@@ -164,7 +164,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   );
 
   return (
-    <ModernModuleShell title="Manufacturing Routings" subtitle={`${Array.isArray(items)?items.length:0} routings • ${companyCode} • MRTC alias CA01 – General ERP – T0 BLOCKING`} code="MRTC" module="PP" classicChildren={classicContent}>
+    <ModernModuleShell title={titleOverride || "Manufacturing Routings"} subtitle={`${Array.isArray(items)?items.length:0} routings • ${companyCode} • MRTC alias CA01 – General ERP – T0 BLOCKING`} code={codeOverride || "MRTC"} module="PP" classicChildren={classicContent}>
       {modernContent}
     </ModernModuleShell>
   );

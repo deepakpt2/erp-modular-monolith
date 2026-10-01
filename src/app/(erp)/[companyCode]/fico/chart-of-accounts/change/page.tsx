@@ -1,5 +1,5 @@
 "use client";
-import ChartOfAccountsPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <ChartOfAccountsPage defaultMode="change" />;
+  return <MasterPage defaultMode="change" codeOverride="FCOE" titleOverride="Change Chart of Accounts" />;
 }

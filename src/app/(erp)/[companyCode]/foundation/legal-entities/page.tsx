@@ -1,12 +1,12 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
-export default function LegalEntitiesPage({ defaultMode }: { defaultMode?: any } = {}) {
+export default function LegalEntitiesPage({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
   return (
     <SingleCodePage
       defaultMode={defaultMode}
-      code="ELEC"
+      code={codeOverride || "ELEC"}
       sapAlias="OX02"
-      title="Legal Entity"
+      title={titleOverride || "Legal Entity"}
       description="Define Legal Entity – statutory company code – needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FFSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000 – per real guide – posting period variant controls FPPE (legacy OB52) open/close, fiscal calendar calculates FY/Period"
       apiEndpoint="/api/legal-entities"
       initialForm={{

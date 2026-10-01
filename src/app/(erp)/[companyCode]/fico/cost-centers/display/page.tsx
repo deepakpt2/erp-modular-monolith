@@ -1,5 +1,5 @@
 "use client";
-import CostCentersPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <CostCentersPage defaultMode="display" />;
+  return <MasterPage defaultMode="display" codeOverride="CCUD" titleOverride="Display Cost Center" />;
 }

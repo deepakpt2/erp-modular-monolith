@@ -1,5 +1,5 @@
 "use client";
-import MaterialsPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <MaterialsPage defaultMode="change" />;
+  return <MasterPage defaultMode="change" codeOverride="EMTE" titleOverride="Change Product Master" />;
 }

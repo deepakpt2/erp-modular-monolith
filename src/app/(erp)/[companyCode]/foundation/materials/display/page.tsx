@@ -1,5 +1,5 @@
 "use client";
-import MaterialsPage from '../page';
+import MasterPage from '../page';
 export default function Page() {
-  return <MaterialsPage defaultMode="display" />;
+  return <MasterPage defaultMode="display" codeOverride="EMTV" titleOverride="Display Product Master" />;
 }
