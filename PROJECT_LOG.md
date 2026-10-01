@@ -793,3 +793,10 @@ Once you confirm, I will:
   1. `src/shared/kernel/auth/pagePermissions.ts`: Fixed array closure syntax error where new code permission definitions were accidentally nested within the `canUserAccessPage` function instead of `PAGE_PERMISSIONS`.
   2. `src/app/api/company-groups/route.ts`: Fixed duplicate declaration error for `finalCurrency` in `POST` handler.
 
+**Transaction Codes Directory Page - FDIR (2026-10-01):**
+- Created dedicated interactive reference directory page `/{companyCode}/foundation/codes` (code `FDIR`, legacy alias `SM01` / `CODES` / `TCODES`):
+  - Displays every implemented transaction code alongside its legacy / standard SAP alias, module classification, business function, action type, and direct navigation link.
+  - Includes real-time search filtering across code, alias, title, and module tabs.
+  - Registered `FDIR` in `src/shared/lib/functions.ts`, `src/shared/kernel/auth/pagePermissions.ts`, `src/shared/kernel/auth/frontendPermissions.ts`, and `src/app/(erp)/[companyCode]/navigator/page.tsx`.
+
+

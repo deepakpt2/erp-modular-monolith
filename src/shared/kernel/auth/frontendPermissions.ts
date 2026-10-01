@@ -117,6 +117,7 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
   { pattern: /\/system\/jobs/, permission: 'ADMIN_ALL', roles: ['ADMIN', 'OWNER', 'MANAGER', '*'], code: 'FBJM', description: 'Background Jobs – SM37 – FBJM – ADMIN_ALL – allow all for job indicator GET, but POST restricted – fix 403 for MDM' },
   { pattern: /\/system\/locks/, permission: 'ADMIN_ALL', roles: ['ADMIN', 'OWNER', 'MANAGER'], code: 'FELM', description: 'Locks – SM12 – FELM – ADMIN_ALL – ADMIN/MANAGER' },
   { pattern: /\/navigator/, permission: 'MATERIAL_VIEW', roles: ['*'], code: 'NAV', description: 'Navigator – allow all authenticated – but filters children via canUserAccessPage – pages without permission removed' },
+  { pattern: /\/foundation\/codes/, permission: 'MATERIAL_VIEW', roles: ['*'], code: 'FDIR', description: 'Transaction Codes Directory – allow all authenticated' },
   { pattern: /\/foundation\/enterprise-structure/, permission: 'MATERIAL_VIEW', roles: ['*'], code: 'ECAC', description: 'Enterprise Structure Overview – ECAC – view only – allow all authenticated' },
 ];
 

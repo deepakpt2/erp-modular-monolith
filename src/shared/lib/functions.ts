@@ -243,7 +243,7 @@ export const FUNCTIONS: FunctionCode[] = [
   { code: 'FCHB', aliases: ['FIN-HUB', 'FICO-HUB'], description: 'Financial Configuration Hub', route: '/1000/fico/posting-period', module: 'FICO', subModule: 'FI-CFG', type: 'REPORT', classicName: 'Financial Hub', keywords: 'financial configuration hub overview posting period fiscal tax general ledger fchb' },
   { code: 'ECHB', aliases: ['ENT-HUB', 'FND-HUB'], description: 'Enterprise Configuration Hub', route: '/1000/foundation/enterprise-config', module: 'FOUNDATION', subModule: 'ENT-CFG', type: 'REPORT', classicName: 'Enterprise Hub', keywords: 'enterprise structure configuration hub overview company plant org echb' },
   { code: 'NAVI', aliases: ['TREE', 'ERP-TREE', 'NAV'], description: 'Enterprise Function Tree Navigator', route: '/1000/navigator', module: 'FOUNDATION', subModule: 'ADMIN', type: 'REPORT', classicName: 'ERP Navigator', keywords: 'tree structure navigator all transaction codes directory erp navi' },
-
+  { code: 'FDIR', aliases: ['CODES', 'TCODES', 'SM01'], description: 'Transaction Codes & Functions Directory', route: '/1000/foundation/codes', module: 'FOUNDATION', subModule: 'ADMIN', type: 'REPORT', classicName: 'Transaction Code Directory', keywords: 'all transaction codes sap equivalent directory list map fdir sm01' },
 ];
 
 export const MODULE_CLASSIFICATION = {

@@ -113,6 +113,7 @@ export default function NavigatorPage() {
       icon: '🏢',
       module: 'FOUNDATION',
       children: [
+        { label: 'Transaction Codes Directory', code: 'FDIR', route: `/foundation/codes` },
         { label: 'Company Group – Create', code: 'ECGC', route: `/foundation/company-groups`, count: counts['ECGC'] },
         { label: 'Company Group – Change', code: 'ECGE', route: `/foundation/company-groups/change` },
         { label: 'Company Group – Display', code: 'ECGV', route: `/foundation/company-groups/display` },

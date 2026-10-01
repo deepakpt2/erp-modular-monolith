@@ -190,6 +190,7 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { code: 'FCHB', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'ACCOUNTANT'], module: 'FICO', description: 'Financial Hub – FCHB' },
   { code: 'ECHB', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'FOUNDATION', description: 'Enterprise Hub – ECHB' },
   { code: 'NAVI', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER', 'PURCHASER', 'SALES', 'WAREHOUSE', 'ACCOUNTANT', 'PRODUCTION', 'HR'], module: 'FOUNDATION', description: 'Navigator – NAVI' },
+  { code: 'FDIR', permission: 'MATERIAL_VIEW', roles: ['*'], module: 'FOUNDATION', description: 'Transaction Codes Directory – FDIR' },
 ];
 
 export function getPagePermission(code: string): PagePermission | null {
