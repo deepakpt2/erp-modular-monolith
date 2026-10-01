@@ -143,14 +143,14 @@ export function DbAutocomplete({
   const codeBadge = createCode || label.split('_')[0] || 'FORM';
 
   return (
-    <div ref={wrapperRef} className={`relative ${className}`}>
+    <div ref={wrapperRef} className={`relative space-y-1 ${className}`}>
       <label className="text-[11px] font-medium tracking-widest flex items-center gap-1.5 uppercase">
         <span className="text-zinc-600 tracking-widest">{label}</span>
         {required && <span className="text-red-500">*</span>}
         <span className="text-[9px] font-mono bg-zinc-900 text-white rounded-full px-1.5 py-0.5">{codeBadge}</span>
         {loading && <span className="text-[9px] text-zinc-400 font-normal normal-case">loading</span>}
       </label>
-      <div className="relative mt-1">
+      <div className="relative">
         <input
           value={inputValue}
           onChange={e => {
@@ -161,7 +161,7 @@ export function DbAutocomplete({
           }}
           onFocus={() => setShowDropdown(true)}
           placeholder="" // Per rule: if form has label, dont use placeholder – never sample value – label exists, so placeholder empty
-          className={`w-full border rounded-lg px-2.5 py-2 text-[13px] h-[32px] leading-none focus:outline-none uppercase pr-7 transition-all placeholder:text-zinc-400 ${borderClass}`}
+          className={`w-full border rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none uppercase pr-7 transition-all placeholder:text-zinc-400 ${borderClass}`}
         />
         <button
           type="button"

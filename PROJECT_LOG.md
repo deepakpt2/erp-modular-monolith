@@ -805,7 +805,8 @@ Once you confirm, I will:
   - Updated `FAGC` page form (`src/app/(erp)/[companyCode]/fico/account-groups/page.tsx`) to configure both Account Type and GL Category when defining an Account Group.
   - Updated `FGLC` GL Account Master creation page and `/api/gl-accounts`:
     - `ACCOUNT_GROUP_CODE` is elevated as the leading configuration field after `CHART_OF_ACCOUNTS_CODE`.
-    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.
-
-
-
+    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**Responsive Form Input Sizing & Anti-Clipping (2026-10-01):**
+- Replaced rigid fixed height `h-[32px]` on form inputs, selects, autocompletes, and search bars with responsive `min-h-[34px] px-2.5 py-1.5 text-xs sm:text-[13px]`:
+  - Prevents text clipping and field truncation on mobile/laptop screens and high DPI displays.
+  - Allowed textareas to span 2 columns with dynamic vertical resizing (`resize-y min-h-[72px]`).
+  - Adjusted label spacing and helper text line heights for clean vertical balance.

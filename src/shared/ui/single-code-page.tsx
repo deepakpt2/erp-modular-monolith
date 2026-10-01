@@ -429,29 +429,29 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     if (field.type === 'select' && field.options) {
       return (
         <div key={field.key} className="space-y-1">
-          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>{field.label}{field.required ? ' *' : ''}</label>
-          <select value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} className={modern ? `w-full border ${modernBorder} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all` : `w-full border-2 ${classicBorder} px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none`}>
+          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600 block" : "text-[11px] font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
+          <select value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} className={modern ? `w-full border ${modernBorder} rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all` : `w-full border-2 ${classicBorder} px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none min-h-[30px]`}>
             <option value="">{`Select ${field.label}`}</option>
             {field.options.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-tight" : "text-[10px] font-mono text-black leading-tight"}>{field.description}</p>}
+          {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-normal" : "text-[10px] font-mono text-black leading-normal"}>{field.description}</p>}
         </div>
       );
     }
     if (field.type === 'textarea') {
       return (
-        <div key={field.key} className="space-y-1">
-          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>{field.label}{field.required ? ' *' : ''}</label>
-          <textarea value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border ${modernBorder} rounded-lg px-2.5 py-2 text-[13px] min-h-[64px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all placeholder:text-zinc-400 resize-none` : `w-full border-2 ${classicBorder} px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none resize-none min-h-[64px]`} />
-          {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-tight" : "text-[10px] font-mono text-black leading-tight"}>{field.description}</p>}
+        <div key={field.key} className="space-y-1 md:col-span-2">
+          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600 block" : "text-[11px] font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
+          <textarea value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border ${modernBorder} rounded-lg p-2.5 text-xs sm:text-[13px] min-h-[72px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all placeholder:text-zinc-400 resize-y` : `w-full border-2 ${classicBorder} p-1.5 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none resize-y min-h-[64px]`} />
+          {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-normal" : "text-[10px] font-mono text-black leading-normal"}>{field.description}</p>}
         </div>
       );
     }
     return (
       <div key={field.key} className="space-y-1">
-        <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>{field.label}{field.required ? ' *' : ''}</label>
-        <input value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} placeholder="" className={modern ? `w-full border ${modernBorder} rounded-lg px-2.5 py-2 text-[13px] h-[32px] leading-none focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all placeholder:text-zinc-400` : `w-full border-2 ${classicBorder} px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none h-[28px]`} />
-        {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-tight" : "text-[10px] font-mono text-black leading-tight"}>{field.description}</p>}
+        <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600 block" : "text-[11px] font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
+        <input value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} placeholder="" className={modern ? `w-full border ${modernBorder} rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all placeholder:text-zinc-400` : `w-full border-2 ${classicBorder} px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none min-h-[30px]`} />
+        {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-normal" : "text-[10px] font-mono text-black leading-normal"}>{field.description}</p>}
       </div>
     );
   };
@@ -496,7 +496,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
             <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center">
               <h3 className={modern ? "font-semibold text-[13px]" : "font-bold text-[11px] uppercase"}>List – {filteredListItems.length} of {items.length}</h3>
               <div className="relative w-full sm:w-[280px]">
-                <input value={listSearch} onChange={e => { setListSearch(e.target.value); setShowListSuggestions(true); }} onFocus={() => setShowListSuggestions(true)} onBlur={() => setTimeout(() => setShowListSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px] focus:outline-none"} />
+                <input value={listSearch} onChange={e => { setListSearch(e.target.value); setShowListSuggestions(true); }} onFocus={() => setShowListSuggestions(true)} onBlur={() => setTimeout(() => setShowListSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none min-h-[30px] focus:outline-none"} />
                 {showListSuggestions && listSuggestions.length > 0 && (
                   <div className={modern ? "absolute top-full mt-1 w-full bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-zinc-200 z-10 max-h-[180px] overflow-auto" : "absolute top-full mt-1 w-full bg-white border-2 border-black z-10 max-h-[180px] overflow-auto"}>
                     {listSuggestions.map((it: any, i: number) => (
@@ -577,9 +577,9 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
         ) : mode === 'change' ? (
           <div className="space-y-3">
             <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-4 space-y-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-3 space-y-2 bg-white"}>
-              <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-bold uppercase"}>Search {title} to Change</label>
+              <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600 block" : "text-[11px] font-bold uppercase block"}>Search {title} to Change</label>
               <div className="relative">
-                <input value={changeSearch} onChange={e => { setChangeSearch(e.target.value); setShowChangeSuggestions(true); }} onFocus={() => setShowChangeSuggestions(true)} onBlur={() => setTimeout(() => setShowChangeSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px]"} />
+                <input value={changeSearch} onChange={e => { setChangeSearch(e.target.value); setShowChangeSuggestions(true); }} onFocus={() => setShowChangeSuggestions(true)} onBlur={() => setTimeout(() => setShowChangeSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none min-h-[30px]"} />
                 {showChangeSuggestions && filteredChangeItems.length > 0 && (
                   <div className={modern ? "absolute top-full mt-1 w-full bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-zinc-200 z-10 max-h-[260px] overflow-auto" : "absolute top-full mt-1 w-full bg-white border-2 border-black z-10 max-h-[260px] overflow-auto"}>
                     {filteredChangeItems.map((it: any, i: number) => (
