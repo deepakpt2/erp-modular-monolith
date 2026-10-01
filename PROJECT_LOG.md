@@ -805,11 +805,11 @@ Once you confirm, I will:
   - Updated `FAGC` page form (`src/app/(erp)/[companyCode]/fico/account-groups/page.tsx`) to configure both Account Type and GL Category when defining an Account Group.
   - Updated `FGLC` GL Account Master creation page and `/api/gl-accounts`:
     - `ACCOUNT_GROUP_CODE` is elevated as the leading configuration field after `CHART_OF_ACCOUNTS_CODE`.
-    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**Clean Schema Auto-Migration & Manual-Only Master Data Seeding (2026-10-01):**
-- Decoupled database migration from sample/demo data seeding to guarantee truly clean deployments on `docker compose up -d`:
-  - Updated `src/shared/kernel/db/autoMigrate.ts`: now exclusively handles schema synchronization and root `admin` user initialization; no demo companies, materials, or fake vendors are auto-injected.
-  - Removed deprecated legacy seeders: `seedKS01.ts`, `seedFmcg.ts`, `seed.ts`, `initProduction.ts`, and `/api/seed/fmcg`.
-  - Cleaned `docker-compose.yml` and `.env.example`: removed all obsolete `KSPL_ENABLED` and `FMCG_SAMPLE_DATA_ENABLED` references.
-  - Kept isolated manual testing migration in `manual-migrations/001_fictional_company_1000_fmcg_test_only.ts` (runnable only explicitly via `npm run db:seed:fictional:test`).
+    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**Clean Schema Auto-Migration & SAP Client 000 System Baseline (2026-10-01):**
+- Standardized startup migration so that upon fresh deployment (`docker compose up -d`), only system-level baseline configuration standard to SAP Client 000 is initialized:
+  - Created `src/shared/kernel/db/sapStandardDefaults.ts`: pre-populates universal system reference tables (Currencies `TCURC`, Units of Measure `T006`, Fiscal Variants `T009`, Document Types `OBA7`, Movement Types `OMJJ`, Base Tax Rules `FTXP`, Material Types `OMS2`, Field Status Variants `OBC4`).
+  - No company code, plant, mock vendor, demo customer, or sample transactions are auto-seeded.
+  - Initial root `admin` user is ensured.
+
 
 
