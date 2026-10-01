@@ -237,6 +237,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateTaxCodeDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -249,31 +251,15 @@ export async function DELETE(req: NextRequest) {
 
     const checkCode = code?.toUpperCase();
 
-    // Check if tax code in use
-    let inUse = 0;
-    try {
-      if (checkCode) {
-        try {
-          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_ledger_account WHERE id IN (SELECT ledger_account_id FROM fin_tax_rule WHERE code = ${checkCode})`);
-          // Actually check fin_universal_ledger_line tax_code_id
-          const r2 = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_universal_ledger_line WHERE tax_code_id IN (SELECT id FROM fin_tax_rule WHERE code = ${checkCode})`);
-          inUse = parseInt((r2.rows[0] as any).cnt || '0');
-        } catch {
-          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_universal_ledger_line WHERE tax_code_id IN (SELECT id FROM fin_tax_rule WHERE code = ${checkCode})`);
-          inUse = parseInt((r.rows[0] as any).cnt || '0');
-        }
-      }
-    } catch {}
-
-    if (inUse > 0) {
-      try {
-        if (id) await db.execute(sql`UPDATE fin_tax_rule SET is_active = false, updated_at = NOW() WHERE id = ${id}`);
-        else if (checkCode) await db.execute(sql`UPDATE fin_tax_rule SET is_active = false, updated_at = NOW() WHERE code = ${checkCode}`);
-      } catch {
-        if (id) await db.execute(sql`UPDATE fin_tax_rule SET is_active = false WHERE id = ${id}`);
-        else await db.execute(sql`UPDATE fin_tax_rule SET is_active = false WHERE code = ${checkCode}`);
-      }
-      return NextResponse.json({ error: `Cannot delete – tax code ${checkCode} has ${inUse} FI postings and cannot be deleted to maintain audit trail. Deactivated instead.`, code: 'HAS_TRANSACTIONS', softDeleted: true }, { status: 400 });
+    // Industry Standard Pre-check
+    const precheck = await validateTaxCodeDeletion({ id, code: checkCode });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'MSG_TAX_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
     }
 
     try {

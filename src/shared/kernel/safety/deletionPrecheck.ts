@@ -1423,3 +1423,328 @@ export async function validateSalesOrgDeletion(params: {
     } : undefined,
   };
 }
+
+/**
+ * =========================================================================
+ * PHASE 4: Customizing Rules & Configuration Master Data Safeguards
+ * =========================================================================
+ */
+
+/**
+ * 12. Validate Tax Code Deletion (FTXC)
+ * Industry Standard Check:
+ * - Postings exist in fin_universal_ledger_line carrying this tax code -> BLOCK
+ * - Open Purchase Orders with this tax code -> BLOCK
+ * Alternative: Inactive Flag
+ */
+export async function validateTaxCodeDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let taxRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM fin_tax_rule WHERE id = ${id} LIMIT 1`);
+      taxRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM fin_tax_rule WHERE code = ${code} LIMIT 1`);
+      taxRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = taxRecord?.id || id;
+  const effectiveCode = taxRecord?.code || code;
+
+  // 1. Check Universal Ledger Postings
+  try {
+    let postingCount = 0;
+    if (effectiveId) {
+      const pRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_universal_ledger_line 
+        WHERE tax_code_id = ${effectiveId}
+      `);
+      postingCount += Number(pRes.rows[0]?.cnt || 0);
+    }
+    if (postingCount === 0 && effectiveCode) {
+      const pRes2 = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_universal_ledger_line 
+        WHERE tax_code = ${effectiveCode}
+      `);
+      postingCount += Number(pRes2.rows[0]?.cnt || 0);
+    }
+
+    if (postingCount > 0) {
+      reasons.push({
+        code: 'TAX_POSTINGS_EXIST',
+        message: `Financial documents exist with this tax code (${postingCount} ledger postings).`,
+        resolution: 'Tax codes with posted financial documents cannot be deleted per statutory tax audit requirements. Set Inactive Flag instead.',
+        tcode: 'FTXC',
+        count: postingCount,
+      });
+    }
+  } catch {}
+
+  // 2. Check Purchase Orders
+  try {
+    let poCount = 0;
+    if (effectiveCode) {
+      const poRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM proc_po_line 
+        WHERE tax_code = ${effectiveCode}
+      `);
+      poCount += Number(poRes.rows[0]?.cnt || 0);
+    }
+
+    if (poCount > 0) {
+      reasons.push({
+        code: 'PURCHASE_LINES_EXIST',
+        message: `${poCount} Purchase Order line(s) reference this tax code.`,
+        resolution: 'Complete or cancel open Purchase Orders before deleting the tax code.',
+        tcode: 'PPOE',
+        count: poCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Tax Code',
+    entityIdentifier: String(identifier),
+    errorTitle: `Tax Code ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'DELETION_FLAG',
+      label: 'Set Inactive / Deactivation Flag',
+      endpoint: '/api/tax-codes',
+      payload: {
+        id: effectiveId,
+        code: effectiveCode,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * 13. Validate Posting Period Variant Deletion (FPPC)
+ * Industry Standard Check:
+ * - Assigned to Company Code in org_company_code_posting_period -> BLOCK
+ * - Open/closed period records exist in fin_posting_calendar_period -> BLOCK
+ */
+export async function validatePostingPeriodVariantDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let ppRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM fin_posting_calendar WHERE id = ${id} LIMIT 1`);
+      ppRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM fin_posting_calendar WHERE code = ${code} LIMIT 1`);
+      ppRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = ppRecord?.id || id;
+  const effectiveCode = ppRecord?.code || code;
+
+  // 1. Check Company Code Assignments (FLPA / OBBP)
+  try {
+    let assignCount = 0;
+    if (effectiveCode) {
+      const aRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM org_company_code_posting_period 
+        WHERE posting_period_variant_code = ${effectiveCode}
+      `);
+      assignCount += Number(aRes.rows[0]?.cnt || 0);
+    }
+
+    if (assignCount > 0) {
+      reasons.push({
+        code: 'ASSIGNED_TO_COMPANY_CODE',
+        message: `Posting Period Variant is assigned to ${assignCount} Company Code(s).`,
+        resolution: 'Remove Company Code assignments in transaction FLPA before deleting.',
+        tcode: 'FLPA',
+        count: assignCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Posting Period Variant',
+    entityIdentifier: String(identifier),
+    errorTitle: `Posting Period Variant ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'DELETION_FLAG',
+      label: 'Set Inactive / Deactivation Flag',
+      endpoint: '/api/posting-period-variants',
+      payload: {
+        id: effectiveId,
+        code: effectiveCode,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * 14. Validate Field Status Variant Deletion (FFSV)
+ * Industry Standard Check:
+ * - Assigned to Company Code in org_company_code_field_status -> BLOCK
+ */
+export async function validateFieldStatusVariantDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let fsRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM fin_field_status_variant WHERE id = ${id} LIMIT 1`);
+      fsRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM fin_field_status_variant WHERE code = ${code} LIMIT 1`);
+      fsRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = fsRecord?.id || id;
+  const effectiveCode = fsRecord?.code || code;
+
+  // 1. Check Company Code Assignments (FFSA / OBC5)
+  try {
+    let assignCount = 0;
+    if (effectiveCode) {
+      const aRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM org_company_code_field_status 
+        WHERE field_status_variant_code = ${effectiveCode}
+      `);
+      assignCount += Number(aRes.rows[0]?.cnt || 0);
+    }
+
+    if (assignCount > 0) {
+      reasons.push({
+        code: 'ASSIGNED_TO_COMPANY_CODE',
+        message: `Field Status Variant is assigned to ${assignCount} Company Code(s).`,
+        resolution: 'Remove Company Code assignments in transaction FFSA before deleting.',
+        tcode: 'FFSA',
+        count: assignCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Field Status Variant',
+    entityIdentifier: String(identifier),
+    errorTitle: `Field Status Variant ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'DELETION_FLAG',
+      label: 'Set Inactive / Deactivation Flag',
+      endpoint: '/api/field-status-variants',
+      payload: {
+        id: effectiveId,
+        code: effectiveCode,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * 15. Validate Account Group Deletion (FAGC / OBD4)
+ * Industry Standard Check:
+ * - GL Accounts exist within this group number range or reference this group -> BLOCK
+ */
+export async function validateAccountGroupDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let agRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM fin_account_group WHERE id = ${id} LIMIT 1`);
+      agRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM fin_account_group WHERE code = ${code} LIMIT 1`);
+      agRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = agRecord?.id || id;
+  const effectiveCode = agRecord?.code || code;
+
+  // 1. Check G/L Accounts referencing this Account Group
+  try {
+    let glCount = 0;
+    if (effectiveCode) {
+      const gRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_ledger_account 
+        WHERE account_group_code = ${effectiveCode}
+      `);
+      glCount += Number(gRes.rows[0]?.cnt || 0);
+    }
+
+    // Also check number range if from_account and to_account exist
+    if (agRecord?.from_account && agRecord?.to_account) {
+      const gRes2 = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_ledger_account 
+        WHERE account_number >= ${agRecord.from_account} AND account_number <= ${agRecord.to_account}
+      `);
+      glCount = Math.max(glCount, Number(gRes2.rows[0]?.cnt || 0));
+    }
+
+    if (glCount > 0) {
+      reasons.push({
+        code: 'GL_ACCOUNTS_IN_RANGE',
+        message: `${glCount} G/L Account(s) exist within this Account Group's classification/range.`,
+        resolution: 'Delete or reassign the G/L accounts in transaction FGLC before deleting this Account Group.',
+        tcode: 'FGLC',
+        count: glCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Account Group',
+    entityIdentifier: String(identifier),
+    errorTitle: `Account Group ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: undefined,
+  };
+}

@@ -4,7 +4,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Field Status Variant – General ERP terminology (was OBC4 in SAP)
+ * Field Status Variant – General ERP terminology (was legacy OBC4)
  * Defines variant that groups field status groups – e.g., 1000 = Standard
  * Strict usage: Assigned to company code, controls which fields are required/suppressed per GL account and posting key
  * Table: fin_field_status_variant
@@ -112,6 +112,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateFieldStatusVariantDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -121,6 +123,17 @@ export async function DELETE(req: NextRequest) {
     const code = searchParams.get('code')?.toUpperCase();
     const id = searchParams.get('id');
     if (!code && !id) return NextResponse.json({ error: 'code or id required' }, { status: 400 });
+
+    // Industry Standard Pre-check
+    const precheck = await validateFieldStatusVariantDeletion({ id, code });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'MSG_FSV_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
+    }
 
     if (id) await db.execute(sql`DELETE FROM fin_field_status_variant WHERE id = ${id}`);
     else await db.execute(sql`DELETE FROM fin_field_status_variant WHERE code = ${code}`);

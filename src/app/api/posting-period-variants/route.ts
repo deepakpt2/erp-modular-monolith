@@ -249,6 +249,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validatePostingPeriodVariantDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -258,6 +260,17 @@ export async function DELETE(req: NextRequest) {
     const code = searchParams.get('code')?.toUpperCase();
     const id = searchParams.get('id');
     if (!code && !id) return NextResponse.json({ error: 'code or id required' }, { status: 400 });
+
+    // Industry Standard Pre-check
+    const precheck = await validatePostingPeriodVariantDeletion({ id, code });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'MSG_PPV_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
+    }
 
     try {
       if (id) await db.execute(sql`DELETE FROM fin_posting_calendar WHERE id = ${id}`);

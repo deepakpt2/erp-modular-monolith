@@ -841,3 +841,32 @@ Once you confirm, I will:
 
 
 
+
+**Enterprise Deletion Safeguards & Lifecycle Guard Architecture (2026-10-01):**
+- **Design Principle & Legal Standards Compliance:**
+  - Implemented end-to-end multi-phase pre-check safety kernel (`src/shared/kernel/safety/deletionPrecheck.ts`) ensuring no organizational unit, master data, or configuring rule can be physically deleted if active transaction records, ledger postings, or dependent customizing assignments exist.
+  - Neutral industry-standard error diagnostics replace unhandled database exceptions with HTTP `409 Conflict` and structured diagnostic payloads.
+  - When deletion is blocked to preserve audit trail integrity, the system provides one-click deactivation / posting blocks (`is_blocked = true` or `is_active = false`).
+- **Phased Enforcement Coverage:**
+  1. **Phase 1: Foundational Core:**
+     - G/L Account (`FGLC` / FS00): Blocked if ledger lines (`fin_universal_ledger_line`), auto-determination (`FAUC`), or retained earnings (`FREC`) exist. Deactivation: Posting Block.
+     - Chart of Accounts (`FCOA` / OB13): Blocked if company code assignments (`FLC2`), G/L accounts (`FGLC`), or account groups (`FAGC`) exist.
+     - Company Code (`ELEC` / OX02): Blocked if ledger entries (`fin_universal_ledger`), logistics documents (`proc_po`, `proc_gr`, `proc_iv`, `sales_order`), or plant/org assignments exist. Deactivation: Inactive flag.
+     - Plant / Facility (`EFCC` / OX10): Blocked if positive inventory stock (`inv_stock_balance`), open PO lines (`proc_po_line`), or company code assignments exist. Deactivation: Inactive flag.
+  2. **Phase 2: Logistics & Commercial Master:**
+     - Product / Material (`EMTC` / MM01): Blocked if on-hand stock (`inv_stock_balance`, `inv_stock`), open purchase order lines (`proc_po_line`), or active BOM component lines (`mfg_bom_line`) exist. Deactivation: Deletion flag.
+     - Business Partner / Supplier & Customer (`PSUC` / `SCUC`): Blocked if procurement history (`proc_po`, `proc_iv`) or sales history (`sales_order`, `sales_billing_doc`) exist. Deactivation: Posting block / Inactive flag.
+     - Storage Location (`EILC` / OX09): Blocked if on-hand physical stock balance > 0.
+  3. **Phase 3: Controlling & Enterprise Organization:**
+     - Cost Center (`CCUC` / KS01): Blocked if actual postings (`fin_universal_ledger_line`) or assigned employees (`hr_employee`) exist. Deactivation: Cost Center block.
+     - Profit Center (`EPUC` / KE51): Blocked if referencing cost centers (`fin_cost_center`) or ledger lines exist. Deactivation: Inactive flag.
+     - Purchasing Organization (`EPDC` / OX08): Blocked if purchase orders exist or if assigned to Company Code (`EPCA`) or Plant (`EPPA`).
+     - Sales Organization (`ECOC` / OVX2): Blocked if sales orders exist or if assigned to Company Code (`ESCA`), Distribution Channel (`ECSA_ASSIGN`), or Division (`EDSA`).
+  4. **Phase 4: Customizing Rules & Configuration Master Data:**
+     - Tax Codes (`FTXC`): Blocked if ledger postings with tax code or open purchase order lines exist. Deactivation: Inactive flag.
+     - Posting Period Variants (`FPPC`): Blocked if assigned to Company Code (`FLPA`).
+     - Field Status Variants (`FFSV`): Blocked if assigned to Company Code (`FFSA`).
+     - Account Groups (`FAGC`): Blocked if G/L accounts reference the group or exist in the defined number range.
+- **Frontend Interaction & Guard Modal (`IndustryDeletionGuardModal`):**
+  - Dedicated "Delete" buttons in `/change` view actions and in table row item expansions (`/list`).
+  - Interactive enterprise diagnostic modal (`src/shared/ui/sap-deletion-guard-modal.tsx`) rendering structured reasons, document counts, resolution steps with transaction codes, and immediate one-click deactivation.
