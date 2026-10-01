@@ -205,6 +205,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateChartOfAccountsDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -215,25 +217,15 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!code && !id) return NextResponse.json({ error: 'code or id required' }, { status: 400 });
 
-    // Check GL count
-    let glCount = 0;
-    try {
-      if (id) {
-        const c = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_ledger_account WHERE chart_id = ${id}`);
-        glCount = parseInt((c.rows[0] as any).cnt || '0');
-      } else if (code) {
-        try {
-          const c = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_ledger_account WHERE chart_id IN (SELECT id FROM fin_chart WHERE code = ${code})`);
-          glCount = parseInt((c.rows[0] as any).cnt || '0');
-        } catch {
-          const c = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_ledger_account WHERE coa_id IN (SELECT id FROM fin_chart WHERE code = ${code})`);
-          glCount = parseInt((c.rows[0] as any).cnt || '0');
-        }
-      }
-    } catch {}
-
-    if (glCount > 0) {
-      return NextResponse.json({ error: `Cannot delete – CoA ${code || id} has ${glCount} G/L accounts and cannot be deleted to maintain audit trail.`, code: 'HAS_GL_ACCOUNTS' }, { status: 400 });
+    // SAP Standard Safety Pre-check
+    const precheck = await validateChartOfAccountsDeletion({ id, code });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'SAP_MSG_OB13_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
     }
 
     try {

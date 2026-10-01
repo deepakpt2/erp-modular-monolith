@@ -180,6 +180,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateCompanyCodeDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -188,6 +190,18 @@ export async function DELETE(req: NextRequest) {
     const code = searchParams.get('code');
     const id = searchParams.get('id');
     if (!code && !id) return NextResponse.json({ error: 'code or id required' }, { status: 400 });
+
+    // SAP Standard Safety Pre-check
+    const precheck = await validateCompanyCodeDeletion({ id, code });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'SAP_MSG_OX02_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
+    }
+
     let res;
     if (id) res = await db.execute(sql`DELETE FROM org_legal_entity WHERE id = ${id} RETURNING code`);
     else res = await db.execute(sql`DELETE FROM org_legal_entity WHERE code = ${code} RETURNING code`);

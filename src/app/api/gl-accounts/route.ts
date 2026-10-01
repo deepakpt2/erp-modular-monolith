@@ -303,6 +303,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateGLAccountDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -311,16 +313,19 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const account_number = searchParams.get('account_number');
     const id = searchParams.get('id');
+    const coa_code = searchParams.get('coa_code');
     if (!account_number && !id) return NextResponse.json({ error: 'account_number or id required' }, { status: 400 });
 
-    // Check if in use
-    let inUse = 0;
-    try {
-      if (id) {
-        const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_universal_ledger_line WHERE gl_account_id = ${id} UNION ALL SELECT COUNT(*) as cnt FROM fin_ledger_account WHERE id = ${id}`);
-        // Simplified check
-      }
-    } catch {}
+    // SAP Standard Safety Pre-check
+    const precheck = await validateGLAccountDeletion({ id, accountNumber: account_number, coaCode: coa_code });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'SAP_MSG_FS00_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
+    }
 
     try {
       if (id) await db.execute(sql`DELETE FROM fin_ledger_account WHERE id = ${id}`);

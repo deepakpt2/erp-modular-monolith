@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 import { canUserAccessPage, getPagePermission } from '@/shared/kernel/auth/pagePermissions';
+import { SapDeletionGuardModal, DeletionDiagnostic } from '@/shared/ui/sap-deletion-guard-modal';
 
 export interface FieldDef {
   key: string;
@@ -108,6 +109,8 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   const [me, setMe] = useState<any>(null);
   const [meLoading, setMeLoading] = useState(true);
   const [rbacDenied, setRbacDenied] = useState<{ denied: boolean; reason?: string; requiredPermission?: string; requiredRoles?: string[] } | null>(null);
+  const [deletionDiagnostic, setDeletionDiagnostic] = useState<DeletionDiagnostic | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchMe() {
@@ -310,6 +313,50 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
       if (mode === 'create') setForm(initialForm);
     } catch (err: any) {
       setMessage(`❌ ${err.message}`);
+    }
+  };
+
+  const handleDelete = async (targetCodeOrId: string, itemRecord?: any) => {
+    if (!targetCodeOrId) return;
+    const confirmMsg = `Are you sure you want to delete ${title} [${targetCodeOrId}]? SAP standard safety checks will verify there are no active dependencies or postings.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsDeleting(true);
+    setMessage(null);
+    try {
+      // Build delete query params
+      const params = new URLSearchParams();
+      if (itemRecord?.id) params.set('id', itemRecord.id);
+      if (itemRecord?.account_number) params.set('account_number', itemRecord.account_number);
+      else if (itemRecord?.code) params.set('code', itemRecord.code);
+      else if (targetCodeOrId.includes('-') || targetCodeOrId.length > 10) params.set('id', targetCodeOrId);
+      else params.set('code', targetCodeOrId);
+
+      if (itemRecord?.coa_code) params.set('coa_code', itemRecord.coa_code);
+
+      const res = await fetch(`${apiEndpoint}?${params.toString()}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 409 && data.diagnostic) {
+          // Trigger SAP diagnostic error modal
+          setDeletionDiagnostic(data.diagnostic);
+          setMessage(`❌ Deletion blocked: ${data.error}`);
+          return;
+        }
+        throw new Error(data.error || `Deletion failed (${res.status})`);
+      }
+
+      setMessage(`✅ ${title} ${targetCodeOrId} deleted successfully.`);
+      setSelectedCode('');
+      setExpandedItem(null);
+      fetchItems();
+    } catch (err: any) {
+      setMessage(`❌ ${err.message}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -542,6 +589,14 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                                         </Link>
                                         <button
                                           type="button"
+                                          disabled={isDeleting}
+                                          onClick={(e) => { e.stopPropagation(); handleDelete(it.code || it.account_number || it.item_number, it); }}
+                                          className={modern ? "h-7 px-3 rounded-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs inline-flex items-center font-medium transition disabled:opacity-50" : "border-2 border-red-600 px-2 py-0.5 text-xs bg-red-600 text-white uppercase font-bold"}
+                                        >
+                                          Delete
+                                        </button>
+                                        <button
+                                          type="button"
                                           onClick={(e) => { e.stopPropagation(); setExpandedItem(null); }}
                                           className={modern ? "h-7 px-3 rounded-full border border-zinc-200 text-xs bg-white inline-flex items-center hover:bg-zinc-50" : "border-2 border-black px-2 py-0.5 text-xs bg-white uppercase font-bold"}
                                         >
@@ -618,6 +673,14 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                 )}
                 <div className="flex items-center gap-3 pt-2">
                   <button type="submit" disabled={!isFormValid} className={modern ? `h-9 px-5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-3 py-1 text-xs font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Save</button>
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => handleDelete(selectedCode, form)}
+                    className={modern ? "h-9 px-4 rounded-full text-sm font-medium bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition disabled:opacity-50" : "border-2 border-red-600 px-3 py-1 text-xs font-bold uppercase bg-red-600 text-white"}
+                  >
+                    Delete {code}
+                  </button>
                   {!isFormValid && <span className={modern ? "text-xs text-zinc-500" : "text-xs text-black"}>Fill required – red dots show tabs needing attention</span>}
                 </div>
                 {message && <div className={modern ? "text-xs p-3 rounded-lg border border-zinc-200 bg-zinc-50" : "text-xs border-2 border-black p-2 bg-white"}>{message}</div>}
@@ -696,6 +759,16 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
           )}
         </div>
       </div>
+
+      <SapDeletionGuardModal
+        isOpen={!!deletionDiagnostic}
+        onClose={() => setDeletionDiagnostic(null)}
+        diagnostic={deletionDiagnostic}
+        onDeactivateSuccess={() => {
+          fetchItems();
+          setMessage(`✅ Deactivation/block successfully applied.`);
+        }}
+      />
     </div>
   );
 }
