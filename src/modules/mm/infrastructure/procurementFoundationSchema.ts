@@ -64,7 +64,7 @@ export const procPurchaseRequisition = pgTable('proc_purchase_requisition', {
   idxFacility: index('idx_proc_pr_facility').on(t.facilityId),
 }));
 
-// PR Line – legal-safe proc_pr_line
+// PR Line – legal-safe proc_pr_line – fixed own-IP: uom_code references core_unit_measure (KG) not currency
 export const procPrLine = pgTable('proc_pr_line', {
   id: uuid('id').primaryKey().defaultRandom(),
   prId: uuid('pr_id').notNull().references(() => procPurchaseRequisition.id, { onDelete: 'cascade' }),
@@ -72,7 +72,7 @@ export const procPrLine = pgTable('proc_pr_line', {
   itemId: uuid('item_id').notNull().references(() => prodItem.id), // was material_id – prod_item – EMTC
   materialId: uuid('material_id'), // legacy alias
   quantity: numeric('quantity', { precision: 15, scale: 3 }).notNull(),
-  uomCode: varchar('uom_code', { length: 10 }).notNull().references(() => coreCurrency.code), // Actually UoM – will reference core_unit_measure via varchar – keep simple
+  uomCode: varchar('uom_code', { length: 10 }).notNull(), // KG, PC – EUOC – own IP – no FK to currency (was bug referencing currency)
   uom: varchar('uom', { length: 10 }), // legacy alias – e.g., KG, PC – EUOC
   estimatedPrice: numeric('estimated_price', { precision: 15, scale: 4 }).notNull().default('0'),
   facilityId: uuid('facility_id').notNull().references(() => orgFacility.id), // was plant_id

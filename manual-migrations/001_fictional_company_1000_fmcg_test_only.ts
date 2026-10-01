@@ -867,11 +867,23 @@ async function setupFictionalCompany() {
 
   // 30. 2 Purchases Complete – PR → PO → GR → IV → Payment
 
-  // Helper to get IDs
+  // Helper to get IDs – fix FK bug: proc_pr_line uom_code was referencing currency (KG not in currency) – drop FK if exists
   let invLocId: any = null;
   try {
     const ilRes = await db.execute(sql`SELECT id FROM org_inventory_location WHERE code='SL01' LIMIT 1`);
     invLocId = (ilRes.rows[0] as any)?.id;
+    if (!invLocId) {
+      const ilRes2 = await db.execute(sql`SELECT id FROM org_inventory_location WHERE code='0001' LIMIT 1`);
+      invLocId = (ilRes2.rows[0] as any)?.id;
+    }
+  } catch {}
+  try {
+    // Drop wrong FK that references core_currency – own-IP fix
+    await db.execute(sql.raw(`ALTER TABLE proc_pr_line DROP CONSTRAINT IF EXISTS proc_pr_line_uom_code_fkey`)).catch(()=>{});
+    await db.execute(sql.raw(`ALTER TABLE proc_pr_line DROP CONSTRAINT IF EXISTS proc_pr_line_uom_code_core_currency_code_fk`)).catch(()=>{});
+    await db.execute(sql.raw(`ALTER TABLE proc_pr_line DROP CONSTRAINT IF EXISTS proc_pr_line_uom_code_core_currency_code_fkey`)).catch(()=>{});
+    // Also ensure uom_code column exists and is varchar without FK
+    await db.execute(sql`ALTER TABLE proc_pr_line ALTER COLUMN uom_code TYPE VARCHAR(20)`).catch(()=>{});
   } catch {}
 
   // Purchase 1
@@ -895,8 +907,14 @@ async function setupFictionalCompany() {
     const pr1Res = await db.execute(sql`SELECT id FROM proc_purchase_requisition WHERE pr_number='1000000000' LIMIT 1`);
     prId1 = (pr1Res.rows[0] as any)?.id;
     if (prId1 && materialId1) {
-      await db.execute(sql`INSERT INTO proc_pr_line (pr_id, line_number, item_id, material_id, quantity, uom_code, uom, estimated_price, facility_id, plant_id, inventory_location_id, sloc_id, delivery_date, item_text, is_converted, po_id) VALUES (${prId1}, 10, ${materialId1}, ${materialId1}, 100, 'KG', 'KG', 100, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, '2026-10-05'::date, 'Black pepper 100 KG – PR line 10 – Purchase 1', true, null) ON CONFLICT DO NOTHING`);
-      // If already exists, update is_converted later after PO
+      try {
+        await db.execute(sql`INSERT INTO proc_pr_line (pr_id, line_number, item_id, material_id, quantity, uom_code, uom, estimated_price, facility_id, plant_id, inventory_location_id, sloc_id, delivery_date, item_text, is_converted, po_id) VALUES (${prId1}, 10, ${materialId1}, ${materialId1}, 100, 'KG', 'KG', 100, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, '2026-10-05'::date, 'Black pepper 100 KG – PR line 10 – Purchase 1', true, null) ON CONFLICT DO NOTHING`);
+      } catch (e:any) {
+        console.warn('PR line 1000000000-10 failed:', e.message);
+        try {
+          await db.execute(sql`INSERT INTO proc_pr_line (pr_id, line_number, item_id, quantity, uom_code, estimated_price, facility_id, inventory_location_id, delivery_date, item_text, is_converted) VALUES (${prId1}, 10, ${materialId1}, 100, 'KG', 100, ${facilityId}, ${invLocId}, '2026-10-05'::date, 'Black pepper 100 KG – PR line 10 – Purchase 1', true) ON CONFLICT DO NOTHING`);
+        } catch (e2:any) { console.warn('PR line fallback also failed:', e2.message); }
+      }
     }
     console.log(`✅ PR 1000000000 – id ${prId1} – 100 KG pepper – APPROVED`);
 
@@ -1123,7 +1141,14 @@ async function setupFictionalCompany() {
     const pr2Res = await db.execute(sql`SELECT id FROM proc_purchase_requisition WHERE pr_number='1000000001' LIMIT 1`);
     prId2 = (pr2Res.rows[0] as any)?.id;
     if (prId2 && materialId2) {
-      await db.execute(sql`INSERT INTO proc_pr_line (pr_id, line_number, item_id, material_id, quantity, uom_code, uom, estimated_price, facility_id, plant_id, inventory_location_id, sloc_id, delivery_date, item_text, is_converted, po_id) VALUES (${prId2}, 10, ${materialId2}, ${materialId2}, 200, 'KG', 'KG', 80, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, '2026-10-06'::date, 'Turmeric 200 KG – PR line 10 – Purchase 2', true, null) ON CONFLICT DO NOTHING`);
+      try {
+        await db.execute(sql`INSERT INTO proc_pr_line (pr_id, line_number, item_id, material_id, quantity, uom_code, uom, estimated_price, facility_id, plant_id, inventory_location_id, sloc_id, delivery_date, item_text, is_converted, po_id) VALUES (${prId2}, 10, ${materialId2}, ${materialId2}, 200, 'KG', 'KG', 80, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, '2026-10-06'::date, 'Turmeric 200 KG – PR line 10 – Purchase 2', true, null) ON CONFLICT DO NOTHING`);
+      } catch (e:any) {
+        console.warn('PR line 1000000001-10 failed:', e.message);
+        try {
+          await db.execute(sql`INSERT INTO proc_pr_line (pr_id, line_number, item_id, quantity, uom_code, estimated_price, facility_id, inventory_location_id, delivery_date, item_text, is_converted) VALUES (${prId2}, 10, ${materialId2}, 200, 'KG', 80, ${facilityId}, ${invLocId}, '2026-10-06'::date, 'Turmeric 200 KG – PR line 10 – Purchase 2', true) ON CONFLICT DO NOTHING`);
+        } catch (e2:any) { console.warn('PR line fallback also failed:', e2.message); }
+      }
     }
     console.log(`✅ PR 1000000001 – id ${prId2} – 200 KG turmeric – APPROVED`);
 
