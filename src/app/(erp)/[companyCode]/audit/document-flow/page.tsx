@@ -79,7 +79,7 @@ export default function DocumentFlowPage() {
               </div>
             </div>
           ) : (
-            <div className={modern ? "bg-zinc-50 rounded-xl p-4 text-sm text-zinc-500" : "bg-zinc-50 border p-3 text-xs"}>No document flow – Fresh deployment – enter document number to see flow – e.g., PR-5000000001 shows linked PO, GR, IV, Payment – every business transaction creates distinct document number via FNRC number ranges + immutable audit trail via core_document + core_document_history – strict no dummy – e.g., PR Create → PO Create (reference PR) → GR 101 (reference PO) → IV MIRO (reference GR+PO) → Payment F-53 (reference IV) – flow tracked via reference and payload – strict ERP usage</div>
+            <div className={modern ? "bg-zinc-50 rounded-xl p-4 text-sm text-zinc-500" : "bg-zinc-50 border p-3 text-xs"}>No document flow – Fresh deployment – enter document number to see flow – e.g., PR-5000000001 shows linked PO, GR, IV, Payment – every business transaction creates distinct document number via FNRC number ranges + immutable audit trail via core_document + core_document_history – strict no dummy – e.g., PR Create → PO Create (reference PR) → GR 101 (reference PO) → IV PIVC (legacy MIRO) (reference GR+PO) → Payment FPYP (legacy F-53) (reference IV) – flow tracked via reference and payload – strict ERP usage</div>
           )}
         </div>
 

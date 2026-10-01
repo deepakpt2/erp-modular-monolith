@@ -55,7 +55,7 @@ export default function LocksPage({ params }: { params: { companyCode: string } 
               <Link href={`/${companyCode}/navigator`} className={modern ? "px-3 py-1.5 rounded-full border text-xs hover:bg-zinc-50" : "border px-2 py-1 text-xs"}>🌳 Navigator</Link>
             </div>
           </div>
-          <h1 className={modern ? "text-xl font-bold mt-3 tracking-tight" : "text-lg font-bold mt-2"}>Enqueue Locks – FELM own IP (alias SM12) – Double-Entry Protection</h1>
+          <h1 className={modern ? "text-xl font-bold mt-3 tracking-tight" : "text-lg font-bold mt-2"}>Enqueue Locks – FELM own IP (alias FELM (legacy SM12)) – Double-Entry Protection</h1>
           <p className={modern ? "text-xs text-zinc-500 mt-1" : "text-[11px] text-zinc-500"}>
             Prevents double entry – e.g., one user starts GR for PO 4500000001 and moved to background, lock PO 4500000001 – other users locked out – must wait until completion or 5 min inactivity – critical settings like number ranges locked when editing – other users see 🔒 Locked – can edit after release or 5 min expiry – industry standard enqueue/dequeue – heartbeat extends lock while typing – auto-expire after 5 min if user closes browser
           </p>
@@ -118,7 +118,7 @@ export default function LocksPage({ params }: { params: { companyCode: string } 
         </div>
 
         <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6" : "border p-4"}>
-          <h3 className="font-bold text-xs">Industry Standard – FELM own IP (alias SM12) Enqueue – Implementation Details</h3>
+          <h3 className="font-bold text-xs">Industry Standard – FELM own IP (alias FELM (legacy SM12)) Enqueue – Implementation Details</h3>
           <ul className="text-[11px] text-zinc-600 mt-2 space-y-1 list-disc ml-4">
             <li><span className="font-bold">Table:</span> core_enqueue_lock – lock_object, object_id, table_name, locked_by, locked_at, expires_at (NOW+5min), is_active, job_id, description – indexes on object_id, active, expires, job</li>
             <li><span className="font-bold">Enqueue:</span> POST /api/locks – body lock_object, object_id, locked_by – checks if already locked and not expired – if locked by other → 423 Locked – other users must wait – if same user → extend 5 min</li>

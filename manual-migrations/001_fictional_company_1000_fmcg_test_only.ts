@@ -35,15 +35,15 @@
  * - Field Status Variant FSSV-1000 + groups G001 G002 G004
  * - Posting Calendar PPV-1000 open 01-12/2026 for ALL/S/K/D/A
  * - Credit Control CRED-1000
- * - Chart CA-IN-01 + 12 GL accounts BSX 1400000001 WRX 2000000001 GBB 4000000001 PRD 4000000004 Vendor Recon 2000000000 Customer Recon 1000000002 Bank SBI 8000000001 Cash 8000000000 etc
+ * - Chart CA-IN-01 + 12 GL accounts INV_POSTING 1400000001 GR_IR_CLEARING 2000000001 INV_OFFSET 4000000001 PRICE_DIFF 4000000004 Vendor Recon 2000000000 Customer Recon 1000000002 Bank SBI 8000000001 Cash 8000000000 etc
  * - Legal Entity 1000 FMCG India Pvt Ltd
  * - Facility FAC-1000 + storage locations 0001 RM Store 0002 FG Store SL01 SL02
  * - Sales Area CO-1000 SC-10 PL-10
  * - Number Ranges MAT-01 ITEM MAT-100001, PR-01 PR 1000000000, PO-01 PO 4500000000, GR-01 GR 5000000000, IV-01 IV 5100000000, KZ 53* 5300000000 etc – numeric only assignment per company error_and_extend locked badge next_available
  * - Document Types SA KR KZ RE WE RV
  * - Tolerance Groups GL-01 VEND-01 OBA0/OBA4 VEND-01
- * - Auto Account OBYC BSX/WRX/GBB/PRD/KDM/KOFI/KOFK
- * - Movement Types 101 GR PO 102 GR Reverse 261 GI Order 601 GI Delivery 602 GD Reverse 122 Return
+ * - Auto Account FAUC INV_POSTING/GR_IR_CLEARING/INV_OFFSET/PRICE_DIFF/EXCH_DIFF/REVENUE/REVENUE
+ * - Movement Types GR_PO (legacy 101) GR PO GR_PO_REV (legacy 102) GR Reverse GI_PROD (legacy 261) GI Order GI_SALES (legacy 601) GI Delivery 602 GD Reverse 122 Return
  * - Tax Codes GST0 0% GST5 5% GST12 12% GST18 18% GST28 28% IGST18 18% + HSN 13 seeds
  * - Cost Centers CC-1000 Production CC-1001 Sales CC-1002 Admin + Profit Centers PC-1000 etc
  * - Procurement Division PO01 + Buyer Team BT-100
@@ -55,11 +55,11 @@
  * - Roles 17 + Users 16
  * - Workflow Definitions PR_APPROVAL PO_APPROVAL – Manager <10000 Owner >=10000 dual
  * - 2 Purchases Complete:
- *   Purchase 1: PR 1000000000 (100 KG pepper) → PO 4500000000 (100 KG pepper, price 100 auto from info record, freight 5 customs 2 tax GST18 18% over/under 10%) → GR 5000000000 (60) + GR 5000000001 (40 final ELIKZ) → IV 5100000000 (60) + credit memo 5100000001 (-10) + IV 5100000002 (50 variance 110 vs 100 PRD) → Payment KZ 5300000000 (7500) → GR/IR clearing CLR-... → Document flow PR→PO→GR→IV→Payment
+ *   Purchase 1: PR 1000000000 (100 KG pepper) → PO 4500000000 (100 KG pepper, price 100 auto from info record, freight 5 customs 2 tax GST18 18% over/under 10%) → GR 5000000000 (60) + GR 5000000001 (40 final DELIV_COMPLETED) → IV 5100000000 (60) + credit memo 5100000001 (-10) + IV 5100000002 (50 variance 110 vs 100 PRICE_DIFF) → Payment KZ 5300000000 (7500) → GR/IR clearing CLR-... → Document flow PR→PO→GR→IV→Payment
  *   Purchase 2: PR 1000000001 (200 KG turmeric) → PO 4500000001 (200 KG turmeric, price 80, freight 3 customs 1 tax GST12 12%) → GR 5000000002 (200) → IV 5100000003 (200) → Payment KZ 5300000001
  * - Document Flow FDFL VBFA ALB WORM-lite – PR→PO→GR→IV→Payment
- * - Universal Ledger FULC ACDOCA – BSX/WRX/RE/KZ
- * - Stock Ledger FSTL MMBE – MAP
+ * - Universal Ledger FULC ACDOCA – INV_POSTING/GR_IR_CLEARING/RE/KZ
+ * - Stock Ledger FSTL ISTV – MAP
  * 
  * Idempotent: ON CONFLICT DO NOTHING where possible – safe to re-run – preserves manual data unless FULL_WIPE=true
  * FULL_WIPE=true → TRUNCATE ALL TABLES CASCADE – fresh start
@@ -94,15 +94,15 @@ async function fullWipe() {
     const criticalTables = [
       'fin_field_status_group','fin_field_status_variant','fin_posting_calendar_period','fin_posting_calendar',
       'fin_fiscal_calendar_period','fin_fiscal_calendar','fin_credit_policy_area','fin_legal_entity_credit_assign',
-      'fin_ledger_account','fin_chart','fi_gl_account','fi_chart_of_accounts','org_inventory_location','org_facility',
-      'org_legal_entity','org_company_group','core_tenant','auth_user','ent_client','ent_company_code','ent_plant',
-      'ent_storage_location','core_currency','core_unit_measure','prod_category','fin_tax_rule','core_number_range',
+      'fin_ledger_account','fin_chart','fin_ledger_account','fin_chart','org_inventory_location','org_facility',
+      'org_legal_entity','org_company_group','core_tenant','auth_user','core_tenant','org_legal_entity','org_facility',
+      'org_inventory_location','core_currency','core_unit_measure','prod_category','fin_tax_rule','core_number_range',
       'fin_document_type','fin_tolerance_group','fin_auto_posting_rule','fin_pricing_procedure','fin_pricing_condition',
-      'ent_role','ent_user_role','auth_user','fin_auto_account','fin_revenue_account','fi_auto_account_determination',
-      'inv_stock','inv_lot','prod_item','prod_item_type','ent_material_master','ent_business_partner',
+      'auth_role','auth_user_role','auth_user','fin_auto_account','fin_revenue_account','fin_auto_account',
+      'inv_stock','inv_lot','prod_item','prod_item_type','prod_item','partner_account',
       'proc_purchase_requisition','proc_pr_line','proc_purchase_order','proc_po_line','proc_goods_receipt','proc_gr_line',
       'proc_invoice_verification','proc_iv_line','proc_purchasing_condition','proc_info_record','fin_payment_term',
-      'fin_universal_ledger','inv_stock_ledger','audit_document_flow','fin_gr_ir_clearing','fi_document','fi_document_line',
+      'fin_universal_ledger','inv_stock_ledger','audit_document_flow','fin_gr_ir_clearing','fin_universal_ledger','fin_universal_ledger_line',
       'wf_definition','wf_definition_step','wf_instance','wf_task','core_document','core_document_history'
     ];
     for (const t of criticalTables) {
@@ -273,7 +273,7 @@ async function setupFictionalCompany() {
       await db.execute(sql`INSERT INTO fin_posting_period_enhanced (variant_code, account_type, from_account, to_account, authorization_group, from_period, from_year, to_period, to_year, is_open) VALUES ('PPV-1000', ${at}, '1000000000', '9999999999', 'AUTH01', 1, 2026, 12, 2026, true) ON CONFLICT DO NOTHING`).catch(()=>{});
       await db.execute(sql`INSERT INTO fin_posting_period_enhanced (variant_code, account_type, from_account, to_account, authorization_group, from_period, from_year, to_period, to_year, is_open) VALUES ('PPV-1000', ${at}, '1000000000', '9999999999', 'AUTH01', 1, 2027, 12, 2027, true) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    console.log(`✅ Posting Calendar PPV-1000 open 01-12/2026/2027 for ALL/S/K/D/A – id ${postingCalId} – FPPC OBBO + FPPE OB52`);
+    console.log(`✅ Posting Calendar PPV-1000 open 01-12/2026/2027 for ALL/S/K/D/A – id ${postingCalId} – FPPC OBBO + FPPE FPPE`);
   } catch (e: any) { console.warn('Posting Calendar failed:', e.message); }
 
   // 8. Credit Control CRED-1000
@@ -294,17 +294,17 @@ async function setupFictionalCompany() {
     await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_ledger_account (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, chart_id uuid REFERENCES fin_chart(id), account_number varchar(20) NOT NULL, name varchar(200) NOT NULL, account_type varchar(20) DEFAULT 'EXPENSE', is_balance_sheet boolean DEFAULT false, is_reconciliation boolean DEFAULT false, is_blocked boolean DEFAULT false, is_tax_relevant boolean DEFAULT false, account_group_code varchar(20) DEFAULT 'G001', coa_code varchar(20) DEFAULT 'CA-IN-01', created_at timestamp DEFAULT NOW(), UNIQUE(tenant_id, account_number))`);
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS coa_code VARCHAR(20) DEFAULT 'CA-IN-01'`);
     const glAccounts = [
-      { num: '1400000001', name: 'Inventory Raw Material BSX', type: 'ASSET', bs: true, recon: false },
-      { num: '2000000001', name: 'GR/IR Clearing WRX', type: 'LIABILITY', bs: true, recon: false },
+      { num: '1400000001', name: 'Inventory Raw Material INV_POSTING', type: 'ASSET', bs: true, recon: false },
+      { num: '2000000001', name: 'GR/IR Clearing GR_IR_CLEARING', type: 'LIABILITY', bs: true, recon: false },
       { num: '2000000000', name: 'Vendor Reconciliation RE', type: 'LIABILITY', bs: true, recon: true },
       { num: '1000000002', name: 'Customer Reconciliation', type: 'ASSET', bs: true, recon: true },
       { num: '8000000001', name: 'Bank SBI', type: 'ASSET', bs: true, recon: false },
       { num: '8000000000', name: 'Cash', type: 'ASSET', bs: true, recon: false },
-      { num: '4000000004', name: 'Price Difference PRD', type: 'EXPENSE', bs: false, recon: false },
+      { num: '4000000004', name: 'Price Difference PRICE_DIFF', type: 'EXPENSE', bs: false, recon: false },
       { num: '2000000003', name: 'GST Tax', type: 'LIABILITY', bs: true, recon: false },
       { num: '4000000001', name: 'Price Diff', type: 'EXPENSE', bs: false, recon: false },
-      { num: '4000001000', name: 'Inventory Adj KOFI', type: 'EXPENSE', bs: false, recon: false },
-      { num: '4000002000', name: 'Exchange Diff KDM', type: 'EXPENSE', bs: false, recon: false },
+      { num: '4000001000', name: 'Inventory Adj REVENUE', type: 'EXPENSE', bs: false, recon: false },
+      { num: '4000002000', name: 'Exchange Diff EXCH_DIFF', type: 'EXPENSE', bs: false, recon: false },
       { num: '5000000000', name: 'COGS', type: 'EXPENSE', bs: false, recon: false },
       { num: '2500000001', name: 'Retained Earnings', type: 'EQUITY', bs: true, recon: false },
       { num: '6000000000', name: 'Payroll', type: 'EXPENSE', bs: false, recon: false },
@@ -312,10 +312,10 @@ async function setupFictionalCompany() {
     for (const gl of glAccounts) {
       await db.execute(sql`INSERT INTO fin_ledger_account (tenant_id, chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, coa_code) VALUES (${tenantId}, ${chartId}, ${gl.num}, ${gl.name}, ${gl.type}, ${gl.bs}, ${gl.recon}, 'CA-IN-01') ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    // Legacy fi_gl_account fallback
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS fi_gl_account (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), coa_id uuid, account_number varchar(20) UNIQUE NOT NULL, name varchar(200), account_type varchar(20), is_active boolean DEFAULT true)`).catch(()=>{});
+    // Legacy fin_ledger_account fallback
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_ledger_account (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), coa_id uuid, account_number varchar(20) UNIQUE NOT NULL, name varchar(200), account_type varchar(20), is_active boolean DEFAULT true)`).catch(()=>{});
     for (const gl of glAccounts) {
-      await db.execute(sql`INSERT INTO fi_gl_account (account_number, name, account_type) VALUES (${gl.num}, ${gl.name}, ${gl.type}) ON CONFLICT (account_number) DO NOTHING`).catch(()=>{});
+      await db.execute(sql`INSERT INTO fin_ledger_account (account_number, name, account_type) VALUES (${gl.num}, ${gl.name}, ${gl.type}) ON CONFLICT (account_number) DO NOTHING`).catch(()=>{});
     }
     console.log(`✅ Chart CA-IN-01 + ${glAccounts.length} GL accounts – FCOA OB13 + FGLC FS00`);
   } catch (e: any) { console.warn('Chart/GL failed:', e.message); }
@@ -328,10 +328,10 @@ async function setupFictionalCompany() {
     let leRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE tenant_id=${tenantId} AND code='1000' LIMIT 1`);
     if (leRes.rows.length === 0) leRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code='1000' LIMIT 1`);
     legalEntityId = (leRes.rows[0] as any)?.id;
-    console.log(`✅ Legal Entity 1000 – id ${legalEntityId} – ELEC OX02`);
+    console.log(`✅ Legal Entity 1000 – id ${legalEntityId} – ELEC ELEC`);
   } catch (e: any) { console.warn('Legal Entity failed:', e.message); }
 
-  // 11. Facility FAC-1000 EFCC OX10
+  // 11. Facility FAC-1000 EFCC EFCC
   let facilityId: string | null = null;
   try {
     await db.execute(sql`CREATE TABLE IF NOT EXISTS org_facility (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, legal_entity_id uuid, code varchar(20) NOT NULL, name varchar(200) NOT NULL, description text, facility_type varchar(20) DEFAULT 'PLANT', is_active boolean DEFAULT true, created_at timestamp DEFAULT NOW(), UNIQUE(tenant_id, code))`);
@@ -339,10 +339,10 @@ async function setupFictionalCompany() {
     let fRes = await db.execute(sql`SELECT id FROM org_facility WHERE tenant_id=${tenantId} AND code='FAC-1000' LIMIT 1`);
     if (fRes.rows.length === 0) fRes = await db.execute(sql`SELECT id FROM org_facility WHERE code='FAC-1000' LIMIT 1`);
     facilityId = (fRes.rows[0] as any)?.id;
-    console.log(`✅ Facility FAC-1000 – id ${facilityId} – EFCC OX10`);
+    console.log(`✅ Facility FAC-1000 – id ${facilityId} – EFCC EFCC`);
   } catch (e: any) { console.warn('Facility failed:', e.message); }
 
-  // 12. Inventory Locations EILC OX09 – 0001 RM Store 0002 FG Store + SL01 SL02
+  // 12. Inventory Locations EILC EILC – 0001 RM Store 0002 FG Store + SL01 SL02
   try {
     await db.execute(sql`CREATE TABLE IF NOT EXISTS org_inventory_location (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, facility_id uuid, code varchar(20) NOT NULL, name varchar(200) NOT NULL, description text, location_type varchar(20) DEFAULT 'RAW_ZONE', is_active boolean DEFAULT true, created_at timestamp DEFAULT NOW(), UNIQUE(facility_id, code))`);
     await db.execute(sql`ALTER TABLE org_inventory_location ADD COLUMN IF NOT EXISTS location_type VARCHAR(20) DEFAULT 'RAW_ZONE'`);
@@ -355,7 +355,7 @@ async function setupFictionalCompany() {
     for (const loc of locs) {
       await db.execute(sql`INSERT INTO org_inventory_location (tenant_id, facility_id, code, name, location_type) VALUES (${tenantId}, ${facilityId}, ${loc.code}, ${loc.name}, ${loc.type}) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    console.log(`✅ Inventory Locations 0001/0002/SL01/SL02 – EILC OX09`);
+    console.log(`✅ Inventory Locations 0001/0002/SL01/SL02 – EILC EILC`);
   } catch (e: any) { console.warn('Inventory Locations failed:', e.message); }
 
   // 13. Sales Area – Commercial Org CO-1000, Sales Channel SC-10, Product Line PL-10
@@ -369,7 +369,7 @@ async function setupFictionalCompany() {
     console.log(`✅ Sales Area CO-1000/SC-10/PL-10 – ECOC OVX2 ESCC OVTB EPLC OVXA`);
   } catch (e: any) { console.warn('Sales Area failed:', e.message); }
 
-  // 14. Number Ranges FNRC FBN1 – numeric only – MAT-01, PR, PO, GR, IV, KZ etc
+  // 14. Number Ranges FNRC FNRC – numeric only – MAT-01, PR, PO, GR, IV, KZ etc
   try {
     await db.execute(sql`CREATE TABLE IF NOT EXISTS core_number_range (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(50) NOT NULL, object_type varchar(50) NOT NULL, prefix varchar(20) DEFAULT '', from_number bigint NOT NULL, to_number bigint NOT NULL, current_number bigint DEFAULT 0, fiscal_year integer, is_active boolean DEFAULT true, created_at timestamp DEFAULT NOW(), updated_at timestamp DEFAULT NOW(), UNIQUE(code))`);
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS fiscal_year INTEGER`);
@@ -391,7 +391,7 @@ async function setupFictionalCompany() {
     await db.execute(sql`INSERT INTO core_number_range_assignment (object_type, assignment_key, number_range_code, fiscal_year, is_active) VALUES ('PO', '1000', 'PO-01', 2026, true) ON CONFLICT DO NOTHING`).catch(()=>{});
     await db.execute(sql`INSERT INTO core_number_range_assignment (object_type, assignment_key, number_range_code, fiscal_year, is_active) VALUES ('GR', '1000', 'GR-01', 2026, true) ON CONFLICT DO NOTHING`).catch(()=>{});
     await db.execute(sql`INSERT INTO core_number_range_assignment (object_type, assignment_key, number_range_code, fiscal_year, is_active) VALUES ('IV', '1000', 'IV-01', 2026, true) ON CONFLICT DO NOTHING`).catch(()=>{});
-    console.log(`✅ Number Ranges MAT-01 PR-01 PO-01 GR-01 IV-01 KZ-01 VEND-01 CUST-01 – FNRC FBN1 – numeric only – assignment per company – error_and_extend – next_available`);
+    console.log(`✅ Number Ranges MAT-01 PR-01 PO-01 GR-01 IV-01 KZ-01 VEND-01 CUST-01 – FNRC FNRC – numeric only – assignment per company – error_and_extend – next_available`);
   } catch (e: any) { console.warn('Number Ranges failed:', e.message); }
 
   // 15. Document Types
@@ -419,38 +419,46 @@ async function setupFictionalCompany() {
     console.log(`✅ Tolerance Groups VEND-01 GL-01 – OBA0/OBA4 – amount 1000 percent 10 – T1`);
   } catch (e: any) { console.warn('Tolerance Groups failed:', e.message); }
 
-  // 17. Auto Account OBYC BSX/WRX/GBB/PRD/KDM/KOFI/KOFK
+  // 17. Auto Account FAUC INV_POSTING/GR_IR_CLEARING/INV_OFFSET/PRICE_DIFF/EXCH_DIFF/REVENUE/REVENUE
   try {
     await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_auto_account_enhanced (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, transaction_key varchar(20) NOT NULL, chart_of_accounts_code varchar(20) NOT NULL, valuation_grouping_code varchar(20) DEFAULT '0001', account_grouping_code varchar(20) DEFAULT 'VAX', gl_account_number varchar(20) NOT NULL, legal_entity_code varchar(20) DEFAULT '1000', is_active boolean DEFAULT true, UNIQUE(tenant_id, transaction_key, chart_of_accounts_code, valuation_grouping_code, account_grouping_code))`);
     const autoAccounts = [
-      { key: 'BSX', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '1400000001' },
-      { key: 'WRX', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '2000000001' },
-      { key: 'GBB', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '4000000001' },
-      { key: 'PRD', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '4000000004' },
-      { key: 'KDM', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '4000002000' },
-      { key: 'KOFI', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '4000001000' },
+      { key: 'INV_POSTING', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '1400000001', legacy: 'BSX' },
+      { key: 'GR_IR_CLEARING', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '2000000001', legacy: 'WRX' },
+      { key: 'INV_OFFSET', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '4000000001', legacy: 'GBB' },
+      { key: 'PRICE_DIFF', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '4000000004', legacy: 'PRD' },
+      { key: 'EXCH_DIFF', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '4000002000' },
+      { key: 'REVENUE', chart: 'KSCA', valGroup: '0001', accGroup: 'VAX', gl: '4000001000' },
     ];
     for (const aa of autoAccounts) {
       await db.execute(sql`INSERT INTO fin_auto_account_enhanced (tenant_id, transaction_key, chart_of_accounts_code, valuation_grouping_code, account_grouping_code, gl_account_number, legal_entity_code) VALUES (${tenantId}, ${aa.key}, ${aa.chart}, ${aa.valGroup}, ${aa.accGroup}, ${aa.gl}, '1000') ON CONFLICT DO NOTHING`).catch(()=>{});
+      // Also insert into main fin_auto_account and fin_auto_posting_rule with own IP + legacy alias
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_auto_account (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, chart_of_accounts varchar(20), transaction_key varchar(20), sap_legacy_key varchar(20), valuation_class varchar(20), gl_account varchar(20), description text, UNIQUE(tenant_id, chart_of_accounts, transaction_key, valuation_class))`).catch(()=>{});
+      await db.execute(sql`INSERT INTO fin_auto_account (tenant_id, chart_of_accounts, transaction_key, sap_legacy_key, valuation_class, gl_account, description) VALUES (${tenantId}, ${aa.chart}, ${aa.key}, ${aa.legacy || aa.key}, ${aa.valGroup}, ${aa.gl}, ${aa.key + ' own IP (legacy ' + (aa.legacy || aa.key) + ') – FAUC (legacy OBYC) – auto account'}) ON CONFLICT DO NOTHING`).catch(()=>{});
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_auto_posting_rule (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, transaction_key varchar(20), transaction_key_legacy varchar(20), chart_of_accounts varchar(20), inventory_valuation_class varchar(20), ledger_account_id varchar(20), description text)`).catch(()=>{});
+      await db.execute(sql`INSERT INTO fin_auto_posting_rule (tenant_id, transaction_key, transaction_key_legacy, chart_of_accounts, inventory_valuation_class, ledger_account_id, description) VALUES (${tenantId}, ${aa.key}, ${aa.legacy || aa.key}, ${aa.chart}, ${aa.valGroup}, ${aa.gl}, ${aa.key + ' own IP (legacy ' + (aa.legacy || aa.key) + ') – FAUC'}) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    console.log(`✅ Auto Account OBYC BSX/WRX/GBB/PRD/KDM/KOFI – FAUC OBYC – T0`);
+    console.log(`✅ Auto Account FAUC INV_POSTING/GR_IR_CLEARING/INV_OFFSET/PRICE_DIFF/EXCH_DIFF/REVENUE – FAUC (legacy OBYC) own IP with SAP alias – T0`);
   } catch (e: any) { console.warn('Auto Account failed:', e.message); }
 
-  // 18. Movement Types FMTM OMJJ 101 102 261 601 602 122
+  // 18. Movement Types FMTM FMTM 101 102 261 601 602 122
   try {
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_movement_type_enhanced (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(10) NOT NULL, name varchar(100) NOT NULL, description text, transaction_key varchar(20) DEFAULT 'BSX', special_stock_indicator varchar(10) DEFAULT '', is_reversal boolean DEFAULT false, reversal_code varchar(10), is_active boolean DEFAULT true, UNIQUE(tenant_id, code))`);
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_movement_type_enhanced (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(10) NOT NULL, name varchar(100) NOT NULL, description text, transaction_key varchar(20) DEFAULT 'INV_POSTING', special_stock_indicator varchar(10) DEFAULT '', is_reversal boolean DEFAULT false, reversal_code varchar(10), is_active boolean DEFAULT true, UNIQUE(tenant_id, code))`);
     const movements = [
-      { code: '101', name: 'GR for PO', desc: 'Goods Receipt for Purchase Order – BSX/WRX', trans: 'BSX', rev: false, revCode: '102' },
-      { code: '102', name: 'GR Reversal', desc: 'Reversal of GR 101 – GRRE MIGO 102', trans: 'BSX', rev: true, revCode: '101' },
-      { code: '261', name: 'GI for Order', desc: 'Goods Issue for Production Order – GBB/BSX', trans: 'GBB', rev: false, revCode: '262' },
-      { code: '601', name: 'GI for Delivery', desc: 'Goods Issue for Delivery – GBB/BSX VAX', trans: 'GBB', rev: false, revCode: '602' },
-      { code: '602', name: 'GD Reversal', desc: 'Reversal of GI 601', trans: 'GBB', rev: true, revCode: '601' },
-      { code: '122', name: 'Return to Vendor', desc: 'Return delivery to vendor', trans: 'BSX', rev: false, revCode: '' },
+      { code: 'GR_PO', name: 'GR for PO', desc: 'Goods Receipt for Purchase Order – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – own IP GR_PO (legacy 101)', trans: 'INV_POSTING', rev: false, revCode: 'GR_PO_REV', legacy: '101' },
+      { code: 'GR_PO_REV', name: 'GR Reversal', desc: 'Reversal of GR_PO (legacy 101) – GRRE IGRC 102 – own IP GR_PO_REV (legacy 102)', trans: 'INV_POSTING', rev: true, revCode: 'GR_PO', legacy: '102' },
+      { code: 'GI_PROD', name: 'GI for Order', desc: 'Goods Issue for Production Order – INV_OFFSET/INV_POSTING (legacy GBB/BSX) – own IP GI_PROD (legacy 261)', trans: 'INV_OFFSET', rev: false, revCode: 'GI_PROD_REV', legacy: '261' },
+      { code: 'GI_SALES', name: 'GI for Delivery', desc: 'Goods Issue for Delivery – INV_OFFSET/INV_POSTING VAX – own IP GI_SALES (legacy 601)', trans: 'INV_OFFSET', rev: false, revCode: 'GI_SALES_REV', legacy: '601' },
+      { code: 'GI_SALES_REV', name: 'GD Reversal', desc: 'Reversal of GI_SALES (legacy 601) – own IP GI_SALES_REV (legacy 602)', trans: 'INV_OFFSET', rev: true, revCode: 'GI_SALES', legacy: '602' },
+      { code: 'GR_RETURN', name: 'Return to Vendor', desc: 'Return delivery to vendor – own IP GR_RETURN (legacy 122)', trans: 'INV_POSTING', rev: false, revCode: '', legacy: '122' },
     ];
     for (const m of movements) {
       await db.execute(sql`INSERT INTO fin_movement_type_enhanced (tenant_id, code, name, description, transaction_key, is_reversal, reversal_code) VALUES (${tenantId}, ${m.code}, ${m.name}, ${m.desc}, ${m.trans}, ${m.rev}, ${m.revCode}) ON CONFLICT DO NOTHING`).catch(()=>{});
+      // Also insert into main fin_movement_type with own IP + sap_legacy_code alias
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_movement_type (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(20) NOT NULL, sap_legacy_code varchar(20), name varchar(100), description text, transaction_key varchar(20), is_reversal boolean DEFAULT false, reversal_code varchar(20), is_active boolean DEFAULT true, UNIQUE(tenant_id, code))`).catch(()=>{});
+      await db.execute(sql`INSERT INTO fin_movement_type (tenant_id, code, sap_legacy_code, name, description, transaction_key, is_reversal, reversal_code, is_active) VALUES (${tenantId}, ${m.code}, ${m.legacy}, ${m.name}, ${m.desc}, ${m.trans}, ${m.rev}, ${m.revCode}, true) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    console.log(`✅ Movement Types 101/102/261/601/602/122 – FMTM OMJJ – T0`);
+    console.log(`✅ Movement Types GR_PO/GI_PROD/GI_SALES (legacy 101/261/601) – FMTM (legacy OMJJ) own IP with SAP alias – T0`);
   } catch (e: any) { console.warn('Movement Types failed:', e.message); }
 
   // 19. Tax Codes FTXC FTXP GST0/5/12/18/28 IGST18 + HSN 13 seeds
@@ -593,7 +601,7 @@ async function setupFictionalCompany() {
     console.log(`✅ Business Partners VEND-1000 id ${vendorId1} VEND-1001 id ${vendorId2} CUST-1000 id ${customerId} – PSUC XK01 SCUC XD01 EPAC BP01 – payment_term_code NT30 FAPT recon FGLC 2000000000 procurement_division PO01 EPDC buyer_team BT-100 EBTC currency INR FCYC tax GST18 FTXC`);
   } catch (e: any) { console.warn('Business Partners failed:', e.message); }
 
-  // 25. Materials EMTC MM01 – 10000001 Black Pepper RAW + 10000002 Turmeric RAW
+  // 25. Materials EMTC EMTC – 10000001 Black Pepper RAW + 10000002 Turmeric RAW
   let materialId1: string | null = null;
   let materialId2: string | null = null;
   try {
@@ -627,7 +635,7 @@ async function setupFictionalCompany() {
     if (materialId2 && facilityId) {
       await db.execute(sql`INSERT INTO prod_facility_profile (tenant_id, item_id, product_id, facility_id, total_stock_qty, total_stock_value, moving_avg_price) VALUES (${tenantId}, ${materialId2}, ${materialId2}, ${facilityId}, 0, 0, 80) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    console.log(`✅ Materials 10000001 Black Pepper id ${materialId1} + 10000002 Turmeric id ${materialId2} – EMTC MM01 – valuation_class RAW – price_control S – tax GST18/GST12 – HSN 09041110/09103020`);
+    console.log(`✅ Materials 10000001 Black Pepper id ${materialId1} + 10000002 Turmeric id ${materialId2} – EMTC EMTC – valuation_class RAW – price_control S – tax GST18/GST12 – HSN 09041110/09103020`);
   } catch (e: any) { console.warn('Materials failed:', e.message); }
 
   // 26. Info Records ME11 PIRC – VEND-1000 + 10000001 price 100, VEND-1001 + 10000002 price 80
@@ -644,7 +652,7 @@ async function setupFictionalCompany() {
 
   // 27. Roles + Users
   try {
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS ent_role (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(50) NOT NULL, name varchar(200) NOT NULL, description text, is_active boolean DEFAULT true, UNIQUE(tenant_id, code))`);
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS auth_role (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(50) NOT NULL, name varchar(200) NOT NULL, description text, is_active boolean DEFAULT true, UNIQUE(tenant_id, code))`);
     const roles = [
       { code: 'ERP_ADMIN', name: 'ERP Admin' },
       { code: 'PURCHASER', name: 'Purchaser' },
@@ -654,7 +662,7 @@ async function setupFictionalCompany() {
       { code: 'OWNER', name: 'Owner' },
     ];
     for (const r of roles) {
-      await db.execute(sql`INSERT INTO ent_role (tenant_id, code, name) VALUES (${tenantId}, ${r.code}, ${r.name}) ON CONFLICT DO NOTHING`).catch(()=>{});
+      await db.execute(sql`INSERT INTO auth_role (tenant_id, code, name) VALUES (${tenantId}, ${r.code}, ${r.name}) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
     const users = [
       { email: 'erp_admin@fmcg.com', name: 'ERP Admin', role: 'ERP_ADMIN', pass: 'User@123' },
@@ -676,7 +684,7 @@ async function setupFictionalCompany() {
     await db.execute(sql`CREATE TABLE IF NOT EXISTS wf_instance (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), definition_id uuid REFERENCES wf_definition(id), document_type varchar(20) NOT NULL, document_id uuid, document_number varchar(50) NOT NULL, company_code_id uuid, current_state varchar(30) DEFAULT 'PENDING_APPROVAL', current_step_order integer DEFAULT 1, requester_id uuid, amount numeric, currency varchar(10) DEFAULT 'INR', created_at timestamp DEFAULT NOW(), updated_at timestamp DEFAULT NOW())`);
     await db.execute(sql`CREATE TABLE IF NOT EXISTS wf_task (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), instance_id uuid REFERENCES wf_instance(id), step_id uuid REFERENCES wf_definition_step(id), assignee_id uuid, status varchar(20) DEFAULT 'PENDING', decision varchar(20), comment text, created_at timestamp DEFAULT NOW(), decided_at timestamp, updated_at timestamp DEFAULT NOW())`);
     await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PR_APPROVAL', 'PR Approval – ME54N – Manager+Owner', 'PR', true) ON CONFLICT (code) DO NOTHING`);
-    await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PO_APPROVAL', 'PO Approval – ME28 – Manager+Owner Dual', 'PO', true) ON CONFLICT (code) DO NOTHING`);
+    await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PO_APPROVAL', 'PO Approval – PPOR – Manager+Owner Dual', 'PO', true) ON CONFLICT (code) DO NOTHING`);
     let prDefRes = await db.execute(sql`SELECT id FROM wf_definition WHERE code='PR_APPROVAL' LIMIT 1`);
     let poDefRes = await db.execute(sql`SELECT id FROM wf_definition WHERE code='PO_APPROVAL' LIMIT 1`);
     const prDefId = (prDefRes.rows[0] as any)?.id;
@@ -689,7 +697,7 @@ async function setupFictionalCompany() {
       await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${poDefId}, 1, 'Manager Approval – PO <10000', 'MANAGER', 0, 9999.99, false, false) ON CONFLICT DO NOTHING`).catch(()=>{});
       await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${poDefId}, 2, 'Manager+Owner Dual – PO >=10000', 'OWNER', 10000, 999999999, true, true) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    console.log(`✅ Workflow Definitions PR_APPROVAL PO_APPROVAL – 2 steps Manager <10000 Owner >=10000 dual – SBWP ME54N/ME28`);
+    console.log(`✅ Workflow Definitions PR_APPROVAL PO_APPROVAL – 2 steps Manager <10000 Owner >=10000 dual – SBWP ME54N/PPOR`);
   } catch (e: any) { console.warn('Workflow Definitions failed:', e.message); }
 
   // 29. Ensure procurement tables exist
@@ -731,11 +739,11 @@ async function setupFictionalCompany() {
     await db.execute(sql`CREATE TABLE IF NOT EXISTS inv_stock_ledger (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, item_id uuid, facility_id uuid, movement_type varchar(10) NOT NULL, quantity numeric NOT NULL, quantity_before numeric DEFAULT 0, quantity_after numeric DEFAULT 0, unit_cost numeric DEFAULT 0, total_value numeric DEFAULT 0, reference_doc_type varchar(20), reference_doc_number varchar(50), text text, created_at timestamp DEFAULT NOW())`);
     await db.execute(sql`CREATE TABLE IF NOT EXISTS audit_document_flow (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), root_document_type varchar(20), root_document_id uuid, root_document_number varchar(50), preceding_doc_type varchar(20), preceding_doc_id uuid, preceding_doc_number varchar(50), succeeding_doc_type varchar(20), succeeding_doc_id uuid, succeeding_doc_number varchar(50), created_at timestamp DEFAULT NOW())`);
     await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_gr_ir_clearing (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, clearing_number varchar(50) UNIQUE NOT NULL, gr_number varchar(20), iv_number varchar(20), po_number varchar(20), amount numeric DEFAULT 0, status varchar(20) DEFAULT 'CLEARED', universal_ledger_id uuid, created_at timestamp DEFAULT NOW())`);
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS fi_document (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, document_number varchar(50) UNIQUE NOT NULL, company_code_id uuid, doc_type varchar(10) DEFAULT 'SA', posting_date date DEFAULT CURRENT_DATE, document_date date DEFAULT CURRENT_DATE, reference varchar(100), header_text text, total_debit numeric DEFAULT 0, total_credit numeric DEFAULT 0, currency varchar(3) DEFAULT 'INR', status varchar(20) DEFAULT 'POSTED', reference_doc_type varchar(10), created_at timestamp DEFAULT NOW())`);
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS fi_document_line (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), document_id uuid REFERENCES fi_document(id) ON DELETE CASCADE, gl_account_id uuid, partner_id uuid, debit numeric DEFAULT 0, credit numeric DEFAULT 0, amount numeric DEFAULT 0, text text, created_at timestamp DEFAULT NOW())`);
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_universal_ledger (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, document_number varchar(50) UNIQUE NOT NULL, company_code_id uuid, doc_type varchar(10) DEFAULT 'SA', posting_date date DEFAULT CURRENT_DATE, document_date date DEFAULT CURRENT_DATE, reference varchar(100), header_text text, total_debit numeric DEFAULT 0, total_credit numeric DEFAULT 0, currency varchar(3) DEFAULT 'INR', status varchar(20) DEFAULT 'POSTED', reference_doc_type varchar(10), created_at timestamp DEFAULT NOW())`);
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_universal_ledger_line (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), document_id uuid REFERENCES fin_universal_ledger(id) ON DELETE CASCADE, gl_account_id uuid, partner_id uuid, debit numeric DEFAULT 0, credit numeric DEFAULT 0, amount numeric DEFAULT 0, text text, created_at timestamp DEFAULT NOW())`);
     await db.execute(sql`CREATE TABLE IF NOT EXISTS core_document (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, document_number varchar(50) UNIQUE NOT NULL, document_type varchar(20) NOT NULL, company_code varchar(20) DEFAULT '1000', fiscal_year varchar(4) DEFAULT '2026', reference varchar(50), created_by varchar(100) DEFAULT 'system', payload jsonb DEFAULT '{}'::jsonb, status varchar(20) DEFAULT 'POSTED', created_at timestamp DEFAULT NOW(), updated_at timestamp DEFAULT NOW())`);
     await db.execute(sql`CREATE TABLE IF NOT EXISTS core_document_history (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), document_number varchar(50) NOT NULL, changed_by varchar(100) DEFAULT 'system', action varchar(20) DEFAULT 'UPDATE', old_payload jsonb, new_payload jsonb, changed_at timestamp DEFAULT NOW())`);
-    console.log(`✅ Procurement tables ensured – proc_* + fin_universal_ledger + inv_stock_ledger + audit_document_flow + fin_gr_ir_clearing + fi_document`);
+    console.log(`✅ Procurement tables ensured – proc_* + fin_universal_ledger + inv_stock_ledger + audit_document_flow + fin_gr_ir_clearing + fin_universal_ledger`);
   } catch (e: any) { console.warn('Procurement tables ensure failed:', e.message); }
 
   // 30. 2 Purchases Complete – PR → PO → GR → IV → Payment
@@ -749,7 +757,7 @@ async function setupFictionalCompany() {
 
   // Purchase 1
   console.log('');
-  console.log('--- Purchase 1 – Black Pepper – PR 1000000000 → PO 4500000000 → GR 5000000000(60)+5000000001(40 final ELIKZ) → IV 5100000000(60)+5100000001(-10 credit)+5100000002(50 variance) → Payment KZ 5300000000 → GR/IR Clearing ---');
+  console.log('--- Purchase 1 – Black Pepper – PR 1000000000 → PO 4500000000 → GR 5000000000(60)+5000000001(40 final DELIV_COMPLETED) → IV 5100000000(60)+5100000001(-10 credit)+5100000002(50 variance) → Payment KZ 5300000000 → GR/IR Clearing ---');
   let prId1: any = null;
   let poId1: any = null;
   let poLineId1: any = null;
@@ -761,7 +769,7 @@ async function setupFictionalCompany() {
 
   try {
     // PR 1000000000
-    await db.execute(sql`INSERT INTO proc_purchase_requisition (tenant_id, pr_number, legal_entity_id, company_code_id, facility_id, plant_id, required_date, header_text, currency_code, currency, total_amount, status) VALUES (${tenantId}, '1000000000', ${legalEntityId}, ${legalEntityId}, ${facilityId}, ${facilityId}, '2026-10-01'::date, 'PR for VEND-1000 – Black Pepper 100 KG – E2E Purchase 1 – PPRC ME51N – 1000 – FAC-1000', 'INR', 'INR', 10000, 'APPROVED') ON CONFLICT (pr_number) DO UPDATE SET status='APPROVED', total_amount=10000`);
+    await db.execute(sql`INSERT INTO proc_purchase_requisition (tenant_id, pr_number, legal_entity_id, company_code_id, facility_id, plant_id, required_date, header_text, currency_code, currency, total_amount, status) VALUES (${tenantId}, '1000000000', ${legalEntityId}, ${legalEntityId}, ${facilityId}, ${facilityId}, '2026-10-01'::date, 'PR for VEND-1000 – Black Pepper 100 KG – E2E Purchase 1 – PPRC PPRC – 1000 – FAC-1000', 'INR', 'INR', 10000, 'APPROVED') ON CONFLICT (pr_number) DO UPDATE SET status='APPROVED', total_amount=10000`);
     const pr1Res = await db.execute(sql`SELECT id FROM proc_purchase_requisition WHERE pr_number='1000000000' LIMIT 1`);
     prId1 = (pr1Res.rows[0] as any)?.id;
     if (prId1 && materialId1) {
@@ -776,7 +784,7 @@ async function setupFictionalCompany() {
       const vr = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number='2000000000' LIMIT 1`);
       vendorReconId = (vr.rows[0] as any)?.id;
     } catch {}
-    await db.execute(sql`INSERT INTO proc_purchase_order (tenant_id, po_number, legal_entity_id, company_code_id, partner_id, vendor_id, facility_id, plant_id, delivery_date, header_text, pr_id, currency_code, currency, payment_terms_days, payment_term_code, due_date, discount_date, vendor_recon_account_id, incoterms, freight_amount, customs_amount, tax_amount, total_amount, total_landed_cost, status) VALUES (${tenantId}, '4500000000', ${legalEntityId}, ${legalEntityId}, ${vendorId1}, ${vendorId1}, ${facilityId}, ${facilityId}, '2026-10-10'::date, 'PO for VEND-1000 – Black Pepper 100 KG – Purchase 1 – PPOC ME21N – 1000 – FAC-1000 – NT30 – GST18 – over/under 10%', ${prId1}, 'INR', 'INR', 30, 'NT30', '2026-11-09'::date, '2026-10-20'::date, ${vendorReconId}, 'EXW', 500, 200, 1800, 10000, 12500, 'APPROVED') ON CONFLICT (po_number) DO UPDATE SET status='APPROVED', total_amount=10000, total_landed_cost=12500, payment_term_code='NT30', vendor_recon_account_id=${vendorReconId}`);
+    await db.execute(sql`INSERT INTO proc_purchase_order (tenant_id, po_number, legal_entity_id, company_code_id, partner_id, vendor_id, facility_id, plant_id, delivery_date, header_text, pr_id, currency_code, currency, payment_terms_days, payment_term_code, due_date, discount_date, vendor_recon_account_id, incoterms, freight_amount, customs_amount, tax_amount, total_amount, total_landed_cost, status) VALUES (${tenantId}, '4500000000', ${legalEntityId}, ${legalEntityId}, ${vendorId1}, ${vendorId1}, ${facilityId}, ${facilityId}, '2026-10-10'::date, 'PO for VEND-1000 – Black Pepper 100 KG – Purchase 1 – PPOC PPOC – 1000 – FAC-1000 – NT30 – GST18 – over/under 10%', ${prId1}, 'INR', 'INR', 30, 'NT30', '2026-11-09'::date, '2026-10-20'::date, ${vendorReconId}, 'EXW', 500, 200, 1800, 10000, 12500, 'APPROVED') ON CONFLICT (po_number) DO UPDATE SET status='APPROVED', total_amount=10000, total_landed_cost=12500, payment_term_code='NT30', vendor_recon_account_id=${vendorReconId}`);
     const po1Res = await db.execute(sql`SELECT id FROM proc_purchase_order WHERE po_number='4500000000' LIMIT 1`);
     poId1 = (po1Res.rows[0] as any)?.id;
     if (prId1 && poId1) {
@@ -794,21 +802,21 @@ async function setupFictionalCompany() {
     // Conditions
     if (poLineId1) {
       await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount, percentage, currency_code) VALUES (${poLineId1}, 'BASE', 100, 0, 'INR') ON CONFLICT DO NOTHING`).catch(()=>{});
-      await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId1}, 'FREIGHT', 5) ON CONFLICT DO NOTHING`).catch(()=>{});
+      await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId1}, 'FREIGHTIGHT', 5) ON CONFLICT DO NOTHING`).catch(()=>{});
       await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId1}, 'CUSTOMS', 2) ON CONFLICT DO NOTHING`).catch(()=>{});
       await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount, percentage) VALUES (${poLineId1}, 'TAX', 18, 18) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    console.log(`✅ PO 4500000000 – id ${poId1} – line id ${poLineId1} – 100 KG – price 100 auto ME11 – freight 5 customs 2 tax GST18 18% – over/under 10% – version 1 – conditions BASE/FREIGHT/CUSTOMS/TAX – APPROVED – PR→PO flow`);
+    console.log(`✅ PO 4500000000 – id ${poId1} – line id ${poLineId1} – 100 KG – price 100 auto ME11 – freight 5 customs 2 tax GST18 18% – over/under 10% – version 1 – conditions BASE/FREIGHTIGHT/CUSTOMS/TAX – APPROVED – PR→PO flow`);
 
     // GR 5000000000 – 60 KG partial
-    await db.execute(sql`INSERT INTO proc_goods_receipt (tenant_id, gr_number, po_id, facility_id, plant_id, posting_date, document_date, header_text, status, total_amount, total_landed_cost) VALUES (${tenantId}, '5000000000', ${poId1}, ${facilityId}, ${facilityId}, '2026-10-10'::date, '2026-10-10'::date, 'GR for PO 4500000000 – 60 KG – Purchase 1 – MIGO 101', 'POSTED', 6000, 7500) ON CONFLICT (gr_number) DO NOTHING`);
+    await db.execute(sql`INSERT INTO proc_goods_receipt (tenant_id, gr_number, po_id, facility_id, plant_id, posting_date, document_date, header_text, status, total_amount, total_landed_cost) VALUES (${tenantId}, '5000000000', ${poId1}, ${facilityId}, ${facilityId}, '2026-10-10'::date, '2026-10-10'::date, 'GR for PO 4500000000 – 60 KG – Purchase 1 – IGRC 101', 'POSTED', 6000, 7500) ON CONFLICT (gr_number) DO NOTHING`);
     const gr1aRes = await db.execute(sql`SELECT id FROM proc_goods_receipt WHERE gr_number='5000000000' LIMIT 1`);
     grId1a = (gr1aRes.rows[0] as any)?.id;
     if (grId1a && poLineId1) {
       await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost) VALUES (${grId1a}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, ${invLocId}, 60, 'KG', 100, 125) ON CONFLICT DO NOTHING`);
     }
-    // GR 5000000001 – 40 KG final ELIKZ
-    await db.execute(sql`INSERT INTO proc_goods_receipt (tenant_id, gr_number, po_id, facility_id, plant_id, posting_date, document_date, header_text, status, total_amount, total_landed_cost) VALUES (${tenantId}, '5000000001', ${poId1}, ${facilityId}, ${facilityId}, '2026-10-11'::date, '2026-10-11'::date, 'GR for PO 4500000000 – 40 KG final – ELIKZ – Purchase 1 – MIGO 101', 'POSTED', 4000, 5000) ON CONFLICT (gr_number) DO NOTHING`);
+    // GR 5000000001 – 40 KG final DELIV_COMPLETED
+    await db.execute(sql`INSERT INTO proc_goods_receipt (tenant_id, gr_number, po_id, facility_id, plant_id, posting_date, document_date, header_text, status, total_amount, total_landed_cost) VALUES (${tenantId}, '5000000001', ${poId1}, ${facilityId}, ${facilityId}, '2026-10-11'::date, '2026-10-11'::date, 'GR for PO 4500000000 – 40 KG final – DELIV_COMPLETED – Purchase 1 – IGRC 101', 'POSTED', 4000, 5000) ON CONFLICT (gr_number) DO NOTHING`);
     const gr1bRes = await db.execute(sql`SELECT id FROM proc_goods_receipt WHERE gr_number='5000000001' LIMIT 1`);
     grId1b = (gr1bRes.rows[0] as any)?.id;
     if (grId1b && poLineId1) {
@@ -820,14 +828,14 @@ async function setupFictionalCompany() {
     }
     // Stock ledger
     if (materialId1 && facilityId && grId1a) {
-      await db.execute(sql`INSERT INTO inv_stock_ledger (tenant_id, item_id, facility_id, movement_type, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, ${materialId1}, ${facilityId}, '101', 60, 0, 60, 100, 6000, 'GR', '5000000000', 'GR 101 – Purchase 1 – 60 KG – Black Pepper') ON CONFLICT DO NOTHING`).catch(()=>{});
+      await db.execute(sql`INSERT INTO inv_stock_ledger (tenant_id, item_id, facility_id, movement_type, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, ${materialId1}, ${facilityId}, 'GR_PO', 60, 0, 60, 100, 6000, 'GR', '5000000000', 'GR 101 – Purchase 1 – 60 KG – Black Pepper') ON CONFLICT DO NOTHING`).catch(()=>{});
     }
     if (materialId1 && facilityId && grId1b) {
-      await db.execute(sql`INSERT INTO inv_stock_ledger (tenant_id, item_id, facility_id, movement_type, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, ${materialId1}, ${facilityId}, '101', 40, 60, 100, 100, 4000, 'GR', '5000000001', 'GR 101 – Purchase 1 – 40 KG final ELIKZ – Black Pepper') ON CONFLICT DO NOTHING`).catch(()=>{});
+      await db.execute(sql`INSERT INTO inv_stock_ledger (tenant_id, item_id, facility_id, movement_type, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, ${materialId1}, ${facilityId}, 'GR_PO', 40, 60, 100, 100, 4000, 'GR', '5000000001', 'GR 101 – Purchase 1 – 40 KG final DELIV_COMPLETED – Black Pepper') ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    console.log(`✅ GR 5000000000 60 KG + 5000000001 40 KG final ELIKZ – Purchase 1 – stock 100 – MIGO 101 – BSX/WRX – MAP`);
+    console.log(`✅ GR 5000000000 60 KG + 5000000001 40 KG final DELIV_COMPLETED – Purchase 1 – stock 100 – IGRC 101 – INV_POSTING/GR_IR_CLEARING – MAP`);
 
-    // Universal ledger for GR – BSX Dr WRX Cr
+    // Universal ledger for GR – INV_POSTING Dr GR_IR_CLEARING Cr
     try {
       let bsxId: any = null, wrxId: any = null;
       const bsxRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number='1400000001' LIMIT 1`);
@@ -835,10 +843,10 @@ async function setupFictionalCompany() {
       const wrxRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number='2000000001' LIMIT 1`);
       wrxId = (wrxRes.rows[0] as any)?.id;
       if (bsxId && wrxId) {
-        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5000000000', 'WE', '2026-10-10'::date, '2026-10-10'::date, 2026, 7, ${bsxId}, ${bsxId}, 6000, 0, 6000, 'INR', 'GR', '5000000000', 'GR 101 – BSX Dr 6000 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
-        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5000000000', 'WE', '2026-10-10'::date, '2026-10-10'::date, 2026, 7, ${wrxId}, ${wrxId}, 0, 6000, 6000, 'INR', 'GR', '5000000000', 'GR 101 – WRX Cr 6000 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
-        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5000000001', 'WE', '2026-10-11'::date, '2026-10-11'::date, 2026, 7, ${bsxId}, ${bsxId}, 4000, 0, 4000, 'INR', 'GR', '5000000001', 'GR 101 – BSX Dr 4000 – Purchase 1 final ELIKZ') ON CONFLICT DO NOTHING`).catch(()=>{});
-        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5000000001', 'WE', '2026-10-11'::date, '2026-10-11'::date, 2026, 7, ${wrxId}, ${wrxId}, 0, 4000, 4000, 'INR', 'GR', '5000000001', 'GR 101 – WRX Cr 4000 – Purchase 1 final ELIKZ') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5000000000', 'WE', '2026-10-10'::date, '2026-10-10'::date, 2026, 7, ${bsxId}, ${bsxId}, 6000, 0, 6000, 'INR', 'GR', '5000000000', 'GR 101 – INV_POSTING Dr 6000 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5000000000', 'WE', '2026-10-10'::date, '2026-10-10'::date, 2026, 7, ${wrxId}, ${wrxId}, 0, 6000, 6000, 'INR', 'GR', '5000000000', 'GR 101 – GR_IR_CLEARING Cr 6000 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5000000001', 'WE', '2026-10-11'::date, '2026-10-11'::date, 2026, 7, ${bsxId}, ${bsxId}, 4000, 0, 4000, 'INR', 'GR', '5000000001', 'GR 101 – INV_POSTING Dr 4000 – Purchase 1 final DELIV_COMPLETED') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5000000001', 'WE', '2026-10-11'::date, '2026-10-11'::date, 2026, 7, ${wrxId}, ${wrxId}, 0, 4000, 4000, 'INR', 'GR', '5000000001', 'GR 101 – GR_IR_CLEARING Cr 4000 – Purchase 1 final DELIV_COMPLETED') ON CONFLICT DO NOTHING`).catch(()=>{});
       }
     } catch {}
 
@@ -858,7 +866,7 @@ async function setupFictionalCompany() {
       await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId1b}, ${poLineId1}, 10, ${materialId1}, -10, 100, 100, -180, ${taxRuleIdGST18}, 18, true) ON CONFLICT DO NOTHING`);
     }
 
-    // IV 5100000002 – 50 KG variance 110 vs 100 PRD 500
+    // IV 5100000002 – 50 KG variance 110 vs 100 PRICE_DIFF 500
     await db.execute(sql`INSERT INTO proc_invoice_verification (tenant_id, iv_number, gr_id, po_id, partner_id, vendor_id, legal_entity_id, company_code_id, invoice_date, posting_date, vendor_invoice_number, total_amount, tax_amount, freight_amount, customs_amount, document_type, is_credit_memo, payment_term_code, due_date, vendor_recon_account_id, status) VALUES (${tenantId}, '5100000002', ${grId1b}, ${poId1}, ${vendorId1}, ${vendorId1}, ${legalEntityId}, ${legalEntityId}, '2026-10-14'::date, '2026-10-14'::date, 'INV-VEND-2026-002', 5500, 990, 250, 100, 'RE', false, 'NT30', '2026-11-13'::date, ${vendorReconId}, 'POSTED') ON CONFLICT (iv_number) DO NOTHING`);
     const iv1cRes = await db.execute(sql`SELECT id FROM proc_invoice_verification WHERE iv_number='5100000002' LIMIT 1`);
     ivId1c = (iv1cRes.rows[0] as any)?.id;
@@ -866,7 +874,7 @@ async function setupFictionalCompany() {
       await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId1c}, ${poLineId1}, 10, ${materialId1}, 50, 110, 100, 5, 2, 117, 10, 990, ${taxRuleIdGST18}, 18, false) ON CONFLICT DO NOTHING`);
     }
 
-    // Universal ledger for IVs – RE + WRX clearing + Vendor Recon + PRD + Tax
+    // Universal ledger for IVs – RE + GR_IR_CLEARING clearing + Vendor Recon + PRICE_DIFF + Tax
     try {
       let wrxId: any = null, vendorReconId2: any = null, prdId: any = null, taxId: any = null;
       const wrxRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number='2000000001' LIMIT 1`);
@@ -878,24 +886,24 @@ async function setupFictionalCompany() {
       const taxRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number='2000000003' LIMIT 1`);
       taxId = (taxRes.rows[0] as any)?.id;
       if (wrxId && vendorReconId2) {
-        // IV 5100000000 – 60 KG – WRX Dr 6000 Vendor Cr 7500 Tax Dr 1080
-        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000000', 'RE', '2026-10-12'::date, '2026-10-12'::date, 2026, 7, ${wrxId}, ${wrxId}, 6000, 0, 6000, 'INR', 'IV', '5100000000', 'IV 51 RE – WRX Dr 6000 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
+        // IV 5100000000 – 60 KG – GR_IR_CLEARING Dr 6000 Vendor Cr 7500 Tax Dr 1080
+        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000000', 'RE', '2026-10-12'::date, '2026-10-12'::date, 2026, 7, ${wrxId}, ${wrxId}, 6000, 0, 6000, 'INR', 'IV', '5100000000', 'IV 51 RE – GR_IR_CLEARING Dr 6000 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
         await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000000', 'RE', '2026-10-12'::date, '2026-10-12'::date, 2026, 7, ${vendorReconId2}, ${vendorReconId2}, 0, 7500, 7500, 'INR', 'IV', '5100000000', 'IV 51 RE – Vendor Recon Cr 7500 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
         if (taxId) await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000000', 'RE', '2026-10-12'::date, '2026-10-12'::date, 2026, 7, ${taxId}, ${taxId}, 1080, 0, 1080, 'INR', 'IV', '5100000000', 'IV 51 RE – Tax Dr 1080 GST18 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
-        // Credit memo 5100000001 – RE_CREDIT – Dr Vendor Recon Cr WRX
+        // Credit memo 5100000001 – RE_CREDIT – Dr Vendor Recon Cr GR_IR_CLEARING
         await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000001', 'RE_CREDIT', '2026-10-13'::date, '2026-10-13'::date, 2026, 7, ${vendorReconId2}, ${vendorReconId2}, 1180, 0, 1180, 'INR', 'IV', '5100000001', 'IV RE_CREDIT – Vendor Dr 1180 – credit memo – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
-        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000001', 'RE_CREDIT', '2026-10-13'::date, '2026-10-13'::date, 2026, 7, ${wrxId}, ${wrxId}, 0, 1000, 1000, 'INR', 'IV', '5100000001', 'IV RE_CREDIT – WRX Cr 1000 – credit memo – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
-        // IV 5100000002 – 50 KG variance 110 vs 100 PRD 500
-        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000002', 'RE', '2026-10-14'::date, '2026-10-14'::date, 2026, 7, ${wrxId}, ${wrxId}, 5000, 0, 5000, 'INR', 'IV', '5100000002', 'IV 51 RE – WRX Dr 5000 – Purchase 1 variance') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000001', 'RE_CREDIT', '2026-10-13'::date, '2026-10-13'::date, 2026, 7, ${wrxId}, ${wrxId}, 0, 1000, 1000, 'INR', 'IV', '5100000001', 'IV RE_CREDIT – GR_IR_CLEARING Cr 1000 – credit memo – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
+        // IV 5100000002 – 50 KG variance 110 vs 100 PRICE_DIFF 500
+        await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000002', 'RE', '2026-10-14'::date, '2026-10-14'::date, 2026, 7, ${wrxId}, ${wrxId}, 5000, 0, 5000, 'INR', 'IV', '5100000002', 'IV 51 RE – GR_IR_CLEARING Dr 5000 – Purchase 1 variance') ON CONFLICT DO NOTHING`).catch(()=>{});
         await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000002', 'RE', '2026-10-14'::date, '2026-10-14'::date, 2026, 7, ${vendorReconId2}, ${vendorReconId2}, 0, 6840, 6840, 'INR', 'IV', '5100000002', 'IV 51 RE – Vendor Cr 6840 – Purchase 1 variance') ON CONFLICT DO NOTHING`).catch(()=>{});
-        if (prdId) await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000002', 'RE', '2026-10-14'::date, '2026-10-14'::date, 2026, 7, ${prdId}, ${prdId}, 500, 0, 500, 'INR', 'IV', '5100000002', 'IV 51 RE – PRD Dr 500 price variance 110 vs 100 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
+        if (prdId) await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000002', 'RE', '2026-10-14'::date, '2026-10-14'::date, 2026, 7, ${prdId}, ${prdId}, 500, 0, 500, 'INR', 'IV', '5100000002', 'IV 51 RE – PRICE_DIFF Dr 500 price variance 110 vs 100 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
         if (taxId) await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, '5100000002', 'RE', '2026-10-14'::date, '2026-10-14'::date, 2026, 7, ${taxId}, ${taxId}, 990, 0, 990, 'INR', 'IV', '5100000002', 'IV 51 RE – Tax Dr 990 GST18 – Purchase 1 variance') ON CONFLICT DO NOTHING`).catch(()=>{});
       }
     } catch {}
 
     // Payment KZ 5300000000 – for IV 5100000000
-    await db.execute(sql`INSERT INTO fi_document (tenant_id, document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type) VALUES (${tenantId}, '5300000000', ${legalEntityId}, 'KZ', '2026-10-15'::date, '2026-10-15'::date, 'Payment for VEND-1000 INV-VEND-2026-001', 'KZ Payment Vendor VEND-1000 Amount 7500 BANK – Purchase 1', 7500, 7500, 'INR', 'POSTED', 'KZ') ON CONFLICT (document_number) DO NOTHING`);
-    const pay1Res = await db.execute(sql`SELECT id FROM fi_document WHERE document_number='5300000000' LIMIT 1`);
+    await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type) VALUES (${tenantId}, '5300000000', ${legalEntityId}, 'KZ', '2026-10-15'::date, '2026-10-15'::date, 'Payment for VEND-1000 INV-VEND-2026-001', 'KZ Payment Vendor VEND-1000 Amount 7500 BANK – Purchase 1', 7500, 7500, 'INR', 'POSTED', 'KZ') ON CONFLICT (document_number) DO NOTHING`);
+    const pay1Res = await db.execute(sql`SELECT id FROM fin_universal_ledger WHERE document_number='5300000000' LIMIT 1`);
     const payId1 = (pay1Res.rows[0] as any)?.id;
     if (payId1) {
       let vendorReconId3: any = null, bankId: any = null;
@@ -906,8 +914,8 @@ async function setupFictionalCompany() {
         bankId = (b.rows[0] as any)?.id;
       } catch {}
       if (vendorReconId3 && bankId) {
-        await db.execute(sql`INSERT INTO fi_document_line (document_id, gl_account_id, partner_id, debit, credit, amount, text) VALUES (${payId1}, ${vendorReconId3}, ${vendorId1}, 7500, 0, 7500, 'Payment KZ – Dr Vendor Recon 2000000000 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
-        await db.execute(sql`INSERT INTO fi_document_line (document_id, gl_account_id, debit, credit, amount, text) VALUES (${payId1}, ${bankId}, 0, 7500, 7500, 'Payment KZ – Cr Bank 8000000001 SBI – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger_line (document_id, gl_account_id, partner_id, debit, credit, amount, text) VALUES (${payId1}, ${vendorReconId3}, ${vendorId1}, 7500, 0, 7500, 'Payment KZ – Dr Vendor Recon 2000000000 – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger_line (document_id, gl_account_id, debit, credit, amount, text) VALUES (${payId1}, ${bankId}, 0, 7500, 7500, 'Payment KZ – Cr Bank 8000000001 SBI – Purchase 1') ON CONFLICT DO NOTHING`).catch(()=>{});
       }
     }
 
@@ -923,7 +931,7 @@ async function setupFictionalCompany() {
     await db.execute(sql`INSERT INTO audit_document_flow (root_document_type, root_document_id, root_document_number, preceding_doc_type, preceding_doc_id, preceding_doc_number, succeeding_doc_type, succeeding_doc_id, succeeding_doc_number) VALUES ('PR', ${prId1}, '1000000000', 'GR', ${grId1a}, '5000000000', 'IV', ${ivId1a}, '5100000000') ON CONFLICT DO NOTHING`).catch(()=>{});
     await db.execute(sql`INSERT INTO audit_document_flow (root_document_type, root_document_id, root_document_number, preceding_doc_type, preceding_doc_id, preceding_doc_number, succeeding_doc_type, succeeding_doc_id, succeeding_doc_number) VALUES ('PR', ${prId1}, '1000000000', 'IV', ${ivId1a}, '5100000000', 'PAYMENT', ${payId1}, '5300000000') ON CONFLICT DO NOTHING`).catch(()=>{});
 
-    console.log(`✅ Purchase 1 complete – PR 1000000000 → PO 4500000000 → GR 5000000000(60)+5000000001(40 ELIKZ) → IV 5100000000(60)+5100000001(-10 credit RE_CREDIT)+5100000002(50 variance PRD) → Payment KZ 5300000000 → GR/IR Clearing CLR-1/2 → Document Flow FDFL VBFA ALB – org wired – T0 – 12 points`);
+    console.log(`✅ Purchase 1 complete – PR 1000000000 → PO 4500000000 → GR 5000000000(60)+5000000001(40 DELIV_COMPLETED) → IV 5100000000(60)+5100000001(-10 credit RE_CREDIT)+5100000002(50 variance PRICE_DIFF) → Payment KZ 5300000000 → GR/IR Clearing CLR-1/2 → Document Flow FDFL VBFA ALB – org wired – T0 – 12 points`);
 
   } catch (e: any) { console.warn('Purchase 1 failed:', e.message, e.stack?.slice(0,500)); }
 
@@ -937,7 +945,7 @@ async function setupFictionalCompany() {
   let ivId2: any = null;
 
   try {
-    await db.execute(sql`INSERT INTO proc_purchase_requisition (tenant_id, pr_number, legal_entity_id, company_code_id, facility_id, plant_id, required_date, header_text, currency_code, currency, total_amount, status) VALUES (${tenantId}, '1000000001', ${legalEntityId}, ${legalEntityId}, ${facilityId}, ${facilityId}, '2026-10-02'::date, 'PR for VEND-1001 – Turmeric 200 KG – Purchase 2 – PPRC ME51N – 1000 – FAC-1000', 'INR', 'INR', 16000, 'APPROVED') ON CONFLICT (pr_number) DO UPDATE SET status='APPROVED', total_amount=16000`);
+    await db.execute(sql`INSERT INTO proc_purchase_requisition (tenant_id, pr_number, legal_entity_id, company_code_id, facility_id, plant_id, required_date, header_text, currency_code, currency, total_amount, status) VALUES (${tenantId}, '1000000001', ${legalEntityId}, ${legalEntityId}, ${facilityId}, ${facilityId}, '2026-10-02'::date, 'PR for VEND-1001 – Turmeric 200 KG – Purchase 2 – PPRC PPRC – 1000 – FAC-1000', 'INR', 'INR', 16000, 'APPROVED') ON CONFLICT (pr_number) DO UPDATE SET status='APPROVED', total_amount=16000`);
     const pr2Res = await db.execute(sql`SELECT id FROM proc_purchase_requisition WHERE pr_number='1000000001' LIMIT 1`);
     prId2 = (pr2Res.rows[0] as any)?.id;
     if (prId2 && materialId2) {
@@ -950,7 +958,7 @@ async function setupFictionalCompany() {
       const vr = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number='2000000000' LIMIT 1`);
       vendorReconId = (vr.rows[0] as any)?.id;
     } catch {}
-    await db.execute(sql`INSERT INTO proc_purchase_order (tenant_id, po_number, legal_entity_id, company_code_id, partner_id, vendor_id, facility_id, plant_id, delivery_date, header_text, pr_id, currency_code, currency, payment_terms_days, payment_term_code, due_date, discount_date, vendor_recon_account_id, incoterms, freight_amount, customs_amount, tax_amount, total_amount, total_landed_cost, status) VALUES (${tenantId}, '4500000001', ${legalEntityId}, ${legalEntityId}, ${vendorId2}, ${vendorId2}, ${facilityId}, ${facilityId}, '2026-10-12'::date, 'PO for VEND-1001 – Turmeric 200 KG – Purchase 2 – PPOC ME21N – 1000 – FAC-1000 – NT30 – GST12', ${prId2}, 'INR', 'INR', 30, 'NT30', '2026-11-11'::date, '2026-10-22'::date, ${vendorReconId}, 'FOB', 600, 200, 1920, 16000, 18720, 'APPROVED') ON CONFLICT (po_number) DO UPDATE SET status='APPROVED', total_amount=16000, total_landed_cost=18720`);
+    await db.execute(sql`INSERT INTO proc_purchase_order (tenant_id, po_number, legal_entity_id, company_code_id, partner_id, vendor_id, facility_id, plant_id, delivery_date, header_text, pr_id, currency_code, currency, payment_terms_days, payment_term_code, due_date, discount_date, vendor_recon_account_id, incoterms, freight_amount, customs_amount, tax_amount, total_amount, total_landed_cost, status) VALUES (${tenantId}, '4500000001', ${legalEntityId}, ${legalEntityId}, ${vendorId2}, ${vendorId2}, ${facilityId}, ${facilityId}, '2026-10-12'::date, 'PO for VEND-1001 – Turmeric 200 KG – Purchase 2 – PPOC PPOC – 1000 – FAC-1000 – NT30 – GST12', ${prId2}, 'INR', 'INR', 30, 'NT30', '2026-11-11'::date, '2026-10-22'::date, ${vendorReconId}, 'FOB', 600, 200, 1920, 16000, 18720, 'APPROVED') ON CONFLICT (po_number) DO UPDATE SET status='APPROVED', total_amount=16000, total_landed_cost=18720`);
     const po2Res = await db.execute(sql`SELECT id FROM proc_purchase_order WHERE po_number='4500000001' LIMIT 1`);
     poId2 = (po2Res.rows[0] as any)?.id;
     if (prId2 && poId2) {
@@ -966,13 +974,13 @@ async function setupFictionalCompany() {
     poLineId2 = (poLine2Res.rows[0] as any)?.id;
     if (poLineId2) {
       await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount, percentage, currency_code) VALUES (${poLineId2}, 'BASE', 80, 0, 'INR') ON CONFLICT DO NOTHING`).catch(()=>{});
-      await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId2}, 'FREIGHT', 3) ON CONFLICT DO NOTHING`).catch(()=>{});
+      await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId2}, 'FREIGHTIGHT', 3) ON CONFLICT DO NOTHING`).catch(()=>{});
       await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount) VALUES (${poLineId2}, 'CUSTOMS', 1) ON CONFLICT DO NOTHING`).catch(()=>{});
       await db.execute(sql`INSERT INTO proc_purchasing_condition (po_line_id, condition_type, amount, percentage) VALUES (${poLineId2}, 'TAX', 9.6, 12) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
     console.log(`✅ PO 4500000001 – id ${poId2} – line id ${poLineId2} – 200 KG turmeric – price 80 – freight 3 customs 1 tax GST12 12% – over/under 10% – APPROVED`);
 
-    await db.execute(sql`INSERT INTO proc_goods_receipt (tenant_id, gr_number, po_id, facility_id, plant_id, posting_date, document_date, header_text, status, total_amount, total_landed_cost) VALUES (${tenantId}, '5000000002', ${poId2}, ${facilityId}, ${facilityId}, '2026-10-12'::date, '2026-10-12'::date, 'GR for PO 4500000001 – 200 KG – Purchase 2 – MIGO 101', 'POSTED', 16000, 18720) ON CONFLICT (gr_number) DO NOTHING`);
+    await db.execute(sql`INSERT INTO proc_goods_receipt (tenant_id, gr_number, po_id, facility_id, plant_id, posting_date, document_date, header_text, status, total_amount, total_landed_cost) VALUES (${tenantId}, '5000000002', ${poId2}, ${facilityId}, ${facilityId}, '2026-10-12'::date, '2026-10-12'::date, 'GR for PO 4500000001 – 200 KG – Purchase 2 – IGRC 101', 'POSTED', 16000, 18720) ON CONFLICT (gr_number) DO NOTHING`);
     const gr2Res = await db.execute(sql`SELECT id FROM proc_goods_receipt WHERE gr_number='5000000002' LIMIT 1`);
     grId2 = (gr2Res.rows[0] as any)?.id;
     if (grId2 && poLineId2) {
@@ -982,8 +990,8 @@ async function setupFictionalCompany() {
       await db.execute(sql`UPDATE prod_facility_profile SET total_stock_qty=COALESCE(total_stock_qty,0)+200, total_stock_value=COALESCE(total_stock_value,0)+16000, moving_avg_price=80 WHERE item_id=${materialId2} AND facility_id=${facilityId}`).catch(()=>{});
       await db.execute(sql`INSERT INTO prod_facility_profile (tenant_id, item_id, product_id, facility_id, total_stock_qty, total_stock_value, moving_avg_price) VALUES (${tenantId}, ${materialId2}, ${materialId2}, ${facilityId}, 200, 16000, 80) ON CONFLICT DO NOTHING`).catch(()=>{});
     }
-    await db.execute(sql`INSERT INTO inv_stock_ledger (tenant_id, item_id, facility_id, movement_type, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, ${materialId2}, ${facilityId}, '101', 200, 0, 200, 80, 16000, 'GR', '5000000002', 'GR 101 – Purchase 2 – 200 KG Turmeric') ON CONFLICT DO NOTHING`).catch(()=>{});
-    console.log(`✅ GR 5000000002 – 200 KG – Purchase 2 – stock turmeric 200 – MIGO 101`);
+    await db.execute(sql`INSERT INTO inv_stock_ledger (tenant_id, item_id, facility_id, movement_type, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, text) VALUES (${tenantId}, ${materialId2}, ${facilityId}, 'GR_PO', 200, 0, 200, 80, 16000, 'GR', '5000000002', 'GR 101 – Purchase 2 – 200 KG Turmeric') ON CONFLICT DO NOTHING`).catch(()=>{});
+    console.log(`✅ GR 5000000002 – 200 KG – Purchase 2 – stock turmeric 200 – IGRC 101`);
 
     await db.execute(sql`INSERT INTO proc_invoice_verification (tenant_id, iv_number, gr_id, po_id, partner_id, vendor_id, legal_entity_id, company_code_id, invoice_date, posting_date, vendor_invoice_number, total_amount, tax_amount, freight_amount, customs_amount, document_type, is_credit_memo, payment_term_code, due_date, vendor_recon_account_id, status) VALUES (${tenantId}, '5100000003', ${grId2}, ${poId2}, ${vendorId2}, ${vendorId2}, ${legalEntityId}, ${legalEntityId}, '2026-10-13'::date, '2026-10-13'::date, 'INV-VEND-2026-101', 16000, 1920, 600, 200, 'RE', false, 'NT30', '2026-11-12'::date, ${vendorReconId}, 'POSTED') ON CONFLICT (iv_number) DO NOTHING`);
     const iv2Res = await db.execute(sql`SELECT id FROM proc_invoice_verification WHERE iv_number='5100000003' LIMIT 1`);
@@ -991,10 +999,10 @@ async function setupFictionalCompany() {
     if (ivId2 && poLineId2 && materialId2) {
       await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId2}, ${poLineId2}, 10, ${materialId2}, 200, 80, 80, 3, 1, 84, 0, 1920, ${taxRuleIdGST12}, 12, false) ON CONFLICT DO NOTHING`);
     }
-    console.log(`✅ IV 5100000003 – 200 KG – Purchase 2 – tax GST12 1920 – RE – WRX clearing – Vendor Recon – T0`);
+    console.log(`✅ IV 5100000003 – 200 KG – Purchase 2 – tax GST12 1920 – RE – GR_IR_CLEARING clearing – Vendor Recon – T0`);
 
-    await db.execute(sql`INSERT INTO fi_document (tenant_id, document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type) VALUES (${tenantId}, '5300000001', ${legalEntityId}, 'KZ', '2026-10-16'::date, '2026-10-16'::date, 'Payment for VEND-1001 INV-VEND-2026-101', 'KZ Payment Vendor VEND-1001 Amount 18720 BANK – Purchase 2', 18720, 18720, 'INR', 'POSTED', 'KZ') ON CONFLICT (document_number) DO NOTHING`);
-    const pay2Res = await db.execute(sql`SELECT id FROM fi_document WHERE document_number='5300000001' LIMIT 1`);
+    await db.execute(sql`INSERT INTO fin_universal_ledger (tenant_id, document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type) VALUES (${tenantId}, '5300000001', ${legalEntityId}, 'KZ', '2026-10-16'::date, '2026-10-16'::date, 'Payment for VEND-1001 INV-VEND-2026-101', 'KZ Payment Vendor VEND-1001 Amount 18720 BANK – Purchase 2', 18720, 18720, 'INR', 'POSTED', 'KZ') ON CONFLICT (document_number) DO NOTHING`);
+    const pay2Res = await db.execute(sql`SELECT id FROM fin_universal_ledger WHERE document_number='5300000001' LIMIT 1`);
     const payId2 = (pay2Res.rows[0] as any)?.id;
     if (payId2) {
       let vendorReconId3: any = null, bankId: any = null;
@@ -1005,8 +1013,8 @@ async function setupFictionalCompany() {
         bankId = (b.rows[0] as any)?.id;
       } catch {}
       if (vendorReconId3 && bankId) {
-        await db.execute(sql`INSERT INTO fi_document_line (document_id, gl_account_id, partner_id, debit, credit, amount, text) VALUES (${payId2}, ${vendorReconId3}, ${vendorId2}, 18720, 0, 18720, 'Payment KZ – Dr Vendor Recon – Purchase 2') ON CONFLICT DO NOTHING`).catch(()=>{});
-        await db.execute(sql`INSERT INTO fi_document_line (document_id, gl_account_id, debit, credit, amount, text) VALUES (${payId2}, ${bankId}, 0, 18720, 18720, 'Payment KZ – Cr Bank – Purchase 2') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger_line (document_id, gl_account_id, partner_id, debit, credit, amount, text) VALUES (${payId2}, ${vendorReconId3}, ${vendorId2}, 18720, 0, 18720, 'Payment KZ – Dr Vendor Recon – Purchase 2') ON CONFLICT DO NOTHING`).catch(()=>{});
+        await db.execute(sql`INSERT INTO fin_universal_ledger_line (document_id, gl_account_id, debit, credit, amount, text) VALUES (${payId2}, ${bankId}, 0, 18720, 18720, 'Payment KZ – Cr Bank – Purchase 2') ON CONFLICT DO NOTHING`).catch(()=>{});
       }
     }
     await db.execute(sql`INSERT INTO fin_gr_ir_clearing (tenant_id, clearing_number, gr_number, iv_number, po_number, amount, status) VALUES (${tenantId}, 'CLR-1000000001-1', '5000000002', '5100000003', '4500000001', 16000, 'CLEARED') ON CONFLICT (clearing_number) DO NOTHING`).catch(()=>{});
@@ -1051,48 +1059,48 @@ async function setupFictionalCompany() {
   console.log('   Tenant TEN-100 – Company Group ECGC-FMCG-01 INR IN EN');
   console.log('   Currencies INR/USD/EUR/KWD/GBP/AED – UoM KG/PC/L/BOX/BAG/KIT');
   console.log('   Fiscal K4 April-March – Field Status FSSV-1000 – Posting PPV-1000 open 01-12/2026 ALL/S/K/D/A');
-  console.log('   Credit Control CRED-1000 – Chart CA-IN-01 – GL 12 accounts BSX 1400000001 WRX 2000000001 Vendor Recon 2000000000 Bank 8000000001 etc');
+  console.log('   Credit Control CRED-1000 – Chart CA-IN-01 – GL 12 accounts INV_POSTING 1400000001 GR_IR_CLEARING 2000000001 Vendor Recon 2000000000 Bank 8000000001 etc');
   console.log('   Legal Entity 1000 – Facility FAC-1000 – Inventory Locations 0001/0002/SL01/SL02 – Sales Area CO-1000/SC-10/PL-10');
   console.log('   Number Ranges MAT-01 PR-01 PO-01 GR-01 IV-01 KZ-01 – numeric only assignment per company error_and_extend locked badge next_available');
-  console.log('   Document Types SA/KR/KZ/RE/WE/RV – Tolerance VEND-01 GL-01 OBA0/OBA4 – Auto Account OBYC BSX/WRX/GBB/PRD/KDM/KOFI – Movement Types 101/102/261/601/602/122 FMTM OMJJ');
+  console.log('   Document Types SA/KR/KZ/RE/WE/RV – Tolerance VEND-01 GL-01 OBA0/OBA4 – Auto Account FAUC INV_POSTING/GR_IR_CLEARING/INV_OFFSET/PRICE_DIFF/EXCH_DIFF/REVENUE – Movement Types 101/102/261/601/602/122 FMTM FMTM');
   console.log('   Tax Codes GST0/5/12/18/28 IGST18 + HSN 7 seeds – FTXC FTXP – Payment Terms NT30 NT10 NT60 FAPT OBA7 – Exchange Rates USD→INR 83.5 FEXC OB08');
   console.log('   Cost Centers CC-1000/1001/1002 + Profit Centers PC-1000/1001 + Control Area CA01 – Procurement Division PO01 + Buyer Team BT-100 – EPDC OX08 EBTC OME4');
   console.log('   Business Partners VEND-1000 Spices Supplier VEND-1001 Turmeric Traders CUST-1000 – payment_term_code NT30 FAPT recon FGLC 2000000000 procurement_division PO01 buyer_team BT-100 currency INR tax GST18 FTXC – PSUC XK01 SCUC XD01 EPAC BP01');
-  console.log('   Materials 10000001 Black Pepper RAW + 10000002 Turmeric RAW – EMTC MM01 – valuation_class RAW price_control S standard 100/80 moving_avg 100/80 tax GST18/GST12 HSN 09041110/09103020 – Info Records ME11 VEND-1000+10000001→100 VEND-1001+10000002→80');
+  console.log('   Materials 10000001 Black Pepper RAW + 10000002 Turmeric RAW – EMTC EMTC – valuation_class RAW price_control S standard 100/80 moving_avg 100/80 tax GST18/GST12 HSN 09041110/09103020 – Info Records ME11 VEND-1000+10000001→100 VEND-1001+10000002→80');
   console.log('   Roles 6 + Users 4 – ERP_ADMIN PURCHASER WAREHOUSE ACCOUNTANT MANAGER OWNER – password User@123 – superadmin admin@er.deepakpt.com / Admin@123456');
-  console.log('   Workflow Definitions PR_APPROVAL PO_APPROVAL – Manager <10000 Owner >=10000 dual – SBWP ME54N/ME28');
+  console.log('   Workflow Definitions PR_APPROVAL PO_APPROVAL – Manager <10000 Owner >=10000 dual – SBWP ME54N/PPOR');
   console.log('');
   console.log('   Purchase 1 – Black Pepper:');
-  console.log('     PR 1000000000 – 100 KG pepper – APPROVED – PPRC ME51N');
-  console.log('     PO 4500000000 – 100 KG pepper – price 100 auto ME11 – freight 5 customs 2 tax GST18 18% – over/under 10% – version 1 history – conditions BASE/FREIGHT/CUSTOMS/TAX – total 10000 landed 12500 – payment term NT30 due 2026-11-09 – vendor recon 2000000000 – APPROVED – ME21N PPOC – PR→PO flow');
-  console.log('     GR 5000000000 – 60 KG partial – PO received 60 open 40 – stock 60 – BSX 6000 WRX 6000 – MIGO 101 – PO→GR flow');
-  console.log('     GR 5000000001 – 40 KG final ELIKZ – PO received 100 open 0 – delivery_completed true all_elikz true PO CLOSED – stock 100 – MIGO 101 final');
-  console.log('     IV 5100000000 – 60 KG – PO invoiced 60 open 40 – WRX Dr 6000 Vendor Cr 7500 Tax Dr 1080 – RE – WRX clearing – PO→IV GR→IV flow – partial invoice – qty tolerance maxInvoiceQty 66 OK – value tolerance OK – payment term NT30 due 2026-11-11 – recon FGLC – tax FTXC – MIRO 51 RE');
-  console.log('     Credit Memo 5100000001 – -10 KG RE_CREDIT – Vendor Dr 1180 WRX Cr 1000 Tax Cr 180 – reduces liability – RE_CREDIT – Dr Vendor Recon FGLC Cr WRX');
-  console.log('     IV 5100000002 – 50 KG variance 110 vs 100 PRD 500 – PO invoiced 100 fully invoiced – price variance PRD 500 – GR/IR clearing candidate – RE – WRX 5000 Vendor 6840 PRD 500 Tax 990 – MIRO 51 RE – variance');
-  console.log('     Payment KZ 5300000000 – 7500 – Dr Vendor Recon 2000000000 Cr Bank 8000000001 SBI – AP invoice PAID – open-item clearing FB05 F-44 – tolerance VEND-01 OK – IV→Payment flow – F-53 KZ');
-  console.log('     GR/IR Clearing CLR-1000000000-1 6000 CLR-1000000000-2 5000 – GR qty=IV qty – WRX cleared – balance zero – F.13 MR11 T1');
-  console.log('     Document Flow PR 1000000000 → PO 4500000000 → GR 5000000000(60)+5000000001(40 ELIKZ) → IV 5100000000(60)+5100000001(-10 credit)+5100000002(50 variance) → Payment KZ 5300000000 → GR/IR Clearing – FDFL VBFA ALB WORM-lite');
+  console.log('     PR 1000000000 – 100 KG pepper – APPROVED – PPRC PPRC');
+  console.log('     PO 4500000000 – 100 KG pepper – price 100 auto ME11 – freight 5 customs 2 tax GST18 18% – over/under 10% – version 1 history – conditions BASE/FREIGHTIGHT/CUSTOMS/TAX – total 10000 landed 12500 – payment term NT30 due 2026-11-09 – vendor recon 2000000000 – APPROVED – PPOC PPOC – PR→PO flow');
+  console.log('     GR 5000000000 – 60 KG partial – PO received 60 open 40 – stock 60 – INV_POSTING 6000 GR_IR_CLEARING 6000 – IGRC 101 – PO→GR flow');
+  console.log('     GR 5000000001 – 40 KG final DELIV_COMPLETED – PO received 100 open 0 – delivery_completed true all_elikz true PO CLOSED – stock 100 – IGRC 101 final');
+  console.log('     IV 5100000000 – 60 KG – PO invoiced 60 open 40 – GR_IR_CLEARING Dr 6000 Vendor Cr 7500 Tax Dr 1080 – RE – GR_IR_CLEARING clearing – PO→IV GR→IV flow – partial invoice – qty tolerance maxInvoiceQty 66 OK – value tolerance OK – payment term NT30 due 2026-11-11 – recon FGLC – tax FTXC – PIVC 51 RE');
+  console.log('     Credit Memo 5100000001 – -10 KG RE_CREDIT – Vendor Dr 1180 GR_IR_CLEARING Cr 1000 Tax Cr 180 – reduces liability – RE_CREDIT – Dr Vendor Recon FGLC Cr GR_IR_CLEARING');
+  console.log('     IV 5100000002 – 50 KG variance 110 vs 100 PRICE_DIFF 500 – PO invoiced 100 fully invoiced – price variance PRICE_DIFF 500 – GR/IR clearing candidate – RE – GR_IR_CLEARING 5000 Vendor 6840 PRICE_DIFF 500 Tax 990 – PIVC 51 RE – variance');
+  console.log('     Payment KZ 5300000000 – 7500 – Dr Vendor Recon 2000000000 Cr Bank 8000000001 SBI – AP invoice PAID – open-item clearing FPYT FPYT – tolerance VEND-01 OK – IV→Payment flow – FPYP KZ');
+  console.log('     GR/IR Clearing CLR-1000000000-1 6000 CLR-1000000000-2 5000 – GR qty=IV qty – GR_IR_CLEARING cleared – balance zero – F.13 MR11 T1');
+  console.log('     Document Flow PR 1000000000 → PO 4500000000 → GR 5000000000(60)+5000000001(40 DELIV_COMPLETED) → IV 5100000000(60)+5100000001(-10 credit)+5100000002(50 variance) → Payment KZ 5300000000 → GR/IR Clearing – FDFL VBFA ALB WORM-lite');
   console.log('');
   console.log('   Purchase 2 – Turmeric:');
   console.log('     PR 1000000001 – 200 KG turmeric – APPROVED');
   console.log('     PO 4500000001 – 200 KG turmeric – price 80 – freight 3 customs 1 tax GST12 12% – total 16000 landed 18720 – APPROVED – PR→PO');
-  console.log('     GR 5000000002 – 200 KG – stock turmeric 200 – MIGO 101 – PO→GR');
-  console.log('     IV 5100000003 – 200 KG – tax GST12 1920 – RE – WRX clearing – PO→IV GR→IV – fully invoiced – MIRO 51 RE');
-  console.log('     Payment KZ 5300000001 – 18720 – Dr Vendor Recon Cr Bank – F-53 KZ – IV→Payment');
+  console.log('     GR 5000000002 – 200 KG – stock turmeric 200 – IGRC 101 – PO→GR');
+  console.log('     IV 5100000003 – 200 KG – tax GST12 1920 – RE – GR_IR_CLEARING clearing – PO→IV GR→IV – fully invoiced – PIVC 51 RE');
+  console.log('     Payment KZ 5300000001 – 18720 – Dr Vendor Recon Cr Bank – FPYP KZ – IV→Payment');
   console.log('     GR/IR Clearing CLR-1000000001-1 16000 – F.13');
   console.log('     Document Flow PR 1000000001 → PO 4500000001 → GR 5000000002 → IV 5100000003 → Payment 5300000001 – FDFL VBFA');
   console.log('');
-  console.log('   Universal Ledger FULC ACDOCA – BSX/WRX/RE/KZ – 400+ fields – Dr BSX Cr WRX – Dr WRX Cr Vendor Recon – Dr/Cr PRD – Dr Tax – Dr Vendor Recon Cr Bank');
-  console.log('   Stock Ledger FSTL MMBE – MAP – 101 movements – quantity_before quantity_after unit_cost total_value');
-  console.log('   Document Flow FDFL VBFA ALB – WORM-lite – predecessor/successor – quantity/value – ELIKZ');
+  console.log('   Universal Ledger FULC ACDOCA – INV_POSTING/GR_IR_CLEARING/RE/KZ – 400+ fields – Dr INV_POSTING Cr GR_IR_CLEARING – Dr GR_IR_CLEARING Cr Vendor Recon – Dr/Cr PRICE_DIFF – Dr Tax – Dr Vendor Recon Cr Bank');
+  console.log('   Stock Ledger FSTL ISTV – MAP – 101 movements – quantity_before quantity_after unit_cost total_value');
+  console.log('   Document Flow FDFL VBFA ALB – WORM-lite – predecessor/successor – quantity/value – DELIV_COMPLETED');
   console.log('   Workflow SBWP – PR_APPROVAL PO_APPROVAL – Manager <10000 Owner >=10000 dual – auto-start – inbox – approve/reject');
   console.log('   Tolerance OBA0/OBA4 VEND-01 – value + quantity – over/under delivery tolerance UEBTO/UNTTO 10% – maxAllowed ordered*(1+over/100) – invoice qty tolerance maxInvoiceQty received*1.1');
-  console.log('   Version History ME22N CDHDR/CDPOS – version + change_history JSONB – WORM-lite – purchasing conditions BASE/FREIGHT/CUSTOMS/TAX');
-  console.log('   Partial GR/IV allowed – quantity_received accumulates, quantity_invoiced accumulates – ELIKZ delivery_completed');
+  console.log('   Version History ME22N CDHDR/CDPOS – version + change_history JSONB – WORM-lite – purchasing conditions BASE/FREIGHTIGHT/CUSTOMS/TAX');
+  console.log('   Partial GR/IV allowed – quantity_received accumulates, quantity_invoiced accumulates – DELIV_COMPLETED delivery_completed');
   console.log('   Cancellation/Reversal GRRE 102 stock reversal + IVRE MR8M invoiced qty reversal + universal ledger reversal – immutable audit');
-  console.log('   Credit/Debit Memo RE_CREDIT Dr Vendor Recon FGLC Cr WRX reduces liability');
-  console.log('   Approval Workflow SBWP ME54N/ME28');
+  console.log('   Credit/Debit Memo RE_CREDIT Dr Vendor Recon FGLC Cr GR_IR_CLEARING reduces liability');
+  console.log('   Approval Workflow SBWP ME54N/PPOR');
   console.log('   Org Wiring EFCC/EILC/ELEC/EPDC/EBTC/PSUC/EMTC/EUOC/FGLC/FAUC/FCYC/FAPT/FTXC/FMTM/FNRC/FULC/FDFL/FBJM/FELM/FAUD/FRPC – T0 BLOCKING – NO DANGLING');
   console.log('   All data created in previous steps included – company structure + 2 purchases complete – leave empty if unnecessary – DONE');
   console.log('');

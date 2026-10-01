@@ -22,11 +22,11 @@ import { coreCurrency } from '../../enterprise/infrastructure/financialsFoundati
 
 export const inventoryStockStatusEnum = pgEnum('inventory_stock_status_new', ['UNRESTRICTED', 'QUALITY_INSPECTION', 'BLOCKED', 'RETURNS', 'IN_TRANSIT']);
 export const inventoryMovementTypeEnum = pgEnum('inventory_movement_type_new', [
-  '101', // GR for PO
-  '102', // GR reversal
-  '122', // Return to vendor
-  '261', // GI for production order
-  '262', // GI reversal
+  'GR_PO', // GR for PO
+  'GR_PO_REV', // GR reversal
+  'GR_RETURN', // Return to vendor
+  'GI_PROD', // GI for production order
+  'GI_PROD_REV', // GI reversal
   '311', // Transfer facility to facility
   '321', // QI -> Unrestricted
   '322', // QI -> Blocked
@@ -34,13 +34,13 @@ export const inventoryMovementTypeEnum = pgEnum('inventory_movement_type_new', [
   '344', // Unrestricted -> Blocked
   '350', // QI -> Blocked scrap
   '453', // Yield from production
-  '551', // Scrap / Spoilage
-  '561', // Initial stock upload
-  '601', // GI for sales / POS
+  'GI_SCRAP', // Scrap / Spoilage
+  'INIT_STOCK', // Initial stock upload
+  'GI_SALES', // GI for sales / POS
   'K01', // Kitting consumption
   'K02', // Kitting production
-  '701', // Physical inventory adjustment +
-  '702', // Physical inventory adjustment -
+  'PI_PLUS', // Physical inventory adjustment +
+  'PI_MINUS', // Physical inventory adjustment -
 ]);
 export const inventoryPhysicalStatusEnum = pgEnum('inventory_physical_status_new', ['CREATED', 'COUNT_ENTERED', 'POSTED', 'CANCELLED']);
 export const inventoryPhysicalLineStatusEnum = pgEnum('inventory_physical_line_status_new', ['PENDING', 'COUNTED', 'POSTED', 'BLOCKED']);
@@ -198,7 +198,7 @@ export const inventoryReservation = pgTable('inventory_reservation', {
   batchId: uuid('batch_id'), // legacy alias
   quantity: numeric('quantity', { precision: 15, scale: 3 }).notNull(),
   reservedQuantity: numeric('reserved_quantity', { precision: 15, scale: 3 }).notNull().default('0'),
-  movementType: inventoryMovementTypeEnum('movement_type').notNull().default('261'),
+  movementType: inventoryMovementTypeEnum('movement_type').notNull().default('GI_PROD'),
   referenceDocType: varchar('reference_doc_type', { length: 30 }).notNull(), // SALES_ORDER, PROD_ORDER
   referenceDocId: uuid('reference_doc_id'),
   referenceDocNumber: varchar('reference_doc_number', { length: 30 }),

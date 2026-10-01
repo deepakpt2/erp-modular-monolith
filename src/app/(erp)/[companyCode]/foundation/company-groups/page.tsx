@@ -15,7 +15,7 @@ export default function CompanyGroupsPage() {
         { key: 'name', label: 'COMPANY_GROUP_NAME', required: true, placeholder: '', description: 'Name of company group – e.g., FMCG Group India' },
         { key: 'currency_code', label: 'CURRENCY_CODE', required: true, placeholder: '', description: 'Currency – e.g., INR – required per guide – was missing' },
         { key: 'country_code', label: 'COUNTRY_CODE', required: true, placeholder: '', description: 'Country – e.g., IN – required per guide' },
-        { key: 'language', label: 'LANGUAGE', required: true, placeholder: '', description: 'Language – e.g., EN – per OB13 language requirement' },
+        { key: 'language', label: 'LANGUAGE', required: true, placeholder: '', description: 'Language – e.g., EN – per FCOA (legacy OB13) language requirement' },
         { key: 'description', label: 'DESCRIPTION', type: 'textarea', placeholder: '' },
         { key: 'tenant_code', label: 'TENANT_CODE', required: true, placeholder: '', description: 'Tenant code – default TEN-100' },
       ]}

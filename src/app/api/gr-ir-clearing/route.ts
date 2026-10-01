@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
 
           // Post clearing to universal ledger – Dr WRX / Cr WRX? Actually clearing creates clearing doc – T1
           try {
-            const wrx = await getAutoAccount({ transaction_key: 'WRX', chart_of_accounts: 'KSCA', valuation_class: 'RAW' });
+            const wrx = await getAutoAccount({ transaction_key: 'GR_IR_CLEARING', chart_of_accounts: 'KSCA', valuation_class: 'RAW' });
             const postingDate = new Date();
             // Clearing entry – marks WRX as cleared
             await db.execute(sql`

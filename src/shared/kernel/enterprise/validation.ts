@@ -2,7 +2,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Enterprise Validation Helpers - OB52, OBC4/OBC5, OBA0/OBA4, OBYC, ATP, Credit Check
+ * Enterprise Validation Helpers - FPPE (legacy OB52), field status, tolerance, FAUC (legacy OBYC), ATP, Credit Check – own IP
  * No mocks - all real DB checks
  */
 
@@ -10,8 +10,8 @@ export async function validatePostingPeriod(companyCodeId: string, postingDate: 
   try {
     const variantRes = await db.execute(sql`
       SELECT ppv.code as variant_code
-      FROM ent_company_code cc
-      JOIN ent_posting_period_variant ppv ON cc.code = ppv.code OR ppv.code = 'KS01'
+      FROM org_legal_entity cc
+      JOIN fin_posting_calendar ppv ON cc.code = ppv.code OR ppv.code = 'KS01'
       WHERE cc.id = ${companyCodeId}
       LIMIT 1
     `);
@@ -28,7 +28,7 @@ export async function validatePostingPeriod(companyCodeId: string, postingDate: 
     // Check if period is open in OB52
     const periodCheck = await db.execute(sql`
       SELECT id, is_open, from_period, from_year, to_period, to_year, account_type
-      FROM ent_posting_period
+      FROM fin_posting_calendar_period
       WHERE company_code_id = ${companyCodeId}
         AND is_open = true
         AND (
@@ -44,7 +44,7 @@ export async function validatePostingPeriod(companyCodeId: string, postingDate: 
     if (periodCheck.rows.length === 0) {
       // Fallback: check if any open period exists for company
       const anyOpen = await db.execute(sql`
-        SELECT id FROM ent_posting_period WHERE company_code_id = ${companyCodeId} AND is_open = true LIMIT 1
+        SELECT id FROM fin_posting_calendar_period WHERE company_code_id = ${companyCodeId} AND is_open = true LIMIT 1
       `);
       if (anyOpen.rows.length === 0) {
         // If no posting period config, allow (for initial setup) but log warning
@@ -69,8 +69,8 @@ export async function validateFieldStatus(companyCodeId: string, fieldStatusGrou
     const groupRes = await db.execute(sql`
       SELECT fsg.id
       FROM ent_field_status_group fsg
-      JOIN ent_field_status_variant fsv ON fsg.variant_id = fsv.id
-      WHERE fsv.code = (SELECT code FROM ent_posting_period_variant WHERE id = (SELECT variant_id FROM ent_posting_period WHERE company_code_id = ${companyCodeId} LIMIT 1) LIMIT 1)
+      JOIN fin_field_status_variant fsv ON fsg.variant_id = fsv.id
+      WHERE fsv.code = (SELECT code FROM fin_posting_calendar WHERE id = (SELECT variant_id FROM fin_posting_calendar_period WHERE company_code_id = ${companyCodeId} LIMIT 1) LIMIT 1)
         AND fsg.code = ${fieldStatusGroupCode}
       LIMIT 1
     `);
@@ -106,7 +106,7 @@ export async function validateTolerance(companyCodeId: string, toleranceType: st
   try {
     const tolRes = await db.execute(sql`
       SELECT amount_per_document, amount_per_open_item, cash_discount_per_line
-      FROM ent_tolerance_group
+      FROM fin_tolerance_group
       WHERE (company_code_id = ${companyCodeId} OR company_code_id IS NULL)
         AND type = ${toleranceType}
       LIMIT 1
@@ -131,8 +131,8 @@ export async function getAutoAccount(companyCodeId: string, transactionKey: stri
   try {
     const res = await db.execute(sql`
       SELECT gl.account_number, gl.id
-      FROM fi_auto_account_determination aad
-      JOIN fi_gl_account gl ON aad.gl_account_id = gl.id
+      FROM fin_auto_account aad
+      JOIN fin_ledger_account gl ON aad.gl_account_id = gl.id
       WHERE aad.company_code_id = ${companyCodeId}
         AND aad.transaction_key = ${transactionKey}
         AND aad.valuation_class = ${valuationClass}
@@ -141,13 +141,13 @@ export async function getAutoAccount(companyCodeId: string, transactionKey: stri
     if (res.rows.length > 0) {
       return (res.rows[0] as any).account_number;
     }
-    // Fallback hardcoded mapping per OBYC
+    // Fallback hardcoded mapping per FAUC (legacy OBYC) own IP INV_POSTING/GR_IR_CLEARING
     const fallback: Record<string, Record<string, string>> = {
-      'BSX': { 'ROH': '5000000001', 'FERT': '5000000002', 'HALB': '5000000002' },
-      'WRX': { 'ROH': '5000000003', 'FERT': '5000000003' },
-      'PRD': { 'ROH': '5000000005', 'FERT': '5000000005' },
-      'GBB': { 'ROH': '5000000006', 'FERT': '4000000000' },
-      'BSV': { 'ROH': '5000000004' },
+      'INV_POSTING': { 'ROH': '5000000001', 'FERT': '5000000002', 'HALB': '5000000002' },
+      'GR_IR_CLEARING': { 'ROH': '5000000003', 'FERT': '5000000003' },
+      'PRICE_DIFF': { 'ROH': '5000000005', 'FERT': '5000000005' },
+      'INV_OFFSET': { 'ROH': '5000000006', 'FERT': '4000000000' },
+      'INV_DIFF': { 'ROH': '5000000004' },
     };
     return fallback[transactionKey]?.[valuationClass] || null;
   } catch (e: any) {
@@ -192,8 +192,8 @@ export async function checkATP(materialId: string, plantId: string, slocId: stri
     // Check expiry BLOCK
     const batchRes = await db.execute(sql`
       SELECT b.batch_number, b.expiry_date, m.expiry_control
-      FROM ent_batch b
-      JOIN ent_material_master m ON b.material_id = m.id
+      FROM inv_lot b
+      JOIN prod_item m ON b.material_id = m.id
       WHERE b.material_id = ${materialId}
         AND b.plant_id = ${plantId}
         AND b.expiry_date IS NOT NULL
@@ -218,7 +218,7 @@ export async function checkCreditLimit(customerId: string, additionalAmount: num
   try {
     const custRes = await db.execute(sql`
       SELECT bp.id, COALESCE(bp.credit_limit, 1000000) as credit_limit
-      FROM ent_business_partner bp
+      FROM partner_account bp
       WHERE bp.id = ${customerId}
       LIMIT 1
     `);
@@ -252,7 +252,7 @@ export async function getNextNumberForUpdate(tx: any, objectType: string, compan
   // Use SELECT FOR UPDATE to prevent race
   const result = await tx.execute(sql`
     SELECT id, prefix, current_number, from_number, to_number
-    FROM ent_number_range
+    FROM core_number_range
     WHERE object_type = ${objectType}
       AND (company_code_id = ${companyCodeId} OR (company_code_id IS NULL AND ${companyCodeId} IS NULL) OR company_code_id IS NULL)
       AND year = ${year}
@@ -277,7 +277,7 @@ export async function getNextNumberForUpdate(tx: any, objectType: string, compan
   }
 
   await tx.execute(sql`
-    UPDATE ent_number_range SET current_number = ${current}, updated_at = NOW() WHERE id = ${row.id}
+    UPDATE core_number_range SET current_number = ${current}, updated_at = NOW() WHERE id = ${row.id}
   `);
 
   return { number: `${row.prefix || ''}${current}`, prefix: row.prefix };

@@ -194,8 +194,8 @@ export async function POST(req: NextRequest) {
     // Strict ERP: Automatic Account Determination for payroll posting
     try {
       const chartOfAccounts = 'KSCA';
-      const payrollExpenseGL = await getAutoAccount({ transaction_key: 'GBB', chart_of_accounts: chartOfAccounts, valuation_class: 'PAYROLL', company_code: company_code || '1000' });
-      console.log(`Payroll Run ${payroll_period} – auto accounts: Payroll Expense GBB=${payrollExpenseGL.gl_account} – gross ${totalGross} deductions ${totalDeductions} net ${totalNet} – strict OBYC`);
+      const payrollExpenseGL = await getAutoAccount({ transaction_key: 'INV_OFFSET', chart_of_accounts: chartOfAccounts, valuation_class: 'PAYROLL', company_code: company_code || '1000' });
+      console.log(`Payroll Run ${payroll_period} – auto accounts: Payroll Expense GBB=${payrollExpenseGL.gl_account} – gross ${totalGross} deductions ${totalDeductions} net ${totalNet} – strict FAUC (legacy OBYC)`);
     } catch {}
 
     // Create document entry – immutable audit trail
@@ -266,8 +266,8 @@ export async function PUT(req: NextRequest) {
         try {
           const runRes = await db.execute(sql`SELECT * FROM hr_payroll_run_new WHERE id = ${runId} LIMIT 1`);
           const run = runRes.rows[0] as any;
-          const expenseGL = await getAutoAccount({ transaction_key: 'GBB', chart_of_accounts: 'KSCA', valuation_class: 'PAYROLL', company_code: run.company_code });
-          console.log(`Payroll Run ${run.period_year}-${run.period_month} POSTED – FI posting: debit payroll expense ${expenseGL.gl_account} ${run.total_gross}, credit payable ${run.total_net} – strict OBYC`);
+          const expenseGL = await getAutoAccount({ transaction_key: 'INV_OFFSET', chart_of_accounts: 'KSCA', valuation_class: 'PAYROLL', company_code: run.company_code });
+          console.log(`Payroll Run ${run.period_year}-${run.period_month} POSTED – FI posting: debit payroll expense ${expenseGL.gl_account} ${run.total_gross}, credit payable ${run.total_net} – strict FAUC (legacy OBYC)`);
         } catch {}
       }
 

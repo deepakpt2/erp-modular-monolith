@@ -2,7 +2,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Background Job Worker - Polling mechanism for ent_job_queue
+ * Background Job Worker - Polling mechanism for core_job_queue
  * Processes PENDING jobs asynchronously: PAYROLL_RUN, COSTING_RUN, MRP_RUN
  * For medium enterprise 500 employees - avoids HTTP timeout
  */
@@ -15,7 +15,7 @@ export async function processNextJob(): Promise<boolean> {
     // Get oldest PENDING job FOR UPDATE SKIP LOCKED to avoid race
     const jobRes = await db.execute(sql`
       SELECT id, job_type, payload, company_code_id, created_by
-      FROM ent_job_queue
+      FROM core_job_queue
       WHERE status = 'PENDING'
       ORDER BY created_at ASC
       FOR UPDATE SKIP LOCKED
@@ -27,7 +27,7 @@ export async function processNextJob(): Promise<boolean> {
     const job = jobRes.rows[0] as any;
     console.log(`[JOB WORKER] Picked job ${job.id} type ${job.job_type}`);
 
-    await db.execute(sql`UPDATE ent_job_queue SET status = 'RUNNING', started_at = NOW() WHERE id = ${job.id}`);
+    await db.execute(sql`UPDATE core_job_queue SET status = 'RUNNING', started_at = NOW() WHERE id = ${job.id}`);
 
     const payload = typeof job.payload === 'string' ? JSON.parse(job.payload) : job.payload;
 
@@ -49,7 +49,7 @@ export async function processNextJob(): Promise<boolean> {
       }
 
       await db.execute(sql`
-        UPDATE ent_job_queue SET status = 'COMPLETED', finished_at = NOW(), result = ${JSON.stringify(result)}::jsonb
+        UPDATE core_job_queue SET status = 'COMPLETED', finished_at = NOW(), result = ${JSON.stringify(result)}::jsonb
         WHERE id = ${job.id}
       `);
       console.log(`[JOB WORKER] Job ${job.id} COMPLETED`);
@@ -57,7 +57,7 @@ export async function processNextJob(): Promise<boolean> {
     } catch (e: any) {
       console.error(`[JOB WORKER] Job ${job.id} FAILED:`, e.message);
       await db.execute(sql`
-        UPDATE ent_job_queue SET status = 'FAILED', finished_at = NOW(), error = ${e.message}
+        UPDATE core_job_queue SET status = 'FAILED', finished_at = NOW(), error = ${e.message}
         WHERE id = ${job.id}
       `).catch(()=>{});
       return true;
@@ -85,7 +85,7 @@ async function processPayroll(job: any, payload: any) {
   let fiDocId = null;
   try {
     const fiRes = await db.execute(sql`
-      INSERT INTO fi_document (document_number, company_code_id, doc_type, posting_date, document_date, total_debit, total_credit, status, header_text)
+      INSERT INTO fin_universal_ledger (document_number, company_code_id, doc_type, posting_date, document_date, total_debit, total_credit, status, header_text)
       VALUES (${fiNumber}, ${companyCodeId}, 'HR', NOW(), NOW(), ${totalGross}, ${totalGross}, 'POSTED', ${`Payroll ${periodYear}-${periodMonth} ${empRes.rows.length} employees`})
       RETURNING id
     `);
@@ -99,8 +99,8 @@ async function processCosting(job: any, payload: any) {
   const { plantId, type, companyCodeId } = payload;
   const matRes = await db.execute(sql`
     SELECT m.id, m.material_number
-    FROM ent_material_master m
-    JOIN ent_material_plant mp ON m.id = mp.material_id
+    FROM prod_item m
+    JOIN prod_item_plant mp ON m.id = mp.material_id
     WHERE mp.plant_id = ${plantId} AND m.type = 'FERT'
     LIMIT 100
   `);
@@ -110,9 +110,9 @@ async function processCosting(job: any, payload: any) {
   for (const mat of matRes.rows as any[]) {
     const bomRes = await db.execute(sql`
       SELECT bml.quantity as comp_qty, mp.moving_avg_price as comp_map
-      FROM pp_bom_header bmh
-      JOIN pp_bom_line bml ON bmh.id = bml.bom_header_id
-      JOIN ent_material_plant mp ON bml.material_id = mp.material_id AND mp.plant_id = ${plantId}
+      FROM mfg_bom_header bmh
+      JOIN mfg_bom_line bml ON bmh.id = bml.bom_header_id
+      JOIN prod_item_plant mp ON bml.material_id = mp.material_id AND mp.plant_id = ${plantId}
       WHERE bmh.material_id = ${mat.id} AND bmh.plant_id = ${plantId} AND bmh.is_active = true
       LIMIT 20
     `);
@@ -123,7 +123,7 @@ async function processCosting(job: any, payload: any) {
     if (matCost > 0) {
       totalCost += matCost;
       if (type === 'STANDARD') {
-        await db.execute(sql`UPDATE ent_material_plant SET standard_price = ${matCost} WHERE material_id = ${mat.id} AND plant_id = ${plantId}`);
+        await db.execute(sql`UPDATE prod_item_plant SET standard_price = ${matCost} WHERE material_id = ${mat.id} AND plant_id = ${plantId}`);
         updatedCount++;
       }
     }
@@ -137,7 +137,7 @@ async function processMrp(job: any, payload: any) {
   const { plantId, companyCodeId } = payload;
   const lowStockRes = await db.execute(sql`
     SELECT material_id, safety_stock, total_stock_qty
-    FROM ent_material_plant
+    FROM prod_item_plant
     WHERE plant_id = ${plantId} AND total_stock_qty < safety_stock
     LIMIT 50
   `);

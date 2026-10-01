@@ -2,12 +2,12 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Posting Period & Fiscal Year Helpers – SAP-like OB29/OBBO/OB52 enforcement
+ * Posting Period & Fiscal Year Helpers – SAP-like FFYC/FPPC/FPPE (legacy OB29/OBBO/OB52) own IP enforcement
  * Legal-safe own IP – FPPE/FPPC/FFYC
  * 
  * Functions:
  * - getFiscalYearPeriodFromDate(companyCode, postingDate): Calculates fiscal year and period from posting date via fiscal calendar
- * - isPostingPeriodOpen(variantCode, accountType, period, year): Checks if period is open in OB52
+ * - isPostingPeriodOpen(variantCode, accountType, period, year): Checks if period is open in FPPE (legacy OB52)
  * - enforcePostingPeriod(companyCode, postingDate, accountType): Full enforcement – returns error if closed
  */
 
@@ -46,9 +46,9 @@ export async function getFiscalCalendarForCompany(companyCode: string): Promise<
       };
     }
 
-    // Fallback: try ent_company_code
+    // Fallback: try org_legal_entity legacy check – own IP only, no ent_ tables
     try {
-      const res2 = await db.execute(sql`SELECT fiscal_year_variant as fiscal_calendar_code FROM ent_company_code WHERE code = ${companyCode} LIMIT 1`);
+      const res2 = await db.execute(sql`SELECT fiscal_calendar_code as fiscal_calendar_code FROM org_legal_entity WHERE code = ${companyCode} LIMIT 1`);
       if (res2.rows.length > 0) {
         return {
           fiscal_calendar_code: (res2.rows[0] as any).fiscal_calendar_code || 'K4',
@@ -153,15 +153,15 @@ export async function isPostingPeriodOpen(variantCode: string, accountType: stri
       const row = res.rows[0] as any;
       return {
         open: row.is_open === true || row.is_open === 't',
-        message: row.is_open ? `Period ${period}/${year} open for ${accountType} in variant ${variantCode}` : `Period ${period}/${year} CLOSED for ${accountType} in variant ${variantCode} – OB52`,
+        message: row.is_open ? `Period ${period}/${year} open for ${accountType} in variant ${variantCode}` : `Period ${period}/${year} CLOSED for ${accountType} in variant ${variantCode} – FPPE (legacy OB52)`,
         variant_exists: true
       };
     }
 
-    // Fallback to legacy fi_posting_period
+    // Fallback to legacy posting period (own IP fin_posting_calendar_period primary, legacy compatibility)
     try {
       const legacyRes = await db.execute(sql`
-        SELECT * FROM fi_posting_period
+        SELECT * FROM fin_posting_calendar_period /* legacy fin_posting_calendar_period compatibility */
         WHERE variant_code = ${variantCode.toUpperCase()}
         AND (account_type = ${accountType} OR account_type = '+' OR account_type = 'ALL')
         AND ${period} BETWEEN from_period AND to_period
@@ -180,7 +180,7 @@ export async function isPostingPeriodOpen(variantCode: string, accountType: stri
     // If no record found, check if variant exists at all
     const varCheck = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE code = ${variantCode.toUpperCase()} LIMIT 1`);
     if (varCheck.rows.length === 0) {
-      const varCheck2 = await db.execute(sql`SELECT id FROM fi_posting_period_variant WHERE code = ${variantCode.toUpperCase()} LIMIT 1`);
+      const varCheck2 = await db.execute(sql`SELECT id FROM fin_posting_calendar /* legacy fin_posting_calendar */ WHERE code = ${variantCode.toUpperCase()} LIMIT 1`);
       if (varCheck2.rows.length === 0) {
         return {
           open: true, // If variant doesn't exist, allow posting – don't block fresh deployments
@@ -193,7 +193,7 @@ export async function isPostingPeriodOpen(variantCode: string, accountType: stri
     // Variant exists but no open period record for this period/year/account type → closed
     return {
       open: false,
-      message: `Posting period ${period}/${year} NOT open for account type ${accountType} in variant ${variantCode} – OB52 – Create open period via POST /api/posting-period-variants with variant_code=${variantCode}, account_type=${accountType}, from_period=${period}, from_year=${year}, to_period=${period}, to_year=${year}, is_open=true`,
+      message: `Posting period ${period}/${year} NOT open for account type ${accountType} in variant ${variantCode} – FPPE (legacy OB52) – Create open period via POST /api/posting-period-variants with variant_code=${variantCode}, account_type=${accountType}, from_period=${period}, from_year=${year}, to_period=${period}, to_year=${year}, is_open=true`,
       variant_exists: true
     };
   } catch (e: any) {
@@ -201,7 +201,7 @@ export async function isPostingPeriodOpen(variantCode: string, accountType: stri
     // On error, allow posting to not block fresh deployments
     return {
       open: true,
-      message: `Posting period check failed (${e.message}) – allowing posting to not block – OB52`,
+      message: `Posting period check failed (${e.message}) – allowing posting to not block – FPPE (legacy OB52)`,
       variant_exists: false
     };
   }
@@ -239,40 +239,69 @@ export async function enforcePostingPeriod(params: {
 // === Strict ERP Functions – No Dummy – All Used in Practice – Phase 0 T0 BLOCKING ===
 
 export async function getAutoAccount(params: {
-  transaction_key: string; // BSX inventory, WRX GR/IR, GBB offset, PRD price diff, BSV PI, KDM FX, KOFI/KOFK revenue
+  transaction_key: string; // Own IP: INV_POSTING (legacy BSX), GR_IR_CLEARING (legacy WRX), INV_OFFSET (legacy GBB), PRICE_DIFF (legacy PRD), INV_DIFF (legacy BSV), FREIGHT, CUSTOMS, EXCH_DIFF (legacy KDM), REVENUE (legacy KOFI/KOFK) – with SAP alias support
   chart_of_accounts: string;
   valuation_class?: string;
   company_code?: string;
 }): Promise<{ gl_account: string | null; found: boolean; message: string }> {
+  // Own IP mapping with SAP legacy aliases – for every own IP code, SAP T-code as alias
+  const ownToLegacy: Record<string, string[]> = {
+    'INV_POSTING': ['BSX', 'INV_POST', 'INV_POSTING'],
+    'GR_IR_CLEARING': ['WRX', 'GRIR_CLEAR', 'GR_IR_CLEARING'],
+    'INV_OFFSET': ['GBB', 'OFFSET', 'INV_OFFSET'],
+    'PRICE_DIFF': ['PRD', 'PRICE_DIFF'],
+    'INV_DIFF': ['BSV', 'INV_DIFF'],
+    'FREIGHT': ['FRE', 'FR1', 'FR2', 'FR3', 'FREIGHT'],
+    'CUSTOMS': ['ZOL', 'CUSTOMS'],
+    'EXCH_DIFF': ['KDM', 'EXCH_DIFF'],
+    'REVENUE': ['KOFI', 'KOFK', 'REVENUE'],
+    'COGS': ['COGS'],
+  };
+  const legacyToOwn: Record<string, string> = {};
+  for (const [own, legacies] of Object.entries(ownToLegacy)) {
+    for (const leg of legacies) legacyToOwn[leg] = own;
+  }
+  const inputUpper = params.transaction_key.toUpperCase();
+  const ownKey = legacyToOwn[inputUpper] || inputUpper;
+  const legacyKeys = ownToLegacy[ownKey] || [ownKey];
+
   try {
-    // First try exact valuation_class, then blank fallback, then any
-    const res = await db.execute(sql`
-      SELECT gl_account, description FROM fin_auto_account
-      WHERE transaction_key = ${params.transaction_key.toUpperCase()}
-      AND chart_of_accounts = ${params.chart_of_accounts.toUpperCase()}
-      AND (valuation_class = ${params.valuation_class || ''} OR valuation_class IS NULL OR valuation_class = '' OR ${params.valuation_class || ''} = '')
-      AND (company_code = ${params.company_code || ''} OR company_code IS NULL OR company_code = '' OR ${params.company_code || ''} = '')
-      ORDER BY 
-        CASE WHEN valuation_class = ${params.valuation_class || ''} THEN 0 WHEN valuation_class IS NULL OR valuation_class = '' THEN 1 ELSE 2 END,
-        CASE WHEN company_code = ${params.company_code || ''} THEN 0 ELSE 1 END
-      LIMIT 1
-    `);
-    if (res.rows.length > 0) {
-      return { gl_account: (res.rows[0] as any).gl_account, found: true, message: `Auto account ${params.transaction_key}/${params.chart_of_accounts}/${params.valuation_class || 'DEFAULT'} → ${(res.rows[0] as any).gl_account} – OBYC T0 BLOCKING` };
-    }
-    // Fallback to fin_auto_posting_rule (new legal-safe)
+    // Try own IP key and all legacy aliases in fin_auto_account (legacy table) and fin_auto_posting_rule (new)
+    // First try new table fin_auto_posting_rule with own IP
     try {
-      const res2 = await db.execute(sql`
-        SELECT ledger_account_id, (SELECT account_number FROM fin_ledger_account WHERE id = ledger_account_id LIMIT 1) as gl_account FROM fin_auto_posting_rule
-        WHERE transaction_key = ${params.transaction_key.toUpperCase()}::fin_auto_posting_key
-        AND (inventory_valuation_class = ${params.valuation_class || ''} OR inventory_valuation_class IS NULL OR ${params.valuation_class || ''} = '')
+      for (const keyToTry of [ownKey, ...legacyKeys]) {
+        const res2 = await db.execute(sql`
+          SELECT ledger_account_id, (SELECT account_number FROM fin_ledger_account WHERE id = ledger_account_id LIMIT 1) as gl_account, transaction_key FROM fin_auto_posting_rule
+          WHERE (transaction_key = ${keyToTry}::fin_auto_posting_key OR transaction_key_legacy = ${keyToTry})
+          AND (inventory_valuation_class = ${params.valuation_class || ''} OR inventory_valuation_class IS NULL OR ${params.valuation_class || ''} = '')
+          LIMIT 1
+        `);
+        if (res2.rows.length > 0) {
+          return { gl_account: (res2.rows[0] as any).gl_account || (res2.rows[0] as any).ledger_account_id, found: true, message: `Auto account from fin_auto_posting_rule ${ownKey} (tried ${keyToTry} legacy ${legacyKeys.join('/')}) → ${(res2.rows[0] as any).gl_account} – FAUC own IP (legacy FAUC (legacy OBYC)) – T0` };
+        }
+      }
+    } catch (e) { console.warn('fin_auto_posting_rule lookup failed', e); }
+
+    // Then try legacy fin_auto_account with own IP and legacy keys
+    for (const keyToTry of [ownKey, ...legacyKeys]) {
+      const res = await db.execute(sql`
+        SELECT gl_account, description, transaction_key, sap_legacy_key FROM fin_auto_account
+        WHERE (transaction_key = ${keyToTry} OR sap_legacy_key = ${keyToTry})
+        AND (chart_of_accounts = ${params.chart_of_accounts.toUpperCase()} OR chart_of_accounts = 'KSCA' OR chart_of_accounts = 'CA-IN-01')
+        AND (valuation_class = ${params.valuation_class || ''} OR valuation_class IS NULL OR valuation_class = '' OR ${params.valuation_class || ''} = '')
+        AND (company_code = ${params.company_code || ''} OR company_code IS NULL OR company_code = '' OR ${params.company_code || ''} = '')
+        ORDER BY 
+          CASE WHEN transaction_key = ${ownKey} THEN 0 ELSE 1 END,
+          CASE WHEN valuation_class = ${params.valuation_class || ''} THEN 0 WHEN valuation_class IS NULL OR valuation_class = '' THEN 1 ELSE 2 END,
+          CASE WHEN company_code = ${params.company_code || ''} THEN 0 ELSE 1 END
         LIMIT 1
       `);
-      if (res2.rows.length > 0) {
-        return { gl_account: (res2.rows[0] as any).gl_account || (res2.rows[0] as any).ledger_account_id, found: true, message: `Auto account from fin_auto_posting_rule ${params.transaction_key}/${params.valuation_class}` };
+      if (res.rows.length > 0) {
+        return { gl_account: (res.rows[0] as any).gl_account, found: true, message: `Auto account ${ownKey} (tried ${keyToTry} legacy ${legacyKeys.join('/')}) / ${params.chart_of_accounts}/${params.valuation_class || 'DEFAULT'} → ${(res.rows[0] as any).gl_account} – FAUC own IP (legacy FAUC (legacy OBYC)) – T0` };
       }
-    } catch {}
-    return { gl_account: null, found: false, message: `Auto account not found for ${params.transaction_key}/${params.chart_of_accounts}/${params.valuation_class} – create via OBYC auto-account-determination – T0 BLOCKING` };
+    }
+
+    return { gl_account: null, found: false, message: `Auto account not found for ${ownKey} (legacy ${legacyKeys.join('/')}) / ${params.chart_of_accounts}/${params.valuation_class} – create via FAUC (legacy OBYC) auto-account-determination – T0 – own IP with SAP alias` };
   } catch (e: any) {
     console.warn('getAutoAccount failed:', e.message);
     return { gl_account: null, found: false, message: `Auto account check failed: ${e.message} – allowing to not block fresh` };
@@ -280,12 +309,48 @@ export async function getAutoAccount(params: {
 }
 
 export async function getMovementType(code: string): Promise<{ found: boolean; movement: any; message: string }> {
+  // Own IP movement types with SAP legacy aliases – for every own IP code, SAP code as alias
+  const ownToLegacy: Record<string, string[]> = {
+    'GR_PO': ['101', 'GR_PO'],
+    'GR_PO_REV': ['102', 'GR_PO_REV'],
+    'GR_BLOCK': ['103', 'GR_BLOCK'],
+    'GR_RETURN': ['122', 'GR_RETURN'],
+    'GR_RET_CUST': ['161', 'GR_RET_CUST'],
+    'GI_PROD': ['261', 'GI_PROD'],
+    'GI_PROD_REV': ['262', 'GI_PROD_REV'],
+    'TR_MAT': ['309', 'TR_MAT'],
+    'GI_SCRAP': ['551', 'GI_SCRAP'],
+    'GI_SALES': ['601', 'GI_SALES'],
+    'GI_SALES_REV': ['602', 'GI_SALES_REV'],
+    'GI_STO': ['641', 'GI_STO'],
+    'PI_PLUS': ['701', 'PI_PLUS'],
+    'PI_MINUS': ['702', 'PI_MINUS'],
+    'INIT_STOCK': ['561', 'INIT_STOCK'],
+  };
+  const legacyToOwn: Record<string, string> = {};
+  for (const [own, legs] of Object.entries(ownToLegacy)) {
+    for (const leg of legs) legacyToOwn[leg] = own;
+  }
+  const inputUpper = code.toUpperCase();
+  const ownCode = legacyToOwn[inputUpper] || inputUpper;
+  const legacyCodes = ownToLegacy[ownCode] || [ownCode];
+
   try {
-    const res = await db.execute(sql`SELECT * FROM fin_movement_type WHERE code = ${code} AND is_active = true LIMIT 1`);
-    if (res.rows.length > 0) {
-      return { found: true, movement: res.rows[0], message: `Movement Type ${code} found – ${(res.rows[0] as any).description} – OMJJ T0 BLOCKING` };
+    // Try own IP code and legacy SAP codes – check code and sap_legacy_code columns
+    for (const c of [ownCode, ...legacyCodes]) {
+      const res = await db.execute(sql`SELECT * FROM fin_movement_type WHERE (code = ${c} OR sap_legacy_code = ${c}) AND is_active = true LIMIT 1`);
+      if (res.rows.length > 0) {
+        return { found: true, movement: res.rows[0], message: `Movement Type ${ownCode} found (tried ${c} legacy ${legacyCodes.join('/')}) – ${(res.rows[0] as any).description} – FMTM own IP (legacy FMTM (legacy OMJJ)) – T0` };
+      }
+      // Try enhanced table
+      try {
+        const res2 = await db.execute(sql`SELECT * FROM fin_movement_type_enhanced WHERE (code = ${c} OR code = ${legacyCodes[0]}) AND is_active = true LIMIT 1`);
+        if (res2.rows.length > 0) {
+          return { found: true, movement: res2.rows[0], message: `Movement Type ${ownCode} found in enhanced (tried ${c}) – ${(res2.rows[0] as any).description} – FMTM own IP` };
+        }
+      } catch {}
     }
-    return { found: false, movement: null, message: `Movement Type ${code} not found – create via OMJJ movement-types – T0 BLOCKING` };
+    return { found: false, movement: null, message: `Movement Type ${ownCode} (legacy ${legacyCodes.join('/')}) not found – create via FMTM (legacy OMJJ) movement-types – T0 – own IP with SAP alias` };
   } catch (e: any) {
     console.warn('getMovementType failed:', e.message);
     return { found: false, movement: null, message: `Movement Type check failed: ${e.message} – allowing` };
@@ -322,14 +387,14 @@ export async function getRevenueAccount(params: {
     if (res.rows.length > 0) {
       const row = res.rows[0] as any;
       const fallback = !row.sales_org && !row.customer_group && !row.material_group ? 'DEFAULT' : row.sales_org ? 'EXACT' : 'PARTIAL';
-      return { gl_account: row.gl_account, found: true, message: `Revenue Account VKOA ${params.chart_of_accounts}/${params.transaction_key}/${params.sales_org}/${params.customer_group}/${params.material_group} → ${row.gl_account} – ${fallback} – T0 BLOCKING`, fallback_used: fallback };
+      return { gl_account: row.gl_account, found: true, message: `Revenue Account SBLC revenue determination own IP (legacy VKOA) ${params.chart_of_accounts}/${params.transaction_key}/${params.sales_org}/${params.customer_group}/${params.material_group} → ${row.gl_account} – ${fallback} – T0 BLOCKING`, fallback_used: fallback };
     }
     // Fallback to fin_auto_account KOFI/KOFK
     const fallbackAuto = await getAutoAccount({ transaction_key: params.transaction_key, chart_of_accounts: params.chart_of_accounts });
     if (fallbackAuto.found) {
-      return { gl_account: fallbackAuto.gl_account, found: true, message: `Revenue Account fallback to OBYC ${fallbackAuto.message} – VKOA → OBYC fallback – T0`, fallback_used: 'OBYC_FALLBACK' };
+      return { gl_account: fallbackAuto.gl_account, found: true, message: `Revenue Account fallback to FAUC (legacy OBYC) ${fallbackAuto.message} – SBLC revenue determination own IP (legacy VKOA) → FAUC (legacy OBYC) fallback – T0`, fallback_used: 'FAUC (legacy OBYC)_FALLBACK' };
     }
-    return { gl_account: null, found: false, message: `Revenue Account VKOA not found for ${params.chart_of_accounts}/${params.transaction_key}/${params.sales_org}/${params.customer_group}/${params.material_group} – create via VKOA revenue-accounts – T0 BLOCKING`, fallback_used: 'NOT_FOUND' };
+    return { gl_account: null, found: false, message: `Revenue Account SBLC revenue determination own IP (legacy VKOA) not found for ${params.chart_of_accounts}/${params.transaction_key}/${params.sales_org}/${params.customer_group}/${params.material_group} – create via SBLC revenue determination own IP (legacy VKOA) revenue-accounts – T0 BLOCKING`, fallback_used: 'NOT_FOUND' };
   } catch (e: any) {
     console.warn('getRevenueAccount failed:', e.message);
     return { gl_account: null, found: false, message: `Revenue Account check failed: ${e.message}`, fallback_used: 'ERROR' };
@@ -342,9 +407,9 @@ export async function validateMovementAllowed(movementCode: string, allowedFor: 
     if (!mt.found) return { allowed: false, message: mt.message };
     const allowed = (mt.movement as any).allowed_for;
     if (allowed === 'ALL' || allowed === allowedFor.toUpperCase() || allowedFor === 'ALL') {
-      return { allowed: true, message: `Movement ${movementCode} allowed for ${allowedFor} – ${allowed} – OMJJ T0` };
+      return { allowed: true, message: `Movement ${movementCode} allowed for ${allowedFor} – ${allowed} – FMTM (legacy OMJJ) T0` };
     }
-    return { allowed: false, message: `Movement ${movementCode} NOT allowed for ${allowedFor} – allowed_for=${allowed} – OMJJ – use correct movement` };
+    return { allowed: false, message: `Movement ${movementCode} NOT allowed for ${allowedFor} – allowed_for=${allowed} – FMTM (legacy OMJJ) – use correct movement` };
   } catch (e: any) {
     return { allowed: true, message: `Movement validation failed: ${e.message} – allowing` };
   }
@@ -390,13 +455,13 @@ export async function checkCreditExposure(params: {
   company_code?: string;
 }): Promise<{ allowed: boolean; exposure: number; limit: number; message: string; policy_area: string; risk_category: string; details: any }> {
   try {
-    // T1 REQUIRED – FD32 Credit Master + OVA8 Credit Check – NO DANGLING – exposure = open SO + open delivery + open billing + open AR vs limit
+    // T1 REQUIRED – FD32 own IP customer credit master Credit Master + credit check config own IP (legacy OVA8) Credit Check – NO DANGLING – exposure = open SO + open delivery + open billing + open AR vs limit
     // Get customer credit policy area and risk
     let creditLimit = 1000000;
     let policyArea = 'CPA-1000';
     let riskCategory = 'LOW';
     
-    // Try fin_credit_master FD32 first – customer_code + credit_policy_area_code
+    // Try fin_credit_master FD32 own IP customer credit master first – customer_code + credit_policy_area_code
     try {
       const cmRes = await db.execute(sql`
         SELECT customer_code, credit_policy_area_code, credit_limit, risk_category, credit_exposure 
@@ -441,7 +506,7 @@ export async function checkCreditExposure(params: {
       } catch {}
     }
 
-    // Calculate exposure from open sales orders + delivery + billing + AR open items – T1 REQUIRED – FD32 + OVA8
+    // Calculate exposure from open sales orders + delivery + billing + AR open items – T1 REQUIRED – FD32 own IP customer credit master + credit check config own IP (legacy OVA8)
     let exposure = 0;
     let exposureDetails: any = { so: 0, delivery: 0, billing: 0, ar: 0 };
     try {
@@ -493,7 +558,7 @@ export async function checkCreditExposure(params: {
       }
     } catch (e) { console.warn('Exposure calc failed', e); }
 
-    // Get credit check config OVA8 – reaction A warning, B error, C block
+    // Get credit check config credit check config own IP (legacy OVA8) – reaction A warning, B error, C block
     let reaction = 'B';
     try {
       const cfgRes = await db.execute(sql`
@@ -506,7 +571,7 @@ export async function checkCreditExposure(params: {
 
     const totalAfter = exposure + params.new_order_value;
     if (totalAfter > creditLimit) {
-      // OVA8 reaction: A warning allow, B error block, C block
+      // credit check config own IP (legacy OVA8) reaction: A warning allow, B error block, C block
       const allowed = reaction === 'A'; // Only warning allows
       return {
         allowed,
@@ -515,7 +580,7 @@ export async function checkCreditExposure(params: {
         policy_area: policyArea,
         risk_category: riskCategory,
         details: exposureDetails,
-        message: `${allowed ? '⚠️' : '❌'} Credit limit ${allowed ? 'warning' : 'exceeded'} – customer ${params.customer_code} exposure SO ${exposureDetails.so} + DL ${exposureDetails.delivery} + BL ${exposureDetails.billing} + AR ${exposureDetails.ar} = ${exposure} + new ${params.new_order_value} = ${totalAfter} > limit ${creditLimit} (policy ${policyArea} risk ${riskCategory} reaction ${reaction}) – ${allowed ? 'warning but allow – OVA8 A' : 'block sales order – OVA8 B/C – T1 REQUIRED – FD32 + OVA8'}`
+        message: `${allowed ? '⚠️' : '❌'} Credit limit ${allowed ? 'warning' : 'exceeded'} – customer ${params.customer_code} exposure SO ${exposureDetails.so} + DL ${exposureDetails.delivery} + BL ${exposureDetails.billing} + AR ${exposureDetails.ar} = ${exposure} + new ${params.new_order_value} = ${totalAfter} > limit ${creditLimit} (policy ${policyArea} risk ${riskCategory} reaction ${reaction}) – ${allowed ? 'warning but allow – credit check config own IP (legacy OVA8) A' : 'block sales order – credit check config own IP (legacy OVA8) B/C – T1 REQUIRED – FD32 own IP customer credit master + credit check config own IP (legacy OVA8)'}`
       };
     }
     return {
@@ -525,11 +590,11 @@ export async function checkCreditExposure(params: {
       policy_area: policyArea,
       risk_category: riskCategory,
       details: exposureDetails,
-      message: `✅ Credit OK – customer ${params.customer_code} exposure SO ${exposureDetails.so}+DL ${exposureDetails.delivery}+BL ${exposureDetails.billing}+AR ${exposureDetails.ar}=${exposure} + new ${params.new_order_value} = ${totalAfter} <= limit ${creditLimit} (policy ${policyArea} risk ${riskCategory}) – FD32 + OVA8 – T1 REQUIRED – NO DANGLING`
+      message: `✅ Credit OK – customer ${params.customer_code} exposure SO ${exposureDetails.so}+DL ${exposureDetails.delivery}+BL ${exposureDetails.billing}+AR ${exposureDetails.ar}=${exposure} + new ${params.new_order_value} = ${totalAfter} <= limit ${creditLimit} (policy ${policyArea} risk ${riskCategory}) – FD32 own IP customer credit master + credit check config own IP (legacy OVA8) – T1 REQUIRED – NO DANGLING`
     };
   } catch (e: any) {
-    console.warn('checkCreditExposure FD32 OVA8 failed:', e.message);
-    return { allowed: true, exposure: 0, limit: 1000000, policy_area: 'CPA-1000', risk_category: 'LOW', details: {}, message: `Credit check failed: ${e.message} – allowing – FD32 OVA8` };
+    console.warn('checkCreditExposure FD32 own IP customer credit master credit check config own IP (legacy OVA8) failed:', e.message);
+    return { allowed: true, exposure: 0, limit: 1000000, policy_area: 'CPA-1000', risk_category: 'LOW', details: {}, message: `Credit check failed: ${e.message} – allowing – FD32 own IP customer credit master credit check config own IP (legacy OVA8)` };
   }
 }
 

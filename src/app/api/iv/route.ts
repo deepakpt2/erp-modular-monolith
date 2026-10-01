@@ -9,7 +9,7 @@ import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared
 /**
  * Invoice Verification API – Legal-safe own IP – Module 6 MM Procurement
  * New: proc_invoice_verification + proc_iv_line (was mm_invoice_verification + mm_iv_line) – ivNumber IV-5100000001 was 51*, grId, poId, partnerId was vendor_id PSUC, legalEntityId was company_code_id, vendorInvoiceNumber, priceVariance, universalLedgerId was fi_document_id FULC RE + WRX clearing + BSX adjustment, isLandedCostPosted for MAP adjustment, itemId EMTC was material_id, taxRuleId FTXC was tax_code
- * Helper code: PIVC IV Create (alias IVC, MIRO, FIN-IV-CR) – 4-char MOOA P=Procurement, IV=InvoiceVerification, C=Create – same length as MIRO but own IP, module grouped, intuitive
+ * Helper code: PIVC IV Create (alias IVC, PIVC (legacy MIRO), FIN-IV-CR) – 4-char MOOA P=Procurement, IV=InvoiceVerification, C=Create – same length as PIVC (legacy MIRO) but own IP, module grouped, intuitive
  * Fallback to legacy mm_invoice_verification
  */
 
@@ -70,8 +70,8 @@ export async function GET(req: NextRequest) {
         LEFT JOIN mm_purchase_order po ON iv.po_id = po.id
         LEFT JOIN mm_goods_receipt gr ON iv.gr_id = gr.id
         LEFT JOIN partner_account pa ON iv.vendor_id = pa.id
-        LEFT JOIN ent_business_partner bp ON iv.vendor_id = bp.id
-        LEFT JOIN ent_plant p ON po.plant_id = p.id
+        LEFT JOIN partner_account bp ON iv.vendor_id = bp.id
+        LEFT JOIN org_facility p ON po.plant_id = p.id
         WHERE 1=1
       `;
 
@@ -95,9 +95,9 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Invoice Verification – PIVC legal-safe own IP (was MIRO 51 RE) – ivNumber IV-5100000001, partnerId PSUC was vendor_id, itemId EMTC was material_id, taxRuleId FTXC was tax_code, priceVariance PRD, universalLedgerId FULC RE + WRX clearing + BSX adjustment, isLandedCostPosted for MAP adjustment',
+      functionDescription: 'Invoice Verification – PIVC legal-safe own IP (was PIVC (legacy MIRO) 51 RE) – ivNumber IV-5100000001, partnerId PSUC was vendor_id, itemId EMTC was material_id, taxRuleId FTXC was tax_code, priceVariance PRD, universalLedgerId FULC RE + WRX clearing + BSX adjustment, isLandedCostPosted for MAP adjustment',
       multiPlant: 'Facility filtering via PO facility_id – Module6',
-      explanation: 'IV legal-safe proc_invoice_verification + proc_iv_line – ivNumber IV-5100000001 was 51*, grId, poId, partnerId was vendor_id PSUC, legalEntityId was company_code_id, vendorInvoiceNumber, priceVariance PRD, universalLedgerId was fi_document_id FULC RE + WRX clearing + BSX adjustment, isLandedCostPosted for MAP adjustment, itemId EMTC was material_id, taxRuleId FTXC was tax_code – Code PIVC primary alias IVC/MIRO – 4-char MOOA P=Procurement IV=InvoiceVerification C=Create – module grouped intuitive, same length as MIRO but own IP.',
+      explanation: 'IV legal-safe proc_invoice_verification + proc_iv_line – ivNumber IV-5100000001 was 51*, grId, poId, partnerId was vendor_id PSUC, legalEntityId was company_code_id, vendorInvoiceNumber, priceVariance PRD, universalLedgerId was fi_document_id FULC RE + WRX clearing + BSX adjustment, isLandedCostPosted for MAP adjustment, itemId EMTC was material_id, taxRuleId FTXC was tax_code – Code PIVC primary alias IVC/PIVC (legacy MIRO) – 4-char MOOA P=Procurement IV=InvoiceVerification C=Create – module grouped intuitive, same length as PIVC (legacy MIRO) but own IP.',
     });
   } catch (e: any) {
     console.error('DB error:', e.message);
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // SAP-like posting period enforcement – OB52 – check if period open for account type K
+    // SAP-like posting period enforcement – FPPE (legacy OB52) – check if period open for account type K
     try {
       const postingDate = body.posting_date || body.posting_date || new Date().toISOString();
       const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';
@@ -167,11 +167,11 @@ export async function POST(req: NextRequest) {
       } catch (tolErr: any) {
         console.warn('Tolerance OBA0/OBA4 check failed, allowing to not block fresh:', tolErr.message);
       }
-      // Strict ERP: Auto Account OBYC for IV – WRX clearing
+      // Strict ERP: Auto Account FAUC (legacy OBYC) for IV – WRX clearing
       try {
         const chartOfAccounts = 'KSCA';
         const valuationClass = body.material_type || 'RAW';
-        const wrx = await getAutoAccount({ transaction_key: 'WRX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+        const wrx = await getAutoAccount({ transaction_key: 'GR_IR_CLEARING', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
         (body as any)._auto_gl_wrx = wrx.gl_account;
       } catch {}
 
@@ -408,9 +408,9 @@ export async function POST(req: NextRequest) {
         let vendorReconGL: any = '2000000000';
         let taxGL: any = '2000000003';
         try {
-          const wrx: any = await getAutoAccount({ transaction_key: 'WRX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+          const wrx: any = await getAutoAccount({ transaction_key: 'GR_IR_CLEARING', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
           if(wrx.found) wrxGL = wrx.gl_account;
-          const prd: any = await getAutoAccount({ transaction_key: 'PRD', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+          const prd: any = await getAutoAccount({ transaction_key: 'PRICE_DIFF', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
           if(prd.found) prdGL = prd.gl_account;
         } catch {}
 
@@ -434,7 +434,7 @@ export async function POST(req: NextRequest) {
         }
 
         // WRX – Dr GR/IR clearing – if GR exists, clear WRX – amount = total invoiced based on PO price or invoiced price
-        // In SAP MIRO: Dr WRX (GR/IR) Cr Vendor – when GR qty = IV qty, WRX cleared – here we post Dr WRX – credit memo reverses: Cr WRX Dr Vendor
+        // In SAP PIVC (legacy MIRO): Dr WRX (GR/IR) Cr Vendor – when GR qty = IV qty, WRX cleared – here we post Dr WRX – credit memo reverses: Cr WRX Dr Vendor
         await db.execute(sql`
           INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
           VALUES (${ivNumber}, ${docTypeForLedger}::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalYear}, ${fiscalPeriod}, (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), ${isCredit ? 0 : totalAmountForLedger}, ${isCredit ? totalAmountForLedger : 0}, ${totalAmountForLedger}, 'INR', 'IV', ${ivNumber}, ${`IV 51 ${docTypeForLedger} WRX clearing – GR/IR clearing – PO ${poIdResolved} – WRX ${wrxGL} ${isCredit ? 'Cr' : 'Dr'} ${totalAmountForLedger} – ${isCredit ? 'credit memo' : 'invoice'} – T0 – vendor invoice accounting RE – tax FTXC – payment terms FAPT ${ivPaymentTermCode || ''} due ${ivDueDate?.toISOString().split('T')[0] || ''} – recon ${resolvedVendorReconGL} FGLC`})
@@ -520,7 +520,7 @@ export async function POST(req: NextRequest) {
         console.warn(`Document flow PO→IV GR→IV failed for IV ${ivNumber}:`, flowErr.message);
       }
 
-      return NextResponse.json({ success: true, iv: res.rows[0], ivNumber, code: 'PIVC', message: `IV ${ivNumber} created – PIVC legal-safe – RE + WRX clearing ${totalInvoicedAmount} + Vendor Recon + PRD ${totalVarianceAmount} + Tax ${totalTaxAmount} – vendor invoice accounting RE – WRX clearing – PRD price diff – tax FTXC – tolerance OBA0/OBA4 – posting period K – number range IV 5100000001 – document flow PR→PO→GR→IV PO→IV GR→IV – FDFL VBFA – universal ledger FULC RE posted – T0 – stock update via GR – GR accounting BSX/WRX – price diff PRD – org wired`, legalSafe: true, amounts: { invoiced: totalInvoicedAmount, variance: totalVarianceAmount, tax: totalTaxAmount, freight: totalFreightAmount, customs: totalCustomsAmount } });
+      return NextResponse.json({ success: true, iv: res.rows[0], ivNumber, code: 'PIVC', message: `IV ${ivNumber} created – PIVC legal-safe – RE + WRX clearing ${totalInvoicedAmount} + Vendor Recon + PRD ${totalVarianceAmount} + Tax ${totalTaxAmount} – vendor invoice accounting RE – WRX clearing – PRD price diff – tax FTXC – tolerance OBA0/OBA4 – posting period K – number range IV 5100000001 – document flow PR→PO→GR→IV PO→IV GR→IV – FDFL VBFA – universal ledger FULC RE posted – T0 – stock update via GR – GR accounting INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – price diff PRD – org wired`, legalSafe: true, amounts: { invoiced: totalInvoicedAmount, variance: totalVarianceAmount, tax: totalTaxAmount, freight: totalFreightAmount, customs: totalCustomsAmount } });
     } catch (newErr: any) {
       console.warn('proc_invoice_verification insert failed:', newErr.message);
       return NextResponse.json({ error: newErr.message }, { status: 500 });
@@ -621,7 +621,7 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE mm_invoice_verification SET status = ${status}::iv_status WHERE id = ${id} RETURNING id, iv_number, status`);
       else res = await db.execute(sql`UPDATE mm_invoice_verification SET status = ${status}::iv_status WHERE iv_number = ${iv_number} RETURNING id, iv_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'IV not found' }, { status: 404 });
-      return NextResponse.json({ success: true, iv: res.rows[0], message: `IV ${res.rows[0].iv_number} status ${status} – MIRO legacy` });
+      return NextResponse.json({ success: true, iv: res.rows[0], message: `IV ${res.rows[0].iv_number} status ${status} – PIVC (legacy MIRO) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

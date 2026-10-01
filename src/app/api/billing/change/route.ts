@@ -49,7 +49,7 @@ export async function GET(req: NextRequest){
           dueRows = res2.rows as any[];
         }catch{}
       }
-      return NextResponse.json({ success:true, code:'VF04', alias:'VF04', due_list: dueRows, data: dueRows, count: dueRows.length, message:`VF04 Billing Due List – ${dueRows.length} deliveries GOODS_ISSUED not yet billed – T1 REQUIRED – NO DANGLING – delivery status GOODS_ISSUED, billing not yet created – used for VF01 billing creation` });
+      return NextResponse.json({ success:true, code:'VF04', alias:'VF04', due_list: dueRows, data: dueRows, count: dueRows.length, message:`VF04 Billing Due List – ${dueRows.length} deliveries GOODS_ISSUED not yet billed – T1 REQUIRED – NO DANGLING – delivery status GOODS_ISSUED, billing not yet created – used for SBLC (legacy VF01) billing creation` });
     }
     return NextResponse.json({ success:true, code:'VF02', message:'VF02 Change Billing – use POST to update billing – T1 REQUIRED' });
   }catch(e:any){

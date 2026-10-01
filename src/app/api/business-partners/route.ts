@@ -5,10 +5,10 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Business Partners API – Legal-safe own IP – Module 3
- * New tables: partner_account (was ent_business_partner), partner_vendor_profile (was ent_bp_vendor_ext), partner_customer_profile (was ent_bp_customer_ext), partner_contact (new)
+ * New tables: partner_account (was partner_account), partner_vendor_profile (was partner_vendor_profile), partner_customer_profile (was partner_customer_profile), partner_contact (new)
  * Fresh empty – no hardcoded KS-V-001 etc – sample kept? No, fresh empty per requirement, but common sample data like CoA/GL/Tax/Currencies/UoM kept – partner fresh empty
  * Helper codes: EPAC Partner Account Create (alias PTNC, BPAC, BP01, FND-BP-CR), SCUC Customer Create (alias CUCC, XD01), PSUC Supplier Create (alias SUPC, XK01, ME01)
- * Fallback to legacy ent_business_partner if new tables not yet migrated
+ * Fallback to legacy partner_account if new tables not yet migrated
  */
 
 export async function GET(req: NextRequest) {
@@ -59,10 +59,10 @@ export async function GET(req: NextRequest) {
         freshEmpty: 'Module 3 – fresh empty – no hardcoded KS-V-001 etc – common sample data like CoA/GL/Tax/Currencies/UoM kept for convenience',
       });
     } catch (newErr: any) {
-      console.warn('partner_account not yet migrated, fallback ent_business_partner:', newErr.message);
+      console.warn('partner_account not yet migrated, fallback partner_account:', newErr.message);
       let query = sql`
         SELECT id, bp_number, role, name1, name2, email, phone, address, is_blocked, is_one_time, created_at
-        FROM ent_business_partner
+        FROM partner_account
         WHERE 1=1
       `;
       if (role && role !== 'ALL') {
@@ -79,11 +79,11 @@ export async function GET(req: NextRequest) {
         businessPartners: result.rows,
         count: result.rows.length,
         source: 'db-legacy',
-        table: 'ent_business_partner',
+        table: 'partner_account',
         code: 'EPAC',
         aliasCodes: ['PTNC', 'BP01'],
         helperCode: 'BP',
-        functionDescription: 'Business Partner – BP Central (legacy ent_business_partner – migrating to partner_account EPAC)',
+        functionDescription: 'Business Partner – BP Central (legacy partner_account – migrating to partner_account EPAC)',
         functionCodes: 'ME01 Vendor Master, XD01 Customer Master, BP Central',
         ks01: 'Legacy KS-V-001 Malabar Spice Farms Wayanad, KS-V-002 Idukki Cardamom, KS-V-003 Alleppey Turmeric, KS-C-001 Kochi Exports, KS-C-002 Mumbai Spice – will be removed for fresh empty Module3',
         legalSafe: false,
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
               if (ptRes.rows.length > 0) resolvedPaymentDays = (ptRes.rows[0] as any).days;
             } catch {}
           }
-          // Resolve reconciliation_account_code -> id via fin_ledger_account / fi_gl_account
+          // Resolve reconciliation_account_code -> id via fin_ledger_account / fin_ledger_account
           let resolvedReconId = reconciliation_account_id || null;
           const reconCode = (reconciliation_account_code || '').toString();
           if (!resolvedReconId && reconCode) {
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
               const glRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${reconCode} LIMIT 1`);
               if (glRes.rows.length > 0) resolvedReconId = (glRes.rows[0] as any).id;
               else {
-                const glRes2 = await db.execute(sql`SELECT id FROM fi_gl_account WHERE account_number = ${reconCode} LIMIT 1`);
+                const glRes2 = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${reconCode} LIMIT 1`);
                 if (glRes2.rows.length > 0) resolvedReconId = (glRes2.rows[0] as any).id;
               }
             } catch {}
@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
               const glRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${custReconCode} LIMIT 1`);
               if (glRes.rows.length > 0) resolvedCustReconId = (glRes.rows[0] as any).id;
               else {
-                const glRes2 = await db.execute(sql`SELECT id FROM fi_gl_account WHERE account_number = ${custReconCode} LIMIT 1`);
+                const glRes2 = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${custReconCode} LIMIT 1`);
                 if (glRes2.rows.length > 0) resolvedCustReconId = (glRes2.rows[0] as any).id;
               }
             } catch {}
@@ -309,15 +309,15 @@ export async function POST(req: NextRequest) {
         legalSafe: true,
       });
     } catch (newErr: any) {
-      console.warn('partner_account insert failed, fallback ent_business_partner:', newErr.message);
+      console.warn('partner_account insert failed, fallback partner_account:', newErr.message);
       const res = await db.execute(sql`
-        INSERT INTO ent_business_partner (bp_number, name1, role, email, phone, address, is_blocked, is_one_time)
+        INSERT INTO partner_account (bp_number, name1, role, email, phone, address, is_blocked, is_one_time)
         VALUES (${finalAccountNumber}, ${finalDisplayName}, ${finalRole}::bp_role, ${email||null}, ${phone||null}, ${finalAddressLine1||null}, false, false)
         ON CONFLICT (bp_number) DO UPDATE SET name1 = ${finalDisplayName}, role = ${finalRole}::bp_role
         RETURNING id, bp_number
       `);
 
-      return NextResponse.json({ success: true, businessPartner: res.rows[0], code: 'EPAC', aliasCodes: ['PTNC','BP01'], message: `BP ${finalAccountNumber} ${finalDisplayName} created role ${finalRole} – legacy ent_business_partner (migrating to partner_account EPAC)`, legalSafe: false });
+      return NextResponse.json({ success: true, businessPartner: res.rows[0], code: 'EPAC', aliasCodes: ['PTNC','BP01'], message: `BP ${finalAccountNumber} ${finalDisplayName} created role ${finalRole} – legacy partner_account (migrating to partner_account EPAC)`, legalSafe: false });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -375,17 +375,17 @@ export async function PUT(req: NextRequest) {
     // Fallback legacy
     let existing: any = null;
     if (id) {
-      const r = await db.execute(sql`SELECT * FROM ent_business_partner WHERE id = ${id} LIMIT 1`);
+      const r = await db.execute(sql`SELECT * FROM partner_account WHERE id = ${id} LIMIT 1`);
       if (r.rows.length > 0) existing = r.rows[0];
     } else if (finalAccountNumber) {
-      const r = await db.execute(sql`SELECT * FROM ent_business_partner WHERE bp_number = ${finalAccountNumber} LIMIT 1`);
+      const r = await db.execute(sql`SELECT * FROM partner_account WHERE bp_number = ${finalAccountNumber} LIMIT 1`);
       if (r.rows.length > 0) existing = r.rows[0];
     }
 
     if (!existing) return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
 
     const updated = await db.execute(sql`
-      UPDATE ent_business_partner SET
+      UPDATE partner_account SET
         name1 = COALESCE(${display_name || name1}, name1),
         role = COALESCE(${role}::bp_role, role),
         email = COALESCE(${email}, email),
@@ -429,7 +429,7 @@ export async function DELETE(req: NextRequest) {
         try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_goods_receipt WHERE vendor_id = ${partnerId}`); grCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
         try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM sd_sales_order WHERE customer_id = ${partnerId}`); soCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
         // Legacy checks too
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM ent_business_partner WHERE id = ${partnerId}`); } catch {}
+        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM partner_account WHERE id = ${partnerId}`); } catch {}
 
         if (prCount > 0 || poCount > 0 || grCount > 0 || soCount > 0) {
           await db.execute(sql`UPDATE partner_account SET is_active = false, updated_at = NOW() WHERE id = ${partnerId}`);
@@ -450,7 +450,7 @@ export async function DELETE(req: NextRequest) {
     let entId = id;
     let entNum = bp_number;
     if (!entId && entNum) {
-      const r = await db.execute(sql`SELECT id, bp_number FROM ent_business_partner WHERE bp_number = ${entNum} LIMIT 1`);
+      const r = await db.execute(sql`SELECT id, bp_number FROM partner_account WHERE bp_number = ${entNum} LIMIT 1`);
       if (r.rows.length > 0) { entId = (r.rows[0] as any).id; entNum = (r.rows[0] as any).bp_number; }
     }
 
@@ -461,13 +461,13 @@ export async function DELETE(req: NextRequest) {
     try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM sd_sales_order WHERE customer_id = ${entId}`); soCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
 
     if (poCount > 0 || soCount > 0) {
-      await db.execute(sql`UPDATE ent_business_partner SET is_blocked = true WHERE id = ${entId}`);
+      await db.execute(sql`UPDATE partner_account SET is_blocked = true WHERE id = ${entId}`);
       return NextResponse.json({ success: true, softDeleted: true, message: `BP ${entNum} has transactions PO:${poCount} SO:${soCount} – hard delete BLOCKED – blocked instead` });
     }
 
-    await db.execute(sql`DELETE FROM ent_bp_vendor_ext WHERE bp_id = ${entId}`).catch(()=>{});
-    await db.execute(sql`DELETE FROM ent_bp_customer_ext WHERE bp_id = ${entId}`).catch(()=>{});
-    await db.execute(sql`DELETE FROM ent_business_partner WHERE id = ${entId}`);
+    await db.execute(sql`DELETE FROM partner_vendor_profile WHERE bp_id = ${entId}`).catch(()=>{});
+    await db.execute(sql`DELETE FROM partner_customer_profile WHERE bp_id = ${entId}`).catch(()=>{});
+    await db.execute(sql`DELETE FROM partner_account WHERE id = ${entId}`);
 
     return NextResponse.json({ success: true, message: `BP ${entNum || entId} deleted – legacy – only allowed when no transactions` });
   } catch (e: any) {

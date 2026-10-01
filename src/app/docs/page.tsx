@@ -4,10 +4,10 @@ import { useState } from 'react';
 
 const sections = [
   { id: 'overview', title: 'Overview & Architecture' },
-  { id: 'enterprise', title: 'Enterprise Structure (OX15/OX02)' },
+  { id: 'enterprise', title: 'Enterprise Structure (OX15/ELEC (legacy OX02))' },
   { id: 'financials', title: 'Financials – FICO Config' },
   { id: 'master', title: 'Master Data' },
-  { id: 'users', title: 'Users & Roles (SU01/PFCG)' },
+  { id: 'users', title: 'Users & Roles (FUSC (legacy SU01)/FROC (legacy PFCG))' },
   { id: 'mm', title: 'MM – Procurement' },
   { id: 'inventory', title: 'Inventory Management' },
   { id: 'pp', title: 'PP – Production' },
@@ -28,7 +28,7 @@ export default function DocsPage() {
     return (
       <main className="min-h-screen bg-[#c0c0c0] font-mono text-[11px] p-0">
         <div className="bg-[#000080] text-white px-2 py-1 flex justify-between">
-          <span>ERP Documentation – Modular Monolith – OX02 / OB13 / FS00</span>
+          <span>ERP Documentation – Modular Monolith – ELEC (legacy OX02) / FCOA (legacy OB13) / FGLC (legacy FS00)</span>
           <button onClick={()=>setView('modern')} className="bg-white text-black px-2">Modern View</button>
         </div>
         <div className="flex">
@@ -123,8 +123,8 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
         <div className={cardClass}>
           <h2 className={h2Class}>Architecture Principles</h2>
           <ul className="list-disc pl-5 space-y-1">
-            <li><b>Function is destination</b> – OX02 is helper to find Company Master, not destination itself. Destination is function.</li>
-            <li><b>Code is helper</b> – Show OX02 as small badge ↳ OX02, not primary title.</li>
+            <li><b>Function is destination</b> – ELEC (legacy OX02) is helper to find Company Master, not destination itself. Destination is function.</li>
+            <li><b>Code is helper</b> – Show ELEC (legacy OX02) as small badge ↳ ELEC (legacy OX02), not primary title.</li>
             <li><b>Modular Monolith</b> – src/modules/pp, mm, sd, fico, foundation, hr, audit – each with api/ + ui/ + lib/.</li>
             <li><b>View Toggle</b> – Modern (rounded-2xl, shadows, nice inputs) vs Classic (mono, border-black, power-user no nonsense).</li>
             <li><b>API vs Form fields same</b> – Clean placeholders = field name not sample data. CODE not "e.g. 1000".</li>
@@ -154,15 +154,15 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
         <p className={classic ? "mb-3" : "text-sm text-zinc-500 mb-6"}>Step-by-step to create new company ISL with LE 2000, FAC 2000 covering all config from enterprise to audit.</p>
 
         <div className={cardClass}>
-          <h2 className={h2Class}>Step 0 – Create Company Code (OX02 / Company Master)</h2>
+          <h2 className={h2Class}>Step 0 – Create Company Code (ELEC (legacy OX02) / Company Master)</h2>
           <div className="space-y-2 text-[12px]">
-            <div><span className={codeClass}>OX02</span> <b>Function:</b> Company Master – Legal entity creation</div>
+            <div><span className={codeClass}>ELEC (legacy OX02)</span> <b>Function:</b> Company Master – Legal entity creation</div>
             <div className="font-mono bg-white border p-2 rounded-xl text-[11px]">
               CODE: 2000<br/>
               NAME: ISL – International Steel Ltd<br/>
               COMPANY_GROUP_CODE: ISL<br/>
-              CURRENCY_CODE: INR (OY03 default)<br/>
-              COA_CODE: 1000 (OB13)<br/>
+              CURRENCY_CODE: INR (FCYC (legacy OY03) default)<br/>
+              COA_CODE: 1000 (FCOA (legacy OB13))<br/>
               CITY: Mumbai, COUNTRY: IN<br/>
               PLANT: 2000 (FAC-2000)
             </div>
@@ -187,24 +187,24 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
           </div>
           <div className="mt-3 text-[11px] bg-white border rounded-xl p-3">
             Order: Company Group → Legal Entity → Financial CC → Controlling Area → Plant → SLoc → Sales/Purchasing → Warehouse<br/>
-            All via <b>/foundation/enterprise-structure</b> – OX15/OX02/OX10 helper codes, function is destination.
+            All via <b>/foundation/enterprise-structure</b> – OX15/ELEC (legacy OX02)/EFCC (legacy OX10) helper codes, function is destination.
           </div>
         </div>
 
         <div className={cardClass}>
           <h2 className={h2Class}>Step 2 – Financials (FCYC/FEXC/FFYC/FPPC/FPPE/FCOA/FGLC/ECUC/EPUC/FTXC/FNRC/FTGC)</h2>
           <div className="space-y-1 text-[12px]">
-            <div><span className={codeClass}>FCYC</span> Fiscal Year Variant – FY-2000 – April-March – OB29</div>
-            <div><span className={codeClass}>FEXC</span> Exchange Rates – INR default – OY03</div>
+            <div><span className={codeClass}>FCYC</span> Fiscal Year Variant – FY-2000 – April-March – FFYC (legacy OB29)</div>
+            <div><span className={codeClass}>FEXC</span> Exchange Rates – INR default – FCYC (legacy OY03)</div>
             <div><span className={codeClass}>FFYC</span> Fiscal Year – 2026 – OPEN</div>
-            <div><span className={codeClass}>FPPC</span> Posting Period Variant – PP-2000 – OBBO</div>
-            <div><span className={codeClass}>FPPE</span> Posting Period Entries – OB52 – 01/2026 to 12/2026 OPEN</div>
-            <div><span className={codeClass}>FCOA</span> Chart of Accounts – 1000 – INT – OB13</div>
-            <div><span className={codeClass}>FGLC</span> G/L Accounts – FS00 – 100000 Cash, 400000 Revenue, etc – COMPANY_CODE 2000</div>
-            <div><span className={codeClass}>ECUC</span> Currency Config – INR – OY03</div>
+            <div><span className={codeClass}>FPPC</span> Posting Period Variant – PP-2000 – FPPC (legacy OBBO)</div>
+            <div><span className={codeClass}>FPPE</span> Posting Period Entries – FPPE (legacy OB52) – 01/2026 to 12/2026 OPEN</div>
+            <div><span className={codeClass}>FCOA</span> Chart of Accounts – 1000 – INT – FCOA (legacy OB13)</div>
+            <div><span className={codeClass}>FGLC</span> G/L Accounts – FGLC (legacy FS00) – 100000 Cash, 400000 Revenue, etc – COMPANY_CODE 2000</div>
+            <div><span className={codeClass}>ECUC</span> Currency Config – INR – FCYC (legacy OY03)</div>
             <div><span className={codeClass}>EPUC</span> Payment Terms – 0001 – Immediate</div>
-            <div><span className={codeClass}>FTXC</span> Tax Codes – FTXP – V0 0%, V1 5%, V2 12%, V3 18%</div>
-            <div><span className={codeClass}>FNRC</span> Number Ranges – FBN1 – Document numbers</div>
+            <div><span className={codeClass}>FTXC</span> Tax Codes – FTXC (legacy FTXP) – V0 0%, V1 5%, V2 12%, V3 18%</div>
+            <div><span className={codeClass}>FNRC</span> Number Ranges – FNRC (legacy FBN1) – Document numbers</div>
             <div><span className={codeClass}>FTGC</span> Tax Group – TG-2000 – GST Group</div>
           </div>
         </div>
@@ -212,12 +212,12 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
         <div className={cardClass}>
           <h2 className={h2Class}>Step 3 – Master Data (EUOC/EMTP/EMTC/ELTC/EPAC/PSUC/SCUC)</h2>
           <div className="space-y-1 text-[12px]">
-            <div><span className={codeClass}>EUOC</span> UOM – CUNI – KG, PC, BOX, LTR, MTR – COMPANY_CODE 2000</div>
+            <div><span className={codeClass}>EUOC</span> UOM – EUOC (legacy CUNI) – KG, PC, BOX, LTR, MTR – COMPANY_CODE 2000</div>
             <div><span className={codeClass}>EMTP</span> Material Types – OMS2 – ROH, HALB, FERT, HAWA</div>
-            <div><span className={codeClass}>EMTC</span> Material Master – MM01 – ITEM_NUMBER, DESCRIPTION, TYPE, UOM, PLANT 2000</div>
+            <div><span className={codeClass}>EMTC</span> Material Master – EMTC (legacy MM01) – ITEM_NUMBER, DESCRIPTION, TYPE, UOM, PLANT 2000</div>
             <div><span className={codeClass}>ELTC</span> Location Type – SLoc types</div>
             <div><span className={codeClass}>EPAC</span> Partner Roles – Vendor, Customer</div>
-            <div><span className={codeClass}>PSUC</span> Partners – MM01 – ACCOUNT_NUMBER, DISPLAY_NAME, ROLE, COMPANY_CODE 2000</div>
+            <div><span className={codeClass}>PSUC</span> Partners – EMTC (legacy MM01) – ACCOUNT_NUMBER, DISPLAY_NAME, ROLE, COMPANY_CODE 2000</div>
             <div><span className={codeClass}>SCUC</span> Stock Categories – Unrestricted, Quality, Blocked</div>
           </div>
         </div>
@@ -225,14 +225,14 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
         <div className={cardClass}>
           <h2 className={h2Class}>Step 4 – Remaining Steps Summary</h2>
           <div className="text-[12px] space-y-1">
-            <div><span className={codeClass}>SU01/PFCG</span> Users & Roles – Create users, assign ADMIN/USER/ACCOUNTS roles</div>
+            <div><span className={codeClass}>FUSC (legacy SU01)/FROC (legacy PFCG)</span> Users & Roles – Create users, assign ADMIN/USER/ACCOUNTS roles</div>
             <div><span className={codeClass}>PPRC/PPOC/PGRC/PIVC/PSTC/PIRC/PSRC</span> MM – PR, PO, GR, IV, STO, Physical Inventory, Stock Overview</div>
             <div><span className={codeClass}>ISTC/IPDC/IRSC/ISRC</span> Inventory – Stock Transport, Physical Inventory</div>
             <div><span className={codeClass}>MBMC/MWCC/MRTC/MPVC/MMOC/MMRP/MKTC</span> PP – BOM, Work Centers, Routings, MRP, Kitting</div>
             <div><span className={codeClass}>SSOC/SDLC/SBLC/SPWC/SCMR</span> SD – Sales Orders, Delivery, Billing, Pricing</div>
             <div><span className={codeClass}>HOUC/HPOC/HEMC/HPRC</span> HR – Org Units, Positions, Employees, Payroll</div>
             <div><span className={codeClass}>FAPT/FRPC/FFVC/FCDC/FCCA/FTRC</span> FICO Extended – AP, AR, Cost Centers, etc</div>
-            <div><span className={codeClass}>F-53/KZ</span> Payment – Vendor clearing</div>
+            <div><span className={codeClass}>FPYP (legacy F-53)/KZ</span> Payment – Vendor clearing</div>
             <div><span className={codeClass}>FULC/ALB/SM20/WORM-lite/SBWP</span> Audit – Logs, Document Flow, Workflow Inbox</div>
           </div>
         </div>
@@ -251,7 +251,7 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
         <div className="space-y-3 text-[12px]">
           {active === 'enterprise' && (
             <>
-              <div><b>OX15/OX02/OX10</b> – Enterprise Structure – Company, Company Code, Plant, Storage Location. Destination function.</div>
+              <div><b>OX15/ELEC (legacy OX02)/EFCC (legacy OX10)</b> – Enterprise Structure – Company, Company Code, Plant, Storage Location. Destination function.</div>
               <div className="font-mono bg-white border rounded-xl p-3 text-[11px]">
                 Table: ent_company_group (ECGC) → ent_legal_entity (ELEC) → ent_company_code (EFCC) → ent_plant (EPLC) → ent_storage_location<br/>
                 Fields: CODE, NAME, COMPANY_GROUP_CODE, COMPANY_CODE, PLANT_CODE, CURRENCY_CODE – all uppercase, exact API match.
@@ -261,35 +261,35 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
           )}
           {active === 'financials' && (
             <>
-              <div><b>OB13/FS00/KS01/FTXP/OY03/OBBO/F-53/KSB1/CK40N</b> – Financial config</div>
-              <div>FCYC – Fiscal Year Variant – OB29 – YEAR_VARIANT, DESCRIPTION, PERIOD_COUNT</div>
-              <div>FCOA – Chart of Accounts – OB13 – CODE, NAME, DESCRIPTION</div>
-              <div>FGLC – G/L Accounts – FS00 – ACCOUNT_NUMBER, CHART_OF_ACCOUNTS_CODE, ACCOUNT_TYPE, COMPANY_CODE</div>
-              <div>FTXC – Tax Codes – FTXP – TAX_CODE, RATE, DESCRIPTION, COMPANY_CODE</div>
+              <div><b>FCOA (legacy OB13)/FGLC (legacy FS00)/KS01/FTXC (legacy FTXP)/FCYC (legacy OY03)/FPPC (legacy OBBO)/FPYP (legacy F-53)/KSB1/CK40N</b> – Financial config</div>
+              <div>FCYC – Fiscal Year Variant – FFYC (legacy OB29) – YEAR_VARIANT, DESCRIPTION, PERIOD_COUNT</div>
+              <div>FCOA – Chart of Accounts – FCOA (legacy OB13) – CODE, NAME, DESCRIPTION</div>
+              <div>FGLC – G/L Accounts – FGLC (legacy FS00) – ACCOUNT_NUMBER, CHART_OF_ACCOUNTS_CODE, ACCOUNT_TYPE, COMPANY_CODE</div>
+              <div>FTXC – Tax Codes – FTXC (legacy FTXP) – TAX_CODE, RATE, DESCRIPTION, COMPANY_CODE</div>
             </>
           )}
           {active === 'master' && (
             <>
-              <div>EUOC – UOM – CUNI – CODE, NAME, DIMENSION</div>
+              <div>EUOC – UOM – EUOC (legacy CUNI) – CODE, NAME, DIMENSION</div>
               <div>EMTP – Material Types – OMS2 – CODE, DESCRIPTION, NUMBER_RANGE</div>
-              <div>EMTC – Materials – MM01 – ITEM_NUMBER, DESCRIPTION, TYPE, BASE_UOM, PLANT, COMPANY_CODE</div>
+              <div>EMTC – Materials – EMTC (legacy MM01) – ITEM_NUMBER, DESCRIPTION, TYPE, BASE_UOM, PLANT, COMPANY_CODE</div>
               <div>PSUC – Partners – ACCOUNT_NUMBER, DISPLAY_NAME, ROLE, COMPANY_CODE</div>
             </>
           )}
           {active === 'users' && (
             <>
-              <div><b>SU01/PFCG</b> – User Management – USERNAME, EMAIL, ROLE, PASSWORD</div>
+              <div><b>FUSC (legacy SU01)/FROC (legacy PFCG)</b> – User Management – USERNAME, EMAIL, ROLE, PASSWORD</div>
               <div>Roles: ADMIN (all), ACCOUNTS (FICO), MM (procurement), PP (production), SD (sales), HR, AUDITOR</div>
               <div>Auth via NextAuth – /api/auth – ensureAdmin resilient initProduction.</div>
             </>
           )}
           {active === 'mm' && (
             <>
-              <div>PPRC – PR – ME51N – PR_NUMBER, MATERIAL, QUANTITY, PLANT, COMPANY_CODE</div>
-              <div>PPOC – PO – ME21N – PO_NUMBER, VENDOR, MATERIAL, QUANTITY, PRICE, COMPANY_CODE</div>
-              <div>PGRC – GR – MIGO 101 – MATERIAL, QUANTITY, PLANT, STORAGE_LOCATION</div>
-              <div>PIVC – IV – MIRO – VENDOR, INVOICE_NUMBER, AMOUNT</div>
-              <div>PSTC – STO – ME27 – FROM_PLANT, TO_PLANT, MATERIAL</div>
+              <div>PPRC – PR – PPRC (legacy ME51N) – PR_NUMBER, MATERIAL, QUANTITY, PLANT, COMPANY_CODE</div>
+              <div>PPOC – PO – PPOC (legacy ME21N) – PO_NUMBER, VENDOR, MATERIAL, QUANTITY, PRICE, COMPANY_CODE</div>
+              <div>PGRC – GR – IGRC GR_PO (legacy IGRC (legacy MIGO) 101) – MATERIAL, QUANTITY, PLANT, STORAGE_LOCATION</div>
+              <div>PIVC – IV – PIVC (legacy MIRO) – VENDOR, INVOICE_NUMBER, AMOUNT</div>
+              <div>PSTC – STO – PSTC (legacy ME27) – FROM_PLANT, TO_PLANT, MATERIAL</div>
             </>
           )}
           {active === 'pp' && (
@@ -304,8 +304,8 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
           {active === 'sd' && (
             <>
               <div>SSOC – Sales Orders – VA01 – ORDER_NUMBER, CUSTOMER, MATERIAL, QUANTITY, COMPANY_CODE</div>
-              <div>SDLC – Delivery – VL01N – DELIVERY_NUMBER, SALES_ORDER, PLANT</div>
-              <div>SBLC – Billing – VF01 – BILLING_NUMBER, DELIVERY, AMOUNT</div>
+              <div>SDLC – Delivery – SDLC (legacy VL01N) – DELIVERY_NUMBER, SALES_ORDER, PLANT</div>
+              <div>SBLC – Billing – SBLC (legacy VF01) – BILLING_NUMBER, DELIVERY, AMOUNT</div>
             </>
           )}
           {active === 'hr' && (
@@ -320,7 +320,7 @@ function DocContent({ active, classic }: { active: string; classic: boolean }) {
               <div>FAPT – AP – Vendor invoices, payments</div>
               <div>FRPC – AR – Customer invoices</div>
               <div>FCCA – Cost Centers – KS01 – CODE, NAME, COMPANY_CODE</div>
-              <div>F-53/KZ – Payment – Vendor payment clearing – VENDOR, AMOUNT, GL_ACCOUNT</div>
+              <div>FPYP (legacy F-53)/KZ – Payment – Vendor payment clearing – VENDOR, AMOUNT, GL_ACCOUNT</div>
             </>
           )}
           {active === 'audit' && (

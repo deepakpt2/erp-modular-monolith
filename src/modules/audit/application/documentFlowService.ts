@@ -177,7 +177,7 @@ export class DocumentFlowService {
           };
           // Also add FI doc if exists (material doc → FI)
           if (r.fi_document_id) {
-            const fiRes = await db.execute(sql`SELECT id, document_number, status, total_debit FROM fi_document WHERE id = ${r.fi_document_id}`);
+            const fiRes = await db.execute(sql`SELECT id, document_number, status, total_debit FROM fin_universal_ledger WHERE id = ${r.fi_document_id}`);
             if (fiRes.rows.length > 0) {
               const fi = fiRes.rows[0] as any;
               node.children.push({
@@ -208,7 +208,7 @@ export class DocumentFlowService {
             children: [],
           };
           if (r.fi_document_id) {
-            const fiRes = await db.execute(sql`SELECT id, document_number, status, total_debit FROM fi_document WHERE id = ${r.fi_document_id}`);
+            const fiRes = await db.execute(sql`SELECT id, document_number, status, total_debit FROM fin_universal_ledger WHERE id = ${r.fi_document_id}`);
             if (fiRes.rows.length > 0) {
               const fi = fiRes.rows[0] as any;
               node.children.push({
@@ -225,7 +225,7 @@ export class DocumentFlowService {
           }
         }
       } else if (type === 'FI') {
-        const res = await db.execute(sql`SELECT id, document_number, doc_type, status, total_debit, posting_date, reference_doc_type, reference_doc_number FROM fi_document WHERE id = ${id}`);
+        const res = await db.execute(sql`SELECT id, document_number, doc_type, status, total_debit, posting_date, reference_doc_type, reference_doc_number FROM fin_universal_ledger WHERE id = ${id}`);
         if (res.rows.length > 0) {
           const r = res.rows[0] as any;
           node = {
@@ -274,7 +274,7 @@ export class DocumentFlowService {
             });
           }
           if (r.fi_document_id) {
-            const fiRes = await db.execute(sql`SELECT id, document_number, status, total_debit FROM fi_document WHERE id = ${r.fi_document_id}`);
+            const fiRes = await db.execute(sql`SELECT id, document_number, status, total_debit FROM fin_universal_ledger WHERE id = ${r.fi_document_id}`);
             if (fiRes.rows.length > 0) {
               const fi = fiRes.rows[0] as any;
               node.children.push({
@@ -306,7 +306,7 @@ export class DocumentFlowService {
             children: [],
           };
           if (r.fi_document_id) {
-            const fiRes = await db.execute(sql`SELECT id, document_number, status, total_debit FROM fi_document WHERE id = ${r.fi_document_id}`);
+            const fiRes = await db.execute(sql`SELECT id, document_number, status, total_debit FROM fin_universal_ledger WHERE id = ${r.fi_document_id}`);
             if (fiRes.rows.length > 0) {
               const fi = fiRes.rows[0] as any;
               node.children.push({

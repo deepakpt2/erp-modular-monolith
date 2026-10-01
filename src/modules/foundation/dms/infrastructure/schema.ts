@@ -17,7 +17,7 @@ export const dmsDocument = pgTable('dms_document', {
 export const dmsDocumentLink = pgTable('dms_document_link', {
   id: uuid('id').primaryKey().defaultRandom(),
   documentId: uuid('document_id').notNull().references(() => dmsDocument.id, { onDelete: 'cascade' }),
-  linkedTable: varchar('linked_table', { length: 50 }).notNull(), // e.g., 'mm_purchase_order', 'mm_goods_receipt', 'fi_ap_invoice'
+  linkedTable: varchar('linked_table', { length: 50 }).notNull(), // e.g., 'mm_purchase_order', 'mm_goods_receipt', 'fin_ap_invoice'
   linkedId: uuid('linked_id').notNull(),
   linkedDocNumber: varchar('linked_doc_number', { length: 50 }),
   docCategory: varchar('doc_category', { length: 20 }).notNull().default('OTHER'), // INVOICE, SPEC, CERT, GR, PO, OTHER

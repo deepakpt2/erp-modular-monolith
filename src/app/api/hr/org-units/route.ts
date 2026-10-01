@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
                (SELECT COUNT(*) FROM hr_position WHERE org_unit_id = ou.id) as position_count,
                (SELECT COUNT(*) FROM hr_employee WHERE position_id IN (SELECT id FROM hr_position WHERE org_unit_id = ou.id)) as employee_count
         FROM hr_org_unit ou
-        LEFT JOIN ent_plant p ON ou.plant_id = p.id
+        LEFT JOIN org_facility p ON ou.plant_id = p.id
         WHERE 1=1
       `;
       if (search) query = sql`${query} AND (ou.code ILIKE ${`%${search}%`} OR ou.name ILIKE ${`%${search}%`})`;

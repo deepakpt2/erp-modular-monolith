@@ -31,7 +31,7 @@ export async function GET(req: NextRequest){
         sloc_code VARCHAR(20),
         quantity NUMERIC NOT NULL,
         uom_code VARCHAR(20) DEFAULT 'PC',
-        movement_type VARCHAR(10) DEFAULT '261',
+        movement_type VARCHAR(10) DEFAULT 'GI_PROD',
         cost_center_code VARCHAR(50),
         order_number VARCHAR(50),
         requirement_date DATE,
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest){
         sloc_code VARCHAR(20),
         quantity NUMERIC NOT NULL,
         uom_code VARCHAR(20) DEFAULT 'PC',
-        movement_type VARCHAR(10) DEFAULT '261',
+        movement_type VARCHAR(10) DEFAULT 'GI_PROD',
         cost_center_code VARCHAR(50),
         order_number VARCHAR(50),
         requirement_date DATE,
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest){
     const resNumber = `RES-${Date.now().toString().slice(-6)}`;
     const insRes = await db.execute(sql`
       INSERT INTO inv_reservation (reservation_number, item_id, material_code, facility_id, facility_code, inventory_location_id, sloc_code, quantity, uom_code, movement_type, cost_center_code, order_number, requirement_date, status)
-      VALUES (${resNumber}, ${matId}, ${material_code || item_number || matId}, ${facId}, ${facility_code || null}, ${inventory_location_id || null}, ${sloc_code || null}, ${quantity}, ${uom_code || 'PC'}, ${movement_type || '261'}, ${cost_center_code || null}, ${order_number || null}, ${requirement_date ? new Date(requirement_date) : null}::date, 'CREATED')
+      VALUES (${resNumber}, ${matId}, ${material_code || item_number || matId}, ${facId}, ${facility_code || null}, ${inventory_location_id || null}, ${sloc_code || null}, ${quantity}, ${uom_code || 'PC'}, ${movement_type || 'GI_PROD'}, ${cost_center_code || null}, ${order_number || null}, ${requirement_date ? new Date(requirement_date) : null}::date, 'CREATED')
       RETURNING *
     `);
     // Check availability – deduct from available stock check
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest){
         console.warn(`MB21 Reservation ${resNumber} – stock ${totalStock} < reservation ${quantity} – shortage`);
       }
     }catch{}
-    return NextResponse.json({ success:true, code:'MB21', reservation_number: resNumber, reservation: insRes.rows[0], message:`MB21 Reservation ${resNumber} created – material ${matId} plant ${facId} sloc ${sloc_code||''} qty ${quantity} ${uom_code||'PC'} movement ${movement_type||'261'} cost center ${cost_center_code||''} order ${order_number||''} requirement ${requirement_date||''} – T2 GOOD – NO DANGLING – reservation fields used in GI availability check + stock report – General ERP – SAP MB21 alias` });
+    return NextResponse.json({ success:true, code:'MB21', reservation_number: resNumber, reservation: insRes.rows[0], message:`MB21 Reservation ${resNumber} created – material ${matId} plant ${facId} sloc ${sloc_code||''} qty ${quantity} ${uom_code||'PC'} movement ${movement_type||'GI_PROD'} cost center ${cost_center_code||''} order ${order_number||''} requirement ${requirement_date||''} – T2 GOOD – NO DANGLING – reservation fields used in GI availability check + stock report – General ERP – SAP MB21 alias` });
   }catch(e:any){
     return NextResponse.json({ error:e.message }, {status:500});
   }

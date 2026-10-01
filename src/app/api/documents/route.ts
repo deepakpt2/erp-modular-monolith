@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
     await ensureTables();
     const body = await req.json();
 
-    // SAP-like posting period enforcement – OB52 – check if period open for account type +
+    // SAP-like posting period enforcement – FPPE (legacy OB52) – check if period open for account type +
     try {
       const postingDate = body.posting_date || body.posting_date || new Date().toISOString();
       const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';

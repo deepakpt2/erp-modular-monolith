@@ -98,9 +98,9 @@ export async function POST(req: NextRequest) {
       } catch {}
 
       if (!originalDoc) {
-        // Try fi_document
+        // Try fin_universal_ledger
         try {
-          const origRes2 = await db.execute(sql`SELECT * FROM fi_document WHERE document_number = ${document_number.toUpperCase()} LIMIT 1`);
+          const origRes2 = await db.execute(sql`SELECT * FROM fin_universal_ledger WHERE document_number = ${document_number.toUpperCase()} LIMIT 1`);
           if (origRes2.rows.length > 0) originalDoc = origRes2.rows[0];
         } catch {}
       }

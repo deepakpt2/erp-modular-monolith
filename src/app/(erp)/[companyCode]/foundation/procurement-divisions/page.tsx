@@ -24,12 +24,12 @@ export default function Page() {
         { key: "tenant_code", label: "TENANT_CODE", required: true, placeholder: "", description: "Tenant code – default TEN-100 – tenant" },
       ]}
       relatedLinks={[
-        { code: "ELEC", label: "Legal Entity – company code – 1000 – required – ELEC OX02 – company to purchasing org", route: "/foundation/legal-entities", description: "Legal Entity – 1000 – LE-1000 – company code – company to purchasing org assignment 1000→PO01" },
+        { code: "ELEC", label: "Legal Entity – company code – 1000 – required – ELEC ELEC (legacy OX02) – company to purchasing org", route: "/foundation/legal-entities", description: "Legal Entity – 1000 – LE-1000 – company code – company to purchasing org assignment 1000→PO01" },
         { code: "EFCC", label: "Facility – plant – 1000 – plant to purchasing org – 1000→PO01", route: "/foundation/facilities", description: "Facility – plant – FAC-1000 – 1000 – plant to purchasing org assignment" },
         { code: "EBTC", label: "Buyer Team – purchasing group – uses EPDC – EBTC OME4", route: "/foundation/buying-teams", description: "Buyer Team – purchasing group – e.g., BT-100 Raw Materials Team – buyer determination in PR/PO" },
         { code: "PSUC", label: "Supplier – vendor – uses EPDC – PSUC XK01 – procurement division", route: "/foundation/suppliers", description: "Supplier – vendor master – procurement_division_code PO01 – purchasing org" },
-        { code: "PPRC", label: "Purchase Requisition – ME51N – uses purchasing org/group", route: "/mm/pr", description: "PR – uses purchasing org PO01 + purchasing group BT-100" },
-        { code: "PPOC", label: "Purchase Order – ME21N – uses purchasing org/group – PO01", route: "/mm/po", description: "PO – uses purchasing org PO01 + group BT-100 + supplier" },
+        { code: "PPRC", label: "Purchase Requisition – PPRC (legacy ME51N) – uses purchasing org/group", route: "/mm/pr", description: "PR – uses purchasing org PO01 + purchasing group BT-100" },
+        { code: "PPOC", label: "Purchase Order – PPOC (legacy ME21N) – uses purchasing org/group – PO01", route: "/mm/po", description: "PO – uses purchasing org PO01 + group BT-100 + supplier" },
         { code: "FCRL", label: "Company Relationships – 1000→PO01 – purchasing org assignment", route: "/foundation/enterprise-structure", description: "Company Relationships – FCRL – 1000→CA01/CRED-1000/CA-IN-01/K4/PPV-1000/FFSV-1000/BA01/SO01/PO01 – intercompany 1000→1100" },
       ]}
     />

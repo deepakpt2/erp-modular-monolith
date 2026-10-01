@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
                cc.code as legal_entity_code, cc.name as legal_entity_name,
                (SELECT COUNT(*) FROM hr_payroll_line WHERE payroll_run_id = r.id) as line_count
         FROM hr_payroll_run r
-        LEFT JOIN ent_company_code cc ON r.company_code_id = cc.id
+        LEFT JOIN org_legal_entity cc ON r.company_code_id = cc.id
         WHERE 1=1
       `;
       if (search) query = sql`${query} AND (r.period_year ILIKE ${`%${search}%`} OR r.period_month ILIKE ${`%${search}%`})`;

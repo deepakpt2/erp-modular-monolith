@@ -15,23 +15,23 @@ export async function seedLayer0() {
   const fmcgEnabled = process.env.FMCG_SAMPLE_DATA_ENABLED === 'true';
 
   // 1. Client
-  await db.execute(sql`INSERT INTO ent_client (code, name) VALUES ('100', 'Main Client') ON CONFLICT (code) DO NOTHING`);
-  const clientRes = await db.execute(sql`SELECT id FROM ent_client WHERE code = '100'`);
+  await db.execute(sql`INSERT INTO core_tenant (code, name) VALUES ('100', 'Main Client') ON CONFLICT (code) DO NOTHING`);
+  const clientRes = await db.execute(sql`SELECT id FROM core_tenant WHERE code = '100'`);
   const clientId = (clientRes.rows[0] as any).id;
 
   // 2. Company Code 1000 – only if SEED_DEFAULT_COMPANY != false – now INR default per user request, KWD has to be added by user
   let companyCodeId: string | null = null;
   if (seedDefaultCompany) {
-    await db.execute(sql`INSERT INTO ent_company_code (client_id, code, name, currency_code, city, country)
+    await db.execute(sql`INSERT INTO org_legal_entity (client_id, code, name, currency_code, city, country)
       VALUES (${clientId}, '1000', 'Main Company INR', 'INR', 'Kochi', 'IN')
       ON CONFLICT (code) DO UPDATE SET currency_code = 'INR', city = 'Kochi', country = 'IN'`);
-    const ccRes = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = '1000'`);
+    const ccRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = '1000'`);
     companyCodeId = (ccRes.rows[0] as any).id;
     console.log(`   Seeded default company 1000 Main Company INR (SEED_DEFAULT_COMPANY=${seedDefaultCompany}) – only INR default, KWD has to be added by user via /api/currencies`);
   } else {
     console.log(`   Skipped default company 1000 (SEED_DEFAULT_COMPANY=false) – for SIT scratch, create your own T001 via UI`);
     // Try to get any existing company code for further seeding, or skip plant/material seeding if none
-    const anyCc = await db.execute(sql`SELECT id FROM ent_company_code LIMIT 1`);
+    const anyCc = await db.execute(sql`SELECT id FROM org_legal_entity LIMIT 1`);
     if (anyCc.rows.length > 0) companyCodeId = (anyCc.rows[0] as any).id;
   }
 
@@ -40,20 +40,20 @@ export async function seedLayer0() {
     console.log('   No company code – skipping plants, SLocs, CoA assignment, cost centers, materials (true scratch mode)');
     // Still seed UoM, Currency, Material Groups, Chart of Accounts (standard CoA is ok per user)
   } else {
-    await db.execute(sql`INSERT INTO ent_plant (company_code_id, code, name, description)
+    await db.execute(sql`INSERT INTO org_facility (company_code_id, code, name, description)
       VALUES 
         (${companyCodeId}, '1000', 'Main Production Kitchen', 'Main kitchen and production facility'),
         (${companyCodeId}, '1100', 'Secondary Storage', 'Secondary storage and cold storage')
       ON CONFLICT (code) DO NOTHING`);
   }
-  const plantRes = companyCodeId ? await db.execute(sql`SELECT id, code FROM ent_plant WHERE company_code_id = ${companyCodeId}`) : { rows: [] };
+  const plantRes = companyCodeId ? await db.execute(sql`SELECT id, code FROM org_facility WHERE company_code_id = ${companyCodeId}`) : { rows: [] };
   const mainPlant = plantRes.rows.find((r: any) => r.code === '1000') as any;
   const storagePlant = plantRes.rows.find((r: any) => r.code === '1100') as any;
   const mainPlantId = mainPlant?.id || (plantRes.rows[0] as any)?.id;
   const storagePlantId = storagePlant?.id || mainPlantId;
 
   // 4. Storage Locations
-  await db.execute(sql`INSERT INTO ent_storage_location (plant_id, code, name, type)
+  await db.execute(sql`INSERT INTO org_inventory_location (plant_id, code, name, type)
     VALUES
       (${mainPlantId}, '0001', 'Main Store', 'MAIN'),
       (${mainPlantId}, '0002', 'Cold Storage', 'COLD'),
@@ -63,7 +63,7 @@ export async function seedLayer0() {
     ON CONFLICT DO NOTHING`);
 
   // 5. UoM
-  await db.execute(sql`INSERT INTO ent_uom (code, name, dimension)
+  await db.execute(sql`INSERT INTO core_unit_measure (code, name, dimension)
     VALUES
       ('KG', 'Kilogram', 'WEIGHT'),
       ('G', 'Gram', 'WEIGHT'),
@@ -76,13 +76,13 @@ export async function seedLayer0() {
     ON CONFLICT (code) DO NOTHING`);
 
   // 6. Currency – only INR default per user request, all other currencies (like KWD) has to be added by user via /api/currencies
-  await db.execute(sql`INSERT INTO ent_currency (code, name, decimal_places, symbol)
+  await db.execute(sql`INSERT INTO core_currency (code, name, decimal_places, symbol)
     VALUES ('INR', 'Indian Rupee', 2, '₹')
     ON CONFLICT (code) DO UPDATE SET name = 'Indian Rupee', decimal_places = 2, symbol = '₹'`);
   console.log('   Currency INR seeded as default – only INR default, KWD and others must be added by user via POST /api/currencies – e.g., KWD, USD, EUR');
 
   // 7. Material Groups
-  await db.execute(sql`INSERT INTO ent_material_group (code, name)
+  await db.execute(sql`INSERT INTO prod_category (code, name)
     VALUES
       ('FOOD', 'Food Ingredients'),
       ('BEV', 'Beverages'),
@@ -109,7 +109,7 @@ export async function seedLayer0() {
 
   // 8. Chart of Accounts - ERP standard CoAs like in ERP: INT, KSCA, CAUS, GKR, YIN
   // Code OB13 - General CoA available like ERP defaults
-  await db.execute(sql`INSERT INTO fi_chart_of_accounts (code, name, description)
+  await db.execute(sql`INSERT INTO fin_chart (code, name, description)
     VALUES 
       ('INT', 'International CoA', 'ERP Standard International Chart - OB13 - General CoA for INT'),
       ('KSCA', 'Kerala Spices Chart', 'Kerala Spices Chart of Accounts - OB13 - General CoA for KS01/1000 - ERP-like custom'),
@@ -117,7 +117,7 @@ export async function seedLayer0() {
       ('GKR', 'German Community Chart', 'ERP Standard German GKR Chart - OB13 - General CoA Germany'),
       ('YIN', 'Indian Chart', 'ERP Standard India Chart - OB13 - General CoA India GST')
     ON CONFLICT (code) DO NOTHING`);
-  const coaRes = await db.execute(sql`SELECT id, code FROM fi_chart_of_accounts`);
+  const coaRes = await db.execute(sql`SELECT id, code FROM fin_chart`);
   const coaMap = new Map((coaRes.rows as any[]).map((r:any)=>[r.code, r.id]));
   const coaId = coaMap.get('INT') || coaMap.get('KSCA');
   const kscaId = coaMap.get('KSCA');
@@ -126,12 +126,12 @@ export async function seedLayer0() {
   const yinId = coaMap.get('YIN');
 
   if (companyCodeId && coaId) {
-    await db.execute(sql`UPDATE ent_company_code SET coa_id = ${coaId} WHERE id = ${companyCodeId}`);
+    await db.execute(sql`UPDATE org_legal_entity SET coa_id = ${coaId} WHERE id = ${companyCodeId}`);
   }
 
   // 8b. Account Groups OBD4 - ERP standard groups KASS/KLIA/KREV/KEXP/KMAT etc for each CoA
   try {
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS fi_account_group (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), coa_id UUID REFERENCES fi_chart_of_accounts(id), code VARCHAR(10) NOT NULL, name VARCHAR(100), description TEXT, from_account VARCHAR(20), to_account VARCHAR(20), is_active BOOLEAN DEFAULT true, UNIQUE(coa_id, code))`);
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS fi_account_group (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), coa_id UUID REFERENCES fin_chart(id), code VARCHAR(10) NOT NULL, name VARCHAR(100), description TEXT, from_account VARCHAR(20), to_account VARCHAR(20), is_active BOOLEAN DEFAULT true, UNIQUE(coa_id, code))`);
     for (const [cId, cCode] of [[coaId,'INT'], [kscaId,'KSCA'], [causId,'CAUS'], [gkrId,'GKR'], [yinId,'YIN']] as any) {
       if (!cId) continue;
       await db.execute(sql`INSERT INTO fi_account_group (coa_id, code, name, description, from_account, to_account)
@@ -152,7 +152,7 @@ export async function seedLayer0() {
   // 9. GL Accounts - standard CoA is ok per user, seed regardless of company - ERP-like defaults
   // INT - International standard
   if (coaId) {
-    await db.execute(sql`INSERT INTO fi_gl_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
+    await db.execute(sql`INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
       VALUES
         (${coaId}, '100000', 'Inventory ROH', 'ASSET', true, false, false),
         (${coaId}, '100001', 'Inventory FERT', 'ASSET', true, false, false),
@@ -182,7 +182,7 @@ export async function seedLayer0() {
   }
   // KSCA - Kerala Spices - ERP-like with 5000000001 series - FS00 general CoA accounts
   if (kscaId) {
-    await db.execute(sql`INSERT INTO fi_gl_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
+    await db.execute(sql`INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
       VALUES
         (${kscaId}, '5000000001', 'Raw Materials Stock', 'ASSET', true, false, false),
         (${kscaId}, '5000000002', 'Finished Goods Stock', 'ASSET', true, false, false),
@@ -209,7 +209,7 @@ export async function seedLayer0() {
   }
   // CAUS - USA Chart - ERP standard similar to INT but US GAAP
   if (causId) {
-    await db.execute(sql`INSERT INTO fi_gl_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
+    await db.execute(sql`INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
       VALUES
         (${causId}, '100000', 'Cash', 'ASSET', true, false, false),
         (${causId}, '120000', 'Accounts Receivable', 'ASSET', true, true, false),
@@ -225,7 +225,7 @@ export async function seedLayer0() {
   }
   // GKR - German Chart
   if (gkrId) {
-    await db.execute(sql`INSERT INTO fi_gl_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
+    await db.execute(sql`INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
       VALUES
         (${gkrId}, '160000', 'Rohstoffe', 'ASSET', true, false, false),
         (${gkrId}, '220000', 'Fertige Erzeugnisse', 'ASSET', true, false, false),
@@ -238,7 +238,7 @@ export async function seedLayer0() {
   }
   // YIN - India Chart GST
   if (yinId) {
-    await db.execute(sql`INSERT INTO fi_gl_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
+    await db.execute(sql`INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
       VALUES
         (${yinId}, '100000', 'Inventory Raw', 'ASSET', true, false, false),
         (${yinId}, '100001', 'Inventory Finished', 'ASSET', true, false, false),
@@ -259,7 +259,7 @@ export async function seedLayer0() {
 
   // 10. Cost Centers - only if company exists, otherwise skip (user can create own)
   if (companyCodeId) {
-    await db.execute(sql`INSERT INTO fi_cost_center (code, name, company_code_id)
+    await db.execute(sql`INSERT INTO fin_cost_center (code, name, company_code_id)
       VALUES
         ('CC-KITCHEN-01', 'Main Kitchen', ${companyCodeId}),
         ('CC-COLD-01', 'Cold Storage', ${companyCodeId}),
@@ -271,7 +271,7 @@ export async function seedLayer0() {
 
   // 11. Tax Codes – FTXP – VAT 5%, GST etc – configurable, general tax codes like ERP
   // ERP defaults: V0 Input 0%, V5 Input 5% VAT 5%, A0 Output 0%, A5 Output 5%, plus GST 5%/12%/18%/28% for India, plus IGST
-  await db.execute(sql`INSERT INTO fi_tax_code (code, description, rate, type)
+  await db.execute(sql`INSERT INTO fin_tax_rule (code, description, rate, type)
     VALUES
       ('V0', 'Input Tax 0% – VAT 0% – FTXP – No VAT', 0, 'INPUT'),
       ('V5', 'Input Tax 5% – VAT 5% – FTXP – Kuwait/GCC VAT 5% Input – configurable', 5, 'INPUT'),
@@ -293,33 +293,33 @@ export async function seedLayer0() {
   console.log('   Tax Codes V0/V5 VAT 5%/V14/V15/A0/A5 VAT 5% Output/GST0/GST5 5% Spices/GST12/GST18/GST28/IGST0/IGST5/IGST18 seeded – FTXP – configurable – VAT 5% included');
 
   // 12. Auto Account Determination
-  const glRes = await db.execute(sql`SELECT id, account_number FROM fi_gl_account WHERE coa_id = ${coaId}`);
+  const glRes = await db.execute(sql`SELECT id, account_number FROM fin_ledger_account WHERE coa_id = ${coaId}`);
   const glMap = new Map((glRes.rows as any[]).map((r: any) => [r.account_number, r.id]));
 
   const getGl = (num: string) => glMap.get(num);
   
   if (getGl('100000') && companyCodeId) {
-    await db.execute(sql`INSERT INTO fi_auto_account_determination (company_code_id, transaction_key, valuation_class, gl_account_id, description)
+    await db.execute(sql`INSERT INTO fin_auto_account (company_code_id, transaction_key, valuation_class, gl_account_id, description)
       VALUES
-        (${companyCodeId}, 'BSX', 'ROH', ${getGl('100000')}, 'Inventory ROH'),
-        (${companyCodeId}, 'BSX', 'FERT', ${getGl('100001')}, 'Inventory FERT'),
-        (${companyCodeId}, 'BSX', 'KITS', ${getGl('100002')}, 'Inventory KITS'),
-        (${companyCodeId}, 'WRX', 'ROH', ${getGl('200000')}, 'GR/IR ROH'),
-        (${companyCodeId}, 'WRX', 'FERT', ${getGl('200000')}, 'GR/IR FERT'),
-        (${companyCodeId}, 'WRX', 'KITS', ${getGl('200000')}, 'GR/IR KITS'),
-        (${companyCodeId}, 'GBB', 'ROH', ${getGl('300000')}, 'COGS ROH'),
-        (${companyCodeId}, 'GBB', 'FERT', ${getGl('300000')}, 'COGS FERT'),
-        (${companyCodeId}, 'PRD', 'ROH', ${getGl('310000')}, 'Price Diff ROH'),
-        (${companyCodeId}, 'PRD', 'FERT', ${getGl('310000')}, 'Price Diff FERT'),
-        (${companyCodeId}, 'FRE', 'ROH', ${getGl('200001')}, 'Freight Clearing'),
-        (${companyCodeId}, 'ZOL', 'ROH', ${getGl('200002')}, 'Customs Clearing')
+        (${companyCodeId}, 'INV_POSTING', 'ROH', ${getGl('100000')}, 'Inventory ROH'),
+        (${companyCodeId}, 'INV_POSTING', 'FERT', ${getGl('100001')}, 'Inventory FERT'),
+        (${companyCodeId}, 'INV_POSTING', 'KITS', ${getGl('100002')}, 'Inventory KITS'),
+        (${companyCodeId}, 'GR_IR_CLEARING', 'ROH', ${getGl('200000')}, 'GR/IR ROH'),
+        (${companyCodeId}, 'GR_IR_CLEARING', 'FERT', ${getGl('200000')}, 'GR/IR FERT'),
+        (${companyCodeId}, 'GR_IR_CLEARING', 'KITS', ${getGl('200000')}, 'GR/IR KITS'),
+        (${companyCodeId}, 'INV_OFFSET', 'ROH', ${getGl('300000')}, 'COGS ROH'),
+        (${companyCodeId}, 'INV_OFFSET', 'FERT', ${getGl('300000')}, 'COGS FERT'),
+        (${companyCodeId}, 'PRICE_DIFF', 'ROH', ${getGl('310000')}, 'Price Diff ROH'),
+        (${companyCodeId}, 'PRICE_DIFF', 'FERT', ${getGl('310000')}, 'Price Diff FERT'),
+        (${companyCodeId}, 'FREIGHT', 'ROH', ${getGl('200001')}, 'Freight Clearing'),
+        (${companyCodeId}, 'CUSTOMS', 'ROH', ${getGl('200002')}, 'Customs Clearing')
       ON CONFLICT DO NOTHING`);
   }
 
   // 13. Number Ranges 2026 - only if company exists (standard CoA is ok, but number ranges need company)
   const year = new Date().getFullYear();
   if (companyCodeId) {
-    await db.execute(sql`INSERT INTO ent_number_range (object_type, company_code_id, year, prefix, from_number, to_number, current_number, is_active)
+    await db.execute(sql`INSERT INTO core_number_range (object_type, company_code_id, year, prefix, from_number, to_number, current_number, is_active)
       VALUES
         ('MATERIAL', ${companyCodeId}, ${year}, 'MAT', 1000000000, 1999999999, 1000000000, true),
         ('BP', ${companyCodeId}, ${year}, 'BP', 100000, 999999, 100000, true),
@@ -345,14 +345,14 @@ export async function seedLayer0() {
   } else if (process.env.FMCG_SAMPLE_DATA_ENABLED !== 'true' && !seedDefaultCompany) {
     console.log('   Skipped sample materials – FMCG disabled and default company disabled (true scratch)');
   } else {
-  const foodGroupRes = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = 'FOOD'`);
-  const kitsGroupRes = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = 'KITS'`);
-  const menuGroupRes = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = 'MENU'`);
+  const foodGroupRes = await db.execute(sql`SELECT id FROM prod_category WHERE code = 'FOOD'`);
+  const kitsGroupRes = await db.execute(sql`SELECT id FROM prod_category WHERE code = 'KITS'`);
+  const menuGroupRes = await db.execute(sql`SELECT id FROM prod_category WHERE code = 'MENU'`);
   const foodGroupId = (foodGroupRes.rows[0] as any).id;
   const kitsGroupId = (kitsGroupRes.rows[0] as any).id;
   const menuGroupId = (menuGroupRes.rows[0] as any).id;
 
-  await db.execute(sql`INSERT INTO ent_material_master (material_number, type, group_id, base_uom, description, is_batch_managed, shelf_life_days, valuation_class, expiry_control, is_kit, is_phantom_kit, landed_cost_relevance)
+  await db.execute(sql`INSERT INTO prod_item (material_number, type, group_id, base_uom, description, is_batch_managed, shelf_life_days, valuation_class, expiry_control, is_kit, is_phantom_kit, landed_cost_relevance)
     VALUES
       ('MAT-1000000001', 'ROH', ${foodGroupId}, 'KG', 'Chicken Breast Fresh', true, 5, 'ROH', 'BLOCK', false, false, 'ALL'),
       ('MAT-1000000002', 'ROH', ${foodGroupId}, 'KG', 'Rice Basmati', true, 365, 'ROH', 'WARNING', false, false, 'ALL'),
@@ -365,11 +365,11 @@ export async function seedLayer0() {
     ON CONFLICT (material_number) DO NOTHING`);
 
   // Material Plant extensions
-  const matRes = await db.execute(sql`SELECT id, material_number, type FROM ent_material_master`);
+  const matRes = await db.execute(sql`SELECT id, material_number, type FROM prod_item`);
   for (const mat of matRes.rows as any[]) {
     const isFert = mat.type === 'FERT';
     const priceControl = isFert ? 'S' : 'V';
-    await db.execute(sql`INSERT INTO ent_material_plant (material_id, plant_id, price_control, moving_avg_price, standard_price, total_stock_qty, total_stock_value)
+    await db.execute(sql`INSERT INTO prod_item_plant (material_id, plant_id, price_control, moving_avg_price, standard_price, total_stock_qty, total_stock_value)
       VALUES (${mat.id}, ${mainPlantId}, ${priceControl}, 0, 0, 0, 0)
       ON CONFLICT DO NOTHING`);
   }
@@ -390,7 +390,7 @@ export async function seedLayer0() {
   let matMap = new Map();
   let matRes: any = { rows: [] };
   try {
-    matRes = await db.execute(sql`SELECT id, material_number, type FROM ent_material_master`);
+    matRes = await db.execute(sql`SELECT id, material_number, type FROM prod_item`);
     matMap = new Map((matRes.rows as any[]).map((r: any) => [r.material_number, r.id]));
   } catch { matRes = { rows: [] }; }
   
@@ -400,14 +400,14 @@ export async function seedLayer0() {
   const riceId = matMap.get('MAT-1000000002');
 
   if (spiceKitId && chickenId && riceId && typeof mainPlantId !== 'undefined' && mainPlantId) {
-    await db.execute(sql`INSERT INTO pp_bom_header (bom_number, material_id, plant_id, type, status, base_quantity, base_uom, is_kit, is_phantom, expiry_rule)
+    await db.execute(sql`INSERT INTO mfg_bom_header (bom_number, material_id, plant_id, type, status, base_quantity, base_uom, is_kit, is_phantom, expiry_rule)
       VALUES ('BOM-KIT-SPICE-01', ${spiceKitId}, ${mainPlantId}, 'KIT_STOCKED', 'ACTIVE', 1, 'KIT', true, false, 'MIN_COMPONENTS')
       ON CONFLICT (bom_number) DO NOTHING`);
     
-    const bomRes = await db.execute(sql`SELECT id FROM pp_bom_header WHERE bom_number = 'BOM-KIT-SPICE-01'`);
+    const bomRes = await db.execute(sql`SELECT id FROM mfg_bom_header WHERE bom_number = 'BOM-KIT-SPICE-01'`);
     if (bomRes.rows.length > 0) {
       const bomId = (bomRes.rows[0] as any).id;
-      await db.execute(sql`INSERT INTO pp_bom_line (bom_header_id, line_number, component_material_id, quantity, uom, is_batch_tracked)
+      await db.execute(sql`INSERT INTO mfg_bom_line (bom_header_id, line_number, component_material_id, quantity, uom, is_batch_tracked)
         VALUES
           (${bomId}, 10, ${chickenId}, 0.05, 'KG', true),
           (${bomId}, 20, ${riceId}, 0.02, 'KG', true)
@@ -416,14 +416,14 @@ export async function seedLayer0() {
   }
 
   if (shawarmaId && spiceKitId && chickenId && riceId && typeof mainPlantId !== 'undefined' && mainPlantId) {
-    await db.execute(sql`INSERT INTO pp_bom_header (bom_number, material_id, plant_id, type, status, base_quantity, base_uom, is_kit, is_phantom)
+    await db.execute(sql`INSERT INTO mfg_bom_header (bom_number, material_id, plant_id, type, status, base_quantity, base_uom, is_kit, is_phantom)
       VALUES ('BOM-SHAWARMA-01', ${shawarmaId}, ${mainPlantId}, 'STANDARD', 'ACTIVE', 1, 'PC', false, false)
       ON CONFLICT (bom_number) DO NOTHING`);
     
-    const bomRes = await db.execute(sql`SELECT id FROM pp_bom_header WHERE bom_number = 'BOM-SHAWARMA-01'`);
+    const bomRes = await db.execute(sql`SELECT id FROM mfg_bom_header WHERE bom_number = 'BOM-SHAWARMA-01'`);
     if (bomRes.rows.length > 0) {
       const bomId = (bomRes.rows[0] as any).id;
-      await db.execute(sql`INSERT INTO pp_bom_line (bom_header_id, line_number, component_material_id, quantity, uom, is_batch_tracked, is_phantom_explode)
+      await db.execute(sql`INSERT INTO mfg_bom_line (bom_header_id, line_number, component_material_id, quantity, uom, is_batch_tracked, is_phantom_explode)
         VALUES
           (${bomId}, 10, ${chickenId}, 0.15, 'KG', true, false),
           (${bomId}, 20, ${riceId}, 0.10, 'KG', true, false),
@@ -480,7 +480,7 @@ export async function seedLayer0() {
   const ownerPos = posRes.rows.find((r: any) => r.code === 'POS-OWNER') as any;
   const adminPos = posRes.rows.find((r: any) => r.code === 'POS-ADMIN') as any;
 
-  const ccRes2 = await db.execute(sql`SELECT id, code FROM fi_cost_center`);
+  const ccRes2 = await db.execute(sql`SELECT id, code FROM fin_cost_center`);
   const kitchenCc = ccRes2.rows.find((r: any) => r.code === 'CC-KITCHEN-01') as any;
   const coldCc = ccRes2.rows.find((r: any) => r.code === 'CC-COLD-01') as any;
   const salesCc = ccRes2.rows.find((r: any) => r.code === 'CC-SALES-01') as any;

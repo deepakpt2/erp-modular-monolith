@@ -9,7 +9,7 @@ import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared
 /**
  * Purchase Requisition API – Legal-safe own IP – Module 6 MM Procurement
  * New: proc_purchase_requisition + proc_pr_line (was mm_purchase_requisition + mm_pr_line) – prNumber PR-10000001 was 10*, legalEntityId was company_code_id, facilityId was plant_id FAC-1000 was 1000, procurementDivisionId was purchasing_org PD-1000 was 1000/KPO1, buyerTeamId was purchasing_group BUY-001 was 001/K01, itemId was material_id prod_item EMTC, uomCode was uom EUOC, inventoryLocationId was sloc_id, costUnitId was cost_center ECUC, ledgerAccountId was gl_account FGLC, taxRuleId was tax_code FTXC, currencyCode INR default was KWD
- * Helper code: PPRC PR Create (alias PRC, ME51N, FIN-PR-CR) – 4-char MOOA P=Procurement, PR=PurchaseRequisition, C=Create – same length as ME51N but own IP, module grouped, intuitive
+ * Helper code: PPRC PR Create (alias PRC, PPRC (legacy ME51N), FIN-PR-CR) – 4-char MOOA P=Procurement, PR=PurchaseRequisition, C=Create – same length as PPRC (legacy ME51N) but own IP, module grouped, intuitive
  * Fallback to legacy mm_purchase_requisition
  */
 
@@ -90,12 +90,12 @@ export async function GET(req: NextRequest) {
           prl.plant_id, prl.sloc_id, prl.is_converted, prl.po_id,
           cc.code as company_code
         FROM mm_purchase_requisition pr
-        LEFT JOIN ent_plant p ON pr.plant_id = p.id
+        LEFT JOIN org_facility p ON pr.plant_id = p.id
         LEFT JOIN hr_employee e ON pr.requester_id = e.id
-        LEFT JOIN ent_company_code cc ON pr.company_code_id = cc.id
+        LEFT JOIN org_legal_entity cc ON pr.company_code_id = cc.id
         LEFT JOIN mm_pr_line prl ON prl.pr_id = pr.id
-        LEFT JOIN ent_material_master m ON prl.material_id = m.id
-        LEFT JOIN ent_storage_location sloc ON prl.sloc_id = sloc.id
+        LEFT JOIN prod_item m ON prl.material_id = m.id
+        LEFT JOIN org_inventory_location sloc ON prl.sloc_id = sloc.id
         WHERE 1=1
       `;
 
@@ -128,11 +128,11 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Purchase Requisition – PPRC legal-safe own IP (was ME51N) – prNumber PR-10000001, facilityId FAC-1000 was plant_id, itemId prod_item was material_id, uomCode EUOC, inventoryLocationId was sloc_id, costUnitId ECUC, ledgerAccountId FGLC, taxRuleId FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group',
+      functionDescription: 'Purchase Requisition – PPRC legal-safe own IP (was PPRC (legacy ME51N)) – prNumber PR-10000001, facilityId FAC-1000 was plant_id, itemId prod_item was material_id, uomCode EUOC, inventoryLocationId was sloc_id, costUnitId ECUC, ledgerAccountId FGLC, taxRuleId FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group',
       erpDefaults: [
         { prNumber: 'PR-10000001', facility: 'FAC-1000', item: 'ITM-1001 Spices RAW', quantity: 100, uom: 'KG', estimatedPrice: 50, status: 'DRAFT', helperCode: 'PPRC', note: 'Sample – fresh empty per requirement but CoA/GL/Tax/Currencies/UoM kept' },
       ],
-      explanation: 'PR legal-safe proc_purchase_requisition + proc_pr_line – prNumber PR-10000001 was 10*, legalEntityId was company_code_id, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, uomCode was uom EUOC, inventoryLocationId was sloc_id, costUnitId was cost_center ECUC, ledgerAccountId was gl_account FGLC, taxRuleId was tax_code FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group – Code PPRC primary alias PRC/ME51N – 4-char MOOA P=Procurement PR=PurchaseRequisition C=Create – module grouped intuitive, same length as ME51N but own IP – fresh empty per requirement but CoA/GL/Tax/Currencies/UoM kept.',
+      explanation: 'PR legal-safe proc_purchase_requisition + proc_pr_line – prNumber PR-10000001 was 10*, legalEntityId was company_code_id, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, uomCode was uom EUOC, inventoryLocationId was sloc_id, costUnitId was cost_center ECUC, ledgerAccountId was gl_account FGLC, taxRuleId was tax_code FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group – Code PPRC primary alias PRC/PPRC (legacy ME51N) – 4-char MOOA P=Procurement PR=PurchaseRequisition C=Create – module grouped intuitive, same length as PPRC (legacy ME51N) but own IP – fresh empty per requirement but CoA/GL/Tax/Currencies/UoM kept.',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, purchaseRequisitions: [] }, { status: 500 });
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // SAP-like posting period enforcement – OB52 – check if period open for account type M
+    // SAP-like posting period enforcement – FPPE (legacy OB52) – check if period open for account type M
     try {
       const postingDate = body.required_date || body.posting_date || new Date().toISOString();
       const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
         const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${finalFacilityCode} LIMIT 1`);
         if (f.rows.length > 0) facilityIdResolved = (f.rows[0] as any).id;
         else {
-          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${finalFacilityCode} LIMIT 1`);
+          const f2 = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${finalFacilityCode} LIMIT 1`);
           if (f2.rows.length > 0) facilityIdResolved = (f2.rows[0] as any).id;
         }
       } catch {}
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
         const le = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${finalLegalCode} LIMIT 1`);
         if (le.rows.length > 0) legalEntityIdResolved = (le.rows[0] as any).id;
         else {
-          const le2 = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = ${finalLegalCode} LIMIT 1`);
+          const le2 = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${finalLegalCode} LIMIT 1`);
           if (le2.rows.length > 0) legalEntityIdResolved = (le2.rows[0] as any).id;
         }
       } catch {}
@@ -282,7 +282,7 @@ export async function POST(req: NextRequest) {
               const it = await db.execute(sql`SELECT id FROM prod_item WHERE item_number = ${line.item_number} LIMIT 1`);
               if (it.rows.length > 0) itemId = (it.rows[0] as any).id;
               else {
-                const it2 = await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = ${line.item_number} LIMIT 1`);
+                const it2 = await db.execute(sql`SELECT id FROM prod_item WHERE material_number = ${line.item_number} LIMIT 1`);
                 if (it2.rows.length > 0) itemId = (it2.rows[0] as any).id;
               }
             } catch {}
@@ -335,7 +335,7 @@ export async function POST(req: NextRequest) {
         `).catch(()=>{});
       } catch {}
 
-      // Workflow auto-start – ME54N Release PR – if amount > threshold or always – create wf_instance + wf_task for manager/owner – SBWP – T0
+      // Workflow auto-start – PPRL (legacy ME54N) Release PR – if amount > threshold or always – create wf_instance + wf_task for manager/owner – SBWP – T0
       try {
         await db.execute(sql`
           CREATE TABLE IF NOT EXISTS wf_definition (
@@ -399,7 +399,7 @@ export async function POST(req: NextRequest) {
         const defRes = await db.execute(sql`SELECT id FROM wf_definition WHERE document_type = 'PR' AND is_active = true LIMIT 1`);
         if(defRes.rows.length>0) defId = (defRes.rows[0] as any).id;
         else {
-          const newDef = await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PR_APPROVAL', 'PR Approval – ME54N – Manager + Owner', 'PR', true) RETURNING id`);
+          const newDef = await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PR_APPROVAL', 'PR Approval – PPRL (legacy ME54N) – Manager + Owner', 'PR', true) RETURNING id`);
           defId = (newDef.rows[0] as any).id;
           // Create steps: 1 Manager approval <10000, 2 Owner approval >10000 dual
           await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${defId}, 1, 'Manager Approval – PR <10000', 'MANAGER', 0, 9999.99, false, false)`);
@@ -434,13 +434,13 @@ export async function POST(req: NextRequest) {
               await db.execute(sql`INSERT INTO wf_task (instance_id, step_id, assignee_id, status) VALUES (${instanceId}, ${step.id}, ${assigneeId}, 'PENDING')`);
             }
           }
-          console.log(`Workflow auto-started for PR ${prNumber} – instance ${instanceId} – ${steps.length} tasks – amount ${total} – ME54N SBWP – T0`);
+          console.log(`Workflow auto-started for PR ${prNumber} – instance ${instanceId} – ${steps.length} tasks – amount ${total} – PPRL (legacy ME54N) SBWP – T0`);
         }
       } catch (wfErr:any) {
         console.warn(`Workflow auto-start failed for PR ${prNumber}:`, wfErr.message);
       }
 
-      return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC legal-safe – total ${total} – facility ${facilityCodeForMsg} – posting period M OB52 – number range PR 1000000000 numeric only – workflow auto-started ME54N SBWP – document flow PR root – T0 BLOCKING – NO DANGLING – org wired`, legalSafe: true, document_number: prNumber, total_amount: total });
+      return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC legal-safe – total ${total} – facility ${facilityCodeForMsg} – posting period M FPPE (legacy OB52) – number range PR 1000000000 numeric only – workflow auto-started PPRL (legacy ME54N) SBWP – document flow PR root – T0 BLOCKING – NO DANGLING – org wired`, legalSafe: true, document_number: prNumber, total_amount: total });
     } catch (newErr: any) {
       console.warn('proc_purchase_requisition insert failed fallback mm_purchase_requisition:', newErr.message);
       // Fallback legacy
@@ -458,7 +458,7 @@ export async function POST(req: NextRequest) {
             let itemId = line.item_id || line.material_id;
             if (!itemId && line.item_number) {
               try {
-                const it = await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = ${line.item_number} LIMIT 1`);
+                const it = await db.execute(sql`SELECT id FROM prod_item WHERE material_number = ${line.item_number} LIMIT 1`);
                 if (it.rows.length > 0) itemId = (it.rows[0] as any).id;
               } catch {}
             }
@@ -471,7 +471,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – ME51N legacy (migrating to PPRC)`, legalSafe: false });
+        return NextResponse.json({ success: true, pr: res.rows[0], prNumber, code: 'PPRC', message: `PR ${prNumber} created – PPRC (legacy ME51N) legacy (migrating to PPRC)`, legalSafe: false });
       } catch (legacyErr: any) {
         return NextResponse.json({ error: legacyErr.message }, { status: 500 });
       }
@@ -545,7 +545,7 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE mm_purchase_requisition SET status = ${status}::pr_status, updated_at = NOW() WHERE id = ${id} RETURNING id, pr_number, status`);
       else res = await db.execute(sql`UPDATE mm_purchase_requisition SET status = ${status}::pr_status, updated_at = NOW() WHERE pr_number = ${pr_number} RETURNING id, pr_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'PR not found' }, { status: 404 });
-      return NextResponse.json({ success: true, pr: res.rows[0], message: `PR ${res.rows[0].pr_number} status ${status} – ME51N legacy`, audit_trail: 'Immutable history preserved' });
+      return NextResponse.json({ success: true, pr: res.rows[0], message: `PR ${res.rows[0].pr_number} status ${status} – PPRC (legacy ME51N) legacy`, audit_trail: 'Immutable history preserved' });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

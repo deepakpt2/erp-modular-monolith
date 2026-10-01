@@ -74,7 +74,7 @@ export default function Page(){
           <button onClick={()=>setComponents([...components,{component_code: "", quantity: "1", uom_code: "PC"}])} className="mt-2 border-2 border-black px-3 py-1 bg-zinc-100">+ ADD COMPONENT</button>
         </div>
         <button onClick={create} className="mt-3 bg-black text-white px-3 py-1 w-full">CREATE BOM MBMC – ALIAS CS01 – GENERAL ERP</button>
-        <div className="text-[9px] text-zinc-500 mt-1">T0 BLOCKING – BOM components copied to Manufacturing Order MMOC (alias CO01) on creation – NO DANGLING – used in costing CK40N + MRP explosion MD01</div>
+        <div className="text-[9px] text-zinc-500 mt-1">T0 BLOCKING – BOM components copied to Manufacturing Order MMOC (alias MMOC (legacy CO01)) on creation – NO DANGLING – used in costing CK40N + MRP explosion MD01</div>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
@@ -129,7 +129,7 @@ export default function Page(){
         </div>
 
         <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Bill of Materials MBMC – Alias CS01 – General ERP – T0 BLOCKING</button>
-        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – BOM components copied to Manufacturing Order MMOC (alias CO01) on creation – used in MRP MD01 explosion + costing CK40N – NO DANGLING – General ERP terminology, SAP CS01 kept as alias</div>
+        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – BOM components copied to Manufacturing Order MMOC (alias MMOC (legacy CO01)) on creation – used in MRP MD01 explosion + costing CK40N – NO DANGLING – General ERP terminology, SAP CS01 kept as alias</div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">

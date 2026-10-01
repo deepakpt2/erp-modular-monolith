@@ -13,7 +13,7 @@ const TABS: { key: TabKey; label: string; desc: string }[] = [
   { key: 'purchasing', label: 'Purchasing', desc: 'Plant level – buyer group, procurement division, QM active' },
   { key: 'mrp', label: 'MRP', desc: 'MRP type, controller, lot sizing, safety stock, reorder point, procurement – single source' },
   { key: 'storage', label: 'Storage', desc: 'Facility extension MMSC + Kit & Lot/Batch & Expiry – all storage-related – single source' },
-  { key: 'accounting', label: 'Accounting', desc: 'Valuation class BSX/WRX, price control, MAP/Standard, price unit – T0 BLOCKING' },
+  { key: 'accounting', label: 'Accounting', desc: 'Valuation class INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX), price control, MAP/Standard, price unit – T0 BLOCKING' },
   { key: 'costing', label: 'Costing', desc: 'Costing lot size, overhead group – CK40N' },
 ];
 
@@ -108,7 +108,7 @@ export default function MaterialMasterPage() {
     } catch {}
   }, []);
 
-  // Fetch next number preview for ITEM – SAP STANDARD numeric – no prefix – shows next available like FBN1
+  // Fetch next number preview for ITEM – SAP STANDARD numeric – no prefix – shows next available like FNRC (legacy FBN1)
   useEffect(() => {
     if (mode !== 'create') return;
     const fetchNext = async () => {
@@ -344,7 +344,7 @@ export default function MaterialMasterPage() {
           if (mode === 'create') setForm(initialForm);
         },
         onBackgroundCreated: (newJobId: string) => {
-          setMessage(`⏳ Material creation moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – you can close → redirect to last page – job continues – header Jobs icon shows – no timeout – System Jobs page SM37 – lock acquired for ${form.type} – prevents double entry`);
+          setMessage(`⏳ Material creation moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – you can close → redirect to last page – job continues – header Jobs icon shows – no timeout – System Jobs page FBJM (legacy SM37) – lock acquired for ${form.type} – prevents double entry`);
         },
       });
 
@@ -424,7 +424,7 @@ export default function MaterialMasterPage() {
                         Next: {nextNumberPreview}
                       </div>
                       <div className="mt-2 text-[11px] text-zinc-600">
-                        • SAP standard: Material number purely numeric (e.g., 10000001) – no MAT- prefix – random 10 digits like 1234567890 are <b>BLOCKED</b> – system generates via <Link href={`/${companyCode}/fico/number-ranges`} className="text-zinc-900 underline">FNRC</Link> MAT-01/ITEM – internal numbering – MM01 style – always auto – per your selection block_manual. If you type random number, backend will ignore and still auto-generate next sequential – audit safe.
+                        • SAP standard: Material number purely numeric (e.g., 10000001) – no MAT- prefix – random 10 digits like 1234567890 are <b>BLOCKED</b> – system generates via <Link href={`/${companyCode}/fico/number-ranges`} className="text-zinc-900 underline">FNRC</Link> MAT-01/ITEM – internal numbering – EMTC (legacy MM01) style – always auto – per your selection block_manual. If you type random number, backend will ignore and still auto-generate next sequential – audit safe.
                       </div>
                     </div>
                   )}
@@ -441,7 +441,7 @@ export default function MaterialMasterPage() {
                   <div className="space-y-1">
                     <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>BASE_UNIT * – Base UoM – EUOC – KG/PC/BOX – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/uom" dataKey="uom" codeField="code" value={form.base_unit} onChange={v => setForm({ ...form, base_unit: v })} placeholder="" required createUrl="/foundation/uom" createCode="EUOC" companyCode={companyCode} />
-                    <p className="text-[10px] text-zinc-400">Base unit FK – EUOC own IP alias CUNI – KG/PC/BOX – core_unit_measure – single source – wired from foundation as in industry standard – MARA base UoM – used in GR, PGI, stock ledger quantity</p>
+                    <p className="text-[10px] text-zinc-400">Base unit FK – EUOC own IP alias EUOC (legacy CUNI) – KG/PC/BOX – core_unit_measure – single source – wired from foundation as in industry standard – MARA base UoM – used in GR, PGI, stock ledger quantity</p>
                   </div>
                   <div className="space-y-1">
                     <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PRODUCT_CATEGORY – Category – EMGC – wired from foundation</label>
@@ -524,7 +524,7 @@ export default function MaterialMasterPage() {
               </div>
               {!collapsed['storage_plant'] && (
                 <>
-                  <p className="text-[11px] text-zinc-500 mt-1">Select facilities to extend material to. SAP: MM01 creates for one plant, MMSC extends.</p>
+                  <p className="text-[11px] text-zinc-500 mt-1">Select facilities to extend material to. SAP: EMTC (legacy MM01) creates for one plant, MMSC extends.</p>
                   <div className="mt-4">
                     <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>FACILITY_CODES / PLANT_CODES * (Multi-select) – Single Source</label>
                     <div className={modern ? "mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-white rounded-xl border max-h-[200px] overflow-auto" : "mt-1 grid grid-cols-3 gap-1 border p-2 max-h-[150px] overflow-auto"}>
@@ -551,14 +551,14 @@ export default function MaterialMasterPage() {
               {!collapsed['storage_kit_lot'] && (
                 <div className={modern ? "grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" : "grid grid-cols-3 gap-2 mt-2"}>
                   {renderInput('is_lot_managed', 'IS_LOT_MANAGED / BATCH_MANAGEMENT *', { options: ['true','false'], desc: 'Batch/lot capability where required – e.g., spices with expiry true, packaging false – MARA XCHPF – wired from foundation – inv_lot table – batch determination – industry standard – if true creates inv_lot on GR – MCH1 batch stock' })}
-                  {renderInput('lot_control', 'LOT_CONTROL / EXPIRY_CONTROL *', { options: ['BLOCKED','WARN','RESTRICTED'], desc: 'Expiry control – BLOCKED=block if expired, WARN=warn, RESTRICTED=restricted use – wired from foundation – MCHA batch check – used in GR/MIGO – industry standard – batch/lot capability where required' })}
+                  {renderInput('lot_control', 'LOT_CONTROL / EXPIRY_CONTROL *', { options: ['BLOCKED','WARN','RESTRICTED'], desc: 'Expiry control – BLOCKED=block if expired, WARN=warn, RESTRICTED=restricted use – wired from foundation – MCHA batch check – used in GR/IGRC (legacy MIGO) – industry standard – batch/lot capability where required' })}
                   {renderInput('shelf_life_days', 'SHELF_LIFE_DAYS / MIN_SHELF_LIFE *', { desc: 'Shelf life in days – e.g., 30, 180, 365 – expiry = manufacturing + shelf_life – e.g., pepper 365 days, oil 180 – wired from foundation – MARA MHDHB – used in batch expiry calculation – industry standard – batch/lot capability' })}
                   {renderInput('is_kit', 'IS_KIT', { options: ['true','false'], desc: 'Is kit – for kitting orders – now in Storage per user constraint – storage-related – kit & lot moved to storage – Basic only General' })}
                   {renderInput('is_phantom_kit', 'IS_PHANTOM_KIT', { options: ['true','false'], desc: 'Phantom kit – explodes in sales order not stock – now in Storage per user' })}
                   {renderInput('landed_cost_scope', 'LANDED_COST_SCOPE', { options: ['NONE','FREIGHT','CUSTOMS','FREIGHT_CUSTOMS','ALL'], desc: 'Landed cost relevance – now in Storage per user – storage-related – e.g., spices ALL with freight+customs' })}
                   {renderInput('is_hazardous', 'IS_HAZARDOUS / HAZMAT', { options: ['true','false'], desc: 'Hazardous material – storage condition – e.g., chemicals true – wired from foundation – used in storage location determination – industry standard' })}
                   {renderInput('weight', 'WEIGHT', { desc: 'Gross weight – e.g., 1.5 – wired from foundation – MARA BRGEW – used in shipping' })}
-                  {renderInput('weight_unit', 'WEIGHT_UNIT', { desc: 'Weight unit – FK EUOC CUNI – e.g., KG – wired from foundation – MARA GEWEI' })}
+                  {renderInput('weight_unit', 'WEIGHT_UNIT', { desc: 'Weight unit – FK EUOC EUOC (legacy CUNI) – e.g., KG – wired from foundation – MARA GEWEI' })}
                 </div>
               )}
             </div>
@@ -572,7 +572,7 @@ export default function MaterialMasterPage() {
                 </div>
                 <div className="space-y-1">
                   <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>Batch/Lot Capability – where required – industry standard</label>
-                  <p className="text-[10px] text-zinc-400">If is_lot_managed=true, system creates inv_lot on GR (MIGO) with lot_number, manufacturing_date, expiry_date = manufacturing + shelf_life_days, supplier_lot_number, vendor_id – batch determination in sales/delivery – batch where-used list – expiry check BLOCKED/WARN/RESTRICTED – e.g., spice raw material with 365 days shelf life, batch managed, expiry control BLOCKED – packaging material not batch managed – batch/lot capability where required – wired from foundation – MCH1/MCHB batch stock – industry standard – single source – T0 BLOCKING</p>
+                  <p className="text-[10px] text-zinc-400">If is_lot_managed=true, system creates inv_lot on GR (IGRC (legacy MIGO)) with lot_number, manufacturing_date, expiry_date = manufacturing + shelf_life_days, supplier_lot_number, vendor_id – batch determination in sales/delivery – batch where-used list – expiry check BLOCKED/WARN/RESTRICTED – e.g., spice raw material with 365 days shelf life, batch managed, expiry control BLOCKED – packaging material not batch managed – batch/lot capability where required – wired from foundation – MCH1/MCHB batch stock – industry standard – single source – T0 BLOCKING</p>
                 </div>
               </div>
             </div>
@@ -588,7 +588,7 @@ export default function MaterialMasterPage() {
                 <div className="space-y-1">
                   <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>VALUATION_CLASS * – Valuation Class – FAUC – wired from foundation – BSX</label>
                   <DbAutocomplete label="" apiUrl="/api/auto-account-determination" dataKey="autoAccounts" codeField="valuation_class" value={form.inventory_valuation_class} onChange={v => setForm({ ...form, inventory_valuation_class: v, valuation_class: v })} placeholder="" required createUrl="/fico/auto-account-determination" createCode="FAUC" companyCode={companyCode} />
-                  <p className="text-[10px] text-zinc-400">Valuation Class FK – FAUC own IP alias OBYC – RAW/FINISHED/SEMI – valuation_class determines BSX GL via OBYC – e.g., RAW→1400000001 – single source – wired from foundation as in industry standard – MBEW – T0 BLOCKING</p>
+                  <p className="text-[10px] text-zinc-400">Valuation Class FK – FAUC own IP alias FAUC (legacy OBYC) – RAW/FINISHED/SEMI – valuation_class determines BSX GL via FAUC (legacy OBYC) – e.g., RAW→1400000001 – single source – wired from foundation as in industry standard – MBEW – T0 BLOCKING</p>
                 </div>
                 <div className="space-y-1">
                   <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PRICE_CONTROL * – S/V – Price Control – wired from foundation</label>
@@ -634,7 +634,7 @@ export default function MaterialMasterPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className={modern ? "text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white" : "text-[10px] font-mono border px-2 py-0.5 bg-black text-white"}>EMTC</span>
-              <span className={modern ? "text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border text-zinc-500" : "text-[9px] font-mono border px-1 bg-zinc-50"}>MM01</span>
+              <span className={modern ? "text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border text-zinc-500" : "text-[9px] font-mono border px-1 bg-zinc-50"}>EMTC (legacy MM01)</span>
               <span className={modern ? "text-[11px] bg-zinc-100 border rounded-full px-2.5 py-1 text-zinc-600" : "text-[10px] border px-2 py-0.5"}>{items.length} materials</span>
             </div>
             <div className="flex items-center gap-2">
@@ -643,7 +643,7 @@ export default function MaterialMasterPage() {
             </div>
           </div>
           <h1 className={modern ? "text-xl font-bold mt-3 tracking-tight" : "text-lg font-bold mt-2"}>Product Master – Full Accounting & MRP Views</h1>
-          <p className={modern ? "text-xs text-zinc-500 mt-1" : "text-[11px] text-zinc-500"}>Create Product – T0 BLOCKING – valuation_class determines BSX GL via OBYC – NO DANGLING – Auto number from MAT-01 if blank – Single source per field – Kit & Lot moved to Storage per user</p>
+          <p className={modern ? "text-xs text-zinc-500 mt-1" : "text-[11px] text-zinc-500"}>Create Product – T0 BLOCKING – valuation_class determines BSX GL via FAUC (legacy OBYC) – NO DANGLING – Auto number from MAT-01 if blank – Single source per field – Kit & Lot moved to Storage per user</p>
           <div className={modern ? "flex gap-2 mt-4" : "flex gap-1 mt-3"}>
             {(['create','list','change'] as const).map(m => (
               <Link key={m} href={`/${companyCode}/foundation/materials?mode=${m}`} className={modern ? `h-[28px] px-3 rounded-full text-[11px] font-medium border transition ${mode===m ? 'bg-black text-white border-black' : 'bg-white hover:bg-zinc-50'}` : `px-3 py-1 text-xs border ${mode===m ? 'bg-black text-white' : 'bg-white'}`}>{m.toUpperCase()}</Link>

@@ -11,7 +11,7 @@ export const ppWorkCenter = pgTable('pp_work_center', {
   code: varchar('code', { length: 20 }).notNull().unique(), // e.g., WC-KITCHEN-01
   name: varchar('name', { length: 100 }).notNull(),
   plantId: uuid('plant_id').notNull().references(() => entPlant.id),
-  costCenterId: uuid('cost_center_id'), // FK to fi_cost_center
+  costCenterId: uuid('cost_center_id'), // FK to fin_cost_center
   description: text('description'),
   capacityPerHour: numeric('capacity_per_hour', { precision: 10, scale: 2 }).default('0'),
   // --- Costing rates for labor/overhead - previously costing only material costs ---
@@ -65,7 +65,7 @@ export const ppRoutingLine = pgTable('pp_routing_line', {
 }));
 
 // BOM Header - supports both stocked and phantom kits - increased to 30 for FMCG codes
-export const ppBomHeader = pgTable('pp_bom_header', {
+export const ppBomHeader = pgTable('mfg_bom_header', {
   id: uuid('id').primaryKey().defaultRandom(),
   bomNumber: varchar('bom_number', { length: 30 }).notNull().unique(),
   materialId: uuid('material_id').notNull().references(() => entMaterialMaster.id), // Parent material (FERT or Kit)
@@ -89,7 +89,7 @@ export const ppBomHeader = pgTable('pp_bom_header', {
   uniqueMatPlantVersion: uniqueIndex('uq_bom_mat_plant_ver').on(t.materialId, t.plantId, t.version),
 }));
 
-export const ppBomLine = pgTable('pp_bom_line', {
+export const ppBomLine = pgTable('mfg_bom_line', {
   id: uuid('id').primaryKey().defaultRandom(),
   bomHeaderId: uuid('bom_header_id').notNull().references(() => ppBomHeader.id, { onDelete: 'cascade' }),
   lineNumber: integer('line_number').notNull(),
@@ -121,7 +121,7 @@ export const ppProductionOrder = pgTable('pp_production_order', {
   quantityRework: numeric('quantity_rework', { precision: 15, scale: 3 }).notNull().default('0'),
   status: prodOrderStatusEnum('status').notNull().default('CREATED'),
   // For stocked kits: batch to be created
-  targetBatchId: uuid('target_batch_id'), // FK to ent_batch
+  targetBatchId: uuid('target_batch_id'), // FK to inv_lot
   targetBatchNumber: varchar('target_batch_number', { length: 30 }),
   targetExpiryDate: timestamp('target_expiry_date'), // Calculated as MIN(component expiries)
   plannedStart: timestamp('planned_start'),

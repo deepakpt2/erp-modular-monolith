@@ -5,9 +5,9 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Document Types API – Legal-safe own IP – Module 4
- * New: fin_document_type (was ent_document_type) – code INV/BILL/PAY/JRNL/GR/GI/DN was KR/KG/KZ/RE/WE/WA/SA legacy, sample kept
+ * New: fin_document_type (was fin_document_type) – code INV/BILL/PAY/JRNL/GR/GI/DN was KR/KG/KZ/RE/WE/WA/SA legacy, sample kept
  * Helper code: FDTC Document Type Create (alias DTC, OBA7, FIN-DT-CR) – 4-char MOOA F=Financials, DT=DocumentType, C=Create
- * Fallback to legacy ent_document_type
+ * Fallback to legacy fin_document_type
  */
 
 export async function GET(req: NextRequest) {
@@ -24,12 +24,12 @@ export async function GET(req: NextRequest) {
       const res = await db.execute(sql`SELECT * FROM fin_document_type ORDER BY code`);
       rows = res.rows as any[];
     } catch (newErr: any) {
-      console.warn('fin_document_type not yet fallback ent_document_type:', newErr.message);
+      console.warn('fin_document_type not yet fallback fin_document_type:', newErr.message);
       source = 'db-legacy';
-      table = 'ent_document_type';
+      table = 'fin_document_type';
       legalSafe = false;
       try {
-        const res = await db.execute(sql`SELECT * FROM ent_document_type ORDER BY code`);
+        const res = await db.execute(sql`SELECT * FROM fin_document_type ORDER BY code`);
         rows = res.rows as any[];
       } catch (e: any) {
         if (e.message?.includes('does not exist')) {
@@ -84,9 +84,9 @@ export async function POST(req: NextRequest) {
       `);
       return NextResponse.json({ success: true, documentType: res.rows[0], code: 'FDTC', message: `Document type ${code.toUpperCase()} created – FDTC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
-      console.warn('fin_document_type insert failed fallback ent_document_type:', newErr.message);
+      console.warn('fin_document_type insert failed fallback fin_document_type:', newErr.message);
       const res = await db.execute(sql`
-        INSERT INTO ent_document_type (code, name, description, number_range_code)
+        INSERT INTO fin_document_type (code, name, description, number_range_code)
         VALUES (${code.toUpperCase()}, ${name}, ${description || null}, ${number_range_code || null})
         ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}, number_range_code = ${number_range_code || null}
         RETURNING id, code, name
@@ -115,8 +115,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: true, documentType: res.rows[0], code: 'FDTC', message: `Document type ${res.rows[0].code} updated – FDTC legal-safe` });
     } catch {
       let res;
-      if (id) res = await db.execute(sql`UPDATE ent_document_type SET name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE id = ${id} RETURNING id, code, name`);
-      else res = await db.execute(sql`UPDATE ent_document_type SET name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+      if (id) res = await db.execute(sql`UPDATE fin_document_type SET name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE id = ${id} RETURNING id, code, name`);
+      else res = await db.execute(sql`UPDATE fin_document_type SET name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Document type not found' }, { status: 404 });
       return NextResponse.json({ success: true, documentType: res.rows[0], message: `Document type ${res.rows[0].code} updated – OBA7 legacy` });
     }
@@ -139,8 +139,8 @@ export async function DELETE(req: NextRequest) {
       if (id) await db.execute(sql`DELETE FROM fin_document_type WHERE id = ${id}`);
       else await db.execute(sql`DELETE FROM fin_document_type WHERE code = ${code}`);
     } catch {
-      if (id) await db.execute(sql`DELETE FROM ent_document_type WHERE id = ${id}`);
-      else await db.execute(sql`DELETE FROM ent_document_type WHERE code = ${code}`);
+      if (id) await db.execute(sql`DELETE FROM fin_document_type WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM fin_document_type WHERE code = ${code}`);
     }
 
     return NextResponse.json({ success: true, code: 'FDTC', message: `Document type ${code || id} deleted – FDTC legal-safe` });

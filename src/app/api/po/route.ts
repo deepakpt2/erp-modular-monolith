@@ -8,8 +8,8 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Purchase Order API – Legal-safe own IP – Module 6 MM Procurement
- * New: proc_purchase_order + proc_po_line (was mm_purchase_order + mm_po_line) – poNumber PO-4500000001 was 45*, legalEntityId was company_code_id, partnerId was vendor_id partner_account PSUC, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, uomCode was uom EUOC, inventoryLocationId was sloc_id, costUnitId was cost_center ECUC, ledgerAccountId was gl_account FGLC, taxRuleId was tax_code FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group, deliveryCompleted was ELIKZ
- * Helper code: PPOC PO Create (alias POC, ME21N, FIN-PO-CR) – 4-char MOOA P=Procurement, PO=PurchaseOrder, C=Create – same length as ME21N but own IP, module grouped, intuitive
+ * New: proc_purchase_order + proc_po_line (was mm_purchase_order + mm_po_line) – poNumber PO-4500000001 was 45*, legalEntityId was company_code_id, partnerId was vendor_id partner_account PSUC, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, uomCode was uom EUOC, inventoryLocationId was sloc_id, costUnitId was cost_center ECUC, ledgerAccountId was gl_account FGLC, taxRuleId was tax_code FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group, deliveryCompleted own IP DELIV_COMPLETED was ELIKZ (legacy)
+ * Helper code: PPOC PO Create (alias POC, PPOC (legacy ME21N), FIN-PO-CR) – 4-char MOOA P=Procurement, PO=PurchaseOrder, C=Create – same length as PPOC (legacy ME21N) but own IP, module grouped, intuitive
  * Fallback to legacy mm_purchase_order
  */
 
@@ -87,10 +87,10 @@ export async function GET(req: NextRequest) {
           (SELECT BOOL_AND(delivery_completed) FROM mm_po_line WHERE po_id = po.id) as all_elikz,
           pr.pr_number as pr_ref
         FROM mm_purchase_order po
-        LEFT JOIN ent_plant p ON po.plant_id = p.id
+        LEFT JOIN org_facility p ON po.plant_id = p.id
         LEFT JOIN partner_account pa ON po.vendor_id = pa.id
-        LEFT JOIN ent_business_partner bp ON po.vendor_id = bp.id
-        LEFT JOIN ent_company_code cc ON po.company_code_id = cc.id
+        LEFT JOIN partner_account bp ON po.vendor_id = bp.id
+        LEFT JOIN org_legal_entity cc ON po.company_code_id = cc.id
         LEFT JOIN mm_purchase_requisition pr ON po.pr_id = pr.id
         WHERE 1=1
       `;
@@ -121,9 +121,9 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Purchase Order – PPOC legal-safe own IP (was ME21N) – poNumber PO-4500000001, facilityId FAC-1000 was plant_id, partnerId PSUC was vendor_id, itemId EMTC was material_id, uomCode EUOC, inventoryLocationId was sloc_id, costUnitId ECUC, ledgerAccountId FGLC, taxRuleId FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group, deliveryCompleted was ELIKZ',
-      multiPlant: 'Supports facility_id per PO, partner, legalEntity, ELIKZ filtering – Module6',
-      explanation: 'PO legal-safe proc_purchase_order + proc_po_line – poNumber PO-4500000001 was 45*, legalEntityId was company_code_id, partnerId was vendor_id partner_account PSUC, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, uomCode was uom EUOC, inventoryLocationId was sloc_id, costUnitId was cost_center ECUC, ledgerAccountId was gl_account FGLC, taxRuleId was tax_code FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group, deliveryCompleted was ELIKZ – Code PPOC primary alias POC/ME21N – 4-char MOOA P=Procurement PO=PurchaseOrder C=Create – module grouped intuitive, same length as ME21N but own IP – fresh empty per requirement but CoA/GL/Tax/Currencies/UoM kept.',
+      functionDescription: 'Purchase Order – PPOC legal-safe own IP (was PPOC (legacy ME21N)) – poNumber PO-4500000001, facilityId FAC-1000 was plant_id, partnerId PSUC was vendor_id, itemId EMTC was material_id, uomCode EUOC, inventoryLocationId was sloc_id, costUnitId ECUC, ledgerAccountId FGLC, taxRuleId FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group, deliveryCompleted own IP DELIV_COMPLETED was ELIKZ (legacy)',
+      multiPlant: 'Supports facility_id per PO, partner, legalEntity, DELIV_COMPLETED (legacy ELIKZ) filtering – Module6',
+      explanation: 'PO legal-safe proc_purchase_order + proc_po_line – poNumber PO-4500000001 was 45*, legalEntityId was company_code_id, partnerId was vendor_id partner_account PSUC, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, uomCode was uom EUOC, inventoryLocationId was sloc_id, costUnitId was cost_center ECUC, ledgerAccountId was gl_account FGLC, taxRuleId was tax_code FTXC, currencyCode INR default was KWD, procurementDivision PD-1000 was purchasing_org, buyerTeam BUY-001 was purchasing_group, deliveryCompleted own IP DELIV_COMPLETED was ELIKZ (legacy) – Code PPOC primary alias POC/PPOC (legacy ME21N) – 4-char MOOA P=Procurement PO=PurchaseOrder C=Create – module grouped intuitive, same length as PPOC (legacy ME21N) but own IP – fresh empty per requirement but CoA/GL/Tax/Currencies/UoM kept.',
     });
   } catch (e: any) {
     console.error('DB error:', e.message);
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // SAP-like posting period enforcement – OB52 – check if period open for account type K
+    // SAP-like posting period enforcement – FPPE (legacy OB52) – check if period open for account type K
     try {
       const postingDate = body.delivery_date || body.posting_date || new Date().toISOString();
       const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
         const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${finalFacilityCode} LIMIT 1`);
         if (f.rows.length > 0) facilityIdResolved = (f.rows[0] as any).id;
         else {
-          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${finalFacilityCode} LIMIT 1`);
+          const f2 = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${finalFacilityCode} LIMIT 1`);
           if (f2.rows.length > 0) facilityIdResolved = (f2.rows[0] as any).id;
         }
       } catch {}
@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
         const le = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${finalLegalCode} LIMIT 1`);
         if (le.rows.length > 0) legalEntityIdResolved = (le.rows[0] as any).id;
         else {
-          const le2 = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = ${finalLegalCode} LIMIT 1`);
+          const le2 = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${finalLegalCode} LIMIT 1`);
           if (le2.rows.length > 0) legalEntityIdResolved = (le2.rows[0] as any).id;
         }
       } catch {}
@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
         const pa = await db.execute(sql`SELECT id FROM partner_account WHERE account_number = ${finalPartnerNumber} LIMIT 1`);
         if (pa.rows.length > 0) partnerIdResolved = (pa.rows[0] as any).id;
         else {
-          const pa2 = await db.execute(sql`SELECT id FROM ent_business_partner WHERE bp_number = ${finalPartnerNumber} LIMIT 1`);
+          const pa2 = await db.execute(sql`SELECT id FROM partner_account WHERE bp_number = ${finalPartnerNumber} LIMIT 1`);
           if (pa2.rows.length > 0) partnerIdResolved = (pa2.rows[0] as any).id;
         }
       } catch {}
@@ -373,7 +373,7 @@ export async function POST(req: NextRequest) {
               const it = await db.execute(sql`SELECT id FROM prod_item WHERE item_number = ${line.item_number} LIMIT 1`);
               if (it.rows.length > 0) itemId = (it.rows[0] as any).id;
               else {
-                const it2 = await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = ${line.item_number} LIMIT 1`);
+                const it2 = await db.execute(sql`SELECT id FROM prod_item WHERE material_number = ${line.item_number} LIMIT 1`);
                 if (it2.rows.length > 0) itemId = (it2.rows[0] as any).id;
               }
             } catch {}
@@ -422,7 +422,7 @@ export async function POST(req: NextRequest) {
                 if (tax === 0) tax = (unitPrice * taxRate / 100);
                 console.log(`Tax handling FTXC ${taxCodeInput} -> rate ${taxRate}% tax per unit ${tax} – PO ${poNumber} line ${line.line_number}`);
               } else {
-                const taxRes2 = await db.execute(sql`SELECT id, rate FROM fi_tax_code WHERE UPPER(code) = ${taxCodeInput} LIMIT 1`);
+                const taxRes2 = await db.execute(sql`SELECT id, rate FROM fin_tax_rule WHERE UPPER(code) = ${taxCodeInput} LIMIT 1`);
                 if (taxRes2.rows.length > 0) {
                   taxRuleIdResolved = (taxRes2.rows[0] as any).id;
                   taxRate = parseFloat((taxRes2.rows[0] as any).rate || '0');
@@ -435,7 +435,7 @@ export async function POST(req: NextRequest) {
           total += qty * unitPrice;
           totalLanded += qty * totalPerUnit;
 
-          // Over/under delivery tolerance – industry standard – e.g., 10% over allowed, 10% under allowed – ME21N
+          // Over/under delivery tolerance – industry standard – e.g., 10% over allowed, 10% under allowed – PPOC (legacy ME21N)
           const overTol = parseFloat(line.overdelivery_tolerance_percent || line.over_tolerance || '10');
           const underTol = parseFloat(line.underdelivery_tolerance_percent || line.under_tolerance || '10');
 
@@ -499,7 +499,7 @@ export async function POST(req: NextRequest) {
         `).catch(()=>{});
       } catch {}
 
-      // Workflow auto-start – ME28 Release PO – if amount > threshold – manager/owner dual – SBWP – T0
+      // Workflow auto-start – PPOR (legacy ME28) Release PO – if amount > threshold – manager/owner dual – SBWP – T0
       try {
         await db.execute(sql`
           CREATE TABLE IF NOT EXISTS wf_definition (
@@ -562,7 +562,7 @@ export async function POST(req: NextRequest) {
         const defRes = await db.execute(sql`SELECT id FROM wf_definition WHERE document_type = 'PO' AND is_active = true LIMIT 1`);
         if(defRes.rows.length>0) defId = (defRes.rows[0] as any).id;
         else {
-          const newDef = await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PO_APPROVAL', 'PO Approval – ME28 – Manager + Owner Dual', 'PO', true) RETURNING id`);
+          const newDef = await db.execute(sql`INSERT INTO wf_definition (code, name, document_type, is_active) VALUES ('PO_APPROVAL', 'PO Approval – PPOR (legacy ME28) – Manager + Owner Dual', 'PO', true) RETURNING id`);
           defId = (newDef.rows[0] as any).id;
           await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${defId}, 1, 'Manager Approval – PO <10000', 'MANAGER', 0, 9999.99, false, false)`);
           await db.execute(sql`INSERT INTO wf_definition_step (definition_id, step_order, name, approver_type, min_amount, max_amount, requires_dual, is_owner_approval) VALUES (${defId}, 2, 'Manager + Owner Dual Approval – PO >=10000', 'OWNER', 10000, 999999999, true, true)`);
@@ -594,13 +594,13 @@ export async function POST(req: NextRequest) {
               await db.execute(sql`INSERT INTO wf_task (instance_id, step_id, assignee_id, status) VALUES (${instanceId}, ${step.id}, ${assigneeId}, 'PENDING')`);
             }
           }
-          console.log(`Workflow auto-started for PO ${poNumber} – instance ${instanceId} – ${steps.length} tasks – amount ${total} – ME28 SBWP – T0 – ELIKZ`);
+          console.log(`Workflow auto-started for PO ${poNumber} – instance ${instanceId} – ${steps.length} tasks – amount ${total} – PPOR (legacy ME28) SBWP – T0 – ELIKZ`);
         }
       } catch (wfErr:any) {
         console.warn(`Workflow auto-start failed for PO ${poNumber}:`, wfErr.message);
       }
 
-      return NextResponse.json({ success: true, po: res.rows[0], poNumber, code: 'PPOC', message: `PO ${poNumber} created – PPOC legal-safe – total ${total} landed ${totalLanded} – facility ${facilityCodeForMsg} – vendor ${partnerNumberForMsg} – posting period K OB52 – payment terms ${resolvedPaymentDays} days FAPT due calc – info record ME11 auto price if 0 – number range PO 4500000000 numeric only always_auto – workflow auto-started ME28 SBWP – document flow PR→PO – ELIKZ – T0 BLOCKING – NO DANGLING – org wired – payment term code ${ptCodeInput} recon FGLC tax FTXC over/under tolerance – version history CDHDR/CDPOS – conditions BASE/FREIGHT/CUSTOMS/TAX – partial GR/IV – invoice tolerance OBA0/OBA4 – cancellation/reversal – credit/debit memo – approval workflow`, legalSafe: true, total_amount: total, total_landed_cost: totalLanded });
+      return NextResponse.json({ success: true, po: res.rows[0], poNumber, code: 'PPOC', message: `PO ${poNumber} created – PPOC legal-safe – total ${total} landed ${totalLanded} – facility ${facilityCodeForMsg} – vendor ${partnerNumberForMsg} – posting period K FPPE (legacy OB52) – payment terms ${resolvedPaymentDays} days FAPT due calc – info record ME11 auto price if 0 – number range PO 4500000000 numeric only always_auto – workflow auto-started PPOR (legacy ME28) SBWP – document flow PR→PO – ELIKZ – T0 BLOCKING – NO DANGLING – org wired – payment term code ${ptCodeInput} recon FGLC tax FTXC over/under tolerance – version history CDHDR/CDPOS – conditions BASE/FREIGHT/CUSTOMS/TAX – partial GR/IV – invoice tolerance OBA0/OBA4 – cancellation/reversal – credit/debit memo – approval workflow`, legalSafe: true, total_amount: total, total_landed_cost: totalLanded });
     } catch (newErr: any) {
       console.warn('proc_purchase_order insert failed fallback mm_purchase_order:', newErr.message);
       return NextResponse.json({ error: newErr.message }, { status: 500 });
@@ -656,7 +656,7 @@ export async function PUT(req: NextRequest) {
       if (originalNumber) await updateDocumentWithAudit({ document_number: originalNumber, new_payload: body, changed_by: 'system', action: 'UPDATE' });
     } catch (auditErr) { console.warn('Audit trail failed', auditErr); }
 
-    // If lines provided, handle PO change with version history – ME22N change – version increment, change_history
+    // If lines provided, handle PO change with version history – PPOE (legacy ME22N) change – version increment, change_history
     if (body.lines && Array.isArray(body.lines) && body.lines.length > 0) {
       try {
         let poIdForChange = body.id;
@@ -691,7 +691,7 @@ export async function PUT(req: NextRequest) {
               };
               const updatedHistory = [...(Array.isArray(history) ? history : []), newEntry];
               await db.execute(sql`UPDATE proc_po_line SET version = ${newVersion}, change_history = ${JSON.stringify(updatedHistory)}::jsonb, quantity = COALESCE(${line.quantity || null}, quantity), unit_price = COALESCE(${line.unit_price || null}, unit_price), updated_at = NOW() WHERE id = ${poLineId}`);
-              console.log(`PO line ${poLineId} version ${oldVersion} -> ${newVersion} – change history appended – ME22N PO changes/version history – CDHDR/CDPOS – industry standard`);
+              console.log(`PO line ${poLineId} version ${oldVersion} -> ${newVersion} – change history appended – PPOE (legacy ME22N) PO changes/version history – CDHDR/CDPOS – industry standard`);
             }
           }
           // Update PO header total
@@ -700,7 +700,7 @@ export async function PUT(req: NextRequest) {
             const newTotal = parseFloat((totalRes.rows[0] as any).total || '0');
             await db.execute(sql`UPDATE proc_purchase_order SET total_amount = ${newTotal}, updated_at = NOW() WHERE id = ${poIdForChange}`);
           }
-          return NextResponse.json({ success: true, po_number: body.po_number, message: `PO ${body.po_number} changed – version history updated – ME22N – CDHDR/CDPOS – ${body.lines.length} lines – audit trail – industry standard`, code: 'PPOC', version_history: true });
+          return NextResponse.json({ success: true, po_number: body.po_number, message: `PO ${body.po_number} changed – version history updated – PPOE (legacy ME22N) – CDHDR/CDPOS – ${body.lines.length} lines – audit trail – industry standard`, code: 'PPOC', version_history: true });
         }
       } catch (changeErr:any) { console.warn('PO change version history failed:', changeErr.message); }
     }
@@ -712,14 +712,14 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE proc_purchase_order SET status = ${status}::proc_po_status, updated_at = NOW() WHERE id = ${id} RETURNING id, po_number, status`);
       else res = await db.execute(sql`UPDATE proc_purchase_order SET status = ${status}::proc_po_status, updated_at = NOW() WHERE po_number = ${po_number} RETURNING id, po_number, status`);
       if (res.rows.length === 0) throw new Error('Not found');
-      return NextResponse.json({ success: true, po: res.rows[0], code: 'PPOC', message: `PO ${res.rows[0].po_number} status ${status} – PPOC legal-safe – version history preserved via audit_log – CDHDR/CDPOS`, audit_trail: 'Immutable history preserved – PO changes/version history – ME22N – version increment + change_history JSONB' });
+      return NextResponse.json({ success: true, po: res.rows[0], code: 'PPOC', message: `PO ${res.rows[0].po_number} status ${status} – PPOC legal-safe – version history preserved via audit_log – CDHDR/CDPOS`, audit_trail: 'Immutable history preserved – PO changes/version history – PPOE (legacy ME22N) – version increment + change_history JSONB' });
     } catch {
       const { id, po_number, status } = body;
       let res;
       if (id) res = await db.execute(sql`UPDATE mm_purchase_order SET status = ${status}::po_status, updated_at = NOW() WHERE id = ${id} RETURNING id, po_number, status`);
       else res = await db.execute(sql`UPDATE mm_purchase_order SET status = ${status}::po_status, updated_at = NOW() WHERE po_number = ${po_number} RETURNING id, po_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'PO not found' }, { status: 404 });
-      return NextResponse.json({ success: true, po: res.rows[0], message: `PO ${res.rows[0].po_number} status ${status} – ME21N legacy` });
+      return NextResponse.json({ success: true, po: res.rows[0], message: `PO ${res.rows[0].po_number} status ${status} – PPOC (legacy ME21N) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

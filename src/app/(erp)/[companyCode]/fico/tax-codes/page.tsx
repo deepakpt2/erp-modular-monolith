@@ -38,10 +38,10 @@ export default function Page() {
         { code: "FTGC", label: "Tax Group – groups tax codes", route: "/fico/tax-groups", description: "Tax Group – e.g., GST group – groups tax codes for reporting" },
         { code: "FTXC", label: "HSN Codes – 09041110 pepper 5% – HSN/SAC – FTXC", route: "/fico/hsn-codes", description: "HSN Codes – HSN/SAC – 09041110 Pepper, 090831 Cardamom, 1515 oils – GST rate – tax classification" },
         { code: "EMTC", label: "Product Master – uses HSN_CODE – FTXC – tax classification", route: "/foundation/materials", description: "Product – HSN_CODE 09041110 – tax classification – determines tax rate in PO/SO/Billing" },
-        { code: "PPOC", label: "Purchase Order – ME21N – uses Tax Code – GST18", route: "/mm/po", description: "PO – tax code GST18 – calculates tax amount – PO line tax" },
+        { code: "PPOC", label: "Purchase Order – PPOC (legacy ME21N) – uses Tax Code – GST18", route: "/mm/po", description: "PO – tax code GST18 – calculates tax amount – PO line tax" },
         { code: "VASL", label: "Sales Order – VA01 – uses Tax Code – GST18 – tax calc", route: "/sd/sales-orders", description: "SO – tax code – tax calculation – pricing procedure" },
-        { code: "SBLC", label: "Billing – VF01 – uses Tax Code – GST18 – tax calc – MWST", route: "/sd/billing", description: "Billing – tax code – MWST condition – tax amount – billing" },
-        { code: "PIVC", label: "Invoice Verification – MIRO – uses Tax Code – tax", route: "/mm/iv", description: "IV – tax code – invoice verification – tax" },
+        { code: "SBLC", label: "Billing – SBLC (legacy VF01) – uses Tax Code – GST18 – tax calc – MWST", route: "/sd/billing", description: "Billing – tax code – MWST condition – tax amount – billing" },
+        { code: "PIVC", label: "Invoice Verification – PIVC (legacy MIRO) – uses Tax Code – tax", route: "/mm/iv", description: "IV – tax code – invoice verification – tax" },
       ]}
     />
   );

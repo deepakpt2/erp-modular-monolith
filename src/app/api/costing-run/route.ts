@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       const { sql } = await import('drizzle-orm');
 
       const jobRes = await db.execute(sql`
-        INSERT INTO ent_job_queue (job_type, payload, status, company_code_id, created_by)
+        INSERT INTO core_job_queue (job_type, payload, status, company_code_id, created_by)
         VALUES ('COSTING_RUN', ${JSON.stringify({ plantId, materialIds, type, description, createdBy, companyCodeId })}::jsonb, 'PENDING', ${companyCodeId || null}, ${createdBy})
         RETURNING id, job_type, status, created_at
       `);
@@ -39,13 +39,13 @@ export async function POST(req: NextRequest) {
         try {
           const { db: db2 } = await import('@/shared/kernel/db/client');
           const { sql: sql2 } = await import('drizzle-orm');
-          await db2.execute(sql2`UPDATE ent_job_queue SET status = 'RUNNING', started_at = NOW() WHERE id = ${job.id}`);
+          await db2.execute(sql2`UPDATE core_job_queue SET status = 'RUNNING', started_at = NOW() WHERE id = ${job.id}`);
 
           const BomCostingService = (await import('@/modules/pp/application/bomCostingService')).BomCostingService;
           const result = await BomCostingService.executeCostingRun({ plantId, materialIds, type, description, createdBy });
 
           await db2.execute(sql2`
-            UPDATE ent_job_queue SET status = 'COMPLETED', finished_at = NOW(), result = ${JSON.stringify(result)}::jsonb
+            UPDATE core_job_queue SET status = 'COMPLETED', finished_at = NOW(), result = ${JSON.stringify(result)}::jsonb
             WHERE id = ${job.id}
           `);
           console.log(`[COSTING JOB] ${job.id} COMPLETED:`, result);
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
           console.error(`[COSTING JOB] ${job.id} FAILED:`, e.message);
           const { db: db3 } = await import('@/shared/kernel/db/client');
           const { sql: sql3 } = await import('drizzle-orm');
-          await db3.execute(sql3`UPDATE ent_job_queue SET status = 'FAILED', finished_at = NOW(), error = ${e.message} WHERE id = ${job.id}`).catch(()=>{});
+          await db3.execute(sql3`UPDATE core_job_queue SET status = 'FAILED', finished_at = NOW(), error = ${e.message} WHERE id = ${job.id}`).catch(()=>{});
         }
       });
 
@@ -109,6 +109,6 @@ export async function GET(req: NextRequest) {
       'GET /api/costing-run?materialId=X&plantId=Y': 'Calculate cost rollup for single FERT',
       'POST /api/costing-run': 'Execute costing run for all FERT or filtered materialIds, type STANDARD (update Std Price) or SIMULATION (preview)',
     },
-    costingRun: 'Creates co_costing_run header run_number COSTxxx, type STANDARD/SIMULATION, status RUNNING→COMPLETED, lines co_costing_run_line with total_cost, material_cost, previous/new std price, price_difference, bom_explosion JSONB, if STANDARD updates ent_material_plant.standard_price',
+    costingRun: 'Creates co_costing_run header run_number COSTxxx, type STANDARD/SIMULATION, status RUNNING→COMPLETED, lines co_costing_run_line with total_cost, material_cost, previous/new std price, price_difference, bom_explosion JSONB, if STANDARD updates prod_item_plant.standard_price',
   });
 }

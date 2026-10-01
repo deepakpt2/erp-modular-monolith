@@ -7,7 +7,7 @@ export default function Page() {
       code="FPPE"
       sapAlias="OB52"
       title="Posting Period Control – Fiscal/Posting Period – Open/Close"
-      description="Define Posting Period Control – open/close posting periods – variant, account type A/D/K/M/S/V/+, from/to period/year, from/to account range, authorization group, is_open – strict industry standard: enforces OB52 T0 BLOCKING – rejects posting if period closed – e.g., close 03/2026 open 04/2026 – fiscal/posting period – financial – own names – F_BKPF_BUP"
+      description="Define Posting Period Control – open/close posting periods – variant, account type A/D/K/M/S/V/+, from/to period/year, from/to account range, authorization group, is_open – strict industry standard: enforces FPPE (legacy OB52) T0 BLOCKING – rejects posting if period closed – e.g., close 03/2026 open 04/2026 – fiscal/posting period – financial – own names – F_BKPF_BUP"
       apiEndpoint="/api/posting-periods"
       initialForm={{ 
         variant_code: 'PPV-1000', 
@@ -23,8 +23,8 @@ export default function Page() {
         description: 'GL open 1-12 2026 for 1000000000-1999999999 – AUTH01' 
       }}
       fields={[
-        { key: "variant_code", label: "POSTING_PERIOD_VARIANT_CODE", required: true, type: "autocomplete", apiUrl: "/api/posting-period-variants", dataKey: "postingPeriodVariants", codeField: "code", placeholder: "", createUrl: "/fico/posting-period-variants", createCode: "FPPC", description: "Variant code – e.g., PPV-1000 – must exist via FPPC OBBO – posting period variant – assigned to company code 1000→PPV-1000 – industry standard" },
-        { key: "account_type", label: "ACCOUNT_TYPE", required: true, type: "select", options: ['+', 'A', 'D', 'K', 'M', 'S', 'V'], placeholder: "", description: "Account type – + All, A Assets, D Customers, K Vendors, M Materials, S GL Accounts, V Contract – strict enforcement – e.g., S for GL 1000000000-1999999999, M for materials – industry standard – OB52 – F_BKPF_BUP" },
+        { key: "variant_code", label: "POSTING_PERIOD_VARIANT_CODE", required: true, type: "autocomplete", apiUrl: "/api/posting-period-variants", dataKey: "postingPeriodVariants", codeField: "code", placeholder: "", createUrl: "/fico/posting-period-variants", createCode: "FPPC", description: "Variant code – e.g., PPV-1000 – must exist via FPPC FPPC (legacy OBBO) – posting period variant – assigned to company code 1000→PPV-1000 – industry standard" },
+        { key: "account_type", label: "ACCOUNT_TYPE", required: true, type: "select", options: ['+', 'A', 'D', 'K', 'M', 'S', 'V'], placeholder: "", description: "Account type – + All, A Assets, D Customers, K Vendors, M Materials, S GL Accounts, V Contract – strict enforcement – e.g., S for GL 1000000000-1999999999, M for materials – industry standard – FPPE (legacy OB52) – F_BKPF_BUP" },
         { key: "from_account", label: "FROM_ACCOUNT", placeholder: "", description: "From account – e.g., 1000000000 – account range from – for account type S GL – from/to account – e.g., 1000000000-1999999999 – industry standard – FPPE enhanced – from/to account range" },
         { key: "to_account", label: "TO_ACCOUNT", placeholder: "", description: "To account – e.g., 1999999999 – account range to – for S GL – to account – industry standard – FPPE enhanced" },
         { key: "authorization_group", label: "AUTHORIZATION_GROUP", placeholder: "", description: "Authorization group – e.g., AUTH01 – auth group – F_BKPF_BUP – allows open/close per auth group – industry standard – FPPE enhanced – from/to account + auth group" },
@@ -40,10 +40,10 @@ export default function Page() {
         { code: "FFYC", label: "Fiscal Calendar – K4 April-March – year-dependent 1-12 + special 13-16 + factory IN01", route: "/fico/fiscal-calendars", description: "Fiscal Calendar – K4 – year-dependent periods 1-12 + special 13-16 + factory calendar IN01 – FFYC OB29" },
         { code: "FCOA", label: "Chart of Accounts – CA-IN-01 – OPERATIONAL – AG01", route: "/fico/chart-of-accounts", description: "Chart – CA-IN-01 – OPERATIONAL – AG01" },
         { code: "FGLC", label: "GL Account – 1000000000-1999999999 – account type S", route: "/fico/gl-accounts", description: "GL – 1000000000-1999999999 – S – from/to account" },
-        { code: "IGRC", label: "Goods Receipt MIGO 101 – checks OB52 posting period – T0", route: "/mm/gr", description: "GR 101 – checks posting period – T0 BLOCKING – BSX/WRX" },
-        { code: "PIVC", label: "Invoice Verification MIRO – checks OB52", route: "/mm/iv", description: "IV – checks posting period – WRX/BSX" },
-        { code: "SBLC", label: "Billing VF01 – checks OB52", route: "/sd/billing", description: "Billing – checks posting period" },
-        { code: "FPYP", label: "Payment F110 – checks OB52", route: "/fico/payment", description: "Payment – checks posting period" },
+        { code: "IGRC", label: "Goods Receipt IGRC GR_PO (legacy IGRC (legacy MIGO) 101) – checks FPPE (legacy OB52) posting period – T0", route: "/mm/gr", description: "GR 101 – checks posting period – T0 BLOCKING – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)" },
+        { code: "PIVC", label: "Invoice Verification PIVC (legacy MIRO) – checks OB52", route: "/mm/iv", description: "IV – checks posting period – WRX/BSX" },
+        { code: "SBLC", label: "Billing SBLC (legacy VF01) – checks OB52", route: "/sd/billing", description: "Billing – checks posting period" },
+        { code: "FPYP", label: "Payment FPYA (legacy F110) – checks OB52", route: "/fico/payment", description: "Payment – checks posting period" },
       ]}
     />
   );

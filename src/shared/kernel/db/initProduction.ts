@@ -57,7 +57,7 @@ async function initProduction() {
     }
   }
 
-  // 1. Tenant / Client – try new core_tenant then old ent_client
+  // 1. Tenant / Client – try new core_tenant then old core_tenant
   let tenantId: string | null = null;
   let clientId: string | null = null;
   try {
@@ -65,18 +65,18 @@ async function initProduction() {
     const tRes = await db.execute(sql`SELECT id FROM core_tenant WHERE code = 'TEN-100' LIMIT 1`);
     if (tRes.rows.length > 0) tenantId = (tRes.rows[0] as any).id;
   } catch (e: any) {
-    console.warn('core_tenant insert failed, trying ent_client:', e.message);
+    console.warn('core_tenant insert failed, trying core_tenant:', e.message);
   }
   try {
-    await db.execute(sql`INSERT INTO ent_client (code, name) VALUES ('100', 'Main Client') ON CONFLICT (code) DO NOTHING`);
-    const cRes = await db.execute(sql`SELECT id FROM ent_client WHERE code = '100' LIMIT 1`);
+    await db.execute(sql`INSERT INTO core_tenant (code, name) VALUES ('100', 'Main Client') ON CONFLICT (code) DO NOTHING`);
+    const cRes = await db.execute(sql`SELECT id FROM core_tenant WHERE code = '100' LIMIT 1`);
     if (cRes.rows.length > 0) clientId = (cRes.rows[0] as any).id;
   } catch (e: any) {
-    console.warn('ent_client insert failed (may not exist in new schema):', e.message);
+    console.warn('core_tenant insert failed (may not exist in new schema):', e.message);
   }
   const legalTenantId = tenantId || clientId;
 
-  // 2. Legal Entity / Company Code – try new org_legal_entity then old ent_company_code
+  // 2. Legal Entity / Company Code – try new org_legal_entity then old org_legal_entity
   let legalEntityId: string | null = null;
   let companyCodeId: string | null = null;
   try {
@@ -88,37 +88,37 @@ async function initProduction() {
     const leRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = 'LE-1000' LIMIT 1`);
     if (leRes.rows.length > 0) legalEntityId = (leRes.rows[0] as any).id;
   } catch (e: any) {
-    console.warn('org_legal_entity insert failed, trying ent_company_code:', e.message);
+    console.warn('org_legal_entity insert failed, trying org_legal_entity:', e.message);
   }
   try {
-    await db.execute(sql`INSERT INTO ent_company_code (client_id, code, name, currency_code, city, country)
+    await db.execute(sql`INSERT INTO org_legal_entity (client_id, code, name, currency_code, city, country)
       VALUES (${clientId || legalTenantId || null}, '1000', 'Main Company KWD', 'KWD', 'Kuwait City', 'KW')
       ON CONFLICT (code) DO NOTHING`);
-    const ccRes = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = '1000' LIMIT 1`);
+    const ccRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = '1000' LIMIT 1`);
     if (ccRes.rows.length > 0) companyCodeId = (ccRes.rows[0] as any).id;
   } catch (e: any) {
-    console.warn('ent_company_code insert failed:', e.message);
+    console.warn('org_legal_entity insert failed:', e.message);
   }
   const finalLegalId = legalEntityId || companyCodeId;
 
-  // 3. Chart of Accounts – try new fin_chart then old fi_chart_of_accounts
+  // 3. Chart of Accounts – try new fin_chart then old fin_chart
   let coaId: string | null = null;
   try {
     await db.execute(sql`INSERT INTO fin_chart (code, name, description) VALUES ('INT', 'International CoA', 'Global Chart') ON CONFLICT (code) DO NOTHING`);
     const coaRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'INT' LIMIT 1`);
     if (coaRes.rows.length > 0) coaId = (coaRes.rows[0] as any).id;
   } catch (e: any) {
-    console.warn('fin_chart insert failed, trying fi_chart_of_accounts:', e.message);
+    console.warn('fin_chart insert failed, trying fin_chart:', e.message);
     try {
-      await db.execute(sql`INSERT INTO fi_chart_of_accounts (code, name, description) VALUES ('INT', 'International CoA', 'Global Chart') ON CONFLICT (code) DO NOTHING`);
-      const coaRes = await db.execute(sql`SELECT id FROM fi_chart_of_accounts WHERE code = 'INT' LIMIT 1`);
+      await db.execute(sql`INSERT INTO fin_chart (code, name, description) VALUES ('INT', 'International CoA', 'Global Chart') ON CONFLICT (code) DO NOTHING`);
+      const coaRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'INT' LIMIT 1`);
       if (coaRes.rows.length > 0) coaId = (coaRes.rows[0] as any).id;
     } catch (err: any) {
-      console.warn('fi_chart_of_accounts also failed:', err.message);
+      console.warn('fin_chart also failed:', err.message);
     }
   }
 
-  // 4. Essential GL Accounts – try new fin_ledger_account then old fi_gl_account
+  // 4. Essential GL Accounts – try new fin_ledger_account then old fin_ledger_account
   if (coaId && finalLegalId) {
     try {
       await db.execute(sql`
@@ -138,10 +138,10 @@ async function initProduction() {
         ON CONFLICT DO NOTHING
       `);
     } catch (e: any) {
-      console.warn('fin_ledger_account insert failed, trying fi_gl_account:', e.message);
+      console.warn('fin_ledger_account insert failed, trying fin_ledger_account:', e.message);
       try {
         await db.execute(sql`
-          INSERT INTO fi_gl_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
+          INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
           VALUES
             (${coaId}, '100000', 'Inventory ROH', 'ASSET', true, false, false),
             (${coaId}, '100001', 'Inventory FERT', 'ASSET', true, false, false),
@@ -157,12 +157,12 @@ async function initProduction() {
           ON CONFLICT DO NOTHING
         `);
       } catch (err: any) {
-        console.warn('fi_gl_account also failed:', err.message);
+        console.warn('fin_ledger_account also failed:', err.message);
       }
     }
   }
 
-  // 5. Cost Centers – try new org_cost_unit then old fi_cost_center
+  // 5. Cost Centers – try new org_cost_unit then old fin_cost_center
   if (finalLegalId) {
     try {
       await db.execute(sql`
@@ -174,10 +174,10 @@ async function initProduction() {
         ON CONFLICT (code) DO NOTHING
       `);
     } catch (e: any) {
-      console.warn('org_cost_unit insert failed, trying fi_cost_center:', e.message);
+      console.warn('org_cost_unit insert failed, trying fin_cost_center:', e.message);
       try {
         await db.execute(sql`
-          INSERT INTO fi_cost_center (code, name, company_code_id)
+          INSERT INTO fin_cost_center (code, name, company_code_id)
           VALUES
             ('CC-KITCHEN-01', 'Main Kitchen', ${finalLegalId}),
             ('CC-SALES-01', 'Sales', ${finalLegalId}),
@@ -185,12 +185,12 @@ async function initProduction() {
           ON CONFLICT (code) DO NOTHING
         `);
       } catch (err: any) {
-        console.warn('fi_cost_center also failed:', err.message);
+        console.warn('fin_cost_center also failed:', err.message);
       }
     }
   }
 
-  // 6. Facility / Plant – try new org_facility then old ent_plant
+  // 6. Facility / Plant – try new org_facility then old org_facility
   let facilityId: string | null = null;
   let plantId: string | null = null;
   if (finalLegalId) {
@@ -203,16 +203,16 @@ async function initProduction() {
       const fRes = await db.execute(sql`SELECT id FROM org_facility WHERE code = 'FAC-1000' LIMIT 1`);
       if (fRes.rows.length > 0) facilityId = (fRes.rows[0] as any).id;
     } catch (e: any) {
-      console.warn('org_facility insert failed, trying ent_plant:', e.message);
+      console.warn('org_facility insert failed, trying org_facility:', e.message);
     }
     try {
-      await db.execute(sql`INSERT INTO ent_plant (company_code_id, code, name, description)
+      await db.execute(sql`INSERT INTO org_facility (company_code_id, code, name, description)
         VALUES (${finalLegalId}, '1000', 'Main Production Kitchen', 'Main kitchen')
         ON CONFLICT (code) DO NOTHING`);
-      const pRes = await db.execute(sql`SELECT id FROM ent_plant WHERE code = '1000' LIMIT 1`);
+      const pRes = await db.execute(sql`SELECT id FROM org_facility WHERE code = '1000' LIMIT 1`);
       if (pRes.rows.length > 0) plantId = (pRes.rows[0] as any).id;
     } catch (e: any) {
-      console.warn('ent_plant insert failed:', e.message);
+      console.warn('org_facility insert failed:', e.message);
     }
   }
   const finalFacilityId = facilityId || plantId;
@@ -229,10 +229,10 @@ async function initProduction() {
         ON CONFLICT (code) DO NOTHING
       `);
     } catch (e: any) {
-      console.warn('org_inventory_location failed, trying ent_storage_location:', e.message);
+      console.warn('org_inventory_location failed, trying org_inventory_location:', e.message);
       try {
         await db.execute(sql`
-          INSERT INTO ent_storage_location (plant_id, code, name, type)
+          INSERT INTO org_inventory_location (plant_id, code, name, type)
           VALUES
             (${finalFacilityId}, '0001', 'Main Store', 'MAIN'),
             (${finalFacilityId}, '0002', 'Cold Storage', 'COLD'),
@@ -240,7 +240,7 @@ async function initProduction() {
           ON CONFLICT DO NOTHING
         `);
       } catch (err: any) {
-        console.warn('ent_storage_location also failed:', err.message);
+        console.warn('org_inventory_location also failed:', err.message);
       }
     }
   }
@@ -250,30 +250,30 @@ async function initProduction() {
     await db.execute(sql`INSERT INTO core_unit_measure (code, name, dimension) VALUES ('KG','Kilogram','WEIGHT'), ('L','Liter','VOLUME'), ('PC','Piece','QUANTITY'), ('KIT','Kit','QUANTITY') ON CONFLICT (code) DO NOTHING`);
   } catch {
     try {
-      await db.execute(sql`INSERT INTO ent_uom (code, name, dimension) VALUES ('KG','Kilogram','WEIGHT'), ('L','Liter','VOLUME'), ('PC','Piece','QUANTITY'), ('KIT','Kit','QUANTITY') ON CONFLICT (code) DO NOTHING`);
+      await db.execute(sql`INSERT INTO core_unit_measure (code, name, dimension) VALUES ('KG','Kilogram','WEIGHT'), ('L','Liter','VOLUME'), ('PC','Piece','QUANTITY'), ('KIT','Kit','QUANTITY') ON CONFLICT (code) DO NOTHING`);
     } catch {}
   }
   try {
     await db.execute(sql`INSERT INTO core_currency (code, name, decimal_places, symbol, is_active) VALUES ('INR','Indian Rupee',2,'₹',true), ('KWD','Kuwaiti Dinar',3,'KD',true) ON CONFLICT (code) DO NOTHING`);
   } catch {
     try {
-      await db.execute(sql`INSERT INTO ent_currency (code, name, decimal_places, symbol) VALUES ('KWD','Kuwaiti Dinar',3,'KD') ON CONFLICT (code) DO NOTHING`);
+      await db.execute(sql`INSERT INTO core_currency (code, name, decimal_places, symbol) VALUES ('KWD','Kuwaiti Dinar',3,'KD') ON CONFLICT (code) DO NOTHING`);
     } catch {}
   }
   try {
     await db.execute(sql`INSERT INTO prod_category (code, name) VALUES ('FOOD','Food'), ('KITS','Kits'), ('MENU','Menu Items'), ('PACK','Packaging'), ('BEV','Beverages') ON CONFLICT (code) DO NOTHING`);
   } catch {
     try {
-      await db.execute(sql`INSERT INTO ent_material_group (code, name) VALUES ('FOOD','Food'), ('KITS','Kits'), ('MENU','Menu Items'), ('PACK','Packaging'), ('BEV','Beverages') ON CONFLICT (code) DO NOTHING`);
+      await db.execute(sql`INSERT INTO prod_category (code, name) VALUES ('FOOD','Food'), ('KITS','Kits'), ('MENU','Menu Items'), ('PACK','Packaging'), ('BEV','Beverages') ON CONFLICT (code) DO NOTHING`);
     } catch {}
   }
 
-  // 9. Tax Codes – try new fin_tax_rule then old fi_tax_code
+  // 9. Tax Codes – try new fin_tax_rule then old fin_tax_rule
   try {
     await db.execute(sql`INSERT INTO fin_tax_rule (code, description, rate, type) VALUES ('V0','Input 0%',0,'INPUT'), ('V5','Input 5%',5,'INPUT'), ('A0','Output 0%',0,'OUTPUT'), ('A5','Output 5%',5,'OUTPUT') ON CONFLICT (code) DO NOTHING`);
   } catch {
     try {
-      await db.execute(sql`INSERT INTO fi_tax_code (code, description, rate, type) VALUES ('V0','Input 0%',0,'INPUT'), ('V5','Input 5%',5,'INPUT'), ('A0','Output 0%',0,'OUTPUT'), ('A5','Output 5%',5,'OUTPUT') ON CONFLICT (code) DO NOTHING`);
+      await db.execute(sql`INSERT INTO fin_tax_rule (code, description, rate, type) VALUES ('V0','Input 0%',0,'INPUT'), ('V5','Input 5%',5,'INPUT'), ('A0','Output 0%',0,'OUTPUT'), ('A5','Output 5%',5,'OUTPUT') ON CONFLICT (code) DO NOTHING`);
     } catch {}
   }
 
@@ -329,7 +329,7 @@ async function initProduction() {
     console.warn('Field Status Groups ensure failed:', e.message);
   }
 
-  // 10. Number Ranges – try new core_number_range then old ent_number_range
+  // 10. Number Ranges – try new core_number_range then old core_number_range
   const year = new Date().getFullYear();
   if (finalLegalId) {
     try {
@@ -344,10 +344,10 @@ async function initProduction() {
         ON CONFLICT DO NOTHING
       `);
     } catch (e: any) {
-      console.warn('core_number_range insert failed, trying ent_number_range:', e.message);
+      console.warn('core_number_range insert failed, trying core_number_range:', e.message);
       try {
         await db.execute(sql`
-          INSERT INTO ent_number_range (object_type, company_code_id, year, prefix, from_number, to_number, current_number, is_active)
+          INSERT INTO core_number_range (object_type, company_code_id, year, prefix, from_number, to_number, current_number, is_active)
           VALUES
             ('MATERIAL', ${finalLegalId}, ${year}, 'MAT', 1000000000, 1999999999, 1000000000, true),
             ('BP', ${finalLegalId}, ${year}, 'BP', 100000, 999999, 100000, true),
@@ -357,7 +357,7 @@ async function initProduction() {
           ON CONFLICT DO NOTHING
         `);
       } catch (err: any) {
-        console.warn('ent_number_range also failed:', err.message);
+        console.warn('core_number_range also failed:', err.message);
       }
     }
   }

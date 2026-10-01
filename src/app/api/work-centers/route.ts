@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
       let query = sql`
         SELECT wc.*, p.code as plant_code, p.name as plant_name, cc.code as cost_center_code
         FROM pp_work_center wc
-        LEFT JOIN ent_plant p ON wc.plant_id = p.id
-        LEFT JOIN fi_cost_center cc ON wc.cost_center_id = cc.id
+        LEFT JOIN org_facility p ON wc.plant_id = p.id
+        LEFT JOIN fin_cost_center cc ON wc.cost_center_id = cc.id
         WHERE 1=1
       `;
       if (facilityId) query = sql`${query} AND wc.plant_id = ${facilityId}`;
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${facility_code || plant_code} LIMIT 1`);
         if (f.rows.length > 0) facilityIdResolved = (f.rows[0] as any).id;
         else {
-          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${facility_code || plant_code} LIMIT 1`);
+          const f2 = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${facility_code || plant_code} LIMIT 1`);
           if (f2.rows.length > 0) facilityIdResolved = (f2.rows[0] as any).id;
         }
       } catch {}

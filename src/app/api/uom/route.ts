@@ -5,9 +5,9 @@ import { sql } from 'drizzle-orm';
 
 /**
  * UoM API – Base Unit of Measure configurable – Legal-safe own IP
- * New table: core_unit_measure (was ent_uom)
+ * New table: core_unit_measure (was core_unit_measure)
  * Sample data kept for convenience: KG, G, L, ML, PC, BOX, PACK, KIT, M, TON – as per requirement fresh empty but common sample kept
- * Helper code: EUOC (alias UOC, CUNI) – 4-char module-grouped E=Enterprise, UO=Unit of Measure, C=Create
+ * Helper code: EUOC (alias UOC, EUOC (legacy CUNI)) – 4-char module-grouped E=Enterprise, UO=Unit of Measure, C=Create
  */
 
 export async function GET(req: NextRequest) {
@@ -25,15 +25,15 @@ export async function GET(req: NextRequest) {
         code: 'EUOC',
         aliasCodes: ['UOC', 'CUNI', 'FND-UOM-CR'],
         helperCode: 'EUOC',
-        functionDescription: 'Units of Measurement – ERP EUOC – Legal-safe own IP (was CUNI)',
+        functionDescription: 'Units of Measurement – ERP EUOC – Legal-safe own IP (was EUOC (legacy CUNI))',
         table: 'core_unit_measure',
         examples: 'KG Kilogram WEIGHT, G Gram WEIGHT, L Liter VOLUME, PC Piece QUANTITY, BOX Box QUANTITY, M Meter LENGTH',
         explanation: 'Base UoM configurable – add new UoM via POST, e.g., M for Meter, TON for Ton – Code EUOC (new) alias CUNI',
         legalSafe: true,
       });
     } catch (newErr: any) {
-      console.warn('core_unit_measure not yet migrated, fallback ent_uom:', newErr.message);
-      const res = await db.execute(sql`SELECT id, code, name, dimension, is_active, created_at FROM ent_uom ORDER BY code`);
+      console.warn('core_unit_measure not yet migrated, fallback core_unit_measure:', newErr.message);
+      const res = await db.execute(sql`SELECT id, code, name, dimension, is_active, created_at FROM core_unit_measure ORDER BY code`);
       return NextResponse.json({
         uoms: res.rows,
         count: res.rows.length,
@@ -41,10 +41,10 @@ export async function GET(req: NextRequest) {
         code: 'EUOC',
         aliasCodes: ['UOC', 'CUNI'],
         helperCode: 'CUNI',
-        functionDescription: 'Units of Measurement – ERP CUNI – Configurable base UoM (legacy ent_uom)',
+        functionDescription: 'Units of Measurement – ERP EUOC (legacy CUNI) – Configurable base UoM (legacy core_unit_measure)',
         examples: 'KG Kilogram WEIGHT, G Gram WEIGHT, L Liter VOLUME, PC Piece QUANTITY, BOX Box QUANTITY, M Meter LENGTH',
-        explanation: 'Base UoM configurable – add new UoM via POST, e.g., M for Meter, TON for Ton – Code CUNI (legacy, new EUOC)',
-        table: 'ent_uom',
+        explanation: 'Base UoM configurable – add new UoM via POST, e.g., M for Meter, TON for Ton – Code EUOC (legacy CUNI) (legacy, new EUOC)',
+        table: 'core_unit_measure',
         legalSafe: false,
       });
     }
@@ -72,14 +72,14 @@ export async function POST(req: NextRequest) {
       `);
       return NextResponse.json({ success: true, uom: res.rows[0], code: 'EUOC', message: `UoM ${code.toUpperCase()} created/updated – EUOC legal-safe` });
     } catch (newErr: any) {
-      console.warn('core_unit_measure insert failed, fallback ent_uom:', newErr.message);
+      console.warn('core_unit_measure insert failed, fallback core_unit_measure:', newErr.message);
       const res = await db.execute(sql`
-        INSERT INTO ent_uom (code, name, dimension)
+        INSERT INTO core_unit_measure (code, name, dimension)
         VALUES (${code.toUpperCase()}, ${name}, ${dimension || 'QUANTITY'})
         ON CONFLICT (code) DO UPDATE SET name = ${name}, dimension = ${dimension || 'QUANTITY'}, is_active = true
         RETURNING id, code, name
       `);
-      return NextResponse.json({ success: true, uom: res.rows[0], code: 'EUOC', aliasCodes: ['CUNI'], message: `UoM ${code.toUpperCase()} created/updated – legacy CUNI (migrating to EUOC)` });
+      return NextResponse.json({ success: true, uom: res.rows[0], code: 'EUOC', aliasCodes: ['CUNI'], message: `UoM ${code.toUpperCase()} created/updated – legacy EUOC (legacy CUNI) (migrating to EUOC)` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -113,16 +113,16 @@ export async function PUT(req: NextRequest) {
       if (res.rows.length === 0) return NextResponse.json({ error: 'UoM not found in core_unit_measure' }, { status: 404 });
       return NextResponse.json({ success: true, uom: res.rows[0], code: 'EUOC' });
     } catch (newErr: any) {
-      console.warn('core_unit_measure update failed, fallback ent_uom:', newErr.message);
+      console.warn('core_unit_measure update failed, fallback core_unit_measure:', newErr.message);
       let res;
       if (id) {
         res = await db.execute(sql`
-          UPDATE ent_uom SET code = COALESCE(${code?.toUpperCase()}, code), name = COALESCE(${name}, name), dimension = COALESCE(${dimension}, dimension), is_active = COALESCE(${is_active}, is_active)
+          UPDATE core_unit_measure SET code = COALESCE(${code?.toUpperCase()}, code), name = COALESCE(${name}, name), dimension = COALESCE(${dimension}, dimension), is_active = COALESCE(${is_active}, is_active)
           WHERE id = ${id} RETURNING id, code, name
         `);
       } else {
         res = await db.execute(sql`
-          UPDATE ent_uom SET name = COALESCE(${name}, name), dimension = COALESCE(${dimension}, dimension), is_active = COALESCE(${is_active}, is_active)
+          UPDATE core_unit_measure SET name = COALESCE(${name}, name), dimension = COALESCE(${dimension}, dimension), is_active = COALESCE(${is_active}, is_active)
           WHERE code = ${code.toUpperCase()} RETURNING id, code, name
         `);
       }
@@ -156,7 +156,7 @@ export async function DELETE(req: NextRequest) {
         } catch {}
         // Also check legacy
         try {
-          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM ent_material_master WHERE base_uom = ${checkCode}`);
+          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM prod_item WHERE base_uom = ${checkCode}`);
           inUse += parseInt((r.rows[0] as any).cnt || '0');
         } catch {}
       }
@@ -171,23 +171,23 @@ export async function DELETE(req: NextRequest) {
 
       return NextResponse.json({ success: true, code: 'EUOC', message: `UoM ${code || id} deleted – legal-safe` });
     } catch (newErr: any) {
-      console.warn('core_unit_measure delete failed, fallback ent_uom:', newErr.message);
+      console.warn('core_unit_measure delete failed, fallback core_unit_measure:', newErr.message);
       let inUse = 0;
       try {
         if (checkCode) {
-          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM ent_material_master WHERE base_uom = ${checkCode}`);
+          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM prod_item WHERE base_uom = ${checkCode}`);
           inUse = parseInt((r.rows[0] as any).cnt || '0');
         }
       } catch {}
 
       if (inUse > 0) {
-        if (id) await db.execute(sql`UPDATE ent_uom SET is_active = false WHERE id = ${id}`);
-        else await db.execute(sql`UPDATE ent_uom SET is_active = false WHERE code = ${checkCode}`);
+        if (id) await db.execute(sql`UPDATE core_unit_measure SET is_active = false WHERE id = ${id}`);
+        else await db.execute(sql`UPDATE core_unit_measure SET is_active = false WHERE code = ${checkCode}`);
         return NextResponse.json({ error: `Cannot delete – UoM ${code} has ${inUse} materials and cannot be deleted to maintain audit trail. Deactivated instead.`, code: 'HAS_TRANSACTIONS', softDeleted: true, message: `UoM ${code} deactivated – has materials` }, { status: 400 });
       }
 
-      if (id) await db.execute(sql`DELETE FROM ent_uom WHERE id = ${id}`);
-      else await db.execute(sql`DELETE FROM ent_uom WHERE code = ${checkCode}`);
+      if (id) await db.execute(sql`DELETE FROM core_unit_measure WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM core_unit_measure WHERE code = ${checkCode}`);
 
       return NextResponse.json({ success: true, message: `UoM ${code || id} deleted – legacy` });
     }

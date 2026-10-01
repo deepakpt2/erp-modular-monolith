@@ -9,7 +9,7 @@ import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared
 /**
  * Delivery API – Legal-safe own IP – Module 8 SD
  * New: sales_delivery + sales_delivery_line (was sd_delivery + sd_delivery_line) – deliveryNumber DN-80000001 was 80*, salesOrderId, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, shipToPartnerId SCUC was ship_to_customer_id, status DRAFT/PICKING/PICKED/GOODS_ISSUED/CANCELLED, pickingDate goodsIssueDate, universalLedgerId FULC was fi_document_id COGS Dr COGS Cr Inventory, totalQuantity, shippingPoint DP-1000 was KP01, deliveryPriority 02, deliveryBlock, route ROUTE-01 was KROUTE01, incoterms EXW, pickingStatus goodsMovementStatus, line: deliveryId salesLineId lineNumber itemId EMTC was material_id facilityId inventoryLocationId was sloc_id lotId ELTC was batch_id lotNumber was batch_number quantity quantityPicked quantityIssued 601 uomCode EUOC stockLedgerId
- * Helper code: SDLC Delivery Create (alias DLC, VL01N, FIN-DN-CR) – 4-char MOOA S=Sales D=Delivery L=Line? Actually SDLC = Sales Delivery Create – module grouped intuitive, same length as VL01N but own IP
+ * Helper code: SDLC Delivery Create (alias DLC, SDLC (legacy VL01N), FIN-DN-CR) – 4-char MOOA S=Sales D=Delivery L=Line? Actually SDLC = Sales Delivery Create – module grouped intuitive, same length as SDLC (legacy VL01N) but own IP
  * Fallback to legacy sd_delivery
  */
 
@@ -86,8 +86,8 @@ export async function GET(req: NextRequest) {
           (SELECT COUNT(*) FROM sd_delivery_line WHERE delivery_id = d.id) as line_count
         FROM sd_delivery d
         LEFT JOIN sd_sales_order so ON d.sales_order_id = so.id
-        LEFT JOIN ent_plant p ON d.plant_id = p.id
-        LEFT JOIN ent_business_partner bp ON d.ship_to_customer_id = bp.id
+        LEFT JOIN org_facility p ON d.plant_id = p.id
+        LEFT JOIN partner_account bp ON d.ship_to_customer_id = bp.id
         WHERE 1=1
       `;
 
@@ -111,8 +111,8 @@ export async function GET(req: NextRequest) {
       table,
       source: dbSource,
       legalSafe,
-      functionDescription: 'Delivery – SDLC legal-safe own IP (was VL01N) – deliveryNumber DN-80000001 was 80*, facilityId FAC-1000 was plant_id, shipToPartnerId SCUC was ship_to_customer_id, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC, shippingPoint DP-1000 was KP01',
-      explanation: 'Delivery legal-safe sales_delivery – deliveryNumber DN-80000001 was 80*, salesOrderId, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, shipToPartnerId SCUC was ship_to_customer_id, status DRAFT/PICKING/PICKED/GOODS_ISSUED/CANCELLED, pickingDate goodsIssueDate, universalLedgerId FULC was fi_document_id COGS, shippingPoint DP-1000 was KP01 VL01N, deliveryPriority 02, route ROUTE-01 was KROUTE01, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC – Code SDLC primary alias DLC/VL01N – 4-char MOOA S=Sales D=Delivery C=Create – module grouped intuitive, same length as VL01N but own IP.',
+      functionDescription: 'Delivery – SDLC legal-safe own IP (was SDLC (legacy VL01N)) – deliveryNumber DN-80000001 was 80*, facilityId FAC-1000 was plant_id, shipToPartnerId SCUC was ship_to_customer_id, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC, shippingPoint DP-1000 was KP01',
+      explanation: 'Delivery legal-safe sales_delivery – deliveryNumber DN-80000001 was 80*, salesOrderId, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, shipToPartnerId SCUC was ship_to_customer_id, status DRAFT/PICKING/PICKED/GOODS_ISSUED/CANCELLED, pickingDate goodsIssueDate, universalLedgerId FULC was fi_document_id COGS, shippingPoint DP-1000 was KP01 SDLC (legacy VL01N), deliveryPriority 02, route ROUTE-01 was KROUTE01, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC – Code SDLC primary alias DLC/SDLC (legacy VL01N) – 4-char MOOA S=Sales D=Delivery C=Create – module grouped intuitive, same length as SDLC (legacy VL01N) but own IP.',
     });
   } catch (e: any) {
     console.error('Delivery API fatal, returning empty to avoid 500:', e.message);
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // SAP-like posting period enforcement – OB52 – check if period open for account type M
+    // SAP-like posting period enforcement – FPPE (legacy OB52) – check if period open for account type M
     try {
       const postingDate = body.posting_date || body.posting_date || new Date().toISOString();
       const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';
@@ -226,7 +226,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const action = (body.action || body.edit_action || 'ADJUST').toUpperCase();
 
-    // Phase 0 T0 BLOCKING – PGI 601 – Post Goods Issue for Delivery – VL02N PGI – NO DANGLING
+    // Phase 0 T0 BLOCKING – PGI 601 – Post Goods Issue for Delivery – SDLC (legacy VL02N) PGI – NO DANGLING
     if (action === 'PGI' || action === 'POST_GOODS_ISSUE' || action === 'GOODS_ISSUE' || body.pgi === true) {
       const deliveryNumber = body.delivery_number || body.document_number;
       const deliveryId = body.id || body.delivery_id;
@@ -245,9 +245,9 @@ export async function PUT(req: NextRequest) {
         if (!delivery) return NextResponse.json({ error: `Delivery ${deliveryNumber || deliveryId} not found` }, { status: 404 });
 
         // Validate movement type 601
-        const movementCode = body.movement_type || '601';
+        const movementCode = body.movement_type || 'GI_SALES';
         const movementCheck = await getMovementType(movementCode);
-        if (!movementCheck.found) return NextResponse.json({ error: `Movement Type ${movementCode} not found – OMJJ – T0 BLOCKING` }, { status: 400 });
+        if (!movementCheck.found) return NextResponse.json({ error: `Movement Type ${movementCode} not found – FMTM (legacy OMJJ) – T0 BLOCKING` }, { status: 400 });
         const allowedCheck = await validateMovementAllowed(movementCode, 'GI');
         if (!allowedCheck.allowed) return NextResponse.json({ error: allowedCheck.message }, { status: 400 });
 
@@ -264,7 +264,7 @@ export async function PUT(req: NextRequest) {
 
         if (lines.length === 0) return NextResponse.json({ error: `Delivery ${delivery.delivery_number} has no lines – cannot PGI` }, { status: 400 });
 
-        // For each line, post GI 601 – stock - value - – GBB/BSX – COGS posting – NO DANGLING
+        // For each line, post GI 601 – stock - value - – INV_OFFSET/INV_POSTING (legacy GBB/BSX) – COGS posting – NO DANGLING
         let totalCOGS = 0;
         for (const line of lines) {
           const qty = parseFloat(line.quantity || '0');
@@ -274,8 +274,8 @@ export async function PUT(req: NextRequest) {
           totalCOGS += cogsValue;
 
           // Get auto accounts GBB and BSX
-          const gbb = await getAutoAccount({ transaction_key: 'GBB', chart_of_accounts: 'KSCA', valuation_class: valuationClass });
-          const bsx = await getAutoAccount({ transaction_key: 'BSX', chart_of_accounts: 'KSCA', valuation_class: valuationClass });
+          const gbb = await getAutoAccount({ transaction_key: 'INV_OFFSET', chart_of_accounts: 'KSCA', valuation_class: valuationClass });
+          const bsx = await getAutoAccount({ transaction_key: 'INV_POSTING', chart_of_accounts: 'KSCA', valuation_class: valuationClass });
 
           // Update stock – decrease qty
           try {
@@ -290,7 +290,7 @@ export async function PUT(req: NextRequest) {
             // Stock ledger 601
             await db.execute(sql`
               INSERT INTO inv_stock_ledger (movement_type, material_id, plant_id, sloc_id, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, posted_by, header_text)
-              VALUES ('601', ${line.item_id}, ${line.facility_id}, ${line.inventory_location_id || line.facility_id}, ${-qty}, ${oldQty}, ${newQty}, ${mapPrice}, ${-cogsValue}, 'DELIVERY', ${delivery.delivery_number}, 'system', ${`PGI 601 – Delivery ${delivery.delivery_number} – valuation_class ${valuationClass} – MAP ${mapPrice} – GBB/BSX – COGS – T0 BLOCKING`})
+              VALUES ('GI_SALES', ${line.item_id}, ${line.facility_id}, ${line.inventory_location_id || line.facility_id}, ${-qty}, ${oldQty}, ${newQty}, ${mapPrice}, ${-cogsValue}, 'DELIVERY', ${delivery.delivery_number}, 'system', ${`PGI 601 – Delivery ${delivery.delivery_number} – valuation_class ${valuationClass} – MAP ${mapPrice} – INV_OFFSET/INV_POSTING (legacy GBB/BSX) – COGS – T0 BLOCKING`})
             `).catch(()=>{});
           } catch (e) { console.warn('Stock update failed for PGI', e); }
 
@@ -317,7 +317,7 @@ export async function PUT(req: NextRequest) {
           code: 'SDLC',
           movement_type: movementCode,
           total_cogs: totalCOGS,
-          message: `Delivery ${delivery.delivery_number} PGI 601 posted – T0 BLOCKING – stock -${lines.length} lines – COGS ${totalCOGS} – GBB/BSX via OBYC – stock ledger 601 – universal ledger GBB/BSX – MAP used – NO DANGLING`,
+          message: `Delivery ${delivery.delivery_number} PGI 601 posted – T0 BLOCKING – stock -${lines.length} lines – COGS ${totalCOGS} – INV_OFFSET/INV_POSTING (legacy GBB/BSX) via FAUC (legacy OBYC) – stock ledger 601 – universal ledger INV_OFFSET/INV_POSTING (legacy GBB/BSX) – MAP used – NO DANGLING`,
           legalSafe: true
         });
 
@@ -383,7 +383,7 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE sd_delivery SET status = ${status}::delivery_status, updated_at = NOW() WHERE id = ${id} RETURNING id, delivery_number, status`);
       else res = await db.execute(sql`UPDATE sd_delivery SET status = ${status}::delivery_status, updated_at = NOW() WHERE delivery_number = ${delivery_number} RETURNING id, delivery_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Delivery not found' }, { status: 404 });
-      return NextResponse.json({ success: true, delivery: res.rows[0], message: `Delivery ${res.rows[0].delivery_number} status ${status} – VL01N legacy` });
+      return NextResponse.json({ success: true, delivery: res.rows[0], message: `Delivery ${res.rows[0].delivery_number} status ${status} – SDLC (legacy VL01N) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

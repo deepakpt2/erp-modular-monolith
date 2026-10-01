@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm';
 import { checkAuthorization, getAuthorizations, getUserRoles } from '@/shared/kernel/auth/authorization';
 
 /**
- * Authorizations API – FRPC own IP – Foundation Role/Permission Checks – NEW OWN CODE – alias PFCG/SU01
+ * Authorizations API – FRPC own IP – Foundation Role/Permission Checks – NEW OWN CODE – alias FROC (legacy PFCG)/FUSC (legacy SU01)
  * Implements authorization objects for plant, movement, company code, GL, posting period, number range – checks in APIs – industry standard
  * For large org with 1000s employees, critical – ensures user can only post for authorized plant, movement, company code, GL, etc.
  * Tables: fin_authorization_object, fin_role_authorization, fin_user_role

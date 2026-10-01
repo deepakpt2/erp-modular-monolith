@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
         distinctTypes = d.rows;
       } catch {
         try {
-          const d = await db.execute(sql`SELECT DISTINCT type as code, COUNT(*) as count FROM ent_material_master GROUP BY type ORDER BY type`);
+          const d = await db.execute(sql`SELECT DISTINCT type as code, COUNT(*) as count FROM prod_item GROUP BY type ORDER BY type`);
           distinctTypes = d.rows;
         } catch {}
       }
@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
         uoms = u.rows;
       } catch {
         try {
-          const u = await db.execute(sql`SELECT code, name, dimension, is_active FROM ent_uom ORDER BY code`);
+          const u = await db.execute(sql`SELECT code, name, dimension, is_active FROM core_unit_measure ORDER BY code`);
           uoms = u.rows;
         } catch {}
       }
@@ -130,13 +130,13 @@ export async function GET(req: NextRequest) {
       const typesRes = await db.execute(sql`SELECT id, code, name, description, is_active, created_at FROM ent_material_type ORDER BY code`);
       let distinctTypes: any[] = [];
       try {
-        const d = await db.execute(sql`SELECT DISTINCT type as code, COUNT(*) as count FROM ent_material_master GROUP BY type ORDER BY type`);
+        const d = await db.execute(sql`SELECT DISTINCT type as code, COUNT(*) as count FROM prod_item GROUP BY type ORDER BY type`);
         distinctTypes = d.rows;
       } catch {}
 
       let uoms: any[] = [];
       try {
-        const u = await db.execute(sql`SELECT code, name, dimension, is_active FROM ent_uom ORDER BY code`);
+        const u = await db.execute(sql`SELECT code, name, dimension, is_active FROM core_unit_measure ORDER BY code`);
         uoms = u.rows;
       } catch {}
 
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
         aliasCodes: ['MTP', 'OMS2'],
         helperCode: 'OMS2',
         functionDescription: 'Define Material Types – ERP OMS2 – Configurable: ROH/HALB/FERT + HAWA/VERP/NLAG/DIEN etc (legacy ent_material_type – migrating to prod_item_type RAW/FINISHED/SEMI)',
-        explanation: '3 default types ROH/HALB/FERT, but you can add new types like HAWA, VERP, NLAG via POST. Base UoM also configurable via ent_uom table (CUNI). Code OMS2 (legacy, new EMTP).',
+        explanation: '3 default types ROH/HALB/FERT, but you can add new types like HAWA, VERP, NLAG via POST. Base UoM also configurable via core_unit_measure table (EUOC (legacy CUNI)). Code OMS2 (legacy, new EMTP).',
         table: 'ent_material_type',
         legalSafe: false,
       });
@@ -297,7 +297,7 @@ export async function DELETE(req: NextRequest) {
         // Also check legacy mapping
         try {
           const oldCode = Object.keys(mapOldToNew).find(k => mapOldToNew[k] === checkCode) || checkCode;
-          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM ent_material_master WHERE type = ${oldCode}::material_type`);
+          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM prod_item WHERE type = ${oldCode}::material_type`);
           inUse += parseInt((r.rows[0] as any).cnt || '0');
         } catch {}
       }
@@ -318,7 +318,7 @@ export async function DELETE(req: NextRequest) {
       try {
         const checkCode = upperCode || '';
         if (checkCode) {
-          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM ent_material_master WHERE type = ${checkCode}::material_type`);
+          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM prod_item WHERE type = ${checkCode}::material_type`);
           inUse = parseInt((r.rows[0] as any).cnt || '0');
         }
       } catch {}

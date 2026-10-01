@@ -2,7 +2,7 @@ import { pgTable, varchar, boolean, timestamp, uuid, text, numeric, integer, ind
 import { entCompanyCode, entPlant } from './schema';
 
 // Fiscal Year Variant OB29 K4 April-March
-export const entFiscalYearVariant = pgTable('ent_fiscal_year_variant', {
+export const entFiscalYearVariant = pgTable('fin_fiscal_calendar', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 4 }).notNull().unique(), // K4, K1, etc
   description: varchar('description', { length: 100 }).notNull(),
@@ -12,7 +12,7 @@ export const entFiscalYearVariant = pgTable('ent_fiscal_year_variant', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const entFiscalYearPeriod = pgTable('ent_fiscal_year_period', {
+export const entFiscalYearPeriod = pgTable('fin_fiscal_calendar_period', {
   id: uuid('id').primaryKey().defaultRandom(),
   variantId: uuid('variant_id').notNull().references(() => entFiscalYearVariant.id),
   period: integer('period').notNull(), // 1-12
@@ -25,7 +25,7 @@ export const entFiscalYearPeriod = pgTable('ent_fiscal_year_period', {
 }));
 
 // Posting Period Variant OBBO
-export const entPostingPeriodVariant = pgTable('ent_posting_period_variant', {
+export const entPostingPeriodVariant = pgTable('fin_posting_calendar', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 10 }).notNull().unique(), // KS01, 1000
   name: varchar('name', { length: 100 }).notNull(),
@@ -33,7 +33,7 @@ export const entPostingPeriodVariant = pgTable('ent_posting_period_variant', {
 });
 
 // Open/Close Posting Periods OB52
-export const entPostingPeriod = pgTable('ent_posting_period', {
+export const entPostingPeriod = pgTable('fin_posting_calendar_period', {
   id: uuid('id').primaryKey().defaultRandom(),
   variantId: uuid('variant_id').notNull().references(() => entPostingPeriodVariant.id),
   companyCodeId: uuid('company_code_id').references(() => entCompanyCode.id),
@@ -50,14 +50,14 @@ export const entPostingPeriod = pgTable('ent_posting_period', {
 }));
 
 // Field Status Variant OBC4
-export const entFieldStatusVariant = pgTable('ent_field_status_variant', {
+export const entFieldStatusVariant = pgTable('fin_field_status_variant', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 10 }).notNull().unique(), // KS01, 1000
   name: varchar('name', { length: 100 }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const entFieldStatusGroup = pgTable('ent_field_status_group', {
+export const entFieldStatusGroup = pgTable('fin_field_status_group', {
   id: uuid('id').primaryKey().defaultRandom(),
   variantId: uuid('variant_id').notNull().references(() => entFieldStatusVariant.id),
   code: varchar('code', { length: 10 }).notNull(), // G001, G004, G005
@@ -67,7 +67,7 @@ export const entFieldStatusGroup = pgTable('ent_field_status_group', {
   uniqueVariantCode: uniqueIndex('uq_field_status_group').on(t.variantId, t.code),
 }));
 
-export const entFieldStatus = pgTable('ent_field_status', {
+export const entFieldStatus = pgTable('fin_field_status', {
   id: uuid('id').primaryKey().defaultRandom(),
   groupId: uuid('group_id').notNull().references(() => entFieldStatusGroup.id),
   fieldName: varchar('field_name', { length: 50 }).notNull(), // cost_center, profit_center, tax_code, etc
@@ -80,7 +80,7 @@ export const entFieldStatus = pgTable('ent_field_status', {
 
 // Tolerance Group OBA0 G/L, OBA4 Employee/Customer/Vendor
 export const toleranceTypeEnum = pgEnum('tolerance_type', ['GL', 'EMPLOYEE', 'CUSTOMER', 'VENDOR', 'AP', 'AR']);
-export const entToleranceGroup = pgTable('ent_tolerance_group', {
+export const entToleranceGroup = pgTable('fin_tolerance_group', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 20 }).notNull().unique(), // 1000, KS01, blank
   name: varchar('name', { length: 100 }).notNull(),
@@ -94,7 +94,7 @@ export const entToleranceGroup = pgTable('ent_tolerance_group', {
 });
 
 // Credit Control Area OB45
-export const entCreditControlArea = pgTable('ent_credit_control_area', {
+export const entCreditControlArea = pgTable('fin_credit_policy_area', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 10 }).notNull().unique(), // KS01, 1000
   name: varchar('name', { length: 100 }).notNull(),
@@ -111,7 +111,7 @@ export const entCreditControlAssignment = pgTable('ent_credit_control_assignment
 }));
 
 // Document Type OBA7
-export const entDocumentType = pgTable('ent_document_type', {
+export const entDocumentType = pgTable('fin_document_type', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 10 }).notNull().unique(), // KR, KG, KZ, RE, WE, WA, SA
   name: varchar('name', { length: 100 }).notNull(),
@@ -142,7 +142,7 @@ export const entApprovalAuthority = pgTable('ent_approval_authority', {
 }));
 
 // Role Based Access Control for 500 employees
-export const entRole = pgTable('ent_role', {
+export const entRole = pgTable('auth_role', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 30 }).notNull().unique(), // ADMIN, PURCHASER, WAREHOUSE, ACCOUNTANT, MANAGER, OWNER, HR, SALES
   name: varchar('name', { length: 100 }).notNull(),
@@ -151,7 +151,7 @@ export const entRole = pgTable('ent_role', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const entPermission = pgTable('ent_permission', {
+export const entPermission = pgTable('auth_permission', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 100 }).notNull().unique(), // PR_CREATE, PO_APPROVE, GR_POST, IV_POST, SALES_CREATE, etc
   name: varchar('name', { length: 100 }).notNull(),
@@ -160,7 +160,7 @@ export const entPermission = pgTable('ent_permission', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const entRolePermission = pgTable('ent_role_permission', {
+export const entRolePermission = pgTable('auth_role_permission', {
   id: uuid('id').primaryKey().defaultRandom(),
   roleId: uuid('role_id').notNull().references(() => entRole.id),
   permissionId: uuid('permission_id').notNull().references(() => entPermission.id),
@@ -168,7 +168,7 @@ export const entRolePermission = pgTable('ent_role_permission', {
   uniqueRolePerm: uniqueIndex('uq_role_permission').on(t.roleId, t.permissionId),
 }));
 
-export const entUserRole = pgTable('ent_user_role', {
+export const entUserRole = pgTable('auth_user_role', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull(), // FK to auth user
   roleId: uuid('role_id').notNull().references(() => entRole.id),

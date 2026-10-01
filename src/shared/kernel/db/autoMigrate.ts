@@ -31,7 +31,7 @@ async function checkTablesExist() {
   try {
     // Check both new and old client tables
     const res1 = await db.execute(sql`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'core_tenant') as exists`);
-    const res2 = await db.execute(sql`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'ent_client') as exists`);
+    const res2 = await db.execute(sql`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'core_tenant') as exists`);
     const res3 = await db.execute(sql`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'auth_user') as exists`);
     return (res1.rows[0] as any).exists || (res2.rows[0] as any).exists || (res3.rows[0] as any).exists;
   } catch {
@@ -212,7 +212,7 @@ async function runAutoMigrate() {
       console.log('   Continuing with init-prod – push error is non-fatal due to || true in compose');
     }
   } else {
-    console.log('✅ Tables exist (core_tenant/ent_client/auth_user found), skipping push – but will still ensure new tables via CREATE IF NOT EXISTS in APIs');
+    console.log('✅ Tables exist (core_tenant/core_tenant/auth_user found), skipping push – but will still ensure new tables via CREATE IF NOT EXISTS in APIs');
   }
 
   // Always ensure admin first – critical for login
@@ -225,7 +225,7 @@ async function runAutoMigrate() {
     if (tRes.rows.length > 0) clientExists = true;
   } catch {}
   try {
-    const cRes = await db.execute(sql`SELECT id FROM ent_client WHERE code = '100' LIMIT 1`);
+    const cRes = await db.execute(sql`SELECT id FROM core_tenant WHERE code = '100' LIMIT 1`);
     if (cRes.rows.length > 0) clientExists = true;
   } catch {}
 

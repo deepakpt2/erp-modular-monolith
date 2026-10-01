@@ -5,8 +5,8 @@ import { sql } from 'drizzle-orm';
 import { checkTolerance } from '@/shared/kernel/db/postingPeriodHelpers';
 
 /**
- * Automatic Payment Program – F110 Payment Run – T1 REQUIRED – STANDARD & COMPLIANCE – NO DANGLING
- * SAP F110: Payment Run creates payment docs KZ, DME file, advice, clears AP open items
+ * Automatic Payment Program – FPYA (legacy F110) Payment Run – T1 REQUIRED – STANDARD & COMPLIANCE – NO DANGLING
+ * SAP FPYA (legacy F110): Payment Run creates payment docs KZ, DME file, advice, clears AP open items
  * Proposal must exist first – then run creates FI docs Dr Vendor Cr Bank, clears AP invoices
  * Table: fin_payment_run – run_number, proposal_number, company_code, amount, status, dme_file, advice
  * Strict usage: Reads fin_payment_proposal where status PROPOSED, checks tolerance OBA4, payment terms FAPT, house bank FI12, creates KZ docs 53*, updates AP invoices to PAID, creates universal ledger entries
@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
     if (proposals.length === 0) {
       return NextResponse.json({
         success: false,
-        message: `No PROPOSED payment proposals found for company ${finalCompanyCode} – F110 Run – create proposal via POST /api/payment/proposal first – T1`,
-        code: 'F110-RUN'
+        message: `No PROPOSED payment proposals found for company ${finalCompanyCode} – FPYA (legacy F110) Run – create proposal via POST /api/payment/proposal first – T1`,
+        code: 'FPYA (legacy F110)-RUN'
       });
     }
 
@@ -100,15 +100,15 @@ export async function POST(req: NextRequest) {
       const runNumber = `53${530000000 + Date.now() % 100000000 + runCount}`;
       runNumbers.push(runNumber);
 
-      // Create FI document KZ – Dr Vendor Cr Bank – via fi_document
+      // Create FI document KZ – Dr Vendor Cr Bank – via fin_universal_ledger
       try {
-        const ccRes = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = ${finalCompanyCode} LIMIT 1`);
+        const ccRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${finalCompanyCode} LIMIT 1`);
         const companyCodeId = ccRes.rows.length > 0 ? (ccRes.rows[0] as any).id : null;
 
         if (companyCodeId) {
           const fiRes = await db.execute(sql`
-            INSERT INTO fi_document (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type)
-            VALUES (${runNumber}, ${companyCodeId}, 'KZ', NOW(), NOW(), ${prop.proposal_number}, ${`F110 Payment Run – Proposal ${prop.proposal_number} Vendor ${prop.vendor_number} ${amount} – T1`}, ${amount}, ${amount}, ${prop.currency_code || 'INR'}, 'POSTED', 'KZ')
+            INSERT INTO fin_universal_ledger (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type)
+            VALUES (${runNumber}, ${companyCodeId}, 'KZ', NOW(), NOW(), ${prop.proposal_number}, ${`FPYA (legacy F110) Payment Run – Proposal ${prop.proposal_number} Vendor ${prop.vendor_number} ${amount} – T1`}, ${amount}, ${amount}, ${prop.currency_code || 'INR'}, 'POSTED', 'KZ')
             RETURNING id
           `);
           const fiDocId = (fiRes.rows[0] as any).id;
@@ -117,18 +117,18 @@ export async function POST(req: NextRequest) {
           let vendorGlId: any = null;
           let bankGlId: any = null;
           try {
-            const coaRes = await db.execute(sql`SELECT coa_id FROM ent_company_code WHERE id = ${companyCodeId} LIMIT 1`);
+            const coaRes = await db.execute(sql`SELECT coa_id FROM org_legal_entity WHERE id = ${companyCodeId} LIMIT 1`);
             const coaId = coaRes.rows.length > 0 ? (coaRes.rows[0] as any).coa_id : null;
             if (coaId) {
-              const vendorGlRes = await db.execute(sql`SELECT id FROM fi_gl_account WHERE coa_id = ${coaId} AND account_number IN ('2000000000','210000') ORDER BY account_number LIMIT 1`);
+              const vendorGlRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE coa_id = ${coaId} AND account_number IN ('2000000000','210000') ORDER BY account_number LIMIT 1`);
               if (vendorGlRes.rows.length > 0) vendorGlId = (vendorGlRes.rows[0] as any).id;
-              const bankGlRes = await db.execute(sql`SELECT id FROM fi_gl_account WHERE coa_id = ${coaId} AND account_number = '8000000001' LIMIT 1`);
+              const bankGlRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE coa_id = ${coaId} AND account_number = '8000000001' LIMIT 1`);
               if (bankGlRes.rows.length > 0) bankGlId = (bankGlRes.rows[0] as any).id;
             }
           } catch {}
           if (!vendorGlId || !bankGlId) {
             try {
-              const anyGl = await db.execute(sql`SELECT id FROM fi_gl_account LIMIT 2`);
+              const anyGl = await db.execute(sql`SELECT id FROM fin_ledger_account LIMIT 2`);
               if (anyGl.rows.length >= 2) {
                 if (!vendorGlId) vendorGlId = (anyGl.rows[0] as any).id;
                 if (!bankGlId) bankGlId = (anyGl.rows[1] as any).id;
@@ -138,19 +138,19 @@ export async function POST(req: NextRequest) {
 
           if (vendorGlId && bankGlId) {
             await db.execute(sql`
-              INSERT INTO fi_document_line (fi_document_id, line_number, gl_account_id, bp_id, debit, credit, text)
+              INSERT INTO fin_universal_ledger_line (fi_document_id, line_number, gl_account_id, bp_id, debit, credit, text)
               VALUES 
-                (${fiDocId}, 1, ${vendorGlId}, ${prop.vendor_id}, ${amount}, 0, ${`F110 Vendor Payment ${prop.vendor_number} Proposal ${prop.proposal_number}`}),
-                (${fiDocId}, 2, ${bankGlId}, NULL, 0, ${amount}, ${`F110 Bank ${prop.payment_method} House Bank ${prop.house_bank}`})
+                (${fiDocId}, 1, ${vendorGlId}, ${prop.vendor_id}, ${amount}, 0, ${`FPYA (legacy F110) Vendor Payment ${prop.vendor_number} Proposal ${prop.proposal_number}`}),
+                (${fiDocId}, 2, ${bankGlId}, NULL, 0, ${amount}, ${`FPYA (legacy F110) Bank ${prop.payment_method} House Bank ${prop.house_bank}`})
             `);
           }
 
           // Update AP invoices to PAID if vendor matches
           try {
-            await db.execute(sql`UPDATE fi_ap_invoice SET status = 'PAID' WHERE vendor_id = ${prop.vendor_id} AND status = 'OPEN'`).catch(()=>{});
+            await db.execute(sql`UPDATE fin_ap_invoice SET status = 'PAID' WHERE vendor_id = ${prop.vendor_id} AND status = 'OPEN'`).catch(()=>{});
           } catch {}
         }
-      } catch (e) { console.warn('F110 FI doc creation failed', e); }
+      } catch (e) { console.warn('FPYA (legacy F110) FI doc creation failed', e); }
 
       // Create payment run record
       const dmeFile = `DME-${runNumber}.txt – Vendor ${prop.vendor_number} Amount ${amount} ${prop.currency_code} – House Bank ${prop.house_bank} – Payment Method ${prop.payment_method}`;
@@ -172,9 +172,9 @@ export async function POST(req: NextRequest) {
       run_count: runCount,
       total_amount: totalAmount,
       run_numbers: runNumbers,
-      code: 'F110-RUN',
+      code: 'FPYA (legacy F110)-RUN',
       aliasCodes: ['F110', 'KZ'],
-      message: `F110 Payment Run – ${runCount} payments posted – total ${totalAmount} – company ${finalCompanyCode} – KZ docs ${runNumbers.join(', ')} – T1 REQUIRED – creates payment docs KZ Dr Vendor Cr Bank, DME file, advice, clears AP open items, tolerance OBA4 checked, payment terms FAPT, house bank FI12 – NO DANGLING – AP automation`,
+      message: `FPYA (legacy F110) Payment Run – ${runCount} payments posted – total ${totalAmount} – company ${finalCompanyCode} – KZ docs ${runNumbers.join(', ')} – T1 REQUIRED – creates payment docs KZ Dr Vendor Cr Bank, DME file, advice, clears AP open items, tolerance OBA4 checked, payment terms FAPT, house bank FI12 – NO DANGLING – AP automation`,
       legalSafe: true
     });
   } catch (e: any) {
@@ -208,10 +208,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       runs: res.rows,
       count: res.rows.length,
-      code: 'F110-RUN',
+      code: 'FPYA (legacy F110)-RUN',
       aliasCodes: ['F110', 'KZ'],
       table: 'fin_payment_run',
-      functionDescription: 'Automatic Payment Program Payment Run – F110 – T1 REQUIRED – creates KZ docs Dr Vendor Cr Bank, DME file, advice – NO DANGLING',
+      functionDescription: 'Automatic Payment Program Payment Run – FPYA (legacy F110) – T1 REQUIRED – creates KZ docs Dr Vendor Cr Bank, DME file, advice – NO DANGLING',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, runs: [] }, { status: 500 });

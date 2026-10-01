@@ -148,11 +148,11 @@ export async function POST(req: NextRequest) {
         const totalLocalNew = totalForeign * exchangeRate;
         const variance = totalLocalNew - totalLocalOld;
 
-        // Get KDM account via OBYC
+        // Get KDM account via FAUC (legacy OBYC)
         let kdmAccount = '4000000005';
         try {
           const { getAutoAccount } = await import('@/shared/kernel/db/postingPeriodHelpers');
-          const kdm = await getAutoAccount({ transaction_key: 'KDM', chart_of_accounts: 'KSCA', valuation_class: 'FINISHED' });
+          const kdm = await getAutoAccount({ transaction_key: 'EXCH_DIFF', chart_of_accounts: 'KSCA', valuation_class: 'FINISHED' });
           if (kdm.gl_account) kdmAccount = kdm.gl_account;
         } catch {}
 
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
 
         await db.execute(sql`
           INSERT INTO fin_fx_valuation (valuation_number, legal_entity_id, company_code_id, currency_code, valuation_date, exchange_rate, valuation_method, total_foreign_amount, total_local_amount, variance_amount, text, status)
-          VALUES (${valuationNumber}, ${legalEntityIdResolved}, ${legalEntityIdResolved}, ${finalCurrency}, ${finalValuationDate}, ${exchangeRate}, 'BALANCE_SHEET', ${totalForeign}, ${totalLocalNew}, ${variance}, ${`F.05 FX Valuation Run – ${finalCurrency} rate ${exchangeRate} variance ${variance} – KDM ${kdmAccount} via OBYC – T1 REQUIRED`}, 'POSTED')
+          VALUES (${valuationNumber}, ${legalEntityIdResolved}, ${legalEntityIdResolved}, ${finalCurrency}, ${finalValuationDate}, ${exchangeRate}, 'BALANCE_SHEET', ${totalForeign}, ${totalLocalNew}, ${variance}, ${`F.05 FX Valuation Run – ${finalCurrency} rate ${exchangeRate} variance ${variance} – KDM ${kdmAccount} via FAUC (legacy OBYC) – T1 REQUIRED`}, 'POSTED')
         `);
 
         // Post variance to universal ledger – KDM exchange diff – T1 REQUIRED – NO DANGLING
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
             // Dr/Cr KDM vs AR/AP – simplified: Dr/Cr KDM
             await db.execute(sql`
               INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
-              VALUES (${valuationNumber}, 'FXV'::fin_doc_type_new, ${postingDate}, ${postingDate}, ${postingDate.getFullYear()}, ${postingDate.getMonth()+1}, (SELECT id FROM fin_ledger_account WHERE account_number = ${kdmAccount} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${kdmAccount} LIMIT 1), ${isGain ? 0 : absVar}, ${isGain ? absVar : 0}, ${variance}, 'INR', 'FX_VALUATION', ${valuationNumber}, ${`F.05 FX Valuation – ${finalCurrency} variance ${variance} rate ${exchangeRate} – KDM ${kdmAccount} via OBYC – T1 REQUIRED`})
+              VALUES (${valuationNumber}, 'FXV'::fin_doc_type_new, ${postingDate}, ${postingDate}, ${postingDate.getFullYear()}, ${postingDate.getMonth()+1}, (SELECT id FROM fin_ledger_account WHERE account_number = ${kdmAccount} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${kdmAccount} LIMIT 1), ${isGain ? 0 : absVar}, ${isGain ? absVar : 0}, ${variance}, 'INR', 'FX_VALUATION', ${valuationNumber}, ${`F.05 FX Valuation – ${finalCurrency} variance ${variance} rate ${exchangeRate} – KDM ${kdmAccount} via FAUC (legacy OBYC) – T1 REQUIRED`})
             `).catch(()=>{});
           }
         } catch (e) { console.warn('FX valuation universal ledger posting failed', e); }
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
           kdm_account: kdmAccount,
           code: 'F.05',
           aliasCodes: ['F05', 'FAGL_FC_VAL'],
-          message: `F.05 FX Valuation Run – ${finalCurrency} rate ${exchangeRate} – ${openItems.length} open items foreign ${totalForeign} local new ${totalLocalNew} old ${totalLocalOld} variance ${variance} – KDM ${kdmAccount} via OBYC – T1 REQUIRED – month-end revaluation – NO DANGLING`,
+          message: `F.05 FX Valuation Run – ${finalCurrency} rate ${exchangeRate} – ${openItems.length} open items foreign ${totalForeign} local new ${totalLocalNew} old ${totalLocalOld} variance ${variance} – KDM ${kdmAccount} via FAUC (legacy OBYC) – T1 REQUIRED – month-end revaluation – NO DANGLING`,
           legalSafe: true
         });
       } catch (e: any) {

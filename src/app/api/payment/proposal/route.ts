@@ -4,8 +4,8 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Automatic Payment Program – F110 Proposal – T1 REQUIRED – STANDARD & COMPLIANCE – NO DANGLING
- * SAP F110: Proposal selects vendors due, checks payment method, bank, tolerance, payment terms, house bank
+ * Automatic Payment Program – FPYA (legacy F110) Proposal – T1 REQUIRED – STANDARD & COMPLIANCE – NO DANGLING
+ * SAP FPYA (legacy F110): Proposal selects vendors due, checks payment method, bank, tolerance, payment terms, house bank
  * Without it, AP automation fails – manual payment painful
  * Table: fin_payment_proposal – proposal_number, company_code, vendor_id, amount, due_date, payment_method, house_bank, status
  * Strict usage: Proposal reads AP open items where due_date <= today, checks payment method, bank, tolerance OBA4, payment terms FAPT, house bank FI12
@@ -45,10 +45,10 @@ export async function GET(req: NextRequest) {
       const dueRes = await db.execute(sql`
         SELECT ap.id, ap.invoice_number, ap.vendor_id, COALESCE(pa.account_number, bp.bp_number) as vendor_number, COALESCE(pa.display_name, bp.name1) as vendor_name,
                ap.gross_amount, ap.net_amount, ap.currency, ap.due_date, ap.posting_date, cc.code as company_code
-        FROM fi_ap_invoice ap
+        FROM fin_ap_invoice ap
         LEFT JOIN partner_account pa ON ap.vendor_id = pa.id
-        JOIN ent_business_partner bp ON ap.vendor_id = bp.id
-        JOIN ent_company_code cc ON ap.company_code_id = cc.id
+        JOIN partner_account bp ON ap.vendor_id = bp.id
+        JOIN org_legal_entity cc ON ap.company_code_id = cc.id
         WHERE ap.status = 'OPEN' AND ap.due_date <= CURRENT_DATE
         ORDER BY ap.due_date LIMIT ${limit}
       `);
@@ -60,10 +60,10 @@ export async function GET(req: NextRequest) {
       due_items: dueItems,
       count: res.rows.length,
       due_count: dueItems.length,
-      code: 'F110-PROP',
+      code: 'FPYA (legacy F110)-PROP',
       aliasCodes: ['F110', 'PROPOSAL'],
       table: 'fin_payment_proposal',
-      functionDescription: 'Automatic Payment Program Proposal – F110 – T1 REQUIRED – selects vendors due, checks payment method, bank, tolerance, payment terms, house bank – NO DANGLING',
+      functionDescription: 'Automatic Payment Program Proposal – FPYA (legacy F110) – T1 REQUIRED – selects vendors due, checks payment method, bank, tolerance, payment terms, house bank – NO DANGLING',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, proposals: [] }, { status: 500 });
@@ -104,10 +104,10 @@ export async function POST(req: NextRequest) {
       const dueRes = await db.execute(sql`
         SELECT ap.id, ap.vendor_id, ap.gross_amount, ap.net_amount, ap.currency, ap.due_date, cc.code as company_code,
                COALESCE(pa.account_number, bp.bp_number) as vendor_number
-        FROM fi_ap_invoice ap
+        FROM fin_ap_invoice ap
         LEFT JOIN partner_account pa ON ap.vendor_id = pa.id
-        JOIN ent_business_partner bp ON ap.vendor_id = bp.id
-        JOIN ent_company_code cc ON ap.company_code_id = cc.id
+        JOIN partner_account bp ON ap.vendor_id = bp.id
+        JOIN org_legal_entity cc ON ap.company_code_id = cc.id
         WHERE ap.status = 'OPEN' AND (ap.due_date <= CURRENT_DATE OR ${finalCompanyCode} = cc.code)
         AND cc.code = ${finalCompanyCode}
         ORDER BY ap.due_date LIMIT 100
@@ -124,9 +124,9 @@ export async function POST(req: NextRequest) {
     if (dueItems.length === 0) {
       return NextResponse.json({ 
         success: false,
-        message: `No due AP items found for company ${finalCompanyCode} – F110 Proposal – create AP invoices via IV first – T1`,
+        message: `No due AP items found for company ${finalCompanyCode} – FPYA (legacy F110) Proposal – create AP invoices via IV first – T1`,
         due_count: 0,
-        code: 'F110-PROP'
+        code: 'FPYA (legacy F110)-PROP'
       });
     }
 
@@ -154,9 +154,9 @@ export async function POST(req: NextRequest) {
       total_amount: totalAmount,
       proposal_numbers: proposalNumbers,
       due_items: dueItems.length,
-      code: 'F110-PROP',
+      code: 'FPYA (legacy F110)-PROP',
       aliasCodes: ['F110'],
-      message: `F110 Payment Proposal – ${proposalCount} vendors due – total ${totalAmount} – company ${finalCompanyCode} – payment method ${finalPaymentMethod} – house bank ${finalHouseBank} – T1 REQUIRED – selects vendors due, checks payment method, bank, tolerance OBA4, payment terms FAPT, house bank FI12 – NO DANGLING – next: Payment Run creates KZ docs`,
+      message: `FPYA (legacy F110) Payment Proposal – ${proposalCount} vendors due – total ${totalAmount} – company ${finalCompanyCode} – payment method ${finalPaymentMethod} – house bank ${finalHouseBank} – T1 REQUIRED – selects vendors due, checks payment method, bank, tolerance OBA4, payment terms FAPT, house bank FI12 – NO DANGLING – next: Payment Run creates KZ docs`,
       legalSafe: true
     });
   } catch (e: any) {

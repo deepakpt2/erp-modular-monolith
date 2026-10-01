@@ -19,11 +19,11 @@ export async function GET(req: NextRequest) {
   try {
     const plantsRes = await db.execute(sql`
       SELECT p.id, p.code, p.name, p.company_code_id, cc.code as company_code, p.is_active,
-             (SELECT COUNT(*) FROM ent_storage_location WHERE plant_id = p.id) as sloc_count,
+             (SELECT COUNT(*) FROM org_inventory_location WHERE plant_id = p.id) as sloc_count,
              (SELECT COUNT(*) FROM inv_stock WHERE plant_id = p.id AND quantity > 0) as stock_lines,
              (SELECT SUM(quantity) FROM inv_stock WHERE plant_id = p.id) as total_qty
-      FROM ent_plant p
-      LEFT JOIN ent_company_code cc ON p.company_code_id = cc.id
+      FROM org_facility p
+      LEFT JOIN org_legal_entity cc ON p.company_code_id = cc.id
       WHERE cc.code = ${companyCode} OR ${companyCode} = 'ALL'
       ORDER BY p.code
     `);
@@ -31,18 +31,18 @@ export async function GET(req: NextRequest) {
     const slocsRes = await db.execute(sql`
       SELECT sl.id, sl.code, sl.name, sl.plant_id, p.code as plant_code, p.name as plant_name, sl.is_active,
              (SELECT COUNT(*) FROM inv_stock WHERE sloc_id = sl.id AND quantity > 0) as stock_lines
-      FROM ent_storage_location sl
-      JOIN ent_plant p ON sl.plant_id = p.id
-      LEFT JOIN ent_company_code cc ON p.company_code_id = cc.id
+      FROM org_inventory_location sl
+      JOIN org_facility p ON sl.plant_id = p.id
+      LEFT JOIN org_legal_entity cc ON p.company_code_id = cc.id
       WHERE cc.code = ${companyCode} OR ${companyCode} = 'ALL'
       ORDER BY p.code, sl.code
     `);
 
-    const companyCodesRes = await db.execute(sql`SELECT id, code, name, currency_code, city, country FROM ent_company_code ORDER BY code`);
+    const companyCodesRes = await db.execute(sql`SELECT id, code, name, currency_code, city, country FROM org_legal_entity ORDER BY code`);
 
     return NextResponse.json({
       code: 'OX10',
-      functionDescription: 'Plant / Storage Location – OX10/OX09',
+      functionDescription: 'Plant / Storage Location – EFCC (legacy OX10)/OX09',
 
       plants: plantsRes.rows,
       slocs: slocsRes.rows,

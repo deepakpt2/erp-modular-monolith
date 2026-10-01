@@ -5,9 +5,9 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Currencies API – Legal-safe own IP – Module 4
- * New table: core_currency (was ent_currency) – sample INR default, KWD/USD/EUR sample kept for convenience per requirement fresh empty but common sample kept
- * Helper code: FCYC Currency Create (alias CYC, OY03, FIN-CUR-CR) – 4-char MOOA F=Financials, CY=Currency, C=Create
- * Fallback to legacy ent_currency if new not yet migrated
+ * New table: core_currency (was core_currency) – sample INR default, KWD/USD/EUR sample kept for convenience per requirement fresh empty but common sample kept
+ * Helper code: FCYC Currency Create (alias CYC, FCYC (legacy OY03), FIN-CUR-CR) – 4-char MOOA F=Financials, CY=Currency, C=Create
+ * Fallback to legacy core_currency if new not yet migrated
  */
 
 async function ensureTableNew() {
@@ -38,7 +38,7 @@ async function ensureTableNew() {
 async function ensureTableLegacy() {
   try {
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS ent_currency (
+      CREATE TABLE IF NOT EXISTS core_currency (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         code VARCHAR(3) NOT NULL UNIQUE,
         name VARCHAR(100) NOT NULL,
@@ -48,16 +48,16 @@ async function ensureTableLegacy() {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
-    const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM ent_currency`);
+    const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM core_currency`);
     if (parseInt((cnt.rows[0] as any).c || '0') === 0) {
       await db.execute(sql`
-        INSERT INTO ent_currency (code, name, decimal_places, symbol)
+        INSERT INTO core_currency (code, name, decimal_places, symbol)
         VALUES ('INR', 'Indian Rupee', 2, '₹')
         ON CONFLICT (code) DO NOTHING
       `);
     }
   } catch (e: any) {
-    console.warn('ensure ent_currency failed', e);
+    console.warn('ensure core_currency failed', e);
   }
 }
 
@@ -80,9 +80,9 @@ export async function GET(req: NextRequest) {
         code: 'FCYC',
         aliasCodes: ['CYC', 'OY03', 'FIN-CUR-CR'],
         helperCode: 'FCYC',
-        functionDescription: 'Define Currencies – FCYC – Legal-safe own IP (was OY03) – Only INR default, all other currencies (like KWD) has to be added by user via POST – core_currency',
+        functionDescription: 'Define Currencies – FCYC – Legal-safe own IP (was FCYC (legacy OY03)) – Only INR default, all other currencies (like KWD) has to be added by user via POST – core_currency',
         table: 'core_currency',
-        explanation: 'Only INR default per user request – KWD, USD, EUR, etc must be added by user via POST /api/currencies. Code FCYC primary alias CYC/OY03 – 4-char MOOA F=Financials, CY=Currency, C=Create – same length as OY03 but own IP, module grouped, intuitive – sample data kept for user convenience as per requirement fresh empty but common sample data like coa, gl, tax, currencies, UoM kept.',
+        explanation: 'Only INR default per user request – KWD, USD, EUR, etc must be added by user via POST /api/currencies. Code FCYC primary alias CYC/FCYC (legacy OY03) – 4-char MOOA F=Financials, CY=Currency, C=Create – same length as FCYC (legacy OY03) but own IP, module grouped, intuitive – sample data kept for user convenience as per requirement fresh empty but common sample data like coa, gl, tax, currencies, UoM kept.',
         legalSafe: true,
         freshEmpty: 'Only INR default, sample KWD/USD/EUR can be added by user – fresh empty but common sample kept for convenience',
         erpDefaults: [
@@ -94,8 +94,8 @@ export async function GET(req: NextRequest) {
         ],
       });
     } catch (newErr: any) {
-      console.warn('core_currency not yet migrated, fallback ent_currency:', newErr.message);
-      const res = await db.execute(sql`SELECT id, code, name, decimal_places, symbol, is_active, created_at FROM ent_currency ORDER BY code`);
+      console.warn('core_currency not yet migrated, fallback core_currency:', newErr.message);
+      const res = await db.execute(sql`SELECT id, code, name, decimal_places, symbol, is_active, created_at FROM core_currency ORDER BY code`);
       return NextResponse.json({
         currencies: res.rows,
         count: res.rows.length,
@@ -104,9 +104,9 @@ export async function GET(req: NextRequest) {
         code: 'FCYC',
         aliasCodes: ['CYC', 'OY03'],
         helperCode: 'OY03',
-        functionDescription: 'Define Currencies – ERP OY03 – Only INR default, all other currencies (like KWD) has to be added by user via POST (legacy ent_currency)',
-        explanation: 'Only INR default per user request – KWD, USD, EUR, etc must be added by user via POST /api/currencies. Code OY03 (legacy, new FCYC).',
-        table: 'ent_currency',
+        functionDescription: 'Define Currencies – ERP FCYC (legacy OY03) – Only INR default, all other currencies (like KWD) has to be added by user via POST (legacy core_currency)',
+        explanation: 'Only INR default per user request – KWD, USD, EUR, etc must be added by user via POST /api/currencies. Code FCYC (legacy OY03) (legacy, new FCYC).',
+        table: 'core_currency',
         legalSafe: false,
         erpDefaults: [
           { code: 'INR', name: 'Indian Rupee', decimals: 2, symbol: '₹', note: 'Default – only INR default' },
@@ -143,14 +143,14 @@ export async function POST(req: NextRequest) {
       `);
       return NextResponse.json({ success: true, currency: res.rows[0], code: 'FCYC', aliasCodes: ['CYC','OY03'], message: `Currency ${code.toUpperCase()} created – FCYC legal-safe – only INR default, ${code.toUpperCase()} added by user`, legalSafe: true });
     } catch (newErr: any) {
-      console.warn('core_currency insert failed fallback ent_currency:', newErr.message);
+      console.warn('core_currency insert failed fallback core_currency:', newErr.message);
       const res = await db.execute(sql`
-        INSERT INTO ent_currency (code, name, decimal_places, symbol)
+        INSERT INTO core_currency (code, name, decimal_places, symbol)
         VALUES (${code.toUpperCase()}, ${name}, ${decimal_places ?? 2}, ${symbol || null})
         ON CONFLICT (code) DO UPDATE SET name = ${name}, decimal_places = ${decimal_places ?? 2}, symbol = ${symbol || null}, is_active = true
         RETURNING id, code, name
       `);
-      return NextResponse.json({ success: true, currency: res.rows[0], code: 'FCYC', aliasCodes: ['OY03'], message: `Currency ${code.toUpperCase()} created – legacy OY03 (migrating to FCYC) – only INR default, ${code.toUpperCase()} added by user` });
+      return NextResponse.json({ success: true, currency: res.rows[0], code: 'FCYC', aliasCodes: ['OY03'], message: `Currency ${code.toUpperCase()} created – legacy FCYC (legacy OY03) (migrating to FCYC) – only INR default, ${code.toUpperCase()} added by user` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -196,11 +196,11 @@ export async function PUT(req: NextRequest) {
       if (res.rows.length === 0) return NextResponse.json({ error: 'Currency not found in core_currency' }, { status: 404 });
       return NextResponse.json({ success: true, currency: res.rows[0], code: 'FCYC', message: `Currency ${res.rows[0].code} updated – FCYC legal-safe` });
     } catch (newErr: any) {
-      console.warn('core_currency update failed fallback ent_currency:', newErr.message);
+      console.warn('core_currency update failed fallback core_currency:', newErr.message);
       let res;
       if (id) {
         res = await db.execute(sql`
-          UPDATE ent_currency SET
+          UPDATE core_currency SET
             code = COALESCE(${code?.toUpperCase()}, code),
             name = COALESCE(${name}, name),
             decimal_places = COALESCE(${decimal_places}, decimal_places),
@@ -211,7 +211,7 @@ export async function PUT(req: NextRequest) {
         `);
       } else {
         res = await db.execute(sql`
-          UPDATE ent_currency SET
+          UPDATE core_currency SET
             name = COALESCE(${name}, name),
             decimal_places = COALESCE(${decimal_places}, decimal_places),
             symbol = COALESCE(${symbol}, symbol),
@@ -221,7 +221,7 @@ export async function PUT(req: NextRequest) {
         `);
       }
       if (res.rows.length === 0) return NextResponse.json({ error: 'Currency not found' }, { status: 404 });
-      return NextResponse.json({ success: true, currency: res.rows[0], message: `Currency ${res.rows[0].code} updated – OY03 legacy` });
+      return NextResponse.json({ success: true, currency: res.rows[0], message: `Currency ${res.rows[0].code} updated – FCYC (legacy OY03) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -248,7 +248,7 @@ export async function DELETE(req: NextRequest) {
           return NextResponse.json({ error: 'Cannot delete INR – must have at least one currency' }, { status: 400 });
         }
       } catch {
-        const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM ent_currency`);
+        const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM core_currency`);
         const total = parseInt((cnt.rows[0] as any).c || '0');
         if (total <= 1) {
           return NextResponse.json({ error: 'Cannot delete INR – must have at least one currency' }, { status: 400 });
@@ -263,7 +263,7 @@ export async function DELETE(req: NextRequest) {
           const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM org_legal_entity WHERE currency_code = ${checkCode}`);
           inUse = parseInt((r.rows[0] as any).cnt || '0');
         } catch {
-          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM ent_company_code WHERE currency_code = ${checkCode}`);
+          const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM org_legal_entity WHERE currency_code = ${checkCode}`);
           inUse = parseInt((r.rows[0] as any).cnt || '0');
         }
       }
@@ -274,8 +274,8 @@ export async function DELETE(req: NextRequest) {
         if (checkCode) await db.execute(sql`UPDATE core_currency SET is_active = false WHERE code = ${checkCode}`);
         else if (id) await db.execute(sql`UPDATE core_currency SET is_active = false WHERE code = ${id}`);
       } catch {
-        if (id) await db.execute(sql`UPDATE ent_currency SET is_active = false WHERE id = ${id}`);
-        else await db.execute(sql`UPDATE ent_currency SET is_active = false WHERE code = ${checkCode}`);
+        if (id) await db.execute(sql`UPDATE core_currency SET is_active = false WHERE id = ${id}`);
+        else await db.execute(sql`UPDATE core_currency SET is_active = false WHERE code = ${checkCode}`);
       }
       return NextResponse.json({ error: `Cannot delete – currency ${checkCode} has ${inUse} legal entities and cannot be deleted to maintain audit trail. Deactivated instead.`, code: 'HAS_TRANSACTIONS', softDeleted: true }, { status: 400 });
     }
@@ -284,8 +284,8 @@ export async function DELETE(req: NextRequest) {
       if (checkCode) await db.execute(sql`DELETE FROM core_currency WHERE code = ${checkCode}`);
       else if (id) await db.execute(sql`DELETE FROM core_currency WHERE code = ${id}`);
     } catch {
-      if (id) await db.execute(sql`DELETE FROM ent_currency WHERE id = ${id}`);
-      else await db.execute(sql`DELETE FROM ent_currency WHERE code = ${checkCode}`);
+      if (id) await db.execute(sql`DELETE FROM core_currency WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM core_currency WHERE code = ${checkCode}`);
     }
 
     return NextResponse.json({ success: true, code: 'FCYC', message: `Currency ${checkCode || id} deleted – FCYC legal-safe` });

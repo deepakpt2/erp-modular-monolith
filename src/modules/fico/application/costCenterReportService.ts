@@ -1,6 +1,6 @@
 /**
  * Cost Center Report (CCA) Engine
- * Aggregates expenses by fi_cost_center from three sources:
+ * Aggregates expenses by fin_cost_center from three sources:
  * 1. MM/POS COGS (movement 601 postings to GBB account)
  * 2. HR Payroll Runs (Salary expenses mapped to cost center)
  * 3. Direct FI/AP Invoices (overhead/utilities posted directly against cost center)
@@ -78,7 +78,7 @@ export class CostCenterReportService {
     }
 
     // Query 1: COGS from MM/POS (GBB account, movement 601, sales orders)
-    // Source: fi_document_line where gl is GBB/COGS and cost_center_id not null and reference_doc_type SALES_ORDER or GR
+    // Source: fin_universal_ledger_line where gl is GBB/COGS and cost_center_id not null and reference_doc_type SALES_ORDER or GR
     const cogsQuery = sql`
       SELECT 
         dl.cost_center_id,
@@ -95,10 +95,10 @@ export class CostCenterReportService {
         COUNT(*) as transaction_count,
         EXTRACT(YEAR FROM d.posting_date)::int as period_year,
         EXTRACT(MONTH FROM d.posting_date)::int as period_month
-      FROM fi_document_line dl
-      JOIN fi_document d ON dl.fi_document_id = d.id
-      JOIN fi_gl_account gl ON dl.gl_account_id = gl.id
-      JOIN fi_cost_center cc ON dl.cost_center_id = cc.id
+      FROM fin_universal_ledger_line dl
+      JOIN fin_universal_ledger d ON dl.fi_document_id = d.id
+      JOIN fin_ledger_account gl ON dl.gl_account_id = gl.id
+      JOIN fin_cost_center cc ON dl.cost_center_id = cc.id
       WHERE d.company_code_id = ${companyCodeId}
         AND ${dateFilter}
         AND ${costCenterFilter}
@@ -125,10 +125,10 @@ export class CostCenterReportService {
         COUNT(*) as transaction_count,
         EXTRACT(YEAR FROM d.posting_date)::int as period_year,
         EXTRACT(MONTH FROM d.posting_date)::int as period_month
-      FROM fi_document_line dl
-      JOIN fi_document d ON dl.fi_document_id = d.id
-      JOIN fi_gl_account gl ON dl.gl_account_id = gl.id
-      JOIN fi_cost_center cc ON dl.cost_center_id = cc.id
+      FROM fin_universal_ledger_line dl
+      JOIN fin_universal_ledger d ON dl.fi_document_id = d.id
+      JOIN fin_ledger_account gl ON dl.gl_account_id = gl.id
+      JOIN fin_cost_center cc ON dl.cost_center_id = cc.id
       WHERE d.company_code_id = ${companyCodeId}
         AND ${dateFilter}
         AND ${costCenterFilter}
@@ -158,10 +158,10 @@ export class CostCenterReportService {
         COUNT(*) as transaction_count,
         EXTRACT(YEAR FROM d.posting_date)::int as period_year,
         EXTRACT(MONTH FROM d.posting_date)::int as period_month
-      FROM fi_document_line dl
-      JOIN fi_document d ON dl.fi_document_id = d.id
-      JOIN fi_gl_account gl ON dl.gl_account_id = gl.id
-      JOIN fi_cost_center cc ON dl.cost_center_id = cc.id
+      FROM fin_universal_ledger_line dl
+      JOIN fin_universal_ledger d ON dl.fi_document_id = d.id
+      JOIN fin_ledger_account gl ON dl.gl_account_id = gl.id
+      JOIN fin_cost_center cc ON dl.cost_center_id = cc.id
       WHERE d.company_code_id = ${companyCodeId}
         AND ${dateFilter}
         AND ${costCenterFilter}
@@ -291,10 +291,10 @@ export class CostCenterReportService {
         gl.name as gl_name,
         cc.code as cost_center_code,
         dl.text as line_text
-      FROM fi_document_line dl
-      JOIN fi_document d ON dl.fi_document_id = d.id
-      JOIN fi_gl_account gl ON dl.gl_account_id = gl.id
-      JOIN fi_cost_center cc ON dl.cost_center_id = cc.id
+      FROM fin_universal_ledger_line dl
+      JOIN fin_universal_ledger d ON dl.fi_document_id = d.id
+      JOIN fin_ledger_account gl ON dl.gl_account_id = gl.id
+      JOIN fin_cost_center cc ON dl.cost_center_id = cc.id
       WHERE d.company_code_id = ${companyCodeId}
         AND dl.cost_center_id = ${costCenterId}
         AND ${dateFilter}

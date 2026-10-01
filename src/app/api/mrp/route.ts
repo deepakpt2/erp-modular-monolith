@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       let query = sql`
         SELECT r.*, p.code as plant_code, p.name as plant_name
         FROM pp_mrp_run r
-        LEFT JOIN ent_plant p ON r.plant_id = p.id
+        LEFT JOIN org_facility p ON r.plant_id = p.id
         WHERE 1=1
       `;
       if (facilityId) query = sql`${query} AND r.plant_id = ${facilityId}`;

@@ -8,8 +8,8 @@ import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared
 
 /**
  * Goods Receipt API – Legal-safe own IP – Module 6 MM Procurement
- * New: proc_goods_receipt + proc_gr_line (was mm_goods_receipt + mm_gr_line) – grNumber GR-5000000001 was 50*, poId, legalEntityId was company_code_id, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, facilityId, inventoryLocationId was sloc_id, lotId was batch_id inv_lot ELTC, lotNumber was batch_number, uomCode was uom EUOC, stockStatus UNRESTRICTED/QUALITY_INSPECTION/BLOCKED/IN_TRANSIT was UNRESTRICTED/QI/BLOCKED, universalLedgerId was fi_document_id FULC BSX/WRX
- * Helper code: PGRC GR Create (alias GRC, MIGO, FIN-GR-CR) – 4-char MOOA P=Procurement, GR=GoodsReceipt, C=Create – same length as MIGO but own IP, module grouped, intuitive
+ * New: proc_goods_receipt + proc_gr_line (was mm_goods_receipt + mm_gr_line) – grNumber GR-5000000001 was 50*, poId, legalEntityId was company_code_id, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, facilityId, inventoryLocationId was sloc_id, lotId was batch_id inv_lot ELTC, lotNumber was batch_number, uomCode was uom EUOC, stockStatus UNRESTRICTED/QUALITY_INSPECTION/BLOCKED/IN_TRANSIT was UNRESTRICTED/QI/BLOCKED, universalLedgerId was fi_document_id FULC INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)
+ * Helper code: PGRC GR Create (alias GRC, IGRC (legacy MIGO), FIN-GR-CR) – 4-char MOOA P=Procurement, GR=GoodsReceipt, C=Create – same length as IGRC (legacy MIGO) but own IP, module grouped, intuitive
  * Fallback to legacy mm_goods_receipt
  */
 
@@ -77,10 +77,10 @@ export async function GET(req: NextRequest) {
           (SELECT SUM(quantity) FROM mm_gr_line WHERE gr_id = gr.id) as total_qty
         FROM mm_goods_receipt gr
         LEFT JOIN mm_purchase_order po ON gr.po_id = po.id
-        LEFT JOIN ent_plant p ON gr.plant_id = p.id
-        LEFT JOIN ent_storage_location sloc ON sloc.plant_id = p.id
+        LEFT JOIN org_facility p ON gr.plant_id = p.id
+        LEFT JOIN org_inventory_location sloc ON sloc.plant_id = p.id
         LEFT JOIN partner_account pa ON po.vendor_id = pa.id
-        LEFT JOIN ent_business_partner bp ON po.vendor_id = bp.id
+        LEFT JOIN partner_account bp ON po.vendor_id = bp.id
         WHERE 1=1
       `;
 
@@ -106,9 +106,9 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Goods Receipt – PGRC legal-safe own IP (was MIGO 50 WE/WA) – grNumber GR-5000000001, facilityId FAC-1000 was plant_id, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC, stockStatus UNRESTRICTED/QUALITY_INSPECTION/BLOCKED/IN_TRANSIT was UNRESTRICTED/QI/BLOCKED, universalLedgerId FULC was fi_document_id BSX/WRX',
+      functionDescription: 'Goods Receipt – PGRC legal-safe own IP (was IGRC (legacy MIGO) 50 WE/WA) – grNumber GR-5000000001, facilityId FAC-1000 was plant_id, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC, stockStatus UNRESTRICTED/QUALITY_INSPECTION/BLOCKED/IN_TRANSIT was UNRESTRICTED/QI/BLOCKED, universalLedgerId FULC was fi_document_id INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)',
       multiPlant: 'facility_id, inventory_location_id filtering, PI blocking check – Module6',
-      explanation: 'GR legal-safe proc_goods_receipt + proc_gr_line – grNumber GR-5000000001 was 50*, poId, legalEntityId was company_code_id, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, facilityId, inventoryLocationId was sloc_id, lotId was batch_id inv_lot ELTC, lotNumber was batch_number, uomCode was uom EUOC, stockStatus UNRESTRICTED/QUALITY_INSPECTION/BLOCKED/IN_TRANSIT was UNRESTRICTED/QI/BLOCKED, universalLedgerId was fi_document_id FULC BSX/WRX – Code PGRC primary alias GRC/MIGO – 4-char MOOA P=Procurement GR=GoodsReceipt C=Create – module grouped intuitive, same length as MIGO but own IP.',
+      explanation: 'GR legal-safe proc_goods_receipt + proc_gr_line – grNumber GR-5000000001 was 50*, poId, legalEntityId was company_code_id, facilityId was plant_id FAC-1000 was 1000, itemId was material_id prod_item EMTC, facilityId, inventoryLocationId was sloc_id, lotId was batch_id inv_lot ELTC, lotNumber was batch_number, uomCode was uom EUOC, stockStatus UNRESTRICTED/QUALITY_INSPECTION/BLOCKED/IN_TRANSIT was UNRESTRICTED/QI/BLOCKED, universalLedgerId was fi_document_id FULC INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – Code PGRC primary alias GRC/IGRC (legacy MIGO) – 4-char MOOA P=Procurement GR=GoodsReceipt C=Create – module grouped intuitive, same length as IGRC (legacy MIGO) but own IP.',
     });
   } catch (e: any) {
     console.error('DB error:', e.message);
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // SAP-like posting period enforcement – OB52 – check if period open for account type M
+    // SAP-like posting period enforcement – FPPE (legacy OB52) – check if period open for account type M
     try {
       const postingDate = body.posting_date || body.posting_date || new Date().toISOString();
       const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';
@@ -143,29 +143,29 @@ export async function POST(req: NextRequest) {
       // Attach fiscal info to body for storage
       (body as any)._fiscal_year = postingCheck.fiscal_year;
       (body as any)._fiscal_period = postingCheck.fiscal_period;
-      // Phase 0 T0 BLOCKING – Strict ERP: Movement Type OMJJ + Automatic Account Determination OBYC – BSX/WRX/GBB/PRD – No Dangling
+      // Phase 0 T0 BLOCKING – Strict ERP: Movement Type FMTM (legacy OMJJ) + Automatic Account Determination FAUC (legacy OBYC) – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/GBB/PRD – No Dangling
       try {
-        const movementCode = body.movement_type || body.movement_code || '101';
+        const movementCode = body.movement_type || body.movement_code || 'GR_PO';
         const movementCheck = await getMovementType(movementCode);
         if (!movementCheck.found) {
-          return NextResponse.json({ error: `Movement Type ${movementCode} not found – create via OMJJ movement-types – T0 BLOCKING – ${movementCheck.message}` }, { status: 400 });
+          return NextResponse.json({ error: `Movement Type ${movementCode} not found – create via FMTM (legacy OMJJ) movement-types – T0 BLOCKING – ${movementCheck.message}` }, { status: 400 });
         }
         const allowedCheck = await validateMovementAllowed(movementCode, 'GR');
         if (!allowedCheck.allowed) {
           return NextResponse.json({ error: allowedCheck.message }, { status: 400 });
         }
         (body as any)._movement_type = movementCheck.movement;
-        console.log(`Movement Type OMJJ validated: ${movementCode} – ${movementCheck.message}`);
+        console.log(`Movement Type FMTM (legacy OMJJ) validated: ${movementCode} – ${movementCheck.message}`);
 
         const chartOfAccounts = body.chart_of_accounts || 'KSCA';
         const valuationClass = body.valuation_class || body.material_type || body.inventory_valuation_class || 'RAW';
-        const bsx = await getAutoAccount({ transaction_key: 'BSX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
-        const wrx = await getAutoAccount({ transaction_key: 'WRX', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
-        const gbb = await getAutoAccount({ transaction_key: 'GBB', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
-        const prd = await getAutoAccount({ transaction_key: 'PRD', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+        const bsx = await getAutoAccount({ transaction_key: 'INV_POSTING', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+        const wrx = await getAutoAccount({ transaction_key: 'GR_IR_CLEARING', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+        const gbb = await getAutoAccount({ transaction_key: 'INV_OFFSET', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
+        const prd = await getAutoAccount({ transaction_key: 'PRICE_DIFF', chart_of_accounts: chartOfAccounts, valuation_class: valuationClass, company_code: companyCodeForPosting });
         
         if (!bsx.found || !wrx.found) {
-          console.warn(`OBYC missing for GR – BSX found=${bsx.found} WRX found=${wrx.found} – will allow but log – T0 BLOCKING`);
+          console.warn(`FAUC (legacy OBYC) missing for GR – BSX found=${bsx.found} WRX found=${wrx.found} – will allow but log – T0 BLOCKING`);
         }
         
         (body as any)._auto_gl_bsx = bsx.gl_account;
@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
         (body as any)._auto_gl_gbb = gbb.gl_account;
         (body as any)._auto_gl_prd = prd.gl_account;
         (body as any)._valuation_class = valuationClass;
-        console.log(`Auto account OBYC for GR: BSX=${bsx.gl_account} (${bsx.message}), WRX=${wrx.gl_account} (${wrx.message}), GBB=${gbb.gl_account}, PRD=${prd.gl_account} – valuation_class=${valuationClass} – T0 BLOCKING`);
+        console.log(`Auto account FAUC (legacy OBYC) for GR: BSX=${bsx.gl_account} (${bsx.message}), WRX=${wrx.gl_account} (${wrx.message}), GBB=${gbb.gl_account}, PRD=${prd.gl_account} – valuation_class=${valuationClass} – T0 BLOCKING`);
       } catch (autoErr: any) {
         console.warn('Auto account/movement determination failed, allowing GR:', autoErr.message);
       }
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
         const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${facility_code || plant_code} LIMIT 1`);
         if (f.rows.length > 0) facilityIdResolved = (f.rows[0] as any).id;
         else {
-          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${facility_code || plant_code} LIMIT 1`);
+          const f2 = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${facility_code || plant_code} LIMIT 1`);
           if (f2.rows.length > 0) facilityIdResolved = (f2.rows[0] as any).id;
         }
       } catch {}
@@ -354,9 +354,9 @@ export async function POST(req: NextRequest) {
             }
           } catch {}
 
-          // Over/under delivery tolerance check – industry standard – e.g., PO 100 qty, over tol 10% => max 110 allowed, under tol 10% => min 90 if ELIKZ flagged
+          // Over/under delivery tolerance check – industry standard – e.g., PO 100 qty, over tol 10% => max 110 allowed, under tol 10% => min 90 if DELIV_COMPLETED (legacy ELIKZ) flagged
           if (deliveryCompletedFlag) {
-            return NextResponse.json({ error: `PO line ${poLineId} already delivery completed ELIKZ – no further GR allowed – over/under delivery tolerance – industry standard` }, { status: 400 });
+            return NextResponse.json({ error: `PO line ${poLineId} already delivery completed DELIV_COMPLETED (legacy ELIKZ) – no further GR allowed – over/under delivery tolerance – industry standard` }, { status: 400 });
           }
           const newReceivedTotal = poLineReceived + qty;
           const maxAllowed = poLineQty * (1 + overTolPercent / 100);
@@ -372,12 +372,12 @@ export async function POST(req: NextRequest) {
               help: `PO line ${poLineId} – overdelivery tolerance ${overTolPercent}% – max ${maxAllowed} – current would be ${newReceivedTotal} – reduce qty or update PO line tolerance – industry standard`
             }, { status: 400 });
           }
-          // Under-delivery check – if this GR is flagged as final delivery (ELIKZ) and qty < ordered - under tol, warn but allow if not final
+          // Under-delivery check – if this GR is flagged as final delivery (DELIV_COMPLETED legacy ELIKZ) and qty < ordered - under tol, warn but allow if not final
           const minAllowedIfFinal = poLineQty * (1 - underTolPercent / 100);
           const isFinalDelivery = line.delivery_completed || line.elikz || false;
           if (isFinalDelivery && newReceivedTotal < minAllowedIfFinal - 0.001) {
             return NextResponse.json({
-              error: `Under-delivery tolerance exceeded – PO line qty ${poLineQty} received total after this GR ${newReceivedTotal} < min allowed ${minAllowedIfFinal} (under tol ${underTolPercent}%) for final delivery ELIKZ – increase GR qty or reduce tolerance – industry standard`,
+              error: `Under-delivery tolerance exceeded – PO line qty ${poLineQty} received total after this GR ${newReceivedTotal} < min allowed ${minAllowedIfFinal} (under tol ${underTolPercent}%) for final delivery DELIV_COMPLETED (legacy ELIKZ) – increase GR qty or reduce tolerance – industry standard`,
               po_line_qty: poLineQty,
               new_total: newReceivedTotal,
               min_allowed: minAllowedIfFinal,
@@ -386,7 +386,7 @@ export async function POST(req: NextRequest) {
           }
           console.log(`Over/under delivery tolerance OK – PO line ${poLineId} qty ${poLineQty} received ${poLineReceived} + ${qty} = ${newReceivedTotal} max ${maxAllowed} over ${overTolPercent}% under ${underTolPercent}% – partial GR allowed – industry standard`);
 
-          // Phase 0 T0 – Get material valuation_class and pricing_method for MAP recalc and OBYC – NO DANGLING
+          // Phase 0 T0 – Get material valuation_class and pricing_method for MAP recalc and FAUC (legacy OBYC) – NO DANGLING
           let valuationClass = (body as any)._valuation_class || 'RAW';
           let pricingMethod = 'MOVING_AVG';
           let oldQty = 0;
@@ -416,8 +416,8 @@ export async function POST(req: NextRequest) {
             // If ELIKZ flagged or received >= ordered qty within under tolerance, mark delivery_completed
             const finalFlag = line.delivery_completed || line.elikz || false;
             if (finalFlag) {
-              await db.execute(sql`UPDATE proc_po_line SET delivery_completed = true, is_closed = true, closed_reason = 'ELIKZ_FINAL_DELIVERY', closed_at = NOW() WHERE id = ${poLineId}`);
-              console.log(`PO line ${poLineId} marked delivery_completed ELIKZ final – partial GR final – industry standard`);
+              await db.execute(sql`UPDATE proc_po_line SET delivery_completed = true, is_closed = true, closed_reason = 'DELIV_COMPLETED_FINAL', closed_at = NOW() WHERE id = ${poLineId}`);
+              console.log(`PO line ${poLineId} marked delivery_completed DELIV_COMPLETED (legacy ELIKZ) final – partial GR final – industry standard`);
             } else {
               // Auto-close if fully received within tolerance
               const checkRes = await db.execute(sql`SELECT quantity, quantity_received FROM proc_po_line WHERE id = ${poLineId} LIMIT 1`);
@@ -431,7 +431,7 @@ export async function POST(req: NextRequest) {
             }
           } catch {}
 
-          // Phase 0 T0 – Stock Ledger + MAP Recalculation – NO DANGLING – valuation_class used in OBYC already, now MAP used in stock
+          // Phase 0 T0 – Stock Ledger + MAP Recalculation – NO DANGLING – valuation_class used in FAUC (legacy OBYC) already, now MAP used in stock
           try {
             const newQty = oldQty + qty;
             let newMAP = oldMAP;
@@ -464,12 +464,12 @@ export async function POST(req: NextRequest) {
             // Insert stock ledger – movement 101
             await db.execute(sql`
               INSERT INTO inv_stock_ledger (movement_type, material_id, plant_id, sloc_id, batch_id, stock_status_from, stock_status_to, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, posted_by, header_text)
-              VALUES ('101', ${itemId}, ${facilityIdLine}, ${invLocId || facilityIdLine}, ${lotId || null}, 'NONE', ${line.stock_status || 'UNRESTRICTED'}, ${qty}, ${oldQty}, ${newQty}, ${unitPrice}, ${totalVal}, 'GR', ${grNumber}, 'system', ${`GR 101 – PO ${poIdResolved} – valuation_class ${valuationClass} – MAP ${oldMAP}→${newMAP} – OBYC BSX/WRX`})
+              VALUES ('GR_PO', ${itemId}, ${facilityIdLine}, ${invLocId || facilityIdLine}, ${lotId || null}, 'NONE', ${line.stock_status || 'UNRESTRICTED'}, ${qty}, ${oldQty}, ${newQty}, ${unitPrice}, ${totalVal}, 'GR', ${grNumber}, 'system', ${`GR_PO (legacy 101) – PO ${poIdResolved} – valuation_class ${valuationClass} – MAP ${oldMAP}→${newMAP} – FAUC (legacy OBYC) INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)`})
             `).catch(async () => {
               // Fallback to legacy mm_stock_ledger
               await db.execute(sql`
                 INSERT INTO mm_stock_ledger (movement_type, material_id, plant_id, sloc_id, batch_id, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number)
-                VALUES ('101', ${itemId}, ${facilityIdLine}, ${invLocId || facilityIdLine}, ${lotId || null}, ${qty}, ${oldQty}, ${newQty}, ${unitPrice}, ${totalVal})
+                VALUES ('GR_PO', ${itemId}, ${facilityIdLine}, ${invLocId || facilityIdLine}, ${lotId || null}, ${qty}, ${oldQty}, ${newQty}, ${unitPrice}, ${totalVal})
               `).catch(()=>{});
             });
 
@@ -483,20 +483,20 @@ export async function POST(req: NextRequest) {
             // BSX – Dr Inventory
             await db.execute(sql`
               INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
-              VALUES (${grNumber}, 'GR'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalInfo.year}, ${fiscalInfo.period}, (SELECT id FROM fin_ledger_account WHERE account_number = ${bsxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${bsxGL} LIMIT 1), ${totalVal}, 0, ${totalVal}, 'INR', 'GR', ${grNumber}, ${`GR 101 BSX inventory – valuation_class ${valuationClass} – material ${itemId} – qty ${qty} – MAP ${newMAP}`})
+              VALUES (${grNumber}, 'GR'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalInfo.year}, ${fiscalInfo.period}, (SELECT id FROM fin_ledger_account WHERE account_number = ${bsxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${bsxGL} LIMIT 1), ${totalVal}, 0, ${totalVal}, 'INR', 'GR', ${grNumber}, ${`GR_PO (legacy 101) BSX inventory – valuation_class ${valuationClass} – material ${itemId} – qty ${qty} – MAP ${newMAP}`})
             `).catch(()=>{});
 
             // WRX – Cr GR/IR
             await db.execute(sql`
               INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
-              VALUES (${grNumber}, 'GR'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalInfo.year}, ${fiscalInfo.period}, (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), 0, ${totalVal}, ${totalVal}, 'INR', 'GR', ${grNumber}, ${`GR 101 WRX GR/IR – valuation_class ${valuationClass} – PO ${poIdResolved}`})
+              VALUES (${grNumber}, 'GR'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalInfo.year}, ${fiscalInfo.period}, (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${wrxGL} LIMIT 1), 0, ${totalVal}, ${totalVal}, 'INR', 'GR', ${grNumber}, ${`GR_PO (legacy 101) WRX GR/IR – valuation_class ${valuationClass} – PO ${poIdResolved}`})
             `).catch(()=>{});
 
             // PRD – Price Difference if STANDARD and diff exists
             if (priceDiff !== 0 && pricingMethod === 'STANDARD') {
               await db.execute(sql`
                 INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text)
-                VALUES (${grNumber}, 'GR'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalInfo.year}, ${fiscalInfo.period}, (SELECT id FROM fin_ledger_account WHERE account_number = ${prdGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${prdGL} LIMIT 1), ${priceDiff > 0 ? priceDiff : 0}, ${priceDiff < 0 ? Math.abs(priceDiff) : 0}, ${Math.abs(priceDiff)}, 'INR', 'GR', ${grNumber}, ${`GR 101 PRD price diff – PO price ${unitPrice} vs Standard – diff ${priceDiff} – valuation_class ${valuationClass}`})
+                VALUES (${grNumber}, 'GR'::fin_doc_type_new, ${postingDateVal}, ${postingDateVal}, ${fiscalInfo.year}, ${fiscalInfo.period}, (SELECT id FROM fin_ledger_account WHERE account_number = ${prdGL} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${prdGL} LIMIT 1), ${priceDiff > 0 ? priceDiff : 0}, ${priceDiff < 0 ? Math.abs(priceDiff) : 0}, ${Math.abs(priceDiff)}, 'INR', 'GR', ${grNumber}, ${`GR_PO (legacy 101) PRD price diff – PO price ${unitPrice} vs Standard – diff ${priceDiff} – valuation_class ${valuationClass}`})
               `).catch(()=>{});
             }
 
@@ -551,7 +551,7 @@ export async function POST(req: NextRequest) {
         console.warn(`Document flow PO→GR failed for GR ${grNumber}:`, flowErr.message);
       }
 
-      return NextResponse.json({ success: true, gr: res.rows[0], grNumber, code: 'PGRC', message: `GR ${grNumber} created – PGRC legal-safe – T0 BLOCKING – Movement 101 OMJJ + OBYC BSX/WRX/GBB/PRD – valuation_class ${(body as any)._valuation_class} – MAP recalc – universal ledger BSX/WRX posted – stock ledger 101 – document flow PO→GR – FDFL VBFA – stock update MMBE FSTL – GR accounting BSX/WRX – price diff PRD if STANDARD – org wired`, legalSafe: true, movement_type: (body as any)._movement_type, auto_accounts: { bsx: (body as any)._auto_gl_bsx, wrx: (body as any)._auto_gl_wrx, gbb: (body as any)._auto_gl_gbb, prd: (body as any)._auto_gl_prd }, total_amount: total, total_landed_cost: totalLanded });
+      return NextResponse.json({ success: true, gr: res.rows[0], grNumber, code: 'PGRC', message: `GR ${grNumber} created – PGRC legal-safe – T0 BLOCKING – Movement 101 FMTM (legacy OMJJ) + FAUC (legacy OBYC) INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/GBB/PRD – valuation_class ${(body as any)._valuation_class} – MAP recalc – universal ledger INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) posted – stock ledger 101 – document flow PO→GR – FDFL VBFA – stock update ISTV (legacy MMBE) FSTL – GR accounting INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – price diff PRD if STANDARD – org wired`, legalSafe: true, movement_type: (body as any)._movement_type, auto_accounts: { bsx: (body as any)._auto_gl_bsx, wrx: (body as any)._auto_gl_wrx, gbb: (body as any)._auto_gl_gbb, prd: (body as any)._auto_gl_prd }, total_amount: total, total_landed_cost: totalLanded });
     } catch (newErr: any) {
       console.warn('proc_goods_receipt insert failed:', newErr.message);
       return NextResponse.json({ error: newErr.message }, { status: 500 });
@@ -613,7 +613,7 @@ export async function PUT(req: NextRequest) {
                   try {
                     await db.execute(sql`
                       INSERT INTO inv_stock_ledger (item_id, facility_id, movement_type, quantity, quantity_before, quantity_after, unit_cost, total_value, reference_doc_type, reference_doc_number, text)
-                      VALUES (${l.item_id}, ${l.facility_id}, '102', ${-qty}, 0, 0, 0, 0, 'GR', ${reversalResult.reversal_document_number}, ${'GR reversal 102 – stock reversal – ' + originalNumber})
+                      VALUES (${l.item_id}, ${l.facility_id}, 'GR_PO_REV', ${-qty}, 0, 0, 0, 0, 'GR', ${reversalResult.reversal_document_number}, ${'GR reversal 102 – stock reversal – ' + originalNumber})
                     `).catch(()=>{});
                   } catch {}
                 }
@@ -647,7 +647,7 @@ export async function PUT(req: NextRequest) {
           reversal_type: reversalResult.reversal_type,
           action: action,
           code: reversalResult.reversal_type,
-          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – GR reversal/adjustment – immutable audit trail – legal-safe own IP (was MIGO 102) – stock reversal 102 – PO received qty reversed – universal ledger reversed – industry standard – GRRE`,
+          message: `${isReversal ? 'Reversal' : 'Adjustment'} document ${reversalResult.reversal_document_number} (${reversalResult.reversal_type}) created for ${originalNumber} – GR reversal/adjustment – immutable audit trail – legal-safe own IP (was IGRC (legacy MIGO) 102) – stock reversal 102 – PO received qty reversed – universal ledger reversed – industry standard – GRRE`,
           legalSafe: true,
           stock_reversal: isReversal ? '102 – quantity_received decreased, stock decreased, ledger reversed' : 'adjustment'
         });
@@ -671,7 +671,7 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE mm_goods_receipt SET status = ${status}::gr_status WHERE id = ${id} RETURNING id, gr_number, status`);
       else res = await db.execute(sql`UPDATE mm_goods_receipt SET status = ${status}::gr_status WHERE gr_number = ${gr_number} RETURNING id, gr_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'GR not found' }, { status: 404 });
-      return NextResponse.json({ success: true, gr: res.rows[0], message: `GR ${res.rows[0].gr_number} status ${status} – MIGO legacy` });
+      return NextResponse.json({ success: true, gr: res.rows[0], message: `GR ${res.rows[0].gr_number} status ${status} – IGRC (legacy MIGO) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

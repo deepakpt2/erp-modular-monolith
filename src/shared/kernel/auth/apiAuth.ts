@@ -185,7 +185,7 @@ export async function requirePermission(permissionCode: string): Promise<NextRes
     }
   }
 
-  // Check detailed permissions via ent_user_role / ent_role_permission – FRPC
+  // Check detailed permissions via auth_user_role / auth_role_permission – FRPC
   try {
     const { hasPermission, getUserRoles } = await import('./rbac');
     if (userId) {

@@ -45,9 +45,9 @@ export async function GET() {
       code: 'KSB1',
       functionDescription: 'Cost Center Actuals – KSB1',
 
-    description: 'Cost Center Report (CCA) Engine - Aggregates 3 sources by fi_cost_center',
+    description: 'Cost Center Report (CCA) Engine - Aggregates 3 sources by fin_cost_center',
     sources: {
-      COGS: 'MM/POS COGS movement 601 postings to GBB account 300000/300001, fi_document_line with cost_center_id, doc_type RV/WE',
+      COGS: 'MM/POS COGS movement 601 postings to GBB account 300000/300001, fin_universal_ledger_line with cost_center_id, doc_type RV/WE',
       PAYROLL: 'HR Payroll Runs 300 KWD per employee mapped to department/cost center, gl 500000 Salary Expense, doc_type HR',
       DIRECT_FI: 'Direct FI postings overhead/utilities outside MM, gl expense type not COGS/Payroll, doc_type SA',
       AP_INVOICE: 'AP Invoices overhead posted directly against cost center, doc_type RE',

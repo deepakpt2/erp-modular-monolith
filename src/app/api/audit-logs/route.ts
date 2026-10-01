@@ -38,12 +38,12 @@ export async function GET() {
       functionDescription: 'Audit Log – SM20',
 
     description: 'System-Wide Audit Log WORM-lite - old_data and new_data JSON for critical tables',
-    criticalTables: ['fi_document (BKPF/BSEG)', 'inv_stock (quantity, status)', 'pi_document (status, variance)', 'mm_purchase_order (status, total, ELIKZ)'],
+    criticalTables: ['fin_universal_ledger (FUNL own IP legacy BKPF/BSEG)', 'inv_stock (quantity, status)', 'pi_document (status, variance)', 'proc_purchase_order (status, total, delivery_completed legacy ELIKZ)'],
     wormLite: 'Append-only, INSERT only, no UPDATE/DELETE on audit_log, captures old_values::jsonb, new_values::jsonb, changed_fields array, transaction_id groups changes',
     queryFilters: 'table_name, record_id, user_id, action, fromDate, toDate, limit, offset',
     ui: 'Centralized virtualized grid @tanstack/react-virtual 500 rows → 22 DOM, query by table_name, record_id, user_id, shows old_data JSON red and new_data JSON green, changed_fields, description',
     exampleRequest: {
-      tableName: 'fi_document',
+      tableName: 'fin_universal_ledger',
       recordId: 'rec-1000',
       userId: 'user-100',
       action: 'POST',

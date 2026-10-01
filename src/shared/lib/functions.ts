@@ -1,8 +1,8 @@
 /**
  * Function Classification - ERP structure
  * Maps functions to routes, with module classification
- * Function is the destination (e.g., Create Purchase Order), code is just helper to identify function (e.g., ME21N is helper for Create Purchase Order)
- * Searching ME21N redirects to background function Create Purchase Order – ME21N is not target, function is target
+ * Function is the destination (e.g., Create Purchase Order), code is just helper to identify function (e.g., PPOC (legacy ME21N) is helper for Create Purchase Order – own IP with SAP alias)
+ * Searching PPOC (legacy ME21N) redirects – own IP with SAP alias – to background function Create Purchase Order – ME21N is not target, function is target
  * MM01 now routes with ?mode=create to auto-open create form
  */
 
@@ -93,7 +93,7 @@ export const FUNCTIONS: FunctionCode[] = [
   { code: 'FGLE', aliases: ['FS02', 'FIN-GL-CH', 'GLE'], description: 'Change G/L Account', route: '/1000/fico/gl-accounts', module: 'FICO', subModule: 'FI-GL', type: 'CHANGE', classicName: 'G/L Account Change', keywords: 'change general ledger asset account fields structure definitions parameters edits' },
   { code: 'FGLV', aliases: ['FS03', 'FIN-GL-DP', 'GLV'], description: 'Display G/L Account', route: '/1000/fico/gl-accounts', module: 'FICO', subModule: 'FI-GL', type: 'DISPLAY', classicName: 'G/L Account Display', keywords: 'display operational general ledger account definitions metrics profile view summary' },
   { code: 'FGCV', aliases: ['FSP0', 'FIN-GL-COA-DP', 'GCV'], description: 'G/L Account in Chart of Accounts', route: '/1000/fico/chart-of-accounts', module: 'FICO', subModule: 'FI-GL', type: 'DISPLAY', classicName: 'G/L in Chart', keywords: 'local general ledger account parameters mapping within corporate unified chart structures' },
-  { code: 'FAUC', aliases: ['OBYC', 'FIN-AUTO-CR', 'AUC'], description: 'Auto Account Determination BSX/WRX/PRD/GBB/BSV', route: '/1000/fico/auto-account-determination', module: 'FICO', subModule: 'FI-AUTO', type: 'CREATE', classicName: 'Auto Determination', keywords: 'automatic inventory gl account determination layout matrix setups rule clearing bsx wrx prd gbb bsv fi-auto' },
+  { code: 'FAUC', aliases: ['OBYC', 'FIN-AUTO-CR', 'AUC'], description: 'Auto Account Determination INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/PRD/GBB/BSV', route: '/1000/fico/auto-account-determination', module: 'FICO', subModule: 'FI-AUTO', type: 'CREATE', classicName: 'Auto Determination', keywords: 'automatic inventory gl account determination layout matrix setups rule clearing bsx wrx prd gbb bsv fi-auto' },
 
   // --- PP - BOM, Work Centers, Routings, MRP, STO ---
   { code: 'MBMC', aliases: ['CS01', 'MFG-BOM-CR', 'BMC'], description: 'Create BOM - Bills of Material', route: '/1000/pp/bom', module: 'PP', subModule: 'PP-BOM', type: 'CREATE', classicName: 'BOM Create CS01', keywords: 'create bill of materials bom, product structure design components, engineering recipe list' },
@@ -148,8 +148,8 @@ export const FUNCTIONS: FunctionCode[] = [
   { code: 'AALG', aliases: ['SM20', 'AUD-LOG-LS', 'ALG'], description: 'Audit Log', route: '/1000/audit/logs', module: 'AUDIT', subModule: 'AUDIT-LOG', type: 'REPORT', classicName: 'Audit Log', keywords: 'system audit log, security events, user activity tracking, electronic records tracking' },
 
   // --- Phase 0 T0 BLOCKING – FMTM Movement Types + FRAD Revenue Account – own IP codes, SAP codes as aliases only ---
-  { code: 'FMTM', aliases: ['OMJJ', 'FIN-MV-CR', 'MVC', 'MOVEMENT'], description: 'Define Movement Types 101/102/122/161/261/262/309/551/601/602/701/702 – FMTM – T0 BLOCKING – stock +/- value +/- account modifier BSX/WRX/GBB/PRD/BSV – used in GR GI PGI PI – own IP', route: '/1000/fico/movement-types', module: 'FICO', subModule: 'FI-MV', type: 'CREATE', classicName: 'Movement Types FMTM', keywords: 'movement types fmtm omjj 101 gr 102 reversal 122 return 261 gi prod order co11n 601 pgi sales vl02n 602 reverse pgi vl09 701 702 pi diff mi07 bsv bsx wrx gbb prd' },
-  { code: 'FRAD', aliases: ['VKOA', 'FIN-REV-CR', 'KOFI', 'KOFK', 'REVENUE'], description: 'Define Revenue Account Determination – FRAD – T0 BLOCKING – chart + sales org + customer group + material group + account assignment → GL KOFI/KOFK – used in billing VF01 – Dr AR Cr Revenue – own IP', route: '/1000/fico/revenue-accounts', module: 'FICO', subModule: 'FI-REV', type: 'CREATE', classicName: 'Revenue Account FRAD', keywords: 'revenue account determination frad vkoa kofi kofk chart sales org customer group material group account assignment gl revenue billing vf01' },
+  { code: 'FMTM', aliases: ['OMJJ', 'FIN-MV-CR', 'MVC', 'MOVEMENT'], description: 'Define Movement Types 101/102/122/161/261/262/309/551/601/602/701/702 – FMTM – T0 BLOCKING – stock +/- value +/- account modifier INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/GBB/PRD/BSV – used in GR GI PGI PI – own IP', route: '/1000/fico/movement-types', module: 'FICO', subModule: 'FI-MV', type: 'CREATE', classicName: 'Movement Types FMTM', keywords: 'movement types fmtm omjj 101 gr 102 reversal 122 return 261 gi prod order co11n 601 pgi sales vl02n 602 reverse pgi vl09 701 702 pi diff mi07 bsv bsx wrx gbb prd' },
+  { code: 'FRAD', aliases: ['VKOA', 'FIN-REV-CR', 'REVENUE', 'REVENUE', 'REVENUE'], description: 'Define Revenue Account Determination – FRAD – T0 BLOCKING – chart + sales org + customer group + material group + account assignment → GL KOFI/KOFK – used in billing VF01 – Dr AR Cr Revenue – own IP', route: '/1000/fico/revenue-accounts', module: 'FICO', subModule: 'FI-REV', type: 'CREATE', classicName: 'Revenue Account FRAD', keywords: 'revenue account determination frad vkoa kofi kofk chart sales org customer group material group account assignment gl revenue billing vf01' },
 
   // --- Phase 0 Prerequisites – Field Status, Fiscal, Posting, Credit – Must exist before OB13/ELEC – own IP codes ---
   { code: 'FFSV', aliases: ['FSSV', 'OBC4', 'FIN-FS-VAR-CR', 'FSV'], description: 'Create Field Status Variant – FFSV-1000 – OBC4 – must exist before ELEC – controls field status groups – own IP', route: '/1000/fico/field-status-variants', module: 'FICO', subModule: 'FI-GL', type: 'CREATE', classicName: 'Field Status Variant FFSV', keywords: 'field status variant ffsv fssv obc4 ffsv-1000 create field status variant groups required suppressed gl account posting key controls required before elec legal entity' },
@@ -172,7 +172,7 @@ export const FUNCTIONS: FunctionCode[] = [
 
 export const MODULE_CLASSIFICATION = {
   FOUNDATION: { name: 'Foundation', color: 'bg-zinc-100', icon: '🏗️', description: 'Layer 0: Client, Company Code, Plant, SLoc, Material, Batch, Number Ranges - ERP core' },
-  MM: { name: 'Materials Management', color: 'bg-blue-50', icon: '📦', description: 'PR to PO to GR to IV, ELIKZ, MAP landed, Physical Inventory - ERP MM' },
+  MM: { name: 'Materials Management', color: 'bg-blue-50', icon: '📦', description: 'PR to PO to GR to IV, DELIV_COMPLETED (legacy ELIKZ), MAP landed, Physical Inventory - ERP MM' },
   PP: { name: 'Production Planning', color: 'bg-purple-50', icon: '🏭', description: 'BOM, Work Center, Production Order, Kitting Stocked/Phantom - ERP PP' },
   SD: { name: 'Sales & Distribution', color: 'bg-green-50', icon: '🛒', description: 'Sales Order B2B/B2C/POS Webhook, 601 GI, Revenue - ERP SD' },
   HR: { name: 'Human Resources', color: 'bg-orange-50', icon: '👥', description: 'Org Unit, Position, Employee, Payroll 300 KWD, FI - ERP HR' },
@@ -215,8 +215,8 @@ export function searchFunctions(query: string): FunctionCode[] {
   const docSynonyms: Record<string, string[]> = {
     PO: ['PO', 'PURCHASE ORDER', 'ME21N', 'ME22N', 'ME23N', 'ME28'],
     PR: ['PR', 'PURCHASE REQUISITION', 'REQUISITION', 'ME51N', 'ME52N', 'ME53N', 'ME54N'],
-    GR: ['GR', 'GOODS RECEIPT', 'GOODS MOVEMENT', 'MIGO', 'RECEIPT', '101', 'WE'],
-    GI: ['GI', 'GOODS ISSUE', 'ISSUE', 'MIGO', '261', '601', 'WA'],
+    GR: ['GR', 'GOODS RECEIPT', 'GOODS MOVEMENT', 'MIGO', 'RECEIPT', 'GR_PO', 'WE'],
+    GI: ['GI', 'GOODS ISSUE', 'ISSUE', 'MIGO', 'GI_PROD', 'GI_SALES', 'WA'],
     IV: ['IV', 'INVOICE VERIFICATION', 'INVOICE', 'MIRO', 'RE', '51'],
     SO: ['SO', 'SALES ORDER', 'SALES', 'VA01', 'VA02', 'VA03'],
     DELIVERY: ['DELIVERY', 'DO', 'VL01N', 'VL02N', 'VL03N', 'OUTBOUND DELIVERY'],
@@ -288,8 +288,8 @@ export function searchFunctions(query: string): FunctionCode[] {
     let expanded = searchable;
     if (tc.code.startsWith('ME21') || tc.code.startsWith('ME22') || tc.code.startsWith('ME23')) expanded += ' PO PURCHASE ORDER';
     if (tc.code.startsWith('ME51') || tc.code.startsWith('ME52') || tc.code.startsWith('ME53')) expanded += ' PR PURCHASE REQUISITION REQUISITION';
-    if (tc.code === 'MIGO') expanded += ' GR GOODS RECEIPT GOODS MOVEMENT RECEIPT WE WA GI GOODS ISSUE';
-    if (tc.code === 'MIRO') expanded += ' IV INVOICE VERIFICATION INVOICE RE';
+    if (tc.code === 'IGRC') expanded += ' GR GOODS RECEIPT GOODS MOVEMENT RECEIPT WE WA GI GOODS ISSUE';
+    if (tc.code === 'PIVC') expanded += ' IV INVOICE VERIFICATION INVOICE RE';
     if (tc.code.startsWith('VA0')) expanded += ' SO SALES ORDER SALES';
     if (tc.code === 'VL01N') expanded += ' DELIVERY DO OUTBOUND DELIVERY';
     if (tc.code === 'VF01') expanded += ' BILLING BILL INVOICE';

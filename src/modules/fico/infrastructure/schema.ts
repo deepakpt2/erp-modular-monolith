@@ -7,7 +7,7 @@ export const fiDocStatusEnum = pgEnum('fi_doc_status', ['DRAFT', 'POSTED', 'REVE
 export const taxTypeEnum = pgEnum('tax_type', ['INPUT', 'OUTPUT', 'BOTH', 'NONE']);
 export const apArStatusEnum = pgEnum('ap_ar_status', ['OPEN', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'BLOCKED']);
 
-export const fiChartOfAccounts = pgTable('fi_chart_of_accounts', {
+export const fiChartOfAccounts = pgTable('fin_chart', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 10 }).notNull().unique(), // e.g., 'INT'
   name: varchar('name', { length: 100 }).notNull(),
@@ -15,7 +15,7 @@ export const fiChartOfAccounts = pgTable('fi_chart_of_accounts', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const fiGlAccount = pgTable('fi_gl_account', {
+export const fiGlAccount = pgTable('fin_ledger_account', {
   id: uuid('id').primaryKey().defaultRandom(),
   coaId: uuid('coa_id').notNull().references(() => fiChartOfAccounts.id),
   accountNumber: varchar('account_number', { length: 20 }).notNull(), // e.g., '100000'
@@ -30,7 +30,7 @@ export const fiGlAccount = pgTable('fi_gl_account', {
   uniqueCoaAccount: uniqueIndex('uq_coa_account').on(t.coaId, t.accountNumber),
 }));
 
-export const fiCostCenter = pgTable('fi_cost_center', {
+export const fiCostCenter = pgTable('fin_cost_center', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 20 }).notNull().unique(), // e.g., 'CC-KITCHEN-01'
   name: varchar('name', { length: 100 }).notNull(),
@@ -43,7 +43,7 @@ export const fiCostCenter = pgTable('fi_cost_center', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const fiTaxCode = pgTable('fi_tax_code', {
+export const fiTaxCode = pgTable('fin_tax_rule', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 10 }).notNull().unique(), // V0, V5, A0, A5
   description: varchar('description', { length: 100 }).notNull(),
@@ -53,10 +53,10 @@ export const fiTaxCode = pgTable('fi_tax_code', {
   isActive: boolean('is_active').default(true).notNull(),
 });
 
-export const fiAutoAccountDetermination = pgTable('fi_auto_account_determination', {
+export const fiAutoAccountDetermination = pgTable('fin_auto_posting_rule', {
   id: uuid('id').primaryKey().defaultRandom(),
   companyCodeId: uuid('company_code_id').notNull().references(() => entCompanyCode.id),
-  transactionKey: varchar('transaction_key', { length: 10 }).notNull(), // BSX, WRX, GBB, PRD, BSA, etc
+  transactionKey: varchar('transaction_key', { length: 20 }).notNull(), // Own IP: INV_POSTING (legacy BSX), GR_IR_CLEARING (legacy WRX), INV_OFFSET (legacy GBB), PRICE_DIFF (legacy PRD), INV_DIFF (legacy BSV) etc – with SAP alias
   valuationClass: varchar('valuation_class', { length: 10 }).notNull(), // ROH, FERT, etc
   glAccountId: uuid('gl_account_id').notNull().references(() => fiGlAccount.id),
   description: varchar('description', { length: 100 }),
@@ -65,8 +65,8 @@ export const fiAutoAccountDetermination = pgTable('fi_auto_account_determination
   uniqueAuto: uniqueIndex('uq_auto_key_val_class').on(t.companyCodeId, t.transactionKey, t.valuationClass),
 }));
 
-// FI Document - Header (BKPF in ERP)
-export const fiDocument = pgTable('fi_document', {
+// FI Document - Header – Own IP FUNL (legacy BKPF) – Universal Ledger
+export const fiDocument = pgTable('fin_universal_ledger', {
   id: uuid('id').primaryKey().defaultRandom(),
   documentNumber: varchar('document_number', { length: 20 }).notNull().unique(), // Number range
   companyCodeId: uuid('company_code_id').notNull().references(() => entCompanyCode.id),
@@ -92,8 +92,8 @@ export const fiDocument = pgTable('fi_document', {
   idxCompany: index('idx_fi_doc_company').on(t.companyCodeId),
 }));
 
-// FI Document - Line (BSEG in ERP)
-export const fiDocumentLine = pgTable('fi_document_line', {
+// FI Document - Line (Own IP FUNL line – legacy BSEG)
+export const fiDocumentLine = pgTable('fin_universal_ledger_line', {
   id: uuid('id').primaryKey().defaultRandom(),
   fiDocumentId: uuid('fi_document_id').notNull().references(() => fiDocument.id, { onDelete: 'cascade' }),
   lineNumber: integer('line_number').notNull(), // 1,2,3
@@ -119,7 +119,7 @@ export const fiDocumentLine = pgTable('fi_document_line', {
 }));
 
 // AP/AR Open Items
-export const fiApInvoice = pgTable('fi_ap_invoice', {
+export const fiApInvoice = pgTable('fin_ap_invoice', {
   id: uuid('id').primaryKey().defaultRandom(),
   invoiceNumber: varchar('invoice_number', { length: 30 }).notNull(), // Vendor invoice no
   fiDocumentId: uuid('fi_document_id').references(() => fiDocument.id),

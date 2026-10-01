@@ -4,7 +4,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Inventory Location API - OX09 - Legal-Safe Module 1
+ * Inventory Location API - EILC (legacy OX09) - Legal-Safe Module 1
  * Fresh empty – no sample data except tenant
  * Helper codes kept as-is
  */
@@ -81,7 +81,7 @@ if (!code || !name) return NextResponse.json({ error: 'code and name required' }
         const ex = await db.execute(sql`SELECT id, code, name FROM org_inventory_location WHERE facility_id=${facId} AND code=${code} LIMIT 1`);
         return NextResponse.json({ success: true, inventoryLocation: ex.rows[0], message: `Inventory Location ${code} exists` });
       }
-      return NextResponse.json({ success: true, inventoryLocation: res.rows[0], message: `Inventory Location ${code} created (OX09)` });
+      return NextResponse.json({ success: true, inventoryLocation: res.rows[0], message: `Inventory Location ${code} created (EILC (legacy OX09))` });
     
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

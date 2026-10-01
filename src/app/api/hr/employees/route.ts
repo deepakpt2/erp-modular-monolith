@@ -69,10 +69,10 @@ export async function GET(req: NextRequest) {
         FROM hr_employee e
         LEFT JOIN hr_position p ON e.position_id = p.id
         LEFT JOIN hr_org_unit ou ON p.org_unit_id = ou.id
-        LEFT JOIN ent_plant pl ON e.plant_id = pl.id
-        LEFT JOIN ent_company_code cc ON e.company_code_id = cc.id
+        LEFT JOIN org_facility pl ON e.plant_id = pl.id
+        LEFT JOIN org_legal_entity cc ON e.company_code_id = cc.id
         LEFT JOIN hr_employee m ON e.manager_id = m.id
-        LEFT JOIN ent_company_code cc2 ON e.cost_center_id = cc2.id
+        LEFT JOIN org_legal_entity cc2 ON e.cost_center_id = cc2.id
         WHERE 1=1
       `;
       if (search) query = sql`${query} AND (e.employee_number ILIKE ${`%${search}%`} OR e.first_name ILIKE ${`%${search}%`} OR e.last_name ILIKE ${`%${search}%`} OR e.email ILIKE ${`%${search}%`})`;

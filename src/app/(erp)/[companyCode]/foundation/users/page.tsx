@@ -19,7 +19,7 @@ export default function Page() {
           { key: "description", label: "DESCRIPTION", type: "textarea" },
         ]}
         relatedLinks={[
-          { code: "FROC", label: "Role – required", route: "/foundation/roles", description: "Role – PFCG – S_USER_AGR" },
+          { code: "FROC", label: "Role – required", route: "/foundation/roles", description: "Role – FROC (legacy PFCG) – S_USER_AGR" },
           { code: "ECGC", label: "Company Group – access", route: "/foundation/company-groups", description: "Company Group – OX02" },
         ]}
       />

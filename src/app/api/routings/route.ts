@@ -84,9 +84,9 @@ export async function GET(req: NextRequest) {
           (SELECT COUNT(*) FROM pp_routing_line WHERE routing_header_id = h.id) as operation_count,
           (SELECT SUM(setup_time_minutes + machine_time_minutes + labor_time_minutes) FROM pp_routing_line WHERE routing_header_id = h.id) as total_time_minutes
         FROM pp_routing_header h
-        JOIN ent_material_master m ON h.material_id = m.id
-        JOIN ent_plant p ON h.plant_id = p.id
-        LEFT JOIN pp_bom_header bh ON h.bom_header_id = bh.id
+        JOIN prod_item m ON h.material_id = m.id
+        JOIN org_facility p ON h.plant_id = p.id
+        LEFT JOIN mfg_bom_header bh ON h.bom_header_id = bh.id
         WHERE 1=1
       `;
 

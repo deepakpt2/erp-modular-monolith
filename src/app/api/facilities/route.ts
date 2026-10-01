@@ -4,7 +4,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Facility API - OX10 - Legal-Safe Module 1
+ * Facility API - EFCC (legacy OX10) - Legal-Safe Module 1
  * Fresh empty – no sample data except tenant
  * Helper codes kept as-is
  */
@@ -53,7 +53,7 @@ if (!code || !name) return NextResponse.json({ error: 'code and name required' }
       }
       if (!leId) return NextResponse.json({ error: 'legal_entity_id or legal_entity_code required' }, { status: 400 });
       const res = await db.execute(sql`INSERT INTO org_facility (legal_entity_id, code, name, description, address, city, country) VALUES (${leId}, ${code}, ${name}, ${description || null}, ${address || null}, ${city || null}, ${country || null}) ON CONFLICT (code) DO UPDATE SET name=${name}, description=${description || null}, updated_at=NOW() RETURNING id, code, name`);
-      return NextResponse.json({ success: true, facility: res.rows[0], message: `Facility ${code} created (OX10)` });
+      return NextResponse.json({ success: true, facility: res.rows[0], message: `Facility ${code} created (EFCC (legacy OX10))` });
     
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

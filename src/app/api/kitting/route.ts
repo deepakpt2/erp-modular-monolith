@@ -7,7 +7,7 @@ import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } f
 /**
  * Kitting API – Legal-safe own IP – Module 7 PP Manufacturing
  * New: mfg_kitting_order + mfg_production_order isKitting (was pp_kitting_order + pp_production_order) – kittingNumber KIT-1000001, productionOrderId, kitItemId was kit_material_id prod_item EMTC, targetLotId was target_batch_id inv_lot ELTC, targetQuantity, minComponentExpiry, calculatedExpiry MIN(component expiries), k01MovementId consumption, k02MovementId production, status
- * Helper code: MKTC Kitting Create (alias KTC, CO01 Kitting, FIN-KIT-CR) – 4-char MOOA M=Manufacturing, KT=Kitting, C=Create – module grouped intuitive
+ * Helper code: MKTC Kitting Create (alias KTC, MMOC (legacy CO01) Kitting, FIN-KIT-CR) – 4-char MOOA M=Manufacturing, KT=Kitting, C=Create – module grouped intuitive
  * Fallback to legacy pp_kitting_order
  */
 
@@ -52,8 +52,8 @@ export async function GET(req: NextRequest) {
         SELECT ko.*, po.order_number as production_order_number, m.material_number as kit_number, m.description as kit_name, b.batch_number as target_batch_number
         FROM pp_kitting_order ko
         LEFT JOIN pp_production_order po ON ko.production_order_id = po.id
-        LEFT JOIN ent_material_master m ON ko.kit_material_id = m.id
-        LEFT JOIN ent_batch b ON ko.target_batch_id = b.id
+        LEFT JOIN prod_item m ON ko.kit_material_id = m.id
+        LEFT JOIN inv_lot b ON ko.target_batch_id = b.id
         WHERE 1=1
       `;
       if (status) query = sql`${query} AND ko.status = ${status}::prod_order_status`;
@@ -72,8 +72,8 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Kitting Order – MKTC legal-safe own IP (was CO01 Kitting) – kittingNumber KIT-1000001, kitItemId EMTC was kit_material_id, targetLotId ELTC was target_batch_id, targetQuantity, minComponentExpiry MIN(component expiries), calculatedExpiry, k01/k02 movements',
-      explanation: 'Kitting legal-safe mfg_kitting_order + mfg_production_order isKitting – kittingNumber KIT-1000001, productionOrderId, kitItemId EMTC was kit_material_id, targetLotId ELTC was target_batch_id, targetQuantity, minComponentExpiry, calculatedExpiry MIN(component expiries), k01MovementId consumption, k02MovementId production, status – Code MKTC primary alias KTC/CO01 – 4-char MOOA M=Manufacturing KT=Kitting C=Create – module grouped intuitive, same length as CO01 but own IP.',
+      functionDescription: 'Kitting Order – MKTC legal-safe own IP (was MMOC (legacy CO01) Kitting) – kittingNumber KIT-1000001, kitItemId EMTC was kit_material_id, targetLotId ELTC was target_batch_id, targetQuantity, minComponentExpiry MIN(component expiries), calculatedExpiry, k01/k02 movements',
+      explanation: 'Kitting legal-safe mfg_kitting_order + mfg_production_order isKitting – kittingNumber KIT-1000001, productionOrderId, kitItemId EMTC was kit_material_id, targetLotId ELTC was target_batch_id, targetQuantity, minComponentExpiry, calculatedExpiry MIN(component expiries), k01MovementId consumption, k02MovementId production, status – Code MKTC primary alias KTC/MMOC (legacy CO01) – 4-char MOOA M=Manufacturing KT=Kitting C=Create – module grouped intuitive, same length as MMOC (legacy CO01) but own IP.',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, kittingOrders: [] }, { status: 500 });
@@ -167,7 +167,7 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE pp_kitting_order SET status = ${status}::prod_order_status WHERE id = ${id} RETURNING id, kitting_number, status`);
       else res = await db.execute(sql`UPDATE pp_kitting_order SET status = ${status}::prod_order_status WHERE kitting_number = ${kitting_number} RETURNING id, kitting_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Kitting order not found' }, { status: 404 });
-      return NextResponse.json({ success: true, kittingOrder: res.rows[0], message: `Kitting order ${res.rows[0].kitting_number} status ${status} – CO01 legacy` });
+      return NextResponse.json({ success: true, kittingOrder: res.rows[0], message: `Kitting order ${res.rows[0].kitting_number} status ${status} – MMOC (legacy CO01) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

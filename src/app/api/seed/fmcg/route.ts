@@ -9,10 +9,10 @@ export async function GET() {
   if (authCheck) return authCheck;
 
   try {
-    const matRes = await db.execute(sql`SELECT COUNT(*) as count FROM ent_material_master WHERE material_number LIKE 'FMCG-%'`);
-    const vendorRes = await db.execute(sql`SELECT COUNT(*) as count FROM ent_business_partner WHERE bp_number LIKE 'BP-V-10%'`);
-    const customerRes = await db.execute(sql`SELECT COUNT(*) as count FROM ent_business_partner WHERE bp_number LIKE 'BP-C-20%'`);
-    const stockRes = await db.execute(sql`SELECT COUNT(*) as count FROM inv_stock WHERE material_id IN (SELECT id FROM ent_material_master WHERE material_number LIKE 'FMCG-%')`);
+    const matRes = await db.execute(sql`SELECT COUNT(*) as count FROM prod_item WHERE material_number LIKE 'FMCG-%'`);
+    const vendorRes = await db.execute(sql`SELECT COUNT(*) as count FROM partner_account WHERE bp_number LIKE 'BP-V-10%'`);
+    const customerRes = await db.execute(sql`SELECT COUNT(*) as count FROM partner_account WHERE bp_number LIKE 'BP-C-20%'`);
+    const stockRes = await db.execute(sql`SELECT COUNT(*) as count FROM inv_stock WHERE material_id IN (SELECT id FROM prod_item WHERE material_number LIKE 'FMCG-%')`);
 
     return NextResponse.json({
       enabled: (matRes.rows[0] as any).count > 0,
@@ -55,13 +55,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'FMCG sample data enabled - 23 materials, 5 vendors, 4 customers, 2 BOMs, 5 stock batches created' });
     } else {
       // Disable - delete FMCG data
-      await db.execute(sql`DELETE FROM inv_stock WHERE material_id IN (SELECT id FROM ent_material_master WHERE material_number LIKE 'FMCG-%')`);
-      await db.execute(sql`DELETE FROM ent_batch WHERE batch_number LIKE 'B-FMCG-%'`);
-      await db.execute(sql`DELETE FROM pp_bom_line WHERE bom_header_id IN (SELECT id FROM pp_bom_header WHERE bom_number LIKE 'BOM-FMCG-%')`);
-      await db.execute(sql`DELETE FROM pp_bom_header WHERE bom_number LIKE 'BOM-FMCG-%'`);
-      await db.execute(sql`DELETE FROM ent_material_plant WHERE material_id IN (SELECT id FROM ent_material_master WHERE material_number LIKE 'FMCG-%')`);
-      await db.execute(sql`DELETE FROM ent_material_master WHERE material_number LIKE 'FMCG-%'`);
-      await db.execute(sql`DELETE FROM ent_business_partner WHERE bp_number LIKE 'BP-V-10%' OR bp_number LIKE 'BP-C-20%'`);
+      await db.execute(sql`DELETE FROM inv_stock WHERE material_id IN (SELECT id FROM prod_item WHERE material_number LIKE 'FMCG-%')`);
+      await db.execute(sql`DELETE FROM inv_lot WHERE batch_number LIKE 'B-FMCG-%'`);
+      await db.execute(sql`DELETE FROM mfg_bom_line WHERE bom_header_id IN (SELECT id FROM mfg_bom_header WHERE bom_number LIKE 'BOM-FMCG-%')`);
+      await db.execute(sql`DELETE FROM mfg_bom_header WHERE bom_number LIKE 'BOM-FMCG-%'`);
+      await db.execute(sql`DELETE FROM prod_item_plant WHERE material_id IN (SELECT id FROM prod_item WHERE material_number LIKE 'FMCG-%')`);
+      await db.execute(sql`DELETE FROM prod_item WHERE material_number LIKE 'FMCG-%'`);
+      await db.execute(sql`DELETE FROM partner_account WHERE bp_number LIKE 'BP-V-10%' OR bp_number LIKE 'BP-C-20%'`);
 
       return NextResponse.json({ success: true, message: 'FMCG sample data disabled - deleted' });
     }
@@ -79,13 +79,13 @@ export async function DELETE() {
   try {
     const { db } = await import('@/shared/kernel/db/client');
     const { sql } = await import('drizzle-orm');
-    await db.execute(sql`DELETE FROM inv_stock WHERE material_id IN (SELECT id FROM ent_material_master WHERE material_number LIKE 'FMCG-%')`);
-    await db.execute(sql`DELETE FROM ent_batch WHERE batch_number LIKE 'B-FMCG-%'`);
-    await db.execute(sql`DELETE FROM pp_bom_line WHERE bom_header_id IN (SELECT id FROM pp_bom_header WHERE bom_number LIKE 'BOM-FMCG-%')`);
-    await db.execute(sql`DELETE FROM pp_bom_header WHERE bom_number LIKE 'BOM-FMCG-%'`);
-    await db.execute(sql`DELETE FROM ent_material_plant WHERE material_id IN (SELECT id FROM ent_material_master WHERE material_number LIKE 'FMCG-%')`);
-    await db.execute(sql`DELETE FROM ent_material_master WHERE material_number LIKE 'FMCG-%'`);
-    await db.execute(sql`DELETE FROM ent_business_partner WHERE bp_number LIKE 'BP-V-10%' OR bp_number LIKE 'BP-C-20%'`);
+    await db.execute(sql`DELETE FROM inv_stock WHERE material_id IN (SELECT id FROM prod_item WHERE material_number LIKE 'FMCG-%')`);
+    await db.execute(sql`DELETE FROM inv_lot WHERE batch_number LIKE 'B-FMCG-%'`);
+    await db.execute(sql`DELETE FROM mfg_bom_line WHERE bom_header_id IN (SELECT id FROM mfg_bom_header WHERE bom_number LIKE 'BOM-FMCG-%')`);
+    await db.execute(sql`DELETE FROM mfg_bom_header WHERE bom_number LIKE 'BOM-FMCG-%'`);
+    await db.execute(sql`DELETE FROM prod_item_plant WHERE material_id IN (SELECT id FROM prod_item WHERE material_number LIKE 'FMCG-%')`);
+    await db.execute(sql`DELETE FROM prod_item WHERE material_number LIKE 'FMCG-%'`);
+    await db.execute(sql`DELETE FROM partner_account WHERE bp_number LIKE 'BP-V-10%' OR bp_number LIKE 'BP-C-20%'`);
     return NextResponse.json({ success: true, message: 'FMCG sample data deleted' });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

@@ -1,7 +1,7 @@
 /**
  * Transaction Helper – FTRB own IP – Foundation Transaction Rollback – NEW OWN CODE – alias LUW
  * Implements DB transaction with BEGIN/COMMIT/ROLLBACK for all postings – industry standard LUW
- * Ensures no partial postings – e.g., GR posts stock ledger + universal ledger + MAP recalc + PO update ELIKZ – all in one transaction – if one fails, rollback all – no partial – own IP
+ * Ensures no partial postings – e.g., GR posts stock ledger + universal ledger + MAP recalc + PO update delivery_completed (legacy ELIKZ) – own IP DELIV_COMPLETED – all in one transaction – if one fails, rollback all – no partial – own IP
  * Usage: await withTransaction(async (tx) => { await tx.execute(...); await tx.execute(...); })
  * For large org with 1000s employees, critical – prevents inconsistent data
  */

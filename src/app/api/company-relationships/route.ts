@@ -4,7 +4,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Company Relationships – FCRL own IP – Foundation Company Relationship – NEW OWN CODE – alias OX02, OX10, OX08, OX16, OB62, OB37, OBBO, OBC4
+ * Company Relationships – FCRL own IP – Foundation Company Relationship – NEW OWN CODE – alias ELEC (legacy OX02), EFCC (legacy OX10), OX08, OX16, OB62, OB37, FPPC (legacy OBBO), OBC4
  * Implements company/legal entity/company code relationships – company groups, legal entities, company codes, plants, business area, segment, sales org, purchasing org, controlling area, inter-company – own IP
  * For large org multi-sector, critical – sector-wise reporting, profit center, business area, company code grouping, consolidation, transfer pricing
  * Tables: fin_business_area, fin_segment, fin_sales_org, fin_purchasing_org, fin_controlling_area, fin_intercompany, plus existing org_legal_entity, org_company_code, org_facility

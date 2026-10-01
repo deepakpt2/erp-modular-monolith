@@ -23,9 +23,9 @@ async function ensureTable() {
       CREATE TABLE IF NOT EXISTS ent_user_permission (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES auth_user(id) ON DELETE CASCADE,
-        permission_id UUID NOT NULL REFERENCES ent_permission(id) ON DELETE CASCADE,
-        company_code_id UUID REFERENCES ent_company_code(id),
-        plant_id UUID REFERENCES ent_plant(id),
+        permission_id UUID NOT NULL REFERENCES auth_permission(id) ON DELETE CASCADE,
+        company_code_id UUID REFERENCES org_legal_entity(id),
+        plant_id UUID REFERENCES org_facility(id),
         granted_by UUID REFERENCES auth_user(id),
         granted_at TIMESTAMP DEFAULT NOW() NOT NULL,
         expires_at TIMESTAMP,
@@ -64,9 +64,9 @@ export async function GET(req: NextRequest) {
              granter.email as granted_by_email
       FROM ent_user_permission up
       JOIN auth_user u ON up.user_id = u.id
-      JOIN ent_permission p ON up.permission_id = p.id
-      LEFT JOIN ent_company_code cc ON up.company_code_id = cc.id
-      LEFT JOIN ent_plant pl ON up.plant_id = pl.id
+      JOIN auth_permission p ON up.permission_id = p.id
+      LEFT JOIN org_legal_entity cc ON up.company_code_id = cc.id
+      LEFT JOIN org_facility pl ON up.plant_id = pl.id
       LEFT JOIN auth_user granter ON up.granted_by = granter.id
     `;
     if (userId) {
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
 
       directPermissions: res.rows,
       count: res.rows.length,
-      explanation: 'Direct user permissions allow special access like PO_CREATE, GR_POST without role. Example: Grant PO_CREATE to user to allow ME21N Create PO.',
+      explanation: 'Direct user permissions allow special access like PO_CREATE, GR_POST without role. Example: Grant PO_CREATE to user to allow PPOC (legacy ME21N) Create PO.',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
   let detailedRoles: string[] = [];
   try {
     const roleRes = await db.execute(sql`
-      SELECT r.code FROM ent_user_role ur JOIN ent_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId}
+      SELECT r.code FROM auth_user_role ur JOIN auth_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId}
     `);
     detailedRoles = roleRes.rows.map((r: any) => r.code);
   } catch {}
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 
     let finalPermId = permissionId;
     if (permissionCode && !permissionId) {
-      const permRes = await db.execute(sql`SELECT id FROM ent_permission WHERE code = ${permissionCode} LIMIT 1`);
+      const permRes = await db.execute(sql`SELECT id FROM auth_permission WHERE code = ${permissionCode} LIMIT 1`);
       if (permRes.rows.length === 0) return NextResponse.json({ error: `Permission ${permissionCode} not found` }, { status: 404 });
       finalPermId = (permRes.rows[0] as any).id;
     }
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
 
     // Get info
     const infoRes = await db.execute(sql`
-      SELECT u.email, p.code as perm_code FROM auth_user u, ent_permission p WHERE u.id = ${userId} AND p.id = ${finalPermId}
+      SELECT u.email, p.code as perm_code FROM auth_user u, auth_permission p WHERE u.id = ${userId} AND p.id = ${finalPermId}
     `);
     const info = infoRes.rows[0] as any;
 
@@ -176,7 +176,7 @@ export async function DELETE(req: NextRequest) {
 
   let detailedRoles: string[] = [];
   try {
-    const roleRes = await db.execute(sql`SELECT r.code FROM ent_user_role ur JOIN ent_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId}`);
+    const roleRes = await db.execute(sql`SELECT r.code FROM auth_user_role ur JOIN auth_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId}`);
     detailedRoles = roleRes.rows.map((r: any) => r.code);
   } catch {}
 

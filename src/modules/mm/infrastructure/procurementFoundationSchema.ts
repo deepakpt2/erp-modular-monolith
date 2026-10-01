@@ -14,7 +14,7 @@ import { orgCostUnit } from '../../foundation/enterprise/infrastructure/orgStruc
  * - mm_purchase_requisition → proc_purchase_requisition – prNumber, legalEntityId was company_code_id, facilityId was plant_id, procurementDivision was purchasing_org, buyerTeam was purchasing_group, requesterId hr_employee, status, currency INR default
  * - mm_pr_line → proc_pr_line – itemId was material_id prod_item, uomCode was uom core_unit_measure, facilityId was plant_id, inventoryLocationId was sloc_id, taxRuleId was tax_code, ledgerAccountId was gl_account, costUnitId was cost_center
  * - mm_purchase_order → proc_purchase_order – poNumber 45*, legalEntityId was company_code_id, partnerId was vendor_id partner_account, facilityId was plant_id, status, totalAmount INR, procurementDivision, buyerTeam, paymentTerms, incoterms EXW/FOB/CIF, landed cost freight/customs/tax
- * - mm_po_line → proc_po_line – itemId prod_item, uomCode, facilityId, inventoryLocationId, taxRuleId, costUnitId, ledgerAccountId, deliveryCompleted was ELIKZ, isClosed
+ * - mm_po_line → proc_po_line – itemId prod_item, uomCode, facilityId, inventoryLocationId, taxRuleId, costUnitId, ledgerAccountId, deliveryCompleted was DELIV_COMPLETED (legacy ELIKZ), isClosed
  * - mm_goods_receipt → proc_goods_receipt – grNumber 50*, poId, legalEntityId, facilityId, status, postingDate, universalLedgerId was fi_document_id
  * - mm_gr_line → proc_gr_line – itemId, facilityId, inventoryLocationId, lotId was batch_id inv_lot, lotNumber was batch_number, uomCode, stockStatus UNRESTRICTED/QI/BLOCKED, expiryDate
  * - mm_stock_transport_order → proc_stock_transport_order – stoNumber, type ONE_STEP/TWO_STEP, supplyingFacilityId was supplying_plant_id, receivingFacilityId, inTransitFacilityId
@@ -24,7 +24,7 @@ import { orgCostUnit } from '../../foundation/enterprise/infrastructure/orgStruc
  * - NEW: proc_purchasing_condition – pricing conditions for PO – conditionType BASE/DISCOUNT/FREIGHT/CUSTOMS/TAX
  * Sample data: none – fresh empty per requirement, but UoM, currencies, tax, CoA, GL kept from Module4
  * Helper codes: PPRC PR Create (alias PRC, ME51N, FIN-PR-CR), PPOC PO Create (alias POC, ME21N, FIN-PO-CR), PGRC GR Create (alias GRC, MIGO, FIN-GR-CR), PIVC IV Create (alias IVC, MIRO, FIN-IV-CR), PSTC STO Create (alias STC, ME27), PIRC Info Record Create (alias IRC, ME11), PSRC Source List Create (alias SRC, ME01)
- * 4-char MOOA: P=Procurement, PR=PurchaseRequisition, C=Create etc – module grouped intuitive, same length as ME51N/ME21N/MIGO/MIRO but own IP
+ * 4-char MOOA: P=Procurement, PR=PurchaseRequisition, C=Create etc – module grouped intuitive, same length as PPRC/PPOC/IGRC/PIVC own IP (legacy ME51N/ME21N/MIGO/MIRO) but own IP
  */
 
 export const procPrStatusEnum = pgEnum('proc_pr_status', ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'CONVERTED_TO_PO', 'CANCELLED']);
@@ -167,7 +167,7 @@ export const procPoLine = pgTable('proc_po_line', {
   itemText: text('item_text'),
   deliveryText: text('delivery_text'),
   isLandedCostRelevant: boolean('is_landed_cost_relevant').default(true).notNull(),
-  deliveryCompleted: boolean('delivery_completed').default(false).notNull(), // ELIKZ – delivery completed indicator
+  deliveryCompleted: boolean('delivery_completed').default(false).notNull(), // DELIV_COMPLETED (legacy ELIKZ) – delivery completed indicator
   isClosed: boolean('is_closed').default(false).notNull(),
   closedReason: varchar('closed_reason', { length: 100 }),
   closedAt: timestamp('closed_at'),
@@ -176,7 +176,7 @@ export const procPoLine = pgTable('proc_po_line', {
 }, (t) => ({
   idxPo: index('idx_proc_po_line_po').on(t.poId),
   uniquePoLine: uniqueIndex('uq_proc_po_line').on(t.poId, t.lineNumber),
-  idxDeliveryCompleted: index('idx_proc_po_line_elikz').on(t.deliveryCompleted),
+  idxDeliveryCompleted: index('idx_proc_po_line_delivery_completed').on(t.deliveryCompleted),
   idxItem: index('idx_proc_po_line_item').on(t.itemId),
 }));
 
@@ -196,7 +196,7 @@ export const procGoodsReceipt = pgTable('proc_goods_receipt', {
   totalAmount: numeric('total_amount', { precision: 15, scale: 3 }).notNull().default('0'),
   totalLandedCost: numeric('total_landed_cost', { precision: 15, scale: 3 }).notNull().default('0'),
   universalLedgerId: uuid('universal_ledger_id'), // was fi_document_id – fin_universal_ledger FULC
-  fiDocumentId: uuid('fi_document_id'), // legacy alias – BSX/WRX
+  fiDocumentId: uuid('fi_document_id'), // legacy alias – INV_POSTING/GR_IR_CLEARING (legacy INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – own IP)
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => ({
@@ -279,8 +279,8 @@ export const procStoLine = pgTable('proc_sto_line', {
   itemId: uuid('item_id').notNull().references(() => prodItem.id), // was material_id
   materialId: uuid('material_id'), // legacy alias
   quantity: numeric('quantity', { precision: 15, scale: 3 }).notNull(),
-  quantityIssued: numeric('quantity_issued', { precision: 15, scale: 3 }).default('0'), // MIGO 351
-  quantityReceived: numeric('quantity_received', { precision: 15, scale: 3 }).default('0'), // MIGO 101
+  quantityIssued: numeric('quantity_issued', { precision: 15, scale: 3 }).default('0'), // TR_MAT (legacy MIGO 351)
+  quantityReceived: numeric('quantity_received', { precision: 15, scale: 3 }).default('0'), // GR_PO (legacy MIGO 101)
   quantityInTransit: numeric('quantity_in_transit', { precision: 15, scale: 3 }).default('0'),
   uomCode: varchar('uom_code', { length: 10 }).notNull(), // KG, PC – EUOC
   uom: varchar('uom', { length: 10 }), // legacy alias
@@ -318,7 +318,7 @@ export const procInvoiceVerification = pgTable('proc_invoice_verification', {
   otherCharges: numeric('other_charges', { precision: 15, scale: 3 }).default('0'),
   totalLandedCost: numeric('total_landed_cost', { precision: 15, scale: 3 }).notNull().default('0'),
   priceVariance: numeric('price_variance', { precision: 15, scale: 3 }).default('0'),
-  universalLedgerId: uuid('universal_ledger_id'), // was fi_document_id – fin_universal_ledger FULC – RE + WRX clearing + BSX adjustment
+  universalLedgerId: uuid('universal_ledger_id'), // was fi_document_id – fin_universal_ledger FULC – RE + GR_IR_CLEARING clearing + INV_POSTING adjustment (legacy WRX/BSX) – own IP
   fiDocumentId: uuid('fi_document_id'), // legacy alias
   apInvoiceId: uuid('ap_invoice_id'),
   isLandedCostPosted: boolean('is_landed_cost_posted').default(false).notNull(),

@@ -5,9 +5,9 @@ export default function Page() {
   return (
     <SingleCodePage
       code="IGRC-REV"
-      sapAlias="MIGO 102"
+      sapAlias="IGRC (legacy MIGO) 102"
       title="Inventory Receipt Reversals"
-      description="Reverse Inventory Receipt – 102 movement – strict usage: reverses GR 101, posts opposite BSX/WRX, requires posting period open"
+      description="Reverse Inventory Receipt – 102 movement – strict usage: reverses GR 101, posts opposite INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX), requires posting period open"
       apiEndpoint="/api/gr-reversal"
       initialForm={{ original_gr_code: '', reason: '', posting_date: '' }}
       fields={[

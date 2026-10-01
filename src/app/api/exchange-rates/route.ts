@@ -5,9 +5,9 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Exchange Rates API – Legal-safe own IP – Module 4
- * New: core_exchange_rate (was ent_exchange_rate) – rateType AVG/BUY/SELL/SPOT (was M/B/G) – INR primary default
+ * New: core_exchange_rate (was core_exchange_rate) – rateType AVG/BUY/SELL/SPOT (was M/B/G) – INR primary default
  * Helper code: FEXC Exchange Rate Create (alias EXC, OB08, FIN-EX-CR) – 4-char MOOA F=Financials, EX=Exchange, C=Create
- * Fallback to legacy ent_exchange_rate
+ * Fallback to legacy core_exchange_rate
  */
 
 export async function GET(req: NextRequest) {
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       // Fallback legacy
       try {
         const rateRes = await db.execute(sql`
-          SELECT rate FROM ent_exchange_rate
+          SELECT rate FROM core_exchange_rate
           WHERE from_currency = ${from} AND to_currency = ${to} AND valid_from <= ${postingDate}
           ORDER BY valid_from DESC LIMIT 1
         `);
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
             rate,
             converted,
             postingDate: postingDate.toISOString(),
-            source: 'db-legacy ent_exchange_rate',
+            source: 'db-legacy core_exchange_rate',
             legalSafe: false,
           });
         }
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
       let query = sql`
         SELECT er.*, cc.code as company_code
         FROM core_exchange_rate er
-        LEFT JOIN ent_company_code cc ON er.company_code_id = cc.id
+        LEFT JOIN org_legal_entity cc ON er.company_code_id = cc.id
         WHERE 1=1
       `;
       if (from) query = sql`${query} AND er.from_currency = ${from}`;
@@ -107,15 +107,15 @@ export async function GET(req: NextRequest) {
       const result = await db.execute(query);
       exchangeRows = result.rows as any[];
     } catch (newErr: any) {
-      console.warn('core_exchange_rate not yet, fallback ent_exchange_rate:', newErr.message);
+      console.warn('core_exchange_rate not yet, fallback core_exchange_rate:', newErr.message);
       source = 'db-legacy';
-      table = 'ent_exchange_rate';
+      table = 'core_exchange_rate';
       legalSafe = false;
 
       let query = sql`
         SELECT er.*, cc.code as company_code
-        FROM ent_exchange_rate er
-        LEFT JOIN ent_company_code cc ON er.company_code_id = cc.id
+        FROM core_exchange_rate er
+        LEFT JOIN org_legal_entity cc ON er.company_code_id = cc.id
         WHERE 1=1
       `;
       if (from) query = sql`${query} AND er.from_currency = ${from}`;
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
 
     let companies: any[] = [];
     try {
-      const c = await db.execute(sql`SELECT code, name, currency_code FROM ent_company_code WHERE code IN ('KS01','1000','IND1') LIMIT 20`);
+      const c = await db.execute(sql`SELECT code, name, currency_code FROM org_legal_entity WHERE code IN ('KS01','1000','IND1') LIMIT 20`);
       companies = c.rows;
     } catch {}
 
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
       try {
         const c1 = await db.execute(sql`SELECT id FROM core_currency WHERE code = ${curr.toUpperCase()} LIMIT 1`);
         if (c1.rows.length === 0) {
-          const c2 = await db.execute(sql`SELECT id FROM ent_currency WHERE code = ${curr.toUpperCase()} LIMIT 1`);
+          const c2 = await db.execute(sql`SELECT id FROM core_currency WHERE code = ${curr.toUpperCase()} LIMIT 1`);
           if (c2.rows.length === 0) {
             return NextResponse.json({ error: `CURRENCY ${curr} not found in DB – create it first via FCYC. Valid: /api/currencies` }, { status: 400 });
           }
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
     let companyCodeId = null;
     if (company_code) {
       try {
-        const cc = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = ${company_code} LIMIT 1`);
+        const cc = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${company_code} LIMIT 1`);
         if (cc.rows.length > 0) companyCodeId = (cc.rows[0] as any).id;
       } catch {}
     }
@@ -196,9 +196,9 @@ export async function POST(req: NextRequest) {
       `);
       return NextResponse.json({ success: true, exchangeRate: res.rows[0], code: 'FEXC', message: `Exchange rate ${from_currency}->${to_currency} ${rate} created – FEXC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
-      console.warn('core_exchange_rate insert failed fallback ent_exchange_rate:', newErr.message);
+      console.warn('core_exchange_rate insert failed fallback core_exchange_rate:', newErr.message);
       const res = await db.execute(sql`
-        INSERT INTO ent_exchange_rate (company_code_id, from_currency, to_currency, rate, valid_from, rate_type)
+        INSERT INTO core_exchange_rate (company_code_id, from_currency, to_currency, rate, valid_from, rate_type)
         VALUES (${companyCodeId}, ${from_currency.toUpperCase()}, ${to_currency.toUpperCase()}, ${rate}, ${valid_from ? new Date(valid_from) : new Date()}, ${rate_type || 'M'}::exchange_rate_type)
         RETURNING id, from_currency, to_currency, rate
       `);
@@ -223,7 +223,7 @@ export async function PUT(req: NextRequest) {
       if (res.rows.length === 0) throw new Error('Not found in core_exchange_rate');
       return NextResponse.json({ success: true, exchangeRate: res.rows[0], code: 'FEXC', message: `Rate updated – FEXC legal-safe` });
     } catch {
-      const res = await db.execute(sql`UPDATE ent_exchange_rate SET rate = ${rate} WHERE id = ${id} RETURNING id, from_currency, to_currency, rate`);
+      const res = await db.execute(sql`UPDATE core_exchange_rate SET rate = ${rate} WHERE id = ${id} RETURNING id, from_currency, to_currency, rate`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Rate not found' }, { status: 404 });
       return NextResponse.json({ success: true, exchangeRate: res.rows[0], message: `Rate updated – OB08 legacy` });
     }
@@ -244,7 +244,7 @@ export async function DELETE(req: NextRequest) {
     try {
       await db.execute(sql`DELETE FROM core_exchange_rate WHERE id = ${id}`);
     } catch {
-      await db.execute(sql`DELETE FROM ent_exchange_rate WHERE id = ${id}`);
+      await db.execute(sql`DELETE FROM core_exchange_rate WHERE id = ${id}`);
     }
 
     return NextResponse.json({ success: true, code: 'FEXC', message: `Rate ${id} deleted – FEXC legal-safe` });

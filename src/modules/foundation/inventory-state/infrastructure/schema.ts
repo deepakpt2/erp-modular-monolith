@@ -10,11 +10,11 @@ export const stockStatusEnum = pgEnum('stock_status', [
 ]);
 
 export const movementTypeEnum = pgEnum('movement_type', [
-  '101', // GR for PO
-  '102', // GR reversal
-  '122', // Return to vendor
-  '261', // GI for production order
-  '262', // GI reversal
+  'GR_PO', // GR for PO
+  'GR_PO_REV', // GR reversal
+  'GR_RETURN', // Return to vendor
+  'GI_PROD', // GI for production order
+  'GI_PROD_REV', // GI reversal
   '311', // Transfer plant to plant
   '321', // QI -> Unrestricted
   '322', // QI -> Blocked
@@ -22,9 +22,9 @@ export const movementTypeEnum = pgEnum('movement_type', [
   '344', // Unrestricted -> Blocked
   '350', // QI -> Blocked (scrap)
   '453', // Yield from production
-  '551', // Scrap / Spoilage
-  '561', // Initial stock upload
-  '601', // GI for sales / POS
+  'GI_SCRAP', // Scrap / Spoilage
+  'INIT_STOCK', // Initial stock upload
+  'GI_SALES', // GI for sales / POS
   'K01', // Kitting consumption
   'K02', // Kitting production
 ]);

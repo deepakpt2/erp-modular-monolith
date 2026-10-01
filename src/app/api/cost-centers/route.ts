@@ -15,9 +15,9 @@ export async function GET(req: NextRequest) {
       SELECT cc.id, cc.code, cc.name, cc.company_code_id, comp.code as company_code, comp.name as company_name, comp.currency_code,
              cc.is_active, cc.valid_from, cc.valid_to,
              (SELECT COUNT(*) FROM hr_employee WHERE cost_center_id = cc.id) as employee_count,
-             (SELECT COUNT(*) FROM fi_document_line WHERE cost_center_id = cc.id) as posting_count
-      FROM fi_cost_center cc
-      JOIN ent_company_code comp ON cc.company_code_id = comp.id
+             (SELECT COUNT(*) FROM fin_universal_ledger_line WHERE cost_center_id = cc.id) as posting_count
+      FROM fin_cost_center cc
+      JOIN org_legal_entity comp ON cc.company_code_id = comp.id
       WHERE 1=1
     `;
     if (companyCode && companyCode !== 'ALL') {
@@ -53,12 +53,12 @@ export async function POST(req: NextRequest) {
     const { code, name, company_code } = body;
     if (!code || !name || !company_code) return NextResponse.json({ error: 'code, name, company_code required' }, { status: 400 });
 
-    const ccRes = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = ${company_code} LIMIT 1`);
+    const ccRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${company_code} LIMIT 1`);
     if (ccRes.rows.length === 0) return NextResponse.json({ error: `Company code ${company_code} not found` }, { status: 404 });
     const companyCodeId = (ccRes.rows[0] as any).id;
 
     const res = await db.execute(sql`
-      INSERT INTO fi_cost_center (code, name, company_code_id)
+      INSERT INTO fin_cost_center (code, name, company_code_id)
       VALUES (${code.toUpperCase()}, ${name}, ${companyCodeId})
       ON CONFLICT (code) DO UPDATE SET name = ${name}, company_code_id = ${companyCodeId}, is_active = true
       RETURNING id, code
@@ -81,14 +81,14 @@ export async function PUT(req: NextRequest) {
 
     let companyCodeId = null;
     if (company_code) {
-      const r = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = ${company_code} LIMIT 1`);
+      const r = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${company_code} LIMIT 1`);
       if (r.rows.length > 0) companyCodeId = (r.rows[0] as any).id;
     }
 
     let res;
     if (id) {
       res = await db.execute(sql`
-        UPDATE fi_cost_center SET
+        UPDATE fin_cost_center SET
           code = COALESCE(${code?.toUpperCase()}, code),
           name = COALESCE(${name}, name),
           company_code_id = COALESCE(${companyCodeId}, company_code_id),
@@ -98,7 +98,7 @@ export async function PUT(req: NextRequest) {
       `);
     } else {
       res = await db.execute(sql`
-        UPDATE fi_cost_center SET
+        UPDATE fin_cost_center SET
           name = COALESCE(${name}, name),
           company_code_id = COALESCE(${companyCodeId}, company_code_id),
           is_active = COALESCE(${is_active}, is_active)
@@ -127,7 +127,7 @@ export async function DELETE(req: NextRequest) {
     let ccId = id;
     let ccCode = code?.toUpperCase();
     if (!ccId && ccCode) {
-      const r = await db.execute(sql`SELECT id, code FROM fi_cost_center WHERE code = ${ccCode} LIMIT 1`);
+      const r = await db.execute(sql`SELECT id, code FROM fin_cost_center WHERE code = ${ccCode} LIMIT 1`);
       if (r.rows.length > 0) { ccId = (r.rows[0] as any).id; ccCode = (r.rows[0] as any).code; }
     }
 
@@ -140,13 +140,13 @@ export async function DELETE(req: NextRequest) {
       empCount = parseInt((r.rows[0] as any).cnt || '0');
     } catch {}
     try {
-      const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM fi_document_line WHERE cost_center_id = ${ccId}`);
+      const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_universal_ledger_line WHERE cost_center_id = ${ccId}`);
       postingCount = parseInt((r.rows[0] as any).cnt || '0');
     } catch {}
 
     if (empCount > 0 || postingCount > 0) {
       // Soft delete – blocked hard delete to maintain audit trail
-      await db.execute(sql`UPDATE fi_cost_center SET is_active = false WHERE id = ${ccId}`);
+      await db.execute(sql`UPDATE fin_cost_center SET is_active = false WHERE id = ${ccId}`);
       return NextResponse.json({
         error: `Cannot delete – cost center ${ccCode} has ${empCount} employees and ${postingCount} postings and cannot be deleted to maintain audit trail. Deactivated instead.`,
         code: 'HAS_TRANSACTIONS',
@@ -157,7 +157,7 @@ export async function DELETE(req: NextRequest) {
       }, { status: 400 });
     }
 
-    await db.execute(sql`DELETE FROM fi_cost_center WHERE id = ${ccId}`);
+    await db.execute(sql`DELETE FROM fin_cost_center WHERE id = ${ccId}`);
     return NextResponse.json({ success: true, message: `Cost Center ${ccCode} deleted – KS01 – only allowed when no transactions` });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

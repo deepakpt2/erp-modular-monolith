@@ -69,13 +69,13 @@ export default function Home() {
 
         const firstCompany = companies[0]?.code || '1000';
         const dynamicEnterprise = [
-          { href: `/${firstCompany}/foundation/enterprise-structure`, icon: '🏢', title: 'Enterprise Structure', desc: `Company, Company Code, Plant, SLoc`, color: 'bg-slate-50 border-slate-300', count: `${companyCount} Companies`, code: 'OX15/OX02/OX10', company: 'ALL' },
+          { href: `/${firstCompany}/foundation/enterprise-structure`, icon: '🏢', title: 'Enterprise Structure', desc: `Company, Company Code, Plant, SLoc`, color: 'bg-slate-50 border-slate-300', count: `${companyCount} Companies`, code: 'OX15/ELEC (legacy OX02)/OX10', company: 'ALL' },
           { href: `/${firstCompany}/fico/company-master`, icon: '🏛️', title: 'Company Master Data', desc: `Company Code Legal Details`, color: 'bg-zinc-50 border-zinc-300', count: `${companyCount} Companies`, code: 'OX02', company: 'ALL' },
-          { href: `/${firstCompany}/fico/chart-of-accounts`, icon: '📚', title: 'Chart of Accounts', desc: `General CoA – Accounts`, color: 'bg-indigo-50 border-indigo-300', count: 'OB13', code: 'OB13/FS00', company: 'ALL' },
+          { href: `/${firstCompany}/fico/chart-of-accounts`, icon: '📚', title: 'Chart of Accounts', desc: `General CoA – Accounts`, color: 'bg-indigo-50 border-indigo-300', count: 'OB13', code: 'FCOA (legacy OB13)/FS00', company: 'ALL' },
           { href: `/${firstCompany}/fico/gl-accounts`, icon: '📒', title: 'G/L Accounts', desc: `G/L Accounts – Configurable`, color: 'bg-purple-50 border-purple-300', count: 'FS00', code: 'FS00', company: 'ALL' },
           { href: `/${firstCompany}/fico/cost-centers`, icon: '🎯', title: 'Cost Centers', desc: `Cost Centers – Configurable`, color: 'bg-cyan-50 border-cyan-300', count: 'KS01', code: 'KS01', company: 'ALL' },
           { href: `/${firstCompany}/fico/tax-codes`, icon: '🧾', title: 'Tax Codes', desc: `Tax Codes – VAT/GST`, color: 'bg-zinc-50 border-zinc-300', count: 'FTXP', code: 'FTXP', company: 'ALL' },
-          { href: `/${firstCompany}/foundation/enterprise-config`, icon: '⚙️', title: 'Enterprise Config', desc: `Fiscal, Posting Periods, Currencies`, color: 'bg-zinc-50 border-zinc-300', count: 'Config', code: 'OB29/OY03', company: 'ALL' },
+          { href: `/${firstCompany}/foundation/enterprise-config`, icon: '⚙️', title: 'Enterprise Config', desc: `Fiscal, Posting Periods, Currencies`, color: 'bg-zinc-50 border-zinc-300', count: 'Config', code: 'FFYC (legacy OB29)/OY03', company: 'ALL' },
         ];
         setEnterpriseModules(dynamicEnterprise);
       } catch (e) {
@@ -140,7 +140,7 @@ export default function Home() {
                   <div className="text-[9px] mt-1">{c.city} {c.country} • CoA {c.coa_code} • Plants {c.plant_count}</div>
                 </div>
               ))}
-              {companyList.length===0 && <div className="border border-black p-1 bg-[#ffffcc]">No companies – Create via Enterprise Structure OX02</div>}
+              {companyList.length===0 && <div className="border border-black p-1 bg-[#ffffcc]">No companies – Create via Enterprise Structure ELEC (legacy OX02)</div>}
             </div>
           </div>
 

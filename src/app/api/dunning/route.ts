@@ -4,13 +4,13 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * F150 Dunning + FI12 House Bank + OKEON Groups + KL01 Activity Type + KSU5 Cycles + SWDD Workflow + DMS/SM37/CDHDR – T2 GOOD
+ * F150 Dunning + FI12 House Bank + OKEON Groups + KL01 Activity Type + KSU5 Cycles + SWDD Workflow + DMS/FBJM (legacy SM37)/CDHDR – T2 GOOD
  * F150: Dunning – dunning letters for overdue AR
- * FI12: House Banks – bank config for payment program F110
+ * FI12: House Banks – bank config for payment program FPYA (legacy F110)
  * OKEON: Cost Center Groups, KL01 Activity Types, KSU5 Assessment Cycles
  * SWDD: Workflow Builder + Release Strategy
- * DMS-GOS-ATTACH: Attachments, SM37 Jobs, CDHDR Change Docs
- * NO DANGLING – dunning fields used in AR collection + FI posting, house bank used in F110 payment run, cost center groups used in reporting, activity types used in costing, cycles used in allocation, workflow used in approval, DMS used in doc attachments, jobs used in background MRP/costing, change docs used in audit
+ * DMS-GOS-ATTACH: Attachments, FBJM (legacy SM37) Jobs, CDHDR Change Docs
+ * NO DANGLING – dunning fields used in AR collection + FI posting, house bank used in FPYA (legacy F110) payment run, cost center groups used in reporting, activity types used in costing, cycles used in allocation, workflow used in approval, DMS used in doc attachments, jobs used in background MRP/costing, change docs used in audit
  */
 
 export async function GET(req: NextRequest){
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest){
 
     if(action === 'HOUSE_BANK' || action === 'FI12'){
       const res = await db.execute(sql`SELECT * FROM fi_house_bank WHERE is_active = true ORDER BY house_bank_code LIMIT ${limit}`);
-      return NextResponse.json({ success:true, code:'FI12', data:res.rows, houseBanks:res.rows, count:res.rows.length, message:`FI12 House Banks – ${res.rows.length} house banks – bank config for F110 payment program – T2 GOOD – NO DANGLING` });
+      return NextResponse.json({ success:true, code:'FI12', data:res.rows, houseBanks:res.rows, count:res.rows.length, message:`FI12 House Banks – ${res.rows.length} house banks – bank config for FPYA (legacy F110) payment program – T2 GOOD – NO DANGLING` });
     }
     if(action === 'COST_CENTER_GROUP' || action === 'OKEON'){
       const res = await db.execute(sql`SELECT * FROM co_cost_center_group ORDER BY group_code LIMIT ${limit}`);
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest){
     }
     if(action === 'JOB' || action === 'SM37'){
       const res = await db.execute(sql`SELECT * FROM sm37_job ORDER BY scheduled_at DESC LIMIT ${limit}`);
-      return NextResponse.json({ success:true, code:'SM37', data:res.rows, jobs:res.rows, count:res.rows.length, message:`SM37 Batch Jobs – ${res.rows.length} jobs – background MRP/costing – T2 GOOD – NO DANGLING` });
+      return NextResponse.json({ success:true, code:'SM37', data:res.rows, jobs:res.rows, count:res.rows.length, message:`FBJM (legacy SM37) Batch Jobs – ${res.rows.length} jobs – background MRP/costing – T2 GOOD – NO DANGLING` });
     }
     if(action === 'CHANGE_DOC' || action === 'CDHDR'){
       const res = await db.execute(sql`SELECT * FROM cdhdr_change_doc ORDER BY change_date DESC LIMIT ${limit}`);
@@ -159,7 +159,7 @@ export async function GET(req: NextRequest){
 
     // Default F150 Dunning
     const res = await db.execute(sql`SELECT * FROM fi_dunning ORDER BY dunning_date DESC LIMIT ${limit}`);
-    return NextResponse.json({ success:true, data:res.rows, dunnings:res.rows, count:res.rows.length, code:'F150', aliasCodes:['F150','FI12','OKEON','KL01','KSU5','SWDD','DMS','SM37','CDHDR'], functionDescription:'F150 Dunning + FI12 House Bank + OKEON Groups + KL01 Activity Type + KSU5 Cycles + SWDD Workflow + DMS Attach + SM37 Jobs + CDHDR Change Docs – T2 GOOD' });
+    return NextResponse.json({ success:true, data:res.rows, dunnings:res.rows, count:res.rows.length, code:'F150', aliasCodes:['F150','FI12','OKEON','KL01','KSU5','SWDD','DMS','SM37','CDHDR'], functionDescription:'F150 Dunning + FI12 House Bank + OKEON Groups + KL01 Activity Type + KSU5 Cycles + SWDD Workflow + DMS Attach + FBJM (legacy SM37) Jobs + CDHDR Change Docs – T2 GOOD' });
   }catch(e:any){
     return NextResponse.json({ error:e.message, data:[] }, {status:500});
   }
@@ -284,7 +284,7 @@ export async function POST(req: NextRequest){
         ON CONFLICT (house_bank_code) DO UPDATE SET bank_name = ${bank_name}, account_number = ${account_number || null}, gl_account = ${gl_account || null}, currency_code = ${currency_code || 'INR'}, is_active = true
         RETURNING *
       `);
-      return NextResponse.json({ success:true, code:'FI12', houseBank: insRes.rows[0], message:`FI12 House Bank ${house_bank_code} – ${bank_name} account ${account_number||''} GL ${gl_account||''} ${currency_code||'INR'} – T2 GOOD – NO DANGLING – house bank used in F110 payment run – General ERP – SAP FI12 alias` });
+      return NextResponse.json({ success:true, code:'FI12', houseBank: insRes.rows[0], message:`FI12 House Bank ${house_bank_code} – ${bank_name} account ${account_number||''} GL ${gl_account||''} ${currency_code||'INR'} – T2 GOOD – NO DANGLING – house bank used in FPYA (legacy F110) payment run – General ERP – SAP FI12 alias` });
     }
 
     if(action === 'OKEON' || action === 'COST_CENTER_GROUP'){
@@ -342,13 +342,13 @@ export async function POST(req: NextRequest){
     }
 
     if(action === 'SM37' || action === 'JOB'){
-      if(!job_name) return NextResponse.json({ error:'job_name required – SM37 – T2 GOOD' }, {status:400});
+      if(!job_name) return NextResponse.json({ error:'job_name required – FBJM (legacy SM37) – T2 GOOD' }, {status:400});
       const insRes = await db.execute(sql`
         INSERT INTO sm37_job (job_name, job_type, status, scheduled_at)
         VALUES (${job_name}, ${job_type || 'MRP'}, 'SCHEDULED', NOW())
         RETURNING *
       `);
-      return NextResponse.json({ success:true, code:'SM37', job: insRes.rows[0], message:`SM37 Job ${job_name} – type ${job_type||'MRP'} – SCHEDULED – T2 GOOD – NO DANGLING – batch jobs background MRP/costing – General ERP – SAP SM37 alias` });
+      return NextResponse.json({ success:true, code:'SM37', job: insRes.rows[0], message:`FBJM (legacy SM37) Job ${job_name} – type ${job_type||'MRP'} – SCHEDULED – T2 GOOD – NO DANGLING – batch jobs background MRP/costing – General ERP – SAP FBJM (legacy SM37) alias` });
     }
 
     if(action === 'CDHDR' || action === 'CHANGE_DOC'){

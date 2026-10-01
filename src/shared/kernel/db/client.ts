@@ -59,7 +59,7 @@ export async function getNextNumber(
   // ERP-like buffered number range with row-level locking
   const result = await tx.execute(`
     SELECT id, prefix, current_number, from_number, to_number
-    FROM ent_number_range
+    FROM core_number_range
     WHERE object_type = $1
       AND (company_code_id = $2 OR company_code_id IS NULL)
       AND year = $3

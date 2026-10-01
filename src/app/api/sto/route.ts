@@ -8,7 +8,7 @@ import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared
 /**
  * Stock Transport Order API – Legal-safe own IP – Module 6 MM Procurement
  * New: proc_stock_transport_order + proc_sto_line (was mm_stock_transport_order + mm_sto_line) – stoNumber STO-4500000001, type ONE_STEP/TWO_STEP, status, legalEntityId was company_code_id, supplyingFacilityId was supplying_plant_id FAC-1000, supplyingInventoryLocationId was supplying_sloc_id, receivingFacilityId was receiving_plant_id, receivingInventoryLocationId was receiving_sloc_id, inTransitFacilityId was in_transit_plant_id, freightCost, currencyCode INR default was KWD, itemId was material_id prod_item EMTC, uomCode EUOC, lotId ELTC was batch_id, lotNumber was batch_number
- * Helper code: PSTC STO Create (alias STC, ME27, FIN-ST-CR) – 4-char MOOA P=Procurement, ST=StockTransport, C=Create – same length as ME27 but own IP, module grouped, intuitive
+ * Helper code: PSTC STO Create (alias STC, PSTC (legacy ME27), FIN-ST-CR) – 4-char MOOA P=Procurement, ST=StockTransport, C=Create – same length as PSTC (legacy ME27) but own IP, module grouped, intuitive
  * Fallback to legacy mm_stock_transport_order
  */
 
@@ -84,8 +84,8 @@ export async function GET(req: NextRequest) {
         table,
         source,
         legalSafe,
-        functionDescription: 'Stock Transport Order – PSTC legal-safe own IP (was ME27/MIGO/VL10B) – stoNumber STO-4500000001, type ONE_STEP/TWO_STEP, supplyingFacilityId FAC-1000 was supplying_plant_id, receivingFacilityId was receiving_plant_id, itemId EMTC was material_id, uomCode EUOC, lotId ELTC was batch_id',
-        explanation: 'STO legal-safe proc_stock_transport_order + proc_sto_line – stoNumber STO-4500000001, type ONE_STEP/TWO_STEP, status, legalEntityId was company_code_id, supplyingFacilityId was supplying_plant_id FAC-1000, supplyingInventoryLocationId was supplying_sloc_id, receivingFacilityId was receiving_plant_id, receivingInventoryLocationId was receiving_sloc_id, inTransitFacilityId was in_transit_plant_id, freightCost, currencyCode INR default was KWD, itemId was material_id prod_item EMTC, uomCode EUOC, lotId ELTC was batch_id, lotNumber was batch_number – Code PSTC primary alias STC/ME27 – 4-char MOOA P=Procurement ST=StockTransport C=Create – module grouped intuitive, same length as ME27 but own IP.',
+        functionDescription: 'Stock Transport Order – PSTC legal-safe own IP (was PSTC (legacy ME27)/IGRC (legacy MIGO)/PSTD (legacy VL10B)) – stoNumber STO-4500000001, type ONE_STEP/TWO_STEP, supplyingFacilityId FAC-1000 was supplying_plant_id, receivingFacilityId was receiving_plant_id, itemId EMTC was material_id, uomCode EUOC, lotId ELTC was batch_id',
+        explanation: 'STO legal-safe proc_stock_transport_order + proc_sto_line – stoNumber STO-4500000001, type ONE_STEP/TWO_STEP, status, legalEntityId was company_code_id, supplyingFacilityId was supplying_plant_id FAC-1000, supplyingInventoryLocationId was supplying_sloc_id, receivingFacilityId was receiving_plant_id, receivingInventoryLocationId was receiving_sloc_id, inTransitFacilityId was in_transit_plant_id, freightCost, currencyCode INR default was KWD, itemId was material_id prod_item EMTC, uomCode EUOC, lotId ELTC was batch_id, lotNumber was batch_number – Code PSTC primary alias STC/PSTC (legacy ME27) – 4-char MOOA P=Procurement ST=StockTransport C=Create – module grouped intuitive, same length as PSTC (legacy ME27) but own IP.',
       });
     } catch (newErr: any) {
       console.warn('proc_stock_transport_order not yet fallback mm_stock_transport_order:', newErr.message);
@@ -105,8 +105,8 @@ export async function GET(req: NextRequest) {
           (SELECT SUM(quantity_received) FROM mm_sto_line WHERE sto_id = sto.id) as total_received,
           (SELECT SUM(quantity_in_transit) FROM mm_sto_line WHERE sto_id = sto.id) as total_in_transit
         FROM mm_stock_transport_order sto
-        JOIN ent_plant sp ON sto.supplying_plant_id = sp.id
-        JOIN ent_plant rp ON sto.receiving_plant_id = rp.id
+        JOIN org_facility sp ON sto.supplying_plant_id = sp.id
+        JOIN org_facility rp ON sto.receiving_plant_id = rp.id
         WHERE 1=1
       `;
 
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
           SELECT l.id, l.line_number, l.material_id, l.quantity, l.quantity_issued, l.quantity_received, l.quantity_in_transit, l.uom, l.unit_price, l.batch_number, l.is_closed,
                  m.material_number, m.description
           FROM mm_sto_line l
-          JOIN ent_material_master m ON l.material_id = m.id
+          JOIN prod_item m ON l.material_id = m.id
           WHERE l.sto_id = ${row.id}
           ORDER BY l.line_number
         `);
@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
         table,
         source,
         legalSafe,
-        functionDescription: 'Stock Transport Order – PSTC legal-safe own IP (was ME27/MIGO/VL10B) – legacy mm_stock_transport_order – migrating to proc_stock_transport_order',
+        functionDescription: 'Stock Transport Order – PSTC legal-safe own IP (was PSTC (legacy ME27)/IGRC (legacy MIGO)/PSTD (legacy VL10B)) – legacy mm_stock_transport_order – migrating to proc_stock_transport_order',
       });
     }
   } catch (e: any) {
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
         const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${supplying_facility_code || supplying_plant_code} LIMIT 1`);
         if (f.rows.length > 0) supplyingFacilityIdResolved = (f.rows[0] as any).id;
         else {
-          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${supplying_facility_code || supplying_plant_code} LIMIT 1`);
+          const f2 = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${supplying_facility_code || supplying_plant_code} LIMIT 1`);
           if (f2.rows.length > 0) supplyingFacilityIdResolved = (f2.rows[0] as any).id;
         }
       } catch {}
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${receiving_facility_code || receiving_plant_code} LIMIT 1`);
         if (f.rows.length > 0) receivingFacilityIdResolved = (f.rows[0] as any).id;
         else {
-          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${receiving_facility_code || receiving_plant_code} LIMIT 1`);
+          const f2 = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${receiving_facility_code || receiving_plant_code} LIMIT 1`);
           if (f2.rows.length > 0) receivingFacilityIdResolved = (f2.rows[0] as any).id;
         }
       } catch {}
@@ -312,7 +312,7 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE mm_stock_transport_order SET status = ${status}::sto_status, updated_at = NOW() WHERE id = ${id} RETURNING id, sto_number, status`);
       else res = await db.execute(sql`UPDATE mm_stock_transport_order SET status = ${status}::sto_status, updated_at = NOW() WHERE sto_number = ${sto_number} RETURNING id, sto_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'STO not found' }, { status: 404 });
-      return NextResponse.json({ success: true, sto: res.rows[0], message: `STO ${res.rows[0].sto_number} status ${status} – ME27 legacy` });
+      return NextResponse.json({ success: true, sto: res.rows[0], message: `STO ${res.rows[0].sto_number} status ${status} – PSTC (legacy ME27) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

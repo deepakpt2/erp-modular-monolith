@@ -72,7 +72,7 @@ export default function Page(){
         const poList = poRes.pos || poRes.purchaseOrders || [];
         const found = poList.find((p:any)=>p.po_number===poNumber) || poList[0];
         if (!found) {
-          setMsg(`❌ PO ${poNumber} not found – create via PPOC ME21N first – PIVC MIRO requires PO reference – T0 BLOCKING`);
+          setMsg(`❌ PO ${poNumber} not found – create via PPOC PPOC (legacy ME21N) first – PIVC PIVC (legacy MIRO) requires PO reference – T0 BLOCKING`);
           return;
         }
         setPoId(found.id);
@@ -116,7 +116,7 @@ export default function Page(){
           }
         });
         setSelectedLines(sel);
-        setMsg(`✅ PO ${found.po_number} loaded – ${enriched.length} lines with GR qty – vendor ${found.vendor_name} – for IV PIVC MIRO – GR/IR clearing WRX – price variance PRD – tolerance OBA0/OBA4 – T0`);
+        setMsg(`✅ PO ${found.po_number} loaded – ${enriched.length} lines with GR qty – vendor ${found.vendor_name} – for IV PIVC PIVC (legacy MIRO) – GR/IR clearing WRX – price variance PRD – tolerance OBA0/OBA4 – T0`);
       }catch(e:any){
         setMsg(`❌ Failed to load PO ${poNumber}: ${e.message}`);
       }
@@ -126,7 +126,7 @@ export default function Page(){
 
   async function create(){
     if(!poId && !poNumber){
-      setMsg('❌ PO Number required – PIVC MIRO requires PO reference – e.g., 4500000001 – create PO via PPOC ME21N first – T0 BLOCKING – SAP standard MIRO 51 RE requires PO');
+      setMsg('❌ PO Number required – PIVC PIVC (legacy MIRO) requires PO reference – e.g., 4500000001 – create PO via PPOC PPOC (legacy ME21N) first – T0 BLOCKING – SAP standard PIVC (legacy MIRO) 51 RE requires PO');
       return;
     }
     const linesToPost = Object.entries(selectedLines)
@@ -149,7 +149,7 @@ export default function Page(){
       });
 
     if(linesToPost.length===0){
-      setMsg('❌ Select at least one PO line with GR qty and invoiced qty >0 – PIVC MIRO requires PO line reference with GR – T0 – e.g., PO 4500000001 line 10 GR qty 10');
+      setMsg('❌ Select at least one PO line with GR qty and invoiced qty >0 – PIVC PIVC (legacy MIRO) requires PO line reference with GR – T0 – e.g., PO 4500000001 line 10 GR qty 10');
       return;
     }
     if(!vendorInvoiceNumber){
@@ -198,7 +198,7 @@ export default function Page(){
         lockObject: 'IV',
         lockObjectId: poNumber,
         onDirectSuccess: (j:any)=>{
-          setMsg(`✅ IV ${j.ivNumber || j.iv?.iv_number || 'created'} created for PO ${poNumber} – ${linesToPost.length} lines – Vendor Invoice ${vendorInvoiceNumber} – PIVC MIRO 51 ${isCreditMemo ? 'RE_CREDIT credit memo Dr Vendor Recon FGLC Cr WRX – credit memo reduces liability – industry standard' : 'RE'} – WRX clearing – PRD price variance – tax FTXC ${taxCode} – payment terms FAPT ${paymentTermCode} – vendor invoice accounting RE – vendor recon account FGLC – over/under delivery tolerance – invoice qty/value tolerance OBA0/OBA4 VEND-01 – partial invoice allowed – T0 BLOCKING – GR/IR clearing candidate for F.13 – document flow PR→PO→GR→IV – credit/debit memo – cancellation/reversal GRRE/IVRE/PORE – approval workflow SBWP`);
+          setMsg(`✅ IV ${j.ivNumber || j.iv?.iv_number || 'created'} created for PO ${poNumber} – ${linesToPost.length} lines – Vendor Invoice ${vendorInvoiceNumber} – PIVC PIVC (legacy MIRO) 51 ${isCreditMemo ? 'RE_CREDIT credit memo Dr Vendor Recon FGLC Cr WRX – credit memo reduces liability – industry standard' : 'RE'} – WRX clearing – PRD price variance – tax FTXC ${taxCode} – payment terms FAPT ${paymentTermCode} – vendor invoice accounting RE – vendor recon account FGLC – over/under delivery tolerance – invoice qty/value tolerance OBA0/OBA4 VEND-01 – partial invoice allowed – T0 BLOCKING – GR/IR clearing candidate for F.13 – document flow PR→PO→GR→IV – credit/debit memo – cancellation/reversal GRRE/IVRE/PORE – approval workflow SBWP`);
           load();
           // Auto document flow PO→IV and GR→IV
           try{
@@ -238,41 +238,41 @@ export default function Page(){
           setGrNumber('');
         },
         onBackgroundCreated: (newJobId:string)=>{
-          setMsg(`⏳ IV for PO ${poNumber} moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – header Jobs icon shows – no timeout – SM37 – auto-promote 10s ALL`);
+          setMsg(`⏳ IV for PO ${poNumber} moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – header Jobs icon shows – no timeout – FBJM (legacy SM37) – auto-promote 10s ALL`);
         },
       });
     }catch(err:any){
-      setMsg(`❌ ${err.message} – check posting period OB52 open for account type K Vendors, PO ${poNumber} exists with GR qty, tolerance OBA0/OBA4 VEND-01 – e.g., diff 100 vs limit – adjust invoice or increase tolerance via /fico/tolerance-groups-cv – T1 REQUIRED – prevents overpay – NO DANGLING – auto account OBYC WRX exists via FAUC – T0`);
+      setMsg(`❌ ${err.message} – check posting period FPPE (legacy OB52) open for account type K Vendors, PO ${poNumber} exists with GR qty, tolerance OBA0/OBA4 VEND-01 – e.g., diff 100 vs limit – adjust invoice or increase tolerance via /fico/tolerance-groups-cv – T1 REQUIRED – prevents overpay – NO DANGLING – auto account FAUC (legacy OBYC) WRX exists via FAUC – T0`);
     }
   }
 
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING MIRO – PIVC – fetching IVs via /api/iv – SAP standard requires PO reference – posting period K OB52 – tolerance OBA0/OBA4 VEND-01 – WRX clearing – PRD – tax FTXC – vendor invoice accounting RE – T0...</div>;
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING PIVC (legacy MIRO) – PIVC – fetching IVs via /api/iv – SAP standard requires PO reference – posting period K FPPE (legacy OB52) – tolerance OBA0/OBA4 VEND-01 – WRX clearing – PRD – tax FTXC – vendor invoice accounting RE – T0...</div>;
   const items = data?.ivs || data?.invoiceVerifications || [];
 
   const classicContent = (
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">PIVC INVOICE VERIFICATION – MIRO – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD REQUIRES PO – T0 – WRX CLEARING – PRD – TAX – VENDOR INVOICE ACCOUNTING RE</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">PIVC INVOICE VERIFICATION – PIVC (legacy MIRO) – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD REQUIRES PO – T0 – WRX CLEARING – PRD – TAX – VENDOR INVOICE ACCOUNTING RE</div>
         <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
-          <div className="font-bold">⚠️ SAP STANDARD – PIVC MIRO 51 RE – T0 BLOCKING – WRX CLEARING – PRD – TAX – VENDOR INVOICE ACCOUNTING – TOLERANCE OBA0/OBA4</div>
-          <div>• PO Number required – e.g., 4500000001 – create via PPOC ME21N – PIVC → FPYP flow – industry standard – PO must have GR qty – e.g., PO 4500000001 GR 5000000001 qty 10</div>
-          <div>• GR Number optional – e.g., 5000000001 – GR reference – proc_goods_receipt – GR 101 – MIGO – creates WRX – IV clears WRX – GR/IR clearing F.13 where GR qty = IV qty</div>
+          <div className="font-bold">⚠️ SAP STANDARD – PIVC PIVC (legacy MIRO) 51 RE – T0 BLOCKING – WRX CLEARING – PRD – TAX – VENDOR INVOICE ACCOUNTING – TOLERANCE OBA0/OBA4</div>
+          <div>• PO Number required – e.g., 4500000001 – create via PPOC PPOC (legacy ME21N) – PIVC → FPYP flow – industry standard – PO must have GR qty – e.g., PO 4500000001 GR 5000000001 qty 10</div>
+          <div>• GR Number optional – e.g., 5000000001 – GR reference – proc_goods_receipt – GR_PO (legacy 101) – IGRC (legacy MIGO) – creates WRX – IV clears WRX – GR/IR clearing F.13 where GR qty = IV qty</div>
           <div>• Vendor Invoice Number required – e.g., INV-VEND-2026-001 – vendor_invoice_number – T0 – vendor invoice</div>
-          <div>• Posting Period OB52 K must be open for account type K Vendors – else error – FPPE – F_BKPF_BUP – T0 – K</div>
+          <div>• Posting Period FPPE (legacy OB52) K must be open for account type K Vendors – else error – FPPE – F_BKPF_BUP – T0 – K</div>
           <div>• Tolerance OBA0/OBA4 VEND-01 – T1 REQUIRED – check invoice vs PO price diff within tolerance – prevents overpay vendor 100% – e.g., PO price 100 invoiced 110 diff 10*10=100 vs tolerance limit – if exceeded 400 error – adjust invoice or increase tolerance via /fico/tolerance-groups-cv</div>
-          <div>• Auto Account OBYC WRX – WRX clearing – FAUC – valuation_class – T0 – WRX 2000000001 GR/IR – RE Dr WRX Cr Vendor Recon</div>
+          <div>• Auto Account FAUC (legacy OBYC) WRX – WRX clearing – FAUC – valuation_class – T0 – WRX 2000000001 GR/IR – RE Dr WRX Cr Vendor Recon</div>
           <div>• Price Variance PRD – price_variance_per_unit = unit_price_invoiced - unit_price_po – e.g., invoiced 110 vs PO 100 variance 10*10=100 – PRD posting Dr/Cr PRD 4000000004 – price difference handling – T0</div>
           <div>• Vendor Invoice Accounting RE – Dr WRX (clear GR/IR) Cr Vendor Recon 2000000000 RE – Dr/Cr PRD price variance – Dr/Cr BSX adjustment if landed cost – Dr Tax GST – taxRuleId FTXC – tax_amount – ledger_account_code from tax code – e.g., GST 18% tax GL 2000000003 – universal ledger FULC RE + WRX clearing + BSX adjustment – is_landed_cost_posted for MAP adjustment</div>
-          <div>• Number Range IV 5100000001 numeric only – assignment per company – error_and_extend – FNRC FBN1 – IV-5100000001 was 51* – always_auto</div>
+          <div>• Number Range IV 5100000001 numeric only – assignment per company – error_and_extend – FNRC FNRC (legacy FBN1) – IV-5100000001 was 51* – always_auto</div>
           <div>• Document Flow PR→PO→GR→IV→Payment – FDFL VBFA – WORM-lite – predecessor/successor – quantity/value – ELIKZ – creates flow links via /api/document-flow POST</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">PO_NUMBER * – PIVC MIRO REQUIRES PO – PPOC – 4500000001 – T0</div><input value={poNumber} onChange={e=>setPoNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
-          <div><div className="text-[9px] text-zinc-500">GR_NUMBER – optional – GR 5000000001 – MIGO 101</div><input value={grNumber} onChange={e=>setGrNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">PO_NUMBER * – PIVC PIVC (legacy MIRO) REQUIRES PO – PPOC – 4500000001 – T0</div><input value={poNumber} onChange={e=>setPoNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">GR_NUMBER – optional – GR 5000000001 – IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101))</div><input value={grNumber} onChange={e=>setGrNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">VENDOR_INVOICE_NUMBER * – INV-VEND-2026-001</div><input value={vendorInvoiceNumber} onChange={e=>setVendorInvoiceNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">INVOICE_DATE *</div><input type="date" value={invoiceDate} onChange={e=>setInvoiceDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
-          <div><div className="text-[9px] text-zinc-500">POSTING_DATE * – OB52 K</div><input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
+          <div><div className="text-[9px] text-zinc-500">POSTING_DATE * – FPPE (legacy OB52) K</div><input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
           <div><div className="text-[9px] text-zinc-500">DOCUMENT_TYPE – RE/RE_CREDIT/RE_DEBIT – credit/debit memo</div><select value={documentType} onChange={e=>setDocumentType(e.target.value)} className="w-full border-2 border-black px-1 py-1"><option value="RE">RE – Invoice</option><option value="RE_CREDIT">RE_CREDIT – Credit Memo</option><option value="RE_DEBIT">RE_DEBIT – Debit Memo</option></select></div>
           <div><div className="text-[9px] text-zinc-500">IS_CREDIT_MEMO – checkbox – credit memo reduces liability</div><input type="checkbox" checked={isCreditMemo} onChange={e=>setIsCreditMemo(e.target.checked)} /> {isCreditMemo ? 'Credit Memo – Dr Vendor Recon FGLC Cr WRX' : 'Invoice – Dr WRX Cr Vendor'}</div>
           <div><div className="text-[9px] text-zinc-500">PAYMENT_TERM_CODE – FAPT – NT30 – due calc</div><input value={paymentTermCode} onChange={e=>setPaymentTermCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
@@ -280,7 +280,7 @@ export default function Page(){
         </div>
         {poDetails && (
           <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
-            <div className="font-bold">PO {poDetails.po_number} – Vendor {poDetails.vendor_name} – Total {poDetails.total_amount} – for IV – PIVC MIRO – WRX clearing – PRD – tax</div>
+            <div className="font-bold">PO {poDetails.po_number} – Vendor {poDetails.vendor_name} – Total {poDetails.total_amount} – for IV – PIVC PIVC (legacy MIRO) – WRX clearing – PRD – tax</div>
             <div className="mt-2 space-y-1">
               {poLines.map(line=>(
                 <div key={line.id} className="flex gap-2 items-center border bg-white p-1">
@@ -299,7 +299,7 @@ export default function Page(){
             </div>
           </div>
         )}
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE IV – MIRO 51 RE – REQUIRES PO – T0 – WRX CLEARING – PRD – TAX – VENDOR INVOICE ACCOUNTING RE – TOLERANCE OBA0/OBA4 – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE IV – PIVC (legacy MIRO) 51 RE – REQUIRES PO – T0 – WRX CLEARING – PRD – TAX – VENDOR INVOICE ACCOUNTING RE – TOLERANCE OBA0/OBA4 – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}</button>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
@@ -321,17 +321,17 @@ export default function Page(){
         <div className="flex gap-2">
           <span className="text-xl">⚠️</span>
           <div>
-            <div className="font-bold text-sm text-zinc-800">SAP Standard – PIVC MIRO 51 RE – T0 BLOCKING – WRX Clearing – PRD Price Variance – Tax FTXC – Vendor Invoice Accounting RE – Tolerance OBA0/OBA4 – Fixed from dummy API</div>
+            <div className="font-bold text-sm text-zinc-800">SAP Standard – PIVC PIVC (legacy MIRO) 51 RE – T0 BLOCKING – WRX Clearing – PRD Price Variance – Tax FTXC – Vendor Invoice Accounting RE – Tolerance OBA0/OBA4 – Fixed from dummy API</div>
             <div className="text-xs text-zinc-700 mt-1 space-y-1">
-              <div>• <b>PO Number required</b> – e.g., 4500000001 – create via PPOC ME21N – PO must have GR qty – e.g., PO 4500000001 GR 5000000001 qty 10 – PIVC MIRO requires PO reference – T0 – SAP standard MIRO 51 RE requires PO – was missing in old page that only asked VENDOR, INVOICE_NUMBER, AMOUNT, COMPANY_CODE – now fixed</div>
-              <div>• <b>GR Number optional</b> – e.g., 5000000001 – GR reference – proc_goods_receipt – GR 101 MIGO – creates WRX – IV clears WRX – GR/IR clearing F.13 where GR qty = IV qty – WRX balance zero after clearing – T1 REQUIRED</div>
+              <div>• <b>PO Number required</b> – e.g., 4500000001 – create via PPOC PPOC (legacy ME21N) – PO must have GR qty – e.g., PO 4500000001 GR 5000000001 qty 10 – PIVC PIVC (legacy MIRO) requires PO reference – T0 – SAP standard PIVC (legacy MIRO) 51 RE requires PO – was missing in old page that only asked VENDOR, INVOICE_NUMBER, AMOUNT, COMPANY_CODE – now fixed</div>
+              <div>• <b>GR Number optional</b> – e.g., 5000000001 – GR reference – proc_goods_receipt – GR_PO (legacy 101) IGRC (legacy MIGO) – creates WRX – IV clears WRX – GR/IR clearing F.13 where GR qty = IV qty – WRX balance zero after clearing – T1 REQUIRED</div>
               <div>• <b>Vendor Invoice Number required</b> – e.g., INV-VEND-2026-001 – vendor_invoice_number – T0 – vendor invoice – unique per vendor</div>
-              <div>• <b>Posting Period OB52 K</b> must be open for account type K Vendors – else error – FPPE – F_BKPF_BUP – T0 – K – e.g., close 03/2026 open 04/2026</div>
+              <div>• <b>Posting Period FPPE (legacy OB52) K</b> must be open for account type K Vendors – else error – FPPE – F_BKPF_BUP – T0 – K – e.g., close 03/2026 open 04/2026</div>
               <div>• <b>Tolerance OBA0/OBA4 VEND-01</b> – T1 REQUIRED – check invoice vs PO price diff within tolerance – prevents overpay vendor 100% – e.g., PO price 100 invoiced 110 diff 10*10=100 vs tolerance limit – if exceeded 400 error with help to increase tolerance via /fico/tolerance-groups-cv – prevents fraud/overpay – NO DANGLING</div>
-              <div>• <b>Auto Account OBYC WRX</b> – WRX clearing – FAUC – valuation_class – T0 – WRX 2000000001 GR/IR – RE Dr WRX Cr Vendor Recon – e.g., GR 101 Cr WRX 83500, IV 51 Dr WRX 83500 Cr Vendor 2000000000 83500 – WRX cleared – GR/IR clearing candidate</div>
+              <div>• <b>Auto Account FAUC (legacy OBYC) WRX</b> – WRX clearing – FAUC – valuation_class – T0 – WRX 2000000001 GR/IR – RE Dr WRX Cr Vendor Recon – e.g., GR_PO (legacy 101) Cr WRX 83500, IV 51 Dr WRX 83500 Cr Vendor 2000000000 83500 – WRX cleared – GR/IR clearing candidate</div>
               <div>• <b>Price Variance PRD</b> – price_variance_per_unit = unit_price_invoiced - unit_price_po – e.g., invoiced 110 vs PO 100 variance 10*10=100 – PRD posting Dr/Cr PRD 4000000004 – price difference handling – T0 – e.g., PO price 100 standard 80 diff 20*10=200 PRD in GR, invoiced 110 vs PO 100 diff 10*10=100 PRD in IV – total price diff handling</div>
               <div>• <b>Vendor Invoice Accounting RE</b> – Dr WRX (clear GR/IR) Cr Vendor Recon 2000000000 RE – Dr/Cr PRD price variance – Dr/Cr BSX adjustment if landed cost – is_landed_cost_posted for MAP adjustment – Dr Tax GST – taxRuleId FTXC – tax_amount – ledger_account_code from tax code – e.g., GST 18% tax GL 2000000003 GST Payable – universal ledger FULC RE + WRX clearing + BSX adjustment – is_landed_cost_posted for MAP adjustment – total_per_unit_final = unitInvoiced + freight + customs + other – MAP adjustment</div>
-              <div>• <b>Number Range IV 5100000001</b> numeric only – assignment per company – error_and_extend – FNRC FBN1 – IV-5100000001 was 51* – always_auto – user cannot type random – PO 4500000000 PR 1000000000 GR 5000000000 IV 5100000001 always auto – block_manual for PRODUCT_CODE always_auto for PO/PR/GR/IV per user selection 2026-05-13</div>
+              <div>• <b>Number Range IV 5100000001</b> numeric only – assignment per company – error_and_extend – FNRC FNRC (legacy FBN1) – IV-5100000001 was 51* – always_auto – user cannot type random – PO 4500000000 PR 1000000000 GR 5000000000 IV 5100000001 always auto – block_manual for PRODUCT_CODE always_auto for PO/PR/GR/IV per user selection 2026-05-13</div>
               <div>• <b>Document Flow PR→PO→GR→IV→Payment</b> – FDFL VBFA – WORM-lite – predecessor/successor – quantity/value – ELIKZ – creates flow links via /api/document-flow POST – e.g., PO→IV and GR→IV links – document flow tree shows chain – FDFL ALB – VBFA</div>
             </div>
           </div>
@@ -342,14 +342,14 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">🧾</div>
           <div>
-            <div className="font-semibold">Invoice Verification – PIVC (alias MIRO) – SAP Standard – Requires PO – WRX Clearing – PRD – Tax – Vendor Invoice Accounting RE – Tolerance OBA0/OBA4 – Fixed</div>
+            <div className="font-semibold">Invoice Verification – PIVC (alias PIVC (legacy MIRO)) – SAP Standard – Requires PO – WRX Clearing – PRD – Tax – Vendor Invoice Accounting RE – Tolerance OBA0/OBA4 – Fixed</div>
             <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} IVs • COMPANY_CODE {companyCode} • API: POST /api/iv – po_id/po_number + gr_id/gr_number + vendor_invoice_number + invoice_date + posting_date + lines po_line_id qty unit_price_invoiced unit_price_po freight customs tax – T0 – WRX clearing – PRD – tax FTXC – RE – tolerance OBA0/OBA4 VEND-01 – number range IV 5100000001 – document flow PR→PO→GR→IV</div>
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <DbAutocomplete
-            label="PO_NUMBER * – PIVC MIRO REQUIRES PO – PPOC – 4500000001 – T0 – SAP standard MIRO 51 RE requires PO"
+            label="PO_NUMBER * – PIVC PIVC (legacy MIRO) REQUIRES PO – PPOC – 4500000001 – T0 – SAP standard PIVC (legacy MIRO) 51 RE requires PO"
             value={poNumber}
             onChange={v=>setPoNumber(v)}
             apiUrl="/api/po"
@@ -362,7 +362,7 @@ export default function Page(){
             companyCode={companyCode}
           />
           <DbAutocomplete
-            label="GR_NUMBER – optional – GR 5000000001 – MIGO 101 – WRX"
+            label="GR_NUMBER – optional – GR 5000000001 – IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – WRX"
             value={grNumber}
             onChange={v=>setGrNumber(v)}
             apiUrl="/api/gr"
@@ -382,12 +382,12 @@ export default function Page(){
             <input type="date" value={invoiceDate} onChange={e=>setInvoiceDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
           </div>
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">POSTING_DATE * – OB52 K – F_BKPF_BUP</label>
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">POSTING_DATE * – FPPE (legacy OB52) K – F_BKPF_BUP</label>
             <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
             <p className="text-[10px] text-zinc-400 mt-1">K Vendors – must be open – FPPE</p>
           </div>
           <DbAutocomplete
-            label="PAYMENT_TERM_CODE – FAPT – NT30 – due calc – payment terms – wiring to supplier + PO + IV + F110 – recon FGLC"
+            label="PAYMENT_TERM_CODE – FAPT – NT30 – due calc – payment terms – wiring to supplier + PO + IV + FPYA (legacy F110) – recon FGLC"
             value={paymentTermCode}
             onChange={v=>setPaymentTermCode(v)}
             apiUrl="/api/payment-terms"
@@ -428,7 +428,7 @@ export default function Page(){
           <div className="mt-6 border rounded-2xl p-4 bg-zinc-50/50 border-zinc-200">
             <div className="flex justify-between items-start">
               <div>
-                <div className="font-bold text-sm">PO {poDetails.po_number} – {poDetails.vendor_name} – Total {poDetails.total_amount} – for IV – PIVC MIRO – WRX clearing – PRD – tax – RE</div>
+                <div className="font-bold text-sm">PO {poDetails.po_number} – {poDetails.vendor_name} – Total {poDetails.total_amount} – for IV – PIVC PIVC (legacy MIRO) – WRX clearing – PRD – tax – RE</div>
                 <div className="text-xs text-zinc-600 mt-1">PO lines with GR qty – select lines to invoice – invoiced qty vs PO price vs GR – price variance PRD – tolerance OBA0/OBA4 VEND-01 – WRX clearing – vendor invoice accounting RE</div>
               </div>
               <span className="text-[10px] bg-blue-600 text-white rounded-full px-2 py-1">{poLines.length} lines with GR</span>
@@ -480,9 +480,9 @@ export default function Page(){
         )}
 
         <button onClick={create} disabled={!poNumber || !vendorInvoiceNumber} className={`mt-6 w-full rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors ${poNumber && vendorInvoiceNumber ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
-          {poNumber && vendorInvoiceNumber ? `Create IV for PO ${poNumber} – MIRO 51 RE – Vendor Inv ${vendorInvoiceNumber} – T0 – WRX Clearing – PRD – Tax – RE – Tolerance OBA0/OBA4 – ${elapsed>0? elapsed+'s elapsed – after 10s auto background':''}` : 'Select PO + Vendor Invoice Number first – PIVC MIRO requires PO reference + vendor invoice – T0 – SAP standard MIRO 51 RE'}
+          {poNumber && vendorInvoiceNumber ? `Create IV for PO ${poNumber} – PIVC (legacy MIRO) 51 RE – Vendor Inv ${vendorInvoiceNumber} – T0 – WRX Clearing – PRD – Tax – RE – Tolerance OBA0/OBA4 – ${elapsed>0? elapsed+'s elapsed – after 10s auto background':''}` : 'Select PO + Vendor Invoice Number first – PIVC PIVC (legacy MIRO) requires PO reference + vendor invoice – T0 – SAP standard PIVC (legacy MIRO) 51 RE'}
         </button>
-        <p className="text-[10px] text-zinc-400 mt-2 text-center">IV requires PO_NUMBER * + VENDOR_INVOICE_NUMBER * + INVOICE_DATE + POSTING_DATE – posting period K OB52 must be open – tolerance OBA0/OBA4 VEND-01 T1 REQUIRED – auto account OBYC WRX – price variance PRD 4000000004 – vendor invoice accounting RE Dr WRX Cr Vendor Recon – tax FTXC GST – number range IV 5100000001 – document flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC</p>
+        <p className="text-[10px] text-zinc-400 mt-2 text-center">IV requires PO_NUMBER * + VENDOR_INVOICE_NUMBER * + INVOICE_DATE + POSTING_DATE – posting period K FPPE (legacy OB52) must be open – tolerance OBA0/OBA4 VEND-01 T1 REQUIRED – auto account FAUC (legacy OBYC) WRX – price variance PRD 4000000004 – vendor invoice accounting RE Dr WRX Cr Vendor Recon – tax FTXC GST – number range IV 5100000001 – document flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -490,7 +490,7 @@ export default function Page(){
           <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
             <div className="flex justify-between items-start">
               <div className="font-semibold text-sm">{it.iv_number || it.code} – PO {it.po_number} – GR {it.gr_number} – {it.status}</div>
-              <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">MIRO 51</span>
+              <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">PIVC (legacy MIRO) 51</span>
             </div>
             <div className="mt-2 text-xs text-zinc-500">{it.vendor_name} – Vendor Inv {it.vendor_invoice_number} – Total {it.total_amount} – Price Var {it.price_variance} – Landed Cost {it.total_landed_cost} – Tax {it.tax_amount} – RE + WRX clearing + BSX adjustment – universal ledger</div>
             <div className="mt-2 flex gap-2">
@@ -503,8 +503,8 @@ export default function Page(){
         ))}
         {(!items || (Array.isArray(items) && items.length===0)) && (
           <div className="col-span-2 bg-white rounded-2xl border border-dashed border-zinc-300 p-8 text-center">
-            <div className="text-sm text-zinc-500">No IV yet – create first via MIRO 51 RE – requires PO reference + vendor invoice – T0 – WRX clearing – PRD – tax – RE – tolerance OBA0/OBA4 – number range IV 5100000001 – document flow</div>
-            <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Flow: PPRC ME51N PR → PPOC ME21N PO → IGRC MIGO 101 GR → PIVC MIRO IV → FPYP F110 Payment → F.13 GR/IR Clearing</div>
+            <div className="text-sm text-zinc-500">No IV yet – create first via PIVC (legacy MIRO) 51 RE – requires PO reference + vendor invoice – T0 – WRX clearing – PRD – tax – RE – tolerance OBA0/OBA4 – number range IV 5100000001 – document flow</div>
+            <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Flow: PPRC PPRC (legacy ME51N) PR → PPOC PPOC (legacy ME21N) PO → IGRC IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) GR → PIVC PIVC (legacy MIRO) IV → FPYP FPYA (legacy F110) Payment → F.13 GR/IR Clearing</div>
           </div>
         )}
       </div>
@@ -512,23 +512,23 @@ export default function Page(){
       <div className="bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
         <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related Masters – auto from dependencies – low importance – Org Wired</h4>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO – required – ME21N – PO must have GR qty – T0 – 4500000000</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/mm/gr`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">IGRC</span><span>GR – optional – MIGO 101 – creates WRX – 5000000000 – BSX/WRX</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO – required – PPOC (legacy ME21N) – PO must have GR qty – T0 – 4500000000</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/mm/gr`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">IGRC</span><span>GR – optional – IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – creates WRX – 5000000000 – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/foundation/suppliers`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PSUC</span><span>Supplier – XK01 – vendor – currency_code FCYC payment_term_code FAPT recon_account FGLC</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/fico/tolerance-groups-cv`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">OBA4</span><span>Tolerance Groups CV – OBA0/OBA4 – VEND-01 – T1 REQUIRED – prevents overpay</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/auto-account-determination`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">OBYC</span><span>Auto Account – WRX – FAUC – T0 BLOCKING – WRX 2000000001 GR/IR</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/tax-codes`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FTXC</span><span>Tax Codes – FTXP – GST0/5/12/18/28 IGST – HSN 09041110 – tax calc – RE + tax</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/payment`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FPYP</span><span>Payment – F-53 KZ 53* – uses IV – vendor payment – Dr Vendor Cr Bank</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/auto-account-determination`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FAUC (legacy OBYC)</span><span>Auto Account – WRX – FAUC – T0 BLOCKING – WRX 2000000001 GR/IR</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/tax-codes`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FTXC</span><span>Tax Codes – FTXC (legacy FTXP) – GST0/5/12/18/28 IGST – HSN 09041110 – tax calc – RE + tax</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/payment`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FPYP</span><span>Payment – FPYP (legacy F-53) KZ 53* – uses IV – vendor payment – Dr Vendor Cr Bank</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/fico/gr-ir-clearing`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">F.13</span><span>GR/IR Clearing – F.13 MR11 – T1 REQUIRED – WRX cleared – GR qty = IV qty</span><span className="text-zinc-400">→</span></Link>
         </div>
-        <p className="text-[10px] text-zinc-400 mt-2">Flow: PR (ME51N PPRC) → PO (ME21N PPOC) → GR (MIGO 101 IGRC) → IV (MIRO PIVC) → Payment (F110 FPYP) → F.13 GR/IR Clearing – industry standard MM – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC + payment terms FAPT – WRX clearing – PRD price variance – tax – vendor invoice accounting RE – tolerance OBA0/OBA4 – number range IV 5100000001 – document flow PR→PO→GR→IV – universal ledger FULC RE + WRX clearing + BSX adjustment</p>
+        <p className="text-[10px] text-zinc-400 mt-2">Flow: PR (PPRC (legacy ME51N) PPRC) → PO (PPOC (legacy ME21N) PPOC) → GR (IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) IGRC) → IV (PIVC (legacy MIRO) PIVC) → Payment (FPYA (legacy F110) FPYP) → F.13 GR/IR Clearing – industry standard MM – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC + payment terms FAPT – WRX clearing – PRD price variance – tax – vendor invoice accounting RE – tolerance OBA0/OBA4 – number range IV 5100000001 – document flow PR→PO→GR→IV – universal ledger FULC RE + WRX clearing + BSX adjustment</p>
       </div>
     </div>
   );
 
   return (
     <RoleGuard requiredPermission="IV_POST" requiredRoles={['ACCOUNTANT','ADMIN','OWNER','MANAGER','PURCHASER']}>
-      <ModernModuleShell title="Invoice Verification" subtitle={`${Array.isArray(items)?items.length:0} IVs • ${companyCode} • MIRO 51 RE – Requires PO – WRX Clearing – PRD – Tax – RE – Tolerance OBA0/OBA4 – Fixed`} code="PIVC" module="MM" classicChildren={classicContent}>
+      <ModernModuleShell title="Invoice Verification" subtitle={`${Array.isArray(items)?items.length:0} IVs • ${companyCode} • PIVC (legacy MIRO) 51 RE – Requires PO – WRX Clearing – PRD – Tax – RE – Tolerance OBA0/OBA4 – Fixed`} code="PIVC" module="MM" classicChildren={classicContent}>
         {modernContent}
       </ModernModuleShell>
     </RoleGuard>

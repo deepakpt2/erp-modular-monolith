@@ -6,7 +6,7 @@ import { sql } from 'drizzle-orm';
 /**
  * Revenue Account Determination – VKOA – T0 BLOCKING – No Dangling
  * Condition technique: chart + sales org + customer group + material group + account assignment group → GL account (KOFI/KOFK)
- * Strict usage: Billing VF01 needs to find revenue GL via VKOA, otherwise cannot post Dr AR Cr Revenue
+ * Strict usage: Billing SBLC (legacy VF01) needs to find revenue GL via VKOA, otherwise cannot post Dr AR Cr Revenue
  * Used in: POST /api/billing – determineRevenueAccount() – searches fin_revenue_account with fallback logic
  */
 
@@ -40,9 +40,9 @@ export async function GET(req: NextRequest) {
         `);
         await db.execute(sql`
           INSERT INTO fin_revenue_account (chart_of_accounts, sales_org, customer_group, material_group, account_assignment_group, transaction_key, gl_account, description) VALUES
-          ('KSCA', '1000', '01', '01', '01', 'KOFI', '3000000001', 'Revenue domestic – chart KSCA + sales org 1000 + cust grp 01 + mat grp 01 + acct assign 01 → 3000000001 – T0 BLOCKING VKOA – used in VF01'),
-          ('KSCA', '', '', '', '', 'KOFI', '3000000001', 'Revenue default fallback – T0'),
-          ('KSCA', '1000', '01', '01', '01', 'KOFK', '3000000003', 'Revenue KOFK with account assignment')
+          ('KSCA', '1000', '01', '01', '01', 'REVENUE', '3000000001', 'Revenue domestic – chart KSCA + sales org 1000 + cust grp 01 + mat grp 01 + acct assign 01 → 3000000001 – T0 BLOCKING VKOA – used in VF01'),
+          ('KSCA', '', '', '', '', 'REVENUE', '3000000001', 'Revenue default fallback – T0'),
+          ('KSCA', '1000', '01', '01', '01', 'REVENUE', '3000000003', 'Revenue KOFK with account assignment')
           ON CONFLICT (chart_of_accounts, COALESCE(sales_org,''), COALESCE(customer_group,''), COALESCE(material_group,''), COALESCE(account_assignment_group,''), transaction_key) DO NOTHING
         `);
         const res = await db.execute(sql`SELECT * FROM fin_revenue_account ORDER BY chart_of_accounts`);
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       code: 'FRAD',
       aliasCodes: ['VKOA', 'FIN-REV-CR'],
       table: 'fin_revenue_account',
-      functionDescription: 'Revenue Account Determination – VKOA – T0 BLOCKING – chart + sales org + customer group + material group + account assignment → GL (KOFI/KOFK) – used in billing VF01 – NO DANGLING',
+      functionDescription: 'Revenue Account Determination – VKOA – T0 BLOCKING – chart + sales org + customer group + material group + account assignment → GL (KOFI/KOFK) – used in billing SBLC (legacy VF01) – NO DANGLING',
       usage: {
         KOFI: 'Revenue determination without account assignment – used in standard billing F2',
         KOFK: 'Revenue with account assignment – used in billing with account assignment',
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       if (glCheck.rows.length === 0) {
         const glCheck2 = await db.execute(sql`SELECT id FROM ent_gl_account WHERE account_number = ${gl_account} LIMIT 1`);
         if (glCheck2.rows.length === 0) {
-          return NextResponse.json({ error: `GL Account ${gl_account} not found – create via FGLC/FS00 first` }, { status: 400 });
+          return NextResponse.json({ error: `GL Account ${gl_account} not found – create via FGLC/FGLC (legacy FS00) first` }, { status: 400 });
         }
       }
     } catch {}

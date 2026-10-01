@@ -1,7 +1,7 @@
 import { pgTable, varchar, timestamp, uuid, numeric, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { entCompanyCode } from './schema';
 
-export const entExchangeRate = pgTable('ent_exchange_rate', {
+export const entExchangeRate = pgTable('core_exchange_rate', {
   id: uuid('id').primaryKey().defaultRandom(),
   fromCurrency: varchar('from_currency', { length: 3 }).notNull(), // KWD, USD, INR, EUR
   toCurrency: varchar('to_currency', { length: 3 }).notNull(), // KWD, INR, etc

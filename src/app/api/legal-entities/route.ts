@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     } catch (e: any) { console.warn('Fiscal auto-create failed:', e.message); }
     try {
       await db.execute(sql`INSERT INTO fin_chart (code, name, language) VALUES (${finalChart}, ${finalChart}, 'EN') ON CONFLICT (code) DO NOTHING`);
-      await db.execute(sql`INSERT INTO fi_chart_of_accounts (code, name) VALUES (${finalChart}, ${finalChart}) ON CONFLICT (code) DO NOTHING`).catch(()=>{});
+      await db.execute(sql`INSERT INTO fin_chart (code, name) VALUES (${finalChart}, ${finalChart}) ON CONFLICT (code) DO NOTHING`).catch(()=>{});
     } catch {}
     try {
       await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_field_status_variant (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), code VARCHAR(20) UNIQUE, name VARCHAR(100))`);

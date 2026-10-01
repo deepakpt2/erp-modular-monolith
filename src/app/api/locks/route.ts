@@ -4,7 +4,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Enqueue/Dequeue Locks API – Industry standard FELM own IP (alias SM12) – prevents double entry and concurrent edits
+ * Enqueue/Dequeue Locks API – Industry standard FELM own IP (alias FELM (legacy SM12)) – prevents double entry and concurrent edits
  * Table: core_enqueue_lock – lock_object, object_id, table_name, locked_by, locked_at, expires_at (now+5min), is_active, job_id
  * Features:
  * - When user starts GR for PO 4500000001 and moved to background, lock PO 4500000001 – other users locked out
@@ -12,7 +12,7 @@ import { sql } from 'drizzle-orm';
  * - 5 min inactivity auto-expire – if user closes browser without releasing, lock expires – next user can take over
  * - Heartbeat: PUT extends expiry on activity
  * - Background jobs: When RUNNING, create lock with job_id – release on COMPLETED/FAILED/CANCELLED
- * - SM12 page: /system/locks shows all active locks
+ * - FELM (legacy SM12) page: /system/locks shows all active locks
  */
 
 async function ensureTables() {
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       if (lock.locked_by !== finalLockedBy) {
         // Locked by other user – block
         return NextResponse.json({
-          error: `🔒 Locked – ${finalLockObject} ${finalObjectId} is locked by ${lock.locked_by} since ${lock.locked_at} – expires ${lock.expires_at} – try after 5 min inactivity or after current user releases – ${lock.job_id ? `background job ${lock.job_id} running – check header Jobs icon or System Jobs page FBJM own IP (alias SM37)` : 'user editing critical settings'}`,
+          error: `🔒 Locked – ${finalLockObject} ${finalObjectId} is locked by ${lock.locked_by} since ${lock.locked_at} – expires ${lock.expires_at} – try after 5 min inactivity or after current user releases – ${lock.job_id ? `background job ${lock.job_id} running – check header Jobs icon or System Jobs page FBJM own IP (alias FBJM (legacy SM37))` : 'user editing critical settings'}`,
           locked: true,
           locked_by: lock.locked_by,
           locked_at: lock.locked_at,
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
       success: true,
       lock: newLock,
       lock_id: newLock.id,
-      message: `🔒 Lock acquired – ${finalLockObject} ${finalObjectId} locked by ${finalLockedBy} – expires in 5 min – other users locked out – prevents double entry – e.g., GR for same PO or number range edit – industry standard FELM own IP (alias SM12) enqueue`,
+      message: `🔒 Lock acquired – ${finalLockObject} ${finalObjectId} locked by ${finalLockedBy} – expires in 5 min – other users locked out – prevents double entry – e.g., GR for same PO or number range edit – industry standard FELM own IP (alias FELM (legacy SM12)) enqueue`,
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

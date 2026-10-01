@@ -24,7 +24,7 @@ export class NumberRangeService {
       // Lock the range row
       const ranges = await tx.execute(`
         SELECT id, prefix, current_number, from_number, to_number
-        FROM ent_number_range
+        FROM core_number_range
         WHERE object_type = $1
           AND (company_code_id = $2 OR company_code_id IS NULL)
           AND year = $3
@@ -47,7 +47,7 @@ export class NumberRangeService {
       }
 
       await tx.execute(`
-        UPDATE ent_number_range
+        UPDATE core_number_range
         SET current_number = $1, updated_at = NOW()
         WHERE id = $2
       ` as any);

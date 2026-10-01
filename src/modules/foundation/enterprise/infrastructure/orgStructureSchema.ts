@@ -13,7 +13,7 @@ export const locationTypeEnum = pgEnum('org_location_type', ['PRIMARY', 'COLD_ZO
 export const zoneTypeEnum = pgEnum('org_zone_type', ['BULK', 'PICK', 'COLD', 'QC', 'RETURNS', 'PACK', 'STAGING']);
 export const loadingGroupEnum = pgEnum('org_loading_group', ['MANUAL', 'FORKLIFT', 'CRANE', 'CONVEYOR']);
 
-// Core Tenant – replaces ent_client (SAP T000)
+// Core Tenant – replaces core_tenant (SAP T000)
 export const coreTenant = pgTable('core_tenant', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 20 }).notNull().unique(), // e.g., TEN-100, not 100
@@ -43,7 +43,7 @@ export const orgCompanyGroup = pgTable('org_company_group', {
   uniqueTenantCode: uniqueIndex('uq_org_company_group_tenant_code').on(t.tenantId, t.code),
 }));
 
-// Legal Entity – replaces ent_company_code (SAP T001, OX02)
+// Legal Entity – replaces org_legal_entity (SAP T001, OX02)
 // Extended per real guide – needs chart_of_accounts_code, fiscal_year_variant, field_status_variant, posting_period_variant, credit_control_area
 export const orgLegalEntity = pgTable('org_legal_entity', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -111,7 +111,7 @@ export const orgLegalEntityControlAreaAssign = pgTable('org_legal_entity_control
   uniqueControlArea: index('idx_org_le_ca_control').on(t.controlAreaId),
 }));
 
-// Facility – replaces ent_plant (SAP T001W, OX10)
+// Facility – replaces org_facility (SAP T001W, OX10)
 export const orgFacility = pgTable('org_facility', {
   id: uuid('id').primaryKey().defaultRandom(),
   legalEntityId: uuid('legal_entity_id').notNull().references(() => orgLegalEntity.id),
@@ -128,7 +128,7 @@ export const orgFacility = pgTable('org_facility', {
   idxLegalEntity: index('idx_org_facility_legal').on(t.legalEntityId),
 }));
 
-// Inventory Location – replaces ent_storage_location (SAP T001L, OX09)
+// Inventory Location – replaces org_inventory_location (SAP T001L, OX09)
 export const orgInventoryLocation = pgTable('org_inventory_location', {
   id: uuid('id').primaryKey().defaultRandom(),
   facilityId: uuid('facility_id').notNull().references(() => orgFacility.id),
@@ -382,7 +382,7 @@ export const orgDispatchDetermination = pgTable('org_dispatch_determination', {
   uniqueFacilityChannelGroup: uniqueIndex('uq_org_dispatch_determination').on(t.facilityId, t.salesChannelId, t.loadingGroup),
 }));
 
-// Credit Policy Area – renamed from ent_credit_control_area (OB45)
+// Credit Policy Area – renamed from fin_credit_policy_area (OB45)
 export const finCreditPolicyArea = pgTable('fin_credit_policy_area', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),
@@ -406,7 +406,7 @@ export const finLegalEntityCreditAssign = pgTable('fin_legal_entity_credit_assig
   uniqueCombo: uniqueIndex('uq_fin_legal_credit_assign').on(t.legalEntityId, t.creditPolicyAreaId),
 }));
 
-// Fiscal Calendar – renamed from ent_fiscal_year_variant (OB29)
+// Fiscal Calendar – renamed from fin_fiscal_calendar (OB29)
 export const finFiscalCalendar = pgTable('fin_fiscal_calendar', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),
@@ -422,7 +422,7 @@ export const finFiscalCalendar = pgTable('fin_fiscal_calendar', {
   uniqueTenantCode: uniqueIndex('uq_fin_fiscal_calendar_tenant_code').on(t.tenantId, t.code),
 }));
 
-// Posting Calendar – renamed from ent_posting_period_variant (OBBO)
+// Posting Calendar – renamed from fin_posting_calendar (OBBO)
 export const finPostingCalendar = pgTable('fin_posting_calendar', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),

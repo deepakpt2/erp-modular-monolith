@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       code: 'SBWP',
-      functionDescription: 'Workflow Inbox – SBWP / ME54N / ME28',
+      functionDescription: 'Workflow Inbox – SBWP / PPRL (legacy ME54N) / ME28',
 
       tasks: result.rows,
       count: result.rows.length,

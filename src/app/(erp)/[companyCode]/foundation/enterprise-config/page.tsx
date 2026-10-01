@@ -72,10 +72,10 @@ export default function EnterpriseConfigPage() {
         { code: 'FTGC', label: 'Tax Groups', route: '/fico/tax-groups', desc: 'Group code rate – GST 18% – groups tax codes' },
         { code: 'FTXC', label: 'Tax Codes', route: '/fico/tax-codes', desc: 'GST0/5/12/18/28 IGST VAT 5% – rate ledger_account_code – strict: calculates tax amount on PO/SO/Billing' },
         { code: 'FCOA', label: 'Chart of Accounts', route: '/fico/chart-of-accounts', desc: 'KSCA – general CoA – groups GL accounts' },
-        { code: 'FGLC', label: 'GL Accounts', route: '/fico/gl-accounts', desc: 'Account_number coa_code account_type – 5000000001 inventory, 2000000001 GR/IR – strict: auto account BSX/WRX uses GL, field status' },
+        { code: 'FGLC', label: 'GL Accounts', route: '/fico/gl-accounts', desc: 'Account_number coa_code account_type – 5000000001 inventory, 2000000001 GR/IR – strict: auto account INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) uses GL, field status' },
         { code: 'FCCA', label: 'Cost Centers', route: '/fico/cost-centers', desc: 'Code company_code – KS-CC-01..05 – strict: cost center required for expense GL via field status OBC5' },
         { code: 'FCYC', label: 'Currencies', route: '/fico/currencies', desc: 'Code name symbol – only INR default – strict: used in legal entity, exchange rates' },
-        { code: 'FPPC', label: 'Posting Period Variant', route: '/fico/posting-period-variants', desc: 'Code name – groups company codes for posting period control – strict: OB52 open/close per variant + account type' },
+        { code: 'FPPC', label: 'Posting Period Variant', route: '/fico/posting-period-variants', desc: 'Code name – groups company codes for posting period control – strict: FPPE (legacy OB52) open/close per variant + account type' },
         { code: 'FPPE', label: 'Posting Period Control', route: '/fico/posting-periods', desc: 'Variant_code account_type +/A/D/K/M/S/V from_period from_year to_period to_year is_open – strict: rejects posting if period closed' },
       ]
     },
@@ -88,7 +88,7 @@ export default function EnterpriseConfigPage() {
         { code: 'OBA0', label: 'Tolerance Groups – GL', route: '/fico/tolerance-groups-gl', desc: 'Code name type GL lower_limit upper_limit – strict: allows small differences within tolerance' },
         { code: 'OBA4', label: 'Tolerance Groups – CV', route: '/fico/tolerance-groups-cv', desc: 'Code name type CUSTOMER/VENDOR – strict: if invoice 100 payment 99.90 within 100 allowed clearing' },
         { code: 'OBA7', label: 'Document Types', route: '/fico/document-types', desc: 'Code SA/KA/KG/RV/RE name number_range_code FK FNRC – strict: assigns number range per doc type' },
-        { code: 'OBYC', label: 'Automatic Account Determination', route: '/fico/auto-account-determination', desc: 'Transaction_key BSX/WRX/GBB/PRD chart_of_accounts valuation_class gl_account FK FGLC – strict: GR 101 auto posts BSX inventory debit WRX GR/IR credit – no dummy' },
+        { code: 'OBYC', label: 'Automatic Account Determination', route: '/fico/auto-account-determination', desc: 'Transaction_key INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/GBB/PRD chart_of_accounts valuation_class gl_account FK FGLC – strict: GR 101 auto posts BSX inventory debit WRX GR/IR credit – no dummy' },
         { code: 'FAPT', label: 'Payment Terms', route: '/fico/payment-terms', desc: 'Code NT30 name days discount_percent discount_days – strict: calculates due date posting date + days – used in PO/SO/IV/Billing' },
       ]
     },
@@ -106,7 +106,7 @@ export default function EnterpriseConfigPage() {
               <div>
                 <h1 className={modern ? "text-xl font-bold tracking-tight" : "text-lg font-bold"}>Enterprise Config Overview – One Code One Page Hub</h1>
                 <p className="text-sm text-zinc-500">Company: <b>{companyCode}</b> – All enterprise structure & financial config – strict ERP usage no dummy – data strictly used in practice</p>
-                <p className="text-[11px] text-zinc-400 mt-1">General ERP terminology – SAP aliases for search only – e.g., Posting Period Control not OB52, Automatic Account Determination not OBYC – but OB52/OBYC kept as searchable alias</p>
+                <p className="text-[11px] text-zinc-400 mt-1">General ERP terminology – SAP aliases for search only – e.g., Posting Period Control not FPPE (legacy OB52), Automatic Account Determination not FAUC (legacy OBYC) – but FPPE (legacy OB52)/FAUC (legacy OBYC) kept as searchable alias</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -143,15 +143,15 @@ export default function EnterpriseConfigPage() {
             <li><b>Fiscal Calendar FFYC</b> calculates fiscal year/period from posting date – K4 April-March: 2026-05-15 → FY2026 Period 02 – used in posting period enforcement</li>
             <li><b>Posting Period Variant FPPC</b> groups company codes – <b>Posting Period Control FPPE</b> open/close per variant + account type +/A/D/K/M/S/V – rejects if closed – e.g., close 03/2026 open 04/2026</li>
             <li><b>Document Types OBA7</b> assigns number ranges – number range from doc type SA/KA/KG/RV not object type – strict</li>
-            <li><b>Automatic Account Determination OBYC</b> auto GL for goods movements – BSX inventory posting debit inventory on GR 101, WRX GR/IR clearing credit GR/IR on GR debit on IV – no manual GL – strict</li>
+            <li><b>Automatic Account Determination FAUC (legacy OBYC)</b> auto GL for goods movements – BSX inventory posting debit inventory on GR 101, WRX GR/IR clearing credit GR/IR on GR debit on IV – no manual GL – strict</li>
             <li><b>Tolerance Groups OBA0/OBA4</b> allows small differences within tolerance – e.g., invoice 100 payment 99.90 within 100 allowed clearing – strict</li>
             <li><b>Credit Policy Area FCPC OB45</b> credit_limit risk_category – <b>Credit Check</b> on SO – exposure from open SO + open Billing vs limit – blocks if exposure+new exceeds limit – strict</li>
             <li><b>Field Status Variant OBC4 / Groups OBC5</b> – field_name cost_center/profit_center/tax_code status R required S suppressed O optional D display – e.g., cost center required for expense G001 suppressed for cash G002 – validates on GL posting – strict</li>
             <li><b>Payment Terms FAPT</b> – NT30 Net 30, 2-10-N30 2% discount 10 days net 30 – calculates due date posting date + days – used in PO/SO/IV/Billing – strict</li>
             <li><b>Pricing Procedure PRIC</b> – condition types PR00 price, K007 discount, MWST tax – calculates net/discount/tax/total for SO/Billing – strict</li>
-            <li><b>Production Order CO01</b> – status CRTD created → REL released → CNF confirmed → TECO technically complete – CNF posts 261 component consumption GBB + 101 finished good receipt BSX with auto account – strict</li>
+            <li><b>Production Order MMOC (legacy CO01)</b> – status CRTD created → REL released → CNF confirmed → TECO technically complete – CNF posts 261 component consumption GBB + 101 finished good receipt BSX with auto account – strict</li>
             <li><b>MRP Run MD01</b> – net requirements calculation – Demand Sales Orders – Supply Stock + PO + Production Orders = Net Requirement – if shortage generates PR – strict no dummy</li>
-            <li>General ERP terminology – not SAP terminology – but SAP aliases kept for search – e.g., search OB52 finds Posting Period Control, search OBYC finds Automatic Account Determination</li>
+            <li>General ERP terminology – not SAP terminology – but SAP aliases kept for search – e.g., search FPPE (legacy OB52) finds Posting Period Control, search FAUC (legacy OBYC) finds Automatic Account Determination</li>
           </ul>
         </div>
       </div>

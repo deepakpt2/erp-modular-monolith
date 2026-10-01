@@ -7,11 +7,11 @@ import { invStock, invStockLedger } from '../infrastructure/schema';
 import { eq, and } from 'drizzle-orm';
 
 export type MovementType = 
-  | '101' // GR for PO
-  | '102' // GR reversal
-  | '122' // Return to vendor
-  | '261' // GI for production order
-  | '262' // GI reversal
+  | 'GR_PO' // GR for PO
+  | 'GR_PO_REV' // GR reversal
+  | 'GR_RETURN' // Return to vendor
+  | 'GI_PROD' // GI for production order
+  | 'GI_PROD_REV' // GI reversal
   | '311' // Transfer
   | '321' // QI -> Unrestricted
   | '322' // QI -> Blocked
@@ -19,9 +19,9 @@ export type MovementType =
   | '344' // Unrestricted -> Blocked
   | '350' // QI -> Blocked scrap
   | '453' // Yield from production
-  | '551' // Scrap / Spoilage
-  | '561' // Initial upload
-  | '601' // GI for sales / POS
+  | 'GI_SCRAP' // Scrap / Spoilage
+  | 'INIT_STOCK' // Initial upload
+  | 'GI_SALES' // GI for sales / POS
   | 'K01' // Kitting consumption (stocked kit build)
   | 'K02'; // Kitting production (stocked kit receipt)
 
@@ -58,7 +58,7 @@ export class InventoryService {
     return withTransaction(async (tx) => {
       // 0a. Check Physical Inventory blocking - prevent moving-target counts
       // When PID active for SLoc+Material, block 101/261/601 movements
-      const blockingTypes = ['101', '261', '601', 'K01', 'K02', '453', '551'];
+      const blockingTypes = ['GR_PO', 'GI_PROD', 'GI_SALES', 'K01', 'K02', '453', 'GI_SCRAP'];
       if (blockingTypes.includes(params.movementType)) {
         const activePidRes = await tx.execute(`
           SELECT d.id, d.pi_number
@@ -85,9 +85,9 @@ export class InventoryService {
             mp.expiry_control_override,
             b.id as batch_id, b.batch_number, b.expiry_date, b.is_expired,
             COALESCE(mp.expiry_control_override, m.expiry_control) as effective_control
-          FROM ent_material_master m
-          JOIN ent_material_plant mp ON m.id = mp.material_id AND mp.plant_id = $2
-          LEFT JOIN ent_batch b ON b.id = $3
+          FROM prod_item m
+          JOIN prod_item_plant mp ON m.id = mp.material_id AND mp.plant_id = $2
+          LEFT JOIN inv_lot b ON b.id = $3
           WHERE m.id = $1
         ` as any);
 
@@ -161,7 +161,7 @@ export class InventoryService {
       // 2. Handle valuation - MAP with landed costs
       const materialPlants = await tx.execute(`
         SELECT id, price_control, moving_avg_price, standard_price, total_stock_qty, total_stock_value, total_landed_cost
-        FROM ent_material_plant
+        FROM prod_item_plant
         WHERE material_id = $1 AND plant_id = $2
         FOR UPDATE
       ` as any);
@@ -189,7 +189,7 @@ export class InventoryService {
             const newMAP = newTotalQty > 0 ? newTotalValue / newTotalQty : 0;
 
             await tx.execute(`
-              UPDATE ent_material_plant
+              UPDATE prod_item_plant
               SET moving_avg_price = $1, total_stock_qty = $2, total_stock_value = $3, total_landed_cost = $4, 
                   last_gr_price = $5, last_gr_landed_cost = $6, updated_at = NOW()
               WHERE id = $7
@@ -205,7 +205,7 @@ export class InventoryService {
             totalValueAfter = totalValueBefore - issueValue;
             const newQty = qtyBefore + params.quantity; // quantity negative
             await tx.execute(`
-              UPDATE ent_material_plant
+              UPDATE prod_item_plant
               SET total_stock_qty = $1, total_stock_value = $2, updated_at = NOW()
               WHERE id = $3
             ` as any);
@@ -216,7 +216,7 @@ export class InventoryService {
           totalCostPerUnit = unitCost;
           totalValueAfter = (qtyBefore + params.quantity) * unitCost;
           await tx.execute(`
-            UPDATE ent_material_plant
+            UPDATE prod_item_plant
             SET total_stock_qty = $1, total_stock_value = $2, updated_at = NOW()
             WHERE id = $3
           ` as any);
@@ -255,9 +255,9 @@ export class InventoryService {
              mp.expiry_control_override,
              COALESCE(mp.expiry_control_override, m.expiry_control) as effective_control
       FROM inv_stock s
-      JOIN ent_material_master m ON s.material_id = m.id
-      JOIN ent_material_plant mp ON m.id = mp.material_id AND mp.plant_id = s.plant_id
-      LEFT JOIN ent_batch b ON s.batch_id = b.id
+      JOIN prod_item m ON s.material_id = m.id
+      JOIN prod_item_plant mp ON m.id = mp.material_id AND mp.plant_id = s.plant_id
+      LEFT JOIN inv_lot b ON s.batch_id = b.id
       WHERE s.material_id = $1
         AND s.plant_id = $2
         AND s.stock_status = 'UNRESTRICTED'

@@ -5,9 +5,9 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Tolerance Groups API – Legal-safe own IP – Module 4
- * New: fin_tolerance_group (was ent_tolerance_group) – type GL/EMPLOYEE/CUSTOMER/VENDOR/AP/AR, sample kept
+ * New: fin_tolerance_group (was fin_tolerance_group) – type GL/EMPLOYEE/CUSTOMER/VENDOR/AP/AR, sample kept
  * Helper code: FTGC Tolerance Group Create (alias TGC, OBA4, FIN-TG-CR) – 4-char MOOA F=Financials, TG=ToleranceGroup, C=Create
- * Fallback to legacy ent_tolerance_group
+ * Fallback to legacy fin_tolerance_group
  */
 
 export async function GET(req: NextRequest) {
@@ -24,12 +24,12 @@ export async function GET(req: NextRequest) {
       const res = await db.execute(sql`SELECT * FROM fin_tolerance_group ORDER BY code`);
       rows = res.rows as any[];
     } catch (newErr: any) {
-      console.warn('fin_tolerance_group not yet fallback ent_tolerance_group:', newErr.message);
+      console.warn('fin_tolerance_group not yet fallback fin_tolerance_group:', newErr.message);
       source = 'db-legacy';
-      table = 'ent_tolerance_group';
+      table = 'fin_tolerance_group';
       legalSafe = false;
       try {
-        const res = await db.execute(sql`SELECT * FROM ent_tolerance_group ORDER BY code`);
+        const res = await db.execute(sql`SELECT * FROM fin_tolerance_group ORDER BY code`);
         rows = res.rows as any[];
       } catch (e: any) {
         if (e.message?.includes('does not exist')) {
@@ -81,9 +81,9 @@ export async function POST(req: NextRequest) {
       `);
       return NextResponse.json({ success: true, toleranceGroup: res.rows[0], code: 'FTGC', message: `Tolerance group ${code.toUpperCase()} created – FTGC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
-      console.warn('fin_tolerance_group insert failed fallback ent_tolerance_group:', newErr.message);
+      console.warn('fin_tolerance_group insert failed fallback fin_tolerance_group:', newErr.message);
       const res = await db.execute(sql`
-        INSERT INTO ent_tolerance_group (code, name, type, lower_limit, upper_limit, description)
+        INSERT INTO fin_tolerance_group (code, name, type, lower_limit, upper_limit, description)
         VALUES (${code.toUpperCase()}, ${name}, ${type || 'GL'}, ${lower_limit || 0}, ${upper_limit || 0}, ${description || null})
         ON CONFLICT (code) DO UPDATE SET name = ${name}, type = ${type || 'GL'}, lower_limit = ${lower_limit || 0}, upper_limit = ${upper_limit || 0}, description = ${description || null}
         RETURNING id, code, name
@@ -112,8 +112,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: true, toleranceGroup: res.rows[0], code: 'FTGC', message: `Tolerance group ${res.rows[0].code} updated – FTGC legal-safe` });
     } catch {
       let res;
-      if (id) res = await db.execute(sql`UPDATE ent_tolerance_group SET name = COALESCE(${name}, name), lower_limit = COALESCE(${lower_limit}, lower_limit), upper_limit = COALESCE(${upper_limit}, upper_limit) WHERE id = ${id} RETURNING id, code, name`);
-      else res = await db.execute(sql`UPDATE ent_tolerance_group SET name = COALESCE(${name}, name), lower_limit = COALESCE(${lower_limit}, lower_limit), upper_limit = COALESCE(${upper_limit}, upper_limit) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+      if (id) res = await db.execute(sql`UPDATE fin_tolerance_group SET name = COALESCE(${name}, name), lower_limit = COALESCE(${lower_limit}, lower_limit), upper_limit = COALESCE(${upper_limit}, upper_limit) WHERE id = ${id} RETURNING id, code, name`);
+      else res = await db.execute(sql`UPDATE fin_tolerance_group SET name = COALESCE(${name}, name), lower_limit = COALESCE(${lower_limit}, lower_limit), upper_limit = COALESCE(${upper_limit}, upper_limit) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Tolerance group not found' }, { status: 404 });
       return NextResponse.json({ success: true, toleranceGroup: res.rows[0], message: `Tolerance group ${res.rows[0].code} updated – OBA4 legacy` });
     }
@@ -136,8 +136,8 @@ export async function DELETE(req: NextRequest) {
       if (id) await db.execute(sql`DELETE FROM fin_tolerance_group WHERE id = ${id}`);
       else await db.execute(sql`DELETE FROM fin_tolerance_group WHERE code = ${code}`);
     } catch {
-      if (id) await db.execute(sql`DELETE FROM ent_tolerance_group WHERE id = ${id}`);
-      else await db.execute(sql`DELETE FROM ent_tolerance_group WHERE code = ${code}`);
+      if (id) await db.execute(sql`DELETE FROM fin_tolerance_group WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM fin_tolerance_group WHERE code = ${code}`);
     }
 
     return NextResponse.json({ success: true, code: 'FTGC', message: `Tolerance group ${code || id} deleted – FTGC legal-safe` });

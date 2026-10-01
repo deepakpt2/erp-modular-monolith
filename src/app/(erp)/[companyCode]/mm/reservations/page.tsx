@@ -11,7 +11,7 @@ export default function Page(){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [msg,setMsg]=useState('');
-  const [form,setForm]=useState({material_code: "", facility_code: "FAC-1000", sloc_code: "0001", quantity: "10", uom_code: "PC", movement_type: "261", cost_center_code: "", order_number: "", requirement_date: new Date().toISOString().split('T')[0], action: "MB21"});
+  const [form,setForm]=useState({material_code: "", facility_code: "FAC-1000", sloc_code: "0001", quantity: "10", uom_code: "PC", movement_type: "GI_PROD", cost_center_code: "", order_number: "", requirement_date: new Date().toISOString().split('T')[0], action: "MB21"});
 
   async function load(){
     setLoading(true);
@@ -107,7 +107,7 @@ export default function Page(){
       <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
         <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related – T2 GOOD – General ERP – Low Importance – Reservation</h4>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Materials – EMTC – MM01 alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Materials – EMTC – EMTC (legacy MM01) alias</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/foundation/inventory-locations`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EILC</span><span>Inventory Locations – EILC – OMSL alias</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/mm/stock`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">MB52</span><span>Stock Report – MB52 – MB52 alias</span><span className="text-zinc-400">→</span></Link>
         </div>

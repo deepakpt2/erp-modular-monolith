@@ -4,14 +4,14 @@ import { orgLegalEntity, finFiscalCalendar, finPostingCalendar } from './orgStru
 
 /**
  * Module 4 – Financials Foundation – Legal-Safe Own IP
- * Replaces ent_number_range, ent_currency, ent_exchange_rate, ent_fiscal_year_variant, ent_posting_period_variant, fi_chart_of_accounts, fi_gl_account, fi_tax_code, fi_auto_account_determination etc
+ * Replaces core_number_range, core_currency, core_exchange_rate, fin_fiscal_calendar, fin_posting_calendar, fin_chart, fin_ledger_account, fin_tax_rule, fin_auto_posting_rule etc
  * Fresh empty for some, but sample data kept for convenience: Currencies INR default (KWD/USD/EUR sample), CoA INT, GL 100000-500000, Tax GST0/5/12/18/28, Fiscal Calendar K4 April-March, Posting Calendar etc
  * Helper codes: FNRC Number Range Create (alias FBN1), FCYC Currency Create (alias OY03/CYC), FFYC Fiscal Calendar Create (alias OB29/FYC), FPPC Posting Calendar Create (alias OBBO/PPC), FPPE Open/Close Posting Periods (alias OB52), FCOA Chart Create (alias OB13/COA), FGLC GL Create (alias FS00/GLC), FTXC Tax Create (alias FTXP/TXC), FAUC Auto Posting Rule (alias OBYC), FTGC Tolerance Group Create (alias OBA4), FDTC Document Type Create (alias OBA7)
  * All tables use neutral naming: core_*, fin_*, not ent_*, fi_*
  * No SAP-identical codes: K4, KS01, 1000 etc replaced with neutral LE-1000, FAC-1000, FC-INT etc but old codes kept as aliases for search
  */
 
-// Number Range – replaces ent_number_range – legal-safe core_number_range – own IP short code FNRC
+// Number Range – replaces core_number_range – legal-safe core_number_range – own IP short code FNRC
 export const coreNumberRangeObjectTypeEnum = pgEnum('core_nr_object_type', [
   'ITEM',
   'PARTNER',
@@ -71,7 +71,7 @@ export const coreNumberRangeBuffer = pgTable('core_number_range_buffer', {
   consumedByDoc: varchar('consumed_by_doc', { length: 100 }),
 });
 
-// Currency – replaces ent_currency – legal-safe core_currency – sample INR default, KWD/USD/EUR sample kept
+// Currency – replaces core_currency – legal-safe core_currency – sample INR default, KWD/USD/EUR sample kept
 export const coreCurrency = pgTable('core_currency', {
   code: varchar('code', { length: 3 }).primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
@@ -81,7 +81,7 @@ export const coreCurrency = pgTable('core_currency', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Exchange Rate – replaces ent_exchange_rate – legal-safe core_exchange_rate
+// Exchange Rate – replaces core_exchange_rate – legal-safe core_exchange_rate
 export const coreExchangeRateTypeEnum = pgEnum('core_rate_type', ['AVG', 'BUY', 'SELL', 'SPOT']);
 
 export const coreExchangeRate = pgTable('core_exchange_rate', {
@@ -91,7 +91,7 @@ export const coreExchangeRate = pgTable('core_exchange_rate', {
   validFrom: timestamp('valid_from').notNull(),
   rate: numeric('rate', { precision: 15, scale: 6 }).notNull(),
   rateType: coreExchangeRateTypeEnum('rate_type').default('AVG').notNull(),
-  companyCodeId: uuid('company_code_id'), // legacy – ent_company_code reference
+  companyCodeId: uuid('company_code_id'), // legacy – org_legal_entity reference
   legalEntityId: uuid('legal_entity_id').references(() => orgLegalEntity.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -101,7 +101,7 @@ export const coreExchangeRate = pgTable('core_exchange_rate', {
   idxValidFrom: index('idx_core_exchange_valid_from').on(t.validFrom),
 }));
 
-// Fiscal Calendar – replaces ent_fiscal_year_variant – legal-safe fin_fiscal_calendar already in orgStructureSchema – period table
+// Fiscal Calendar – replaces fin_fiscal_calendar – legal-safe fin_fiscal_calendar already in orgStructureSchema – period table
 export const finFiscalCalendarPeriod = pgTable('fin_fiscal_calendar_period', {
   id: uuid('id').primaryKey().defaultRandom(),
   fiscalCalendarId: uuid('fiscal_calendar_id').notNull().references(() => finFiscalCalendar.id),
@@ -118,7 +118,7 @@ export const finFiscalCalendarPeriod = pgTable('fin_fiscal_calendar_period', {
   uniqueCalendarPeriod: uniqueIndex('uq_fin_fiscal_calendar_period').on(t.fiscalCalendarId, t.period),
 }));
 
-// Posting Calendar – replaces ent_posting_period_variant – legal-safe fin_posting_calendar already in orgStructureSchema – period open/close
+// Posting Calendar – replaces fin_posting_calendar – legal-safe fin_posting_calendar already in orgStructureSchema – period open/close
 export const finPostingAccountTypeEnum = pgEnum('fin_posting_account_type', ['ALL', 'ASSET', 'CUSTOMER', 'VENDOR', 'ITEM', 'GL']);
 
 export const finPostingCalendarPeriod = pgTable('fin_posting_calendar_period', {
@@ -139,7 +139,7 @@ export const finPostingCalendarPeriod = pgTable('fin_posting_calendar_period', {
   idxLegalEntity: index('idx_fin_posting_calendar_period_legal').on(t.legalEntityId),
 }));
 
-// Chart of Accounts – replaces fi_chart_of_accounts – legal-safe fin_chart – sample INT kept
+// Chart of Accounts – replaces fin_chart – legal-safe fin_chart – sample INT kept
 // Extended with language EN per guide – OB13 needs language
 export const finChart = pgTable('fin_chart', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -152,7 +152,7 @@ export const finChart = pgTable('fin_chart', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// GL Account – replaces fi_gl_account – legal-safe fin_ledger_account – sample 100000-500000 kept
+// GL Account – replaces fin_ledger_account – legal-safe fin_ledger_account – sample 100000-500000 kept
 export const finLedgerAccountTypeEnum = pgEnum('fin_ledger_account_type', ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE']);
 
 export const finLedgerAccount = pgTable('fin_ledger_account', {
@@ -173,7 +173,7 @@ export const finLedgerAccount = pgTable('fin_ledger_account', {
   uniqueChartAccount: uniqueIndex('uq_fin_chart_account').on(t.chartId, t.accountNumber),
 }));
 
-// Tax Rule – replaces fi_tax_code – legal-safe fin_tax_rule – sample GST0/5/12/18/28, IGST, VAT 5% kept
+// Tax Rule – replaces fin_tax_rule – legal-safe fin_tax_rule – sample GST0/5/12/18/28, IGST, VAT 5% kept
 export const finTaxRuleTypeEnum = pgEnum('fin_tax_rule_type', ['INPUT', 'OUTPUT', 'BOTH', 'NONE', 'EXEMPT']);
 export const finGstTypeEnum = pgEnum('fin_gst_type', ['CGST', 'SGST', 'IGST', 'UTGST', 'CESS', 'VAT', 'NONE']);
 
@@ -193,7 +193,7 @@ export const finTaxRule = pgTable('fin_tax_rule', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Auto Posting Rule – replaces fi_auto_account_determination – legal-safe fin_auto_posting_rule
+// Auto Posting Rule – replaces fin_auto_posting_rule – legal-safe fin_auto_posting_rule
 export const finAutoPostingTransactionKeyEnum = pgEnum('fin_auto_posting_key', [
   'INV_POSTING',
   'GR_IR_CLEARING',
@@ -232,7 +232,7 @@ export const finAutoPostingRule = pgTable('fin_auto_posting_rule', {
   uniqueAuto: uniqueIndex('uq_fin_auto_key_val_class').on(t.legalEntityId, t.transactionKey, t.inventoryValuationClass),
 }));
 
-// Document Type – replaces ent_document_type – legal-safe fin_document_type
+// Document Type – replaces fin_document_type – legal-safe fin_document_type
 export const finDocumentType = pgTable('fin_document_type', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 20 }).notNull().unique(),
@@ -250,7 +250,7 @@ export const finDocumentType = pgTable('fin_document_type', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Tolerance Group – replaces ent_tolerance_group – legal-safe fin_tolerance_group
+// Tolerance Group – replaces fin_tolerance_group – legal-safe fin_tolerance_group
 export const finToleranceGroupTypeEnum = pgEnum('fin_tolerance_group_type', ['GL', 'EMPLOYEE', 'CUSTOMER', 'VENDOR', 'AP', 'AR']);
 
 export const finToleranceGroup = pgTable('fin_tolerance_group', {

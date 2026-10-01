@@ -4,10 +4,10 @@ import { orgFacility, orgLegalEntity, orgProcurementDivision, orgBuyerTeam, orgC
 
 /**
  * Module 3 – Partner Account – Legal-Safe Own IP
- * Replaces ent_business_partner, ent_bp_vendor_ext, ent_bp_customer_ext
+ * Replaces partner_account, partner_vendor_profile, partner_customer_profile
  * Fresh empty – no SAP-identical names like BP, ME01, XK01, XD01 as primary – those kept as aliases
  * Helper codes: EPAC (Enterprise Partner Account Create) alias PTNC/BPAC/BP01/FND-BP-CR, SCUC (Sales Customer Create) alias CUCC/XD01, PSUC (Procurement Supplier Create) alias SUPC/XK01
- * All tables use neutral naming: partner_*, not ent_business_partner
+ * All tables use neutral naming: partner_*, not partner_account
  * No SAP-identical codes: BP role VENDOR/CUSTOMER/BOTH kept neutral, but field names own IP
  */
 
@@ -15,7 +15,7 @@ import { orgFacility, orgLegalEntity, orgProcurementDivision, orgBuyerTeam, orgC
 export const partnerRoleEnum = pgEnum('partner_role', ['VENDOR', 'CUSTOMER', 'BOTH', 'EMPLOYEE', 'CONTACT']);
 export const partnerContactTypeEnum = pgEnum('partner_contact_type', ['PRIMARY', 'BILLING', 'SHIPPING', 'PURCHASING', 'SALES', 'TECHNICAL', 'FINANCE']);
 
-// Partner Account – replaces ent_business_partner – central master with role VENDOR/CUSTOMER/BOTH
+// Partner Account – replaces partner_account – central master with role VENDOR/CUSTOMER/BOTH
 // Contextual views: partner_customer_profile (sales), partner_vendor_profile (procurement), partner_employee_link (HR)
 export const partnerAccount = pgTable('partner_account', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -46,7 +46,7 @@ export const partnerAccount = pgTable('partner_account', {
   idxCity: index('idx_partner_account_city').on(t.city),
 }));
 
-// Partner Vendor Profile – replaces ent_bp_vendor_ext – procurement view
+// Partner Vendor Profile – replaces partner_vendor_profile – procurement view
 export const partnerVendorProfile = pgTable('partner_vendor_profile', {
   id: uuid('id').primaryKey().defaultRandom(),
   partnerId: uuid('partner_id').notNull().unique().references(() => partnerAccount.id),
@@ -65,7 +65,7 @@ export const partnerVendorProfile = pgTable('partner_vendor_profile', {
   idxProcDiv: index('idx_partner_vendor_proc_div').on(t.procurementDivisionId),
 }));
 
-// Partner Customer Profile – replaces ent_bp_customer_ext – sales view
+// Partner Customer Profile – replaces partner_customer_profile – sales view
 export const partnerCustomerProfile = pgTable('partner_customer_profile', {
   id: uuid('id').primaryKey().defaultRandom(),
   partnerId: uuid('partner_id').notNull().unique().references(() => partnerAccount.id),

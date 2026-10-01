@@ -24,7 +24,7 @@ export default function Page() {
         { code: "PSUC", label: "Supplier – vendor – uses Currency – INR/USD", route: "/foundation/suppliers", description: "Supplier – vendor master – currency_code INR – payment currency" },
         { code: "SCUC", label: "Customer – customer – uses Currency – INR", route: "/foundation/customers", description: "Customer – customer master – currency_code INR" },
         { code: "FEXC", label: "Exchange Rates – OB08 – M/B/G – uses Currency – USD→INR 83.5", route: "/fico/exchange-rates", description: "Exchange Rates – OB08 – rate types M/B/G, spread, translation ratio 100:1, direct/indirect, validity, inverse fallback, cache 60s dragonfly KDM – FEXC" },
-        { code: "PPOC", label: "Purchase Order – ME21N – uses Currency – PO currency", route: "/mm/po", description: "PO – currency from supplier or legal entity – PO currency" },
+        { code: "PPOC", label: "Purchase Order – PPOC (legacy ME21N) – uses Currency – PO currency", route: "/mm/po", description: "PO – currency from supplier or legal entity – PO currency" },
         { code: "VASL", label: "Sales Order – VA01 – uses Currency – SO currency", route: "/sd/sales-orders", description: "SO – currency from customer or commercial org" },
       ]}
     />

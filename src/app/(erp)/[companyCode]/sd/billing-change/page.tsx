@@ -53,7 +53,7 @@ export default function Page(){
           <div><div className="text-[9px] text-zinc-500">BILLING_TYPE – F2 Invoice, G2 Credit Memo, L2 Debit Memo, RE Correction</div><select value={form.billing_type} onChange={e=>setForm({...form,billing_type:e.target.value})} className="w-full border-2 border-black px-1 py-1"><option>F2</option><option>G2</option><option>L2</option><option>RE</option></select></div>
         </div>
         <button onClick={submit} className="mt-3 bg-black text-white px-3 py-1 w-full">SUBMIT VF02 CHANGE / VF11 CANCEL / G2 L2 RE MEMO – T1 REQUIRED – BILLING CHANGE + CANCEL + MEMO</button>
-        <div className="text-[9px] text-zinc-500 mt-1">T1 REQUIRED – VF02: Change billing doc – update payment terms, billing date – VF03: Display – GET /api/billing – VF04: Billing Due List – deliveries with PGI but not yet billed – VF11: Cancel Billing – reverse billing doc + FI reversal + restore delivery billing status – G2: Credit Memo, L2: Debit Memo, RE: Invoice correction – billing types – NO DANGLING – billing fields used in AR + FI + delivery – General ERP, SAP VF02/VF03/VF04/VF11/G2/L2/RE alias – chain: delivery GOODS_ISSUED → billing due VF04 → billing create VF01 → change VF02 → cancel VF11 → credit memo G2 / debit memo L2 / correction RE</div>
+        <div className="text-[9px] text-zinc-500 mt-1">T1 REQUIRED – VF02: Change billing doc – update payment terms, billing date – VF03: Display – GET /api/billing – VF04: Billing Due List – deliveries with PGI but not yet billed – VF11: Cancel Billing – reverse billing doc + FI reversal + restore delivery billing status – G2: Credit Memo, L2: Debit Memo, RE: Invoice correction – billing types – NO DANGLING – billing fields used in AR + FI + delivery – General ERP, SAP VF02/VF03/VF04/VF11/G2/L2/RE alias – chain: delivery GOODS_ISSUED → billing due VF04 → billing create SBLC (legacy VF01) → change VF02 → cancel VF11 → credit memo G2 / debit memo L2 / correction RE</div>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         <div className="bg-white border-2 border-black p-2">
@@ -73,7 +73,7 @@ export default function Page(){
         <div className="font-bold text-[10px]">RELATED – T1 REQUIRED – GENERAL ERP – LOW IMPORTANCE – BILLING</div>
         <div className="flex flex-wrap gap-1 mt-1">
           <Link href={`/${companyCode}/sd/delivery`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">SDLC Delivery – PGI →</Link>
-          <Link href={`/${companyCode}/sd/billing`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">SBLC Billing Create VF01 →</Link>
+          <Link href={`/${companyCode}/sd/billing`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">SBLC Billing Create SBLC (legacy VF01) →</Link>
           <Link href={`/${companyCode}/fico/universal-ledger`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FULC Universal Ledger – AR →</Link>
         </div>
       </div>
@@ -99,7 +99,7 @@ export default function Page(){
           <div><label className="text-[11px] font-medium">BILLING_TYPE – F2/G2/L2/RE</label><select value={form.billing_type} onChange={e=>setForm({...form,billing_type:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>F2</option><option>G2</option><option>L2</option><option>RE</option></select></div>
         </div>
         <button onClick={submit} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Submit VF02 Change / VF11 Cancel / G2 L2 RE Memo – T1 REQUIRED – Billing Change + Cancel + Memo – NO DANGLING</button>
-        <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – VF02: Change billing doc – update payment terms, billing date – VF03: Display – GET /api/billing – VF04: Billing Due List – deliveries with PGI but not yet billed – VF11: Cancel Billing – reverse billing doc + FI reversal + restore delivery billing status – G2: Credit Memo, L2: Debit Memo, RE: Invoice correction – billing types – NO DANGLING – billing fields used in AR + FI + delivery – General ERP, SAP VF02/VF03/VF04/VF11/G2/L2/RE alias – chain: delivery GOODS_ISSUED → billing due VF04 → billing create VF01 → change VF02 → cancel VF11 → credit memo G2 / debit memo L2 / correction RE</div>
+        <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – VF02: Change billing doc – update payment terms, billing date – VF03: Display – GET /api/billing – VF04: Billing Due List – deliveries with PGI but not yet billed – VF11: Cancel Billing – reverse billing doc + FI reversal + restore delivery billing status – G2: Credit Memo, L2: Debit Memo, RE: Invoice correction – billing types – NO DANGLING – billing fields used in AR + FI + delivery – General ERP, SAP VF02/VF03/VF04/VF11/G2/L2/RE alias – chain: delivery GOODS_ISSUED → billing due VF04 → billing create SBLC (legacy VF01) → change VF02 → cancel VF11 → credit memo G2 / debit memo L2 / correction RE</div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -120,11 +120,11 @@ export default function Page(){
       <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
         <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related – T1 REQUIRED – General ERP – Low Importance – Billing</h4>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/${companyCode}/sd/delivery`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SDLC</span><span>Delivery – PGI – VL01N alias</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/sd/billing`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SBLC</span><span>Billing Create – VF01 – FIN-BL-CR alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/sd/delivery`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SDLC</span><span>Delivery – PGI – SDLC (legacy VL01N) alias</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/sd/billing`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SBLC</span><span>Billing Create – SBLC (legacy VF01) – FIN-BL-CR alias</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/fico/universal-ledger`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FULC</span><span>Universal Ledger – AR – ACDOCA alias</span><span className="text-zinc-400">→</span></Link>
         </div>
-        <p className="text-[10px] text-zinc-400 mt-2">General ERP terminology – Billing Change, Billing Due List, Cancel Billing, Credit Memo, Debit Memo, Invoice Correction, Payment Terms, Billing Date, Billing Type – SAP VF02/VF03/VF04/VF11/G2/L2/RE/VF01 kept as alias – T1 REQUIRED – VF02 change, VF04 due list, VF11 cancel, G2 credit memo, L2 debit memo, RE correction – NO DANGLING – billing fields used in AR + FI + delivery</p>
+        <p className="text-[10px] text-zinc-400 mt-2">General ERP terminology – Billing Change, Billing Due List, Cancel Billing, Credit Memo, Debit Memo, Invoice Correction, Payment Terms, Billing Date, Billing Type – SAP VF02/VF03/VF04/VF11/G2/L2/RE/SBLC (legacy VF01) kept as alias – T1 REQUIRED – VF02 change, VF04 due list, VF11 cancel, G2 credit memo, L2 debit memo, RE correction – NO DANGLING – billing fields used in AR + FI + delivery</p>
       </div>
     </div>
   );

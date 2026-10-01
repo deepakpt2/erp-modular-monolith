@@ -22,7 +22,7 @@ export const numberRangeObjectTypeEnum = pgEnum('nr_object_type', [
   'COSTING_RUN'
 ]);
 
-export const entNumberRange = pgTable('ent_number_range', {
+export const entNumberRange = pgTable('core_number_range', {
   id: uuid('id').primaryKey().defaultRandom(),
   objectType: numberRangeObjectTypeEnum('object_type').notNull(),
   companyCodeId: uuid('company_code_id'), // Nullable for global ranges
@@ -40,7 +40,7 @@ export const entNumberRange = pgTable('ent_number_range', {
   uniqueRange: uniqueIndex('uq_nr_obj_co_year').on(t.objectType, t.companyCodeId, t.year),
 }));
 
-export const entNumberRangeBuffer = pgTable('ent_number_range_buffer', {
+export const entNumberRangeBuffer = pgTable('core_number_range_buffer', {
   id: uuid('id').primaryKey().defaultRandom(),
   numberRangeId: uuid('number_range_id').notNull().references(() => entNumberRange.id),
   bufferedNumber: bigint('buffered_number', { mode: 'number' }).notNull(),

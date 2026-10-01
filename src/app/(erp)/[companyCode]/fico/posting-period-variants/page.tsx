@@ -7,7 +7,7 @@ export default function Page() {
       code="FPPC"
       sapAlias="OBBO"
       title="Posting Period Variant"
-      description="Define Posting Period Variant – groups company codes for posting period control – e.g., 1000 Standard – strict usage: OB52 open/close per variant + account type"
+      description="Define Posting Period Variant – groups company codes for posting period control – e.g., 1000 Standard – strict usage: FPPE (legacy OB52) open/close per variant + account type"
       apiEndpoint="/api/posting-period-variants"
       initialForm={{ code: '', name: '', description: '' }}
       fields={[

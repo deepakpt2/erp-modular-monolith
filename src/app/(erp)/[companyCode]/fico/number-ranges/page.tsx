@@ -252,7 +252,7 @@ export default function NumberRangesPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white">FNRC</span>
-              <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border text-zinc-500">FBN1</span>
+              <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border text-zinc-500">FNRC (legacy FBN1)</span>
               <span className="text-[11px] bg-zinc-100 border rounded-full px-2.5 py-1 text-zinc-600">{ranges.length} ranges • {lockedCount} locked 🔒 • {totalUsed} used • {assignments.length} assignments</span>
               {warningRanges.length > 0 && <span className="text-[11px] bg-zinc-100 border border-zinc-300 rounded-full px-2.5 py-1 text-zinc-800">⚠️ {warningRanges.length} ranges ≥80% used</span>}
             </div>

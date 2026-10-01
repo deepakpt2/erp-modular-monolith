@@ -6,7 +6,7 @@ export const poStatusEnum = pgEnum('po_status', ['DRAFT', 'PENDING_APPROVAL', 'A
 export const grStatusEnum = pgEnum('gr_status', ['DRAFT', 'POSTED', 'CANCELLED']);
 export const ivStatusEnum = pgEnum('iv_status', ['DRAFT', 'POSTED', 'BLOCKED', 'CANCELLED']);
 
-// Purchase Requisition - ERP Views: Header+Items+Account Assignment+Delivery/Invoice+Texts+History+Workflow ME51N/ME52N/ME53N/ME54N
+// Purchase Requisition - ERP Views: Header+Items+Account Assignment+Delivery/Invoice+Texts+History+Workflow PPRC/PPRE/PPRV – own IP – legacy ME51N/ME52N/ME53N/ME54N
 export const mmPurchaseRequisition = pgTable('mm_purchase_requisition', {
   id: uuid('id').primaryKey().defaultRandom(),
   prNumber: varchar('pr_number', { length: 20 }).notNull().unique(),
@@ -54,7 +54,7 @@ export const mmPrLine = pgTable('mm_pr_line', {
   idxPr: index('idx_pr_line_pr').on(t.prId),
 }));
 
-// Purchase Order - ERP Views: Header+Items+Item Detail+Delivery/Invoice+Account Assignment+Conditions+Texts+PO History ME21N/ME22N/ME23N
+// Purchase Order - ERP Views: Header+Items+Item Detail+Delivery/Invoice+Account Assignment+Conditions+Texts+PO History PPOC/PPOE/PPOV – own IP – legacy ME21N/ME22N/ME23N
 export const mmPurchaseOrder = pgTable('mm_purchase_order', {
   id: uuid('id').primaryKey().defaultRandom(),
   poNumber: varchar('po_number', { length: 20 }).notNull().unique(), // 45*
@@ -114,7 +114,7 @@ export const mmPoLine = pgTable('mm_po_line', {
   itemText: text('item_text'),
   deliveryText: text('delivery_text'),
   isLandedCostRelevant: boolean('is_landed_cost_relevant').default(true).notNull(),
-  // ELIKZ - Delivery Completed Indicator (ERP-like)
+  // DELIV_COMPLETED (legacy ELIKZ) - Delivery Completed Indicator (ERP-like)
   // If true, PO line is closed even if received_qty < ordered_qty (short-shipment final)
   deliveryCompleted: boolean('delivery_completed').default(false).notNull(),
   isClosed: boolean('is_closed').default(false).notNull(), // Final closed flag
@@ -125,7 +125,7 @@ export const mmPoLine = pgTable('mm_po_line', {
 }, (t) => ({
   idxPo: index('idx_po_line_po').on(t.poId),
   uniquePoLine: uniqueIndex('uq_po_line').on(t.poId, t.lineNumber),
-  idxDeliveryCompleted: index('idx_po_line_elikz').on(t.deliveryCompleted),
+  idxDeliveryCompleted: index('idx_po_line_delivery_completed').on(t.deliveryCompleted),
 }));
 
 // Goods Receipt - with landed cost support for MAP
@@ -142,7 +142,7 @@ export const mmGoodsReceipt = pgTable('mm_goods_receipt', {
   // Landed cost at GR time (provisional) - final at IV
   totalAmount: numeric('total_amount', { precision: 15, scale: 3 }).notNull().default('0'),
   totalLandedCost: numeric('total_landed_cost', { precision: 15, scale: 3 }).notNull().default('0'),
-  fiDocumentId: uuid('fi_document_id'), // Auto BSX/WRX
+  fiDocumentId: uuid('fi_document_id'), // Auto INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)
   createdBy: uuid('created_by'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => ({
@@ -177,7 +177,7 @@ export const mmGrLine = pgTable('mm_gr_line', {
   idxMaterial: index('idx_gr_line_mat').on(t.materialId),
 }));
 
-// --- Stock Transport Order STO - ME27/MIGO/VL10B - Multi-Plant Logistics ---
+// --- Stock Transport Order STO - PSTC/IGRC/SDLC – own IP – legacy ME27/MIGO/VL10B - Multi-Plant Logistics ---
 export const stoStatusEnum = pgEnum('sto_status', ['DRAFT', 'APPROVED', 'IN_TRANSIT', 'PARTIALLY_RECEIVED', 'FULLY_RECEIVED', 'CLOSED', 'CANCELLED']);
 export const stoTypeEnum = pgEnum('sto_type', ['ONE_STEP', 'TWO_STEP']);
 
@@ -213,8 +213,8 @@ export const mmStoLine = pgTable('mm_sto_line', {
   lineNumber: integer('line_number').notNull(),
   materialId: uuid('material_id').notNull().references(() => entMaterialMaster.id),
   quantity: numeric('quantity', { precision: 15, scale: 3 }).notNull(),
-  quantityIssued: numeric('quantity_issued', { precision: 15, scale: 3 }).default('0'), // MIGO 351
-  quantityReceived: numeric('quantity_received', { precision: 15, scale: 3 }).default('0'), // MIGO 101
+  quantityIssued: numeric('quantity_issued', { precision: 15, scale: 3 }).default('0'), // TR_MAT (legacy MIGO 351) – own IP
+  quantityReceived: numeric('quantity_received', { precision: 15, scale: 3 }).default('0'), // GR_PO (legacy MIGO 101) – own IP
   quantityInTransit: numeric('quantity_in_transit', { precision: 15, scale: 3 }).default('0'),
   uom: varchar('uom', { length: 10 }).notNull(),
   unitPrice: numeric('unit_price', { precision: 15, scale: 4 }).default('0'), // MAP at time
@@ -248,7 +248,7 @@ export const mmInvoiceVerification = pgTable('mm_invoice_verification', {
   totalLandedCost: numeric('total_landed_cost', { precision: 15, scale: 3 }).notNull().default('0'),
   // Price variance handling
   priceVariance: numeric('price_variance', { precision: 15, scale: 3 }).default('0'), // Difference between PO and Invoice
-  fiDocumentId: uuid('fi_document_id'), // RE + WRX clearing + BSX adjustment
+  fiDocumentId: uuid('fi_document_id'), // RE + GR_IR_CLEARING clearing + INV_POSTING adjustment (legacy WRX/BSX) – own IP
   apInvoiceId: uuid('ap_invoice_id'), // Link to AP
   isLandedCostPosted: boolean('is_landed_cost_posted').default(false).notNull(), // If true, MAP already adjusted
   createdBy: uuid('created_by'),

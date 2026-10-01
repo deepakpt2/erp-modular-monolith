@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     const res = await db.execute(sql`
       INSERT INTO inventory_reservation (reservation_number, item_id, material_id, facility_id, plant_id, inventory_location_id, sloc_id, lot_id, batch_id, quantity, movement_type, reference_doc_type, reference_doc_id, reference_doc_number, required_date)
-      VALUES (${reservationNumber}, ${itemIdResolved}, ${itemIdResolved}, ${facilityIdResolved}, ${facilityIdResolved}, ${inventoryLocationIdResolved || null}, ${inventoryLocationIdResolved || null}, ${lot_id || batch_id || null}, ${lot_id || batch_id || null}, ${quantity}, ${movement_type || '261'}::inventory_movement_type_new, ${reference_doc_type}, ${reference_doc_id || null}, ${reference_doc_number || null}, ${required_date ? new Date(required_date) : null})
+      VALUES (${reservationNumber}, ${itemIdResolved}, ${itemIdResolved}, ${facilityIdResolved}, ${facilityIdResolved}, ${inventoryLocationIdResolved || null}, ${inventoryLocationIdResolved || null}, ${lot_id || batch_id || null}, ${lot_id || batch_id || null}, ${quantity}, ${movement_type || 'GI_PROD'}::inventory_movement_type_new, ${reference_doc_type}, ${reference_doc_id || null}, ${reference_doc_number || null}, ${required_date ? new Date(required_date) : null})
       RETURNING id, reservation_number
     `);
 

@@ -1,5 +1,5 @@
 /**
- * Goods Receipt Service - Partial GRs & Short-Shipping with ELIKZ (Delivery Completed)
+ * Goods Receipt Service - Partial GRs & Short-Shipping with DELIV_COMPLETED (legacy ELIKZ) (Delivery Completed)
  * Supports multiple 101 movements per PO line, with final closure via delivery_completed flag
  */
 import { db, withTransaction } from '@/shared/kernel/db/client';
@@ -22,14 +22,14 @@ export interface CreateGrParams {
   lines: GrLineInput[];
   headerText?: string;
   createdBy: string;
-  isFinalDelivery?: boolean; // If true, sets ELIKZ on all lines
+  isFinalDelivery?: boolean; // If true, sets DELIV_COMPLETED (legacy ELIKZ) on all lines
   shortShipmentReason?: string;
 }
 
 export class GoodsReceiptService {
   /**
-   * Create Goods Receipt with partial handling and ELIKZ support
-   * Each GR creates 101 movement, updates PO line received_qty, and posts FI BSX/WRX
+   * Create Goods Receipt with partial handling and DELIV_COMPLETED (legacy ELIKZ) support
+   * Each GR creates 101 movement, updates PO line received_qty, and posts FI INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)
    */
   static async createGoodsReceipt(params: CreateGrParams) {
     return withTransaction(async (tx) => {
@@ -48,7 +48,7 @@ export class GoodsReceiptService {
       const year = new Date().getFullYear();
       const nrRes = await tx.execute(sql`
         SELECT current_number + 1 as next_num, prefix
-        FROM ent_number_range
+        FROM core_number_range
         WHERE object_type = 'GR' AND year = ${year}
         FOR UPDATE
       `);
@@ -57,7 +57,7 @@ export class GoodsReceiptService {
         const row = nrRes.rows[0] as any;
         grNumber = `${row.prefix}${String(row.next_num).padStart(10, '0')}`;
         await tx.execute(sql`
-          UPDATE ent_number_range SET current_number = ${row.next_num} WHERE object_type = 'GR' AND year = ${year}
+          UPDATE core_number_range SET current_number = ${row.next_num} WHERE object_type = 'GR' AND year = ${year}
         `);
       } else {
         grNumber = `50${Date.now()}`;
@@ -90,7 +90,7 @@ export class GoodsReceiptService {
         if (!poLine) throw new Error(`PO line ${lineInput.poLineId} not found`);
 
         if (poLine.is_closed || poLine.delivery_completed) {
-          throw new Error(`PO line ${poLine.id} is closed (ELIKZ set). No further receipts allowed. Received ${poLine.quantity_received}/${poLine.quantity}`);
+          throw new Error(`PO line ${poLine.id} is closed (DELIV_COMPLETED (legacy ELIKZ) set). No further receipts allowed. Received ${poLine.quantity_received}/${poLine.quantity}`);
         }
 
         const orderedQty = parseFloat(poLine.quantity);
@@ -107,7 +107,7 @@ export class GoodsReceiptService {
         // Resolve SLoc
         let slocId = lineInput.slocId || poLine.sloc_id;
         if (!slocId) {
-          const slocRes = await tx.execute(sql`SELECT id FROM ent_storage_location WHERE plant_id = ${poLine.plant_id} LIMIT 1`);
+          const slocRes = await tx.execute(sql`SELECT id FROM org_inventory_location WHERE plant_id = ${poLine.plant_id} LIMIT 1`);
           slocId = (slocRes.rows[0] as any).id;
         }
 
@@ -115,7 +115,7 @@ export class GoodsReceiptService {
         let batchId: string | null = null;
         if (lineInput.batchNumber) {
           const batchRes = await tx.execute(sql`
-            INSERT INTO ent_batch (batch_number, material_id, plant_id, expiry_date, manufacturing_date)
+            INSERT INTO inv_lot (batch_number, material_id, plant_id, expiry_date, manufacturing_date)
             VALUES (${lineInput.batchNumber}, ${poLine.material_id}, ${poLine.plant_id}, ${lineInput.expiryDate || null}, NOW())
             ON CONFLICT (batch_number, material_id, plant_id) DO UPDATE SET expiry_date = ${lineInput.expiryDate || null}
             RETURNING id
@@ -138,7 +138,7 @@ export class GoodsReceiptService {
         // 4. Post inventory movement 101 (GR for PO) with landed cost
         const landedPerUnit = 0; // Will be enhanced with freight distribution later
         const movement = await InventoryService.postMovement({
-          movementType: '101',
+          movementType: 'GR_PO',
           materialId: poLine.material_id,
           plantId: poLine.plant_id,
           slocId,
@@ -165,7 +165,7 @@ export class GoodsReceiptService {
           UPDATE mm_po_line SET quantity_received = ${newReceivedQty} WHERE id = ${poLine.id}
         `);
 
-        // 6. Handle ELIKZ - Delivery Completed Indicator
+        // 6. Handle DELIV_COMPLETED (legacy ELIKZ) - Delivery Completed Indicator
         // If this is marked as final delivery (short-shipment final), set delivery_completed=true
         // This closes the line even if received < ordered
         if (params.isFinalDelivery) {
@@ -202,17 +202,17 @@ export class GoodsReceiptService {
         UPDATE mm_goods_receipt SET total_amount = ${totalAmount}, total_landed_cost = ${totalLanded} WHERE id = ${grId}
       `);
 
-      // 9. Create FI document for GR - BSX/WRX auto posting (in same transaction for ACID)
+      // 9. Create FI document for GR - INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) auto posting (in same transaction for ACID)
       const fiDocNumber = `FI-GR-${Date.now()}`;
       const fiDocRes = await tx.execute(sql`
-        INSERT INTO fi_document (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number)
+        INSERT INTO fin_universal_ledger (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number)
         VALUES (${fiDocNumber}, ${po.company_code_id}, 'WE', ${params.postingDate}, ${params.documentDate}, ${po.po_number}, ${'GR ' + grNumber + ' for PO ' + po.po_number}, ${totalAmount}, ${totalAmount}, 'KWD', 'POSTED', 'GR', ${grId}, ${grNumber})
         RETURNING id
       `);
       const fiDocId = (fiDocRes.rows[0] as any).id;
 
       // FI lines: Dr Inventory (BSX) Cr GR/IR (WRX) - simplified, real would use auto determination
-      // TODO: Proper GL account determination via fi_auto_account_determination
+      // TODO: Proper GL account determination via fin_auto_posting_rule
 
       await tx.execute(sql`UPDATE mm_goods_receipt SET fi_document_id = ${fiDocId} WHERE id = ${grId}`);
 
@@ -228,7 +228,7 @@ export class GoodsReceiptService {
   }
 
   /**
-   * Toggle ELIKZ - Mark PO line as delivery completed (short-shipment final)
+   * Toggle DELIV_COMPLETED (legacy ELIKZ) - Mark PO line as delivery completed (short-shipment final)
    * Prevents further GRs and clears open commitment
    */
   static async setDeliveryCompleted(params: {
@@ -260,7 +260,7 @@ export class GoodsReceiptService {
         if (shortQty > 0.001) {
           await tx.execute(sql`
             INSERT INTO audit_log (table_name, record_id, record_number, action, old_values, new_values, changed_by, description)
-            VALUES ('mm_po_line', ${poLine.id}, ${poLine.po_id}, 'UPDATE', ${JSON.stringify({ delivery_completed: false })}::jsonb, ${JSON.stringify({ delivery_completed: true, short_qty: shortQty, reason: params.reason })}::jsonb, ${params.userId}, ${'ELIKZ set: short-shipment final, ordered ' + ordered + ' received ' + received + ' short ' + shortQty})
+            VALUES ('mm_po_line', ${poLine.id}, ${poLine.po_id}, 'UPDATE', ${JSON.stringify({ delivery_completed: false })}::jsonb, ${JSON.stringify({ delivery_completed: true, short_qty: shortQty, reason: params.reason })}::jsonb, ${params.userId}, ${'DELIV_COMPLETED (legacy ELIKZ) set: short-shipment final, ordered ' + ordered + ' received ' + received + ' short ' + shortQty})
           `);
         }
       } else {
@@ -291,14 +291,14 @@ export class GoodsReceiptService {
         receivedQty: received,
         shortQty: shortQty,
         message: params.isCompleted 
-          ? `PO line closed via ELIKZ. Short shipment ${shortQty} cleared from commitment. No further GRs allowed.`
+          ? `PO line closed via DELIV_COMPLETED (legacy ELIKZ). Short shipment ${shortQty} cleared from commitment. No further GRs allowed.`
           : `PO line reopened. Open qty ${ordered - received} available for GR.`,
       };
     });
   }
 
   /**
-   * Get PO line status with open qty and ELIKZ info for UI
+   * Get PO line status with open qty and DELIV_COMPLETED (legacy ELIKZ) info for UI
    */
   static async getPoLineStatus(poId: string) {
     const res = await db.execute(sql`
@@ -316,7 +316,7 @@ export class GoodsReceiptService {
           ELSE 'FULL'
         END as status
       FROM mm_po_line l
-      JOIN ent_material_master m ON l.material_id = m.id
+      JOIN prod_item m ON l.material_id = m.id
       WHERE l.po_id = ${poId}
       ORDER BY l.line_number
     `);

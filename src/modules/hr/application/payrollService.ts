@@ -37,7 +37,7 @@ export class PayrollService {
       const employees = await tx.execute(sql`
         SELECT e.id, e.employee_number, e.first_name, e.last_name, e.basic_salary, e.cost_center_id, cc.code as cost_center_code
         FROM hr_employee e
-        LEFT JOIN fi_cost_center cc ON e.cost_center_id = cc.id
+        LEFT JOIN fin_cost_center cc ON e.cost_center_id = cc.id
         WHERE e.is_active = true AND e.company_code_id = ${params.companyCodeId}
       `);
 
@@ -115,13 +115,13 @@ export class PayrollService {
                cc.code as cost_center_code
         FROM hr_payroll_line pl
         JOIN hr_employee e ON pl.employee_id = e.id
-        LEFT JOIN fi_cost_center cc ON pl.cost_center_id = cc.id
+        LEFT JOIN fin_cost_center cc ON pl.cost_center_id = cc.id
         WHERE pl.payroll_run_id = ${payrollRunId}
       `);
 
       // Get GL accounts
       const glRes = await tx.execute(sql`
-        SELECT id, account_number FROM fi_gl_account 
+        SELECT id, account_number FROM fin_ledger_account 
         WHERE account_number IN ('500000', '210001', '100010')
       `);
       const glMap = new Map((glRes.rows as any[]).map((r: any) => [r.account_number, r.id]));
@@ -136,7 +136,7 @@ export class PayrollService {
       const year = parseInt(run.period_year);
       const nrRes = await tx.execute(sql`
         SELECT current_number + 1 as next_num, prefix
-        FROM ent_number_range
+        FROM core_number_range
         WHERE object_type = 'FI_DOC' AND year = ${year}
         FOR UPDATE
       `);
@@ -144,7 +144,7 @@ export class PayrollService {
       if (nrRes.rows.length > 0) {
         const row = nrRes.rows[0] as any;
         fiDocNumber = `${row.prefix}${String(row.next_num).padStart(10, '0')}`;
-        await tx.execute(sql`UPDATE ent_number_range SET current_number = ${row.next_num} WHERE object_type = 'FI_DOC' AND year = ${year}`);
+        await tx.execute(sql`UPDATE core_number_range SET current_number = ${row.next_num} WHERE object_type = 'FI_DOC' AND year = ${year}`);
       } else {
         fiDocNumber = `FI-HR-${Date.now()}`;
       }
@@ -154,7 +154,7 @@ export class PayrollService {
       const docDate = new Date();
 
       const fiDocRes = await tx.execute(sql`
-        INSERT INTO fi_document (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number, created_by)
+        INSERT INTO fin_universal_ledger (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number, created_by)
         VALUES (${fiDocNumber}, ${run.company_code_id}, 'HR', ${postingDate}, ${docDate}, ${'PAYROLL ' + run.period_year + '-' + run.period_month}, ${'Payroll ' + run.period_year + '-' + run.period_month + ' Salary Expense'}, ${run.total_net}, ${run.total_net}, 'KWD', 'POSTED', 'PAYROLL', ${payrollRunId}, ${run.period_year + '-' + run.period_month}, ${approvedBy})
         RETURNING id
       `);
@@ -183,7 +183,7 @@ export class PayrollService {
       // Debit lines: Salary Expense per cost center
       for (const [_, group] of costCenterGroups) {
         await tx.execute(sql`
-          INSERT INTO fi_document_line (fi_document_id, line_number, gl_account_id, cost_center_id, debit, credit, text, bp_id)
+          INSERT INTO fin_universal_ledger_line (fi_document_id, line_number, gl_account_id, cost_center_id, debit, credit, text, bp_id)
           VALUES (${fiDocId}, ${lineNumber}, ${salaryExpenseGlId}, ${group.costCenterId}, ${group.total}, 0, ${'Salary Expense ' + group.costCenterCode + ' - ' + run.period_year + '-' + run.period_month + ' (' + group.employees.length + ' empl)'}, null)
         `);
         lineNumber += 10;
@@ -192,7 +192,7 @@ export class PayrollService {
 
       // Credit line: Salaries Payable (liability, aggregated)
       await tx.execute(sql`
-        INSERT INTO fi_document_line (fi_document_id, line_number, gl_account_id, cost_center_id, debit, credit, text)
+        INSERT INTO fin_universal_ledger_line (fi_document_id, line_number, gl_account_id, cost_center_id, debit, credit, text)
         VALUES (${fiDocId}, ${lineNumber}, ${salaryPayableGlId}, null, 0, ${totalDebit}, ${'Salaries Payable ' + run.period_year + '-' + run.period_month + ' - ' + linesRes.rows.length + ' employees'})
       `);
 
@@ -209,7 +209,7 @@ export class PayrollService {
       // Audit log
       await tx.execute(sql`
         INSERT INTO audit_log (table_name, record_id, record_number, action, old_values, new_values, changed_by, description)
-        VALUES ('hr_payroll_run', ${payrollRunId}, ${run.period_year + '-' + run.period_month}, 'POST', ${JSON.stringify({ status: 'DRAFT' })}::jsonb, ${JSON.stringify({ status: 'POSTED', fi_document: fiDocNumber, total: totalDebit })}::jsonb, ${approvedBy}, ${'Payroll approved and FI posted: Dr Salary Expense (cost center) ' + totalDebit + ' Cr Salaries Payable ' + totalDebit})
+        VALUES ('hr_payroll_run', ${payrollRunId}, ${run.period_year + '-' + run.period_month}, 'POST', ${JSON.stringify({ status: 'DRAFT' })}::jsonb, ${JSON.stringify({ status: 'POSTED', fin_universal_ledger: fiDocNumber, total: totalDebit })}::jsonb, ${approvedBy}, ${'Payroll approved and FI posted: Dr Salary Expense (cost center) ' + totalDebit + ' Cr Salaries Payable ' + totalDebit})
       `);
 
       return {
@@ -250,7 +250,7 @@ export class PayrollService {
       if (run.status !== 'POSTED') throw new Error(`Payroll run must be POSTED to clear payment, current status ${run.status}`);
 
       const glRes = await tx.execute(sql`
-        SELECT id, account_number FROM fi_gl_account 
+        SELECT id, account_number FROM fin_ledger_account 
         WHERE account_number IN ('210001', '100010', '100011')
       `);
       const glMap = new Map((glRes.rows as any[]).map((r: any) => [r.account_number, r.id]));
@@ -265,7 +265,7 @@ export class PayrollService {
       const year = parseInt(run.period_year);
       const nrRes = await tx.execute(sql`
         SELECT current_number + 1 as next_num, prefix
-        FROM ent_number_range
+        FROM core_number_range
         WHERE object_type = 'FI_DOC' AND year = ${year}
         FOR UPDATE
       `);
@@ -273,7 +273,7 @@ export class PayrollService {
       if (nrRes.rows.length > 0) {
         const row = nrRes.rows[0] as any;
         fiDocNumber = `${row.prefix}${String(row.next_num).padStart(10, '0')}`;
-        await tx.execute(sql`UPDATE ent_number_range SET current_number = ${row.next_num} WHERE object_type = 'FI_DOC' AND year = ${year}`);
+        await tx.execute(sql`UPDATE core_number_range SET current_number = ${row.next_num} WHERE object_type = 'FI_DOC' AND year = ${year}`);
       } else {
         fiDocNumber = `FI-PAY-${Date.now()}`;
       }
@@ -282,7 +282,7 @@ export class PayrollService {
       const totalNet = parseFloat(run.total_net);
 
       const fiDocRes = await tx.execute(sql`
-        INSERT INTO fi_document (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number, created_by)
+        INSERT INTO fin_universal_ledger (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number, created_by)
         VALUES (${fiDocNumber}, ${run.company_code_id}, 'HR', ${postingDate}, ${postingDate}, ${'PAYROLL CLEAR ' + run.period_year + '-' + run.period_month}, ${'Payroll Payment Clearing ' + run.period_year + '-' + run.period_month + ' via ' + params.paymentMethod}, ${totalNet}, ${totalNet}, 'KWD', 'POSTED', 'PAYROLL_CLEARING', ${params.payrollRunId}, ${run.period_year + '-' + run.period_month}, ${params.postedBy})
         RETURNING id
       `);
@@ -290,13 +290,13 @@ export class PayrollService {
 
       // Dr Salaries Payable (clear liability)
       await tx.execute(sql`
-        INSERT INTO fi_document_line (fi_document_id, line_number, gl_account_id, debit, credit, text)
+        INSERT INTO fin_universal_ledger_line (fi_document_id, line_number, gl_account_id, debit, credit, text)
         VALUES (${fiDocId}, 10, ${salaryPayableGlId}, ${totalNet}, 0, ${'Clear Salaries Payable ' + run.period_year + '-' + run.period_month})
       `);
 
       // Cr Bank/Cash
       await tx.execute(sql`
-        INSERT INTO fi_document_line (fi_document_id, line_number, gl_account_id, debit, credit, text)
+        INSERT INTO fin_universal_ledger_line (fi_document_id, line_number, gl_account_id, debit, credit, text)
         VALUES (${fiDocId}, 20, ${bankGlId}, 0, ${totalNet}, ${'Payroll Payment ' + run.period_year + '-' + run.period_month + ' via ' + params.paymentMethod})
       `);
 
@@ -327,8 +327,8 @@ export class PayrollService {
     const runRes = await db.execute(sql`
       SELECT r.*, cc.code as company_code, d.document_number as fi_doc_number
       FROM hr_payroll_run r
-      JOIN ent_company_code cc ON r.company_code_id = cc.id
-      LEFT JOIN fi_document d ON r.fi_document_id = d.id
+      JOIN org_legal_entity cc ON r.company_code_id = cc.id
+      LEFT JOIN fin_universal_ledger d ON r.fi_document_id = d.id
       WHERE r.id = ${payrollRunId}
     `);
 
@@ -336,16 +336,16 @@ export class PayrollService {
       SELECT pl.*, e.first_name, e.last_name, e.employee_number, cc.code as cost_center_code, cc.name as cost_center_name
       FROM hr_payroll_line pl
       JOIN hr_employee e ON pl.employee_id = e.id
-      LEFT JOIN fi_cost_center cc ON pl.cost_center_id = cc.id
+      LEFT JOIN fin_cost_center cc ON pl.cost_center_id = cc.id
       WHERE pl.payroll_run_id = ${payrollRunId}
       ORDER BY cc.code, e.employee_number
     `);
 
     const fiLinesRes = await db.execute(sql`
       SELECT dl.*, gl.account_number, gl.name as gl_name, cc.code as cost_center_code
-      FROM fi_document_line dl
-      JOIN fi_gl_account gl ON dl.gl_account_id = gl.id
-      LEFT JOIN fi_cost_center cc ON dl.cost_center_id = cc.id
+      FROM fin_universal_ledger_line dl
+      JOIN fin_ledger_account gl ON dl.gl_account_id = gl.id
+      LEFT JOIN fin_cost_center cc ON dl.cost_center_id = cc.id
       WHERE dl.fi_document_id = (SELECT fi_document_id FROM hr_payroll_run WHERE id = ${payrollRunId})
       ORDER BY dl.line_number
     `);

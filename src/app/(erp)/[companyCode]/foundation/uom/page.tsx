@@ -23,7 +23,7 @@ export default function Page() {
         { code: "EMTC", label: "Product Master – EMTC – uses Base UoM – KG/PC – T0", route: "/foundation/materials", description: "Product – EMTC – base_uom KG/PC/BOX – base unit – used in PO, SO, GR, inventory – single source" },
         { code: "EMGC", label: "Product Categories – EMGC – CAT-SPICE – OMSF", route: "/foundation/material-categories", description: "Product Categories – EMGC OMSF" },
         { code: "EMTP", label: "Product Types – EMTP – RAW/FINISHED – OMS2", route: "/foundation/material-types", description: "Product Types – RAW/FINISHED – determines valuation class" },
-        { code: "PPOC", label: "Purchase Order – ME21N – uses UoM – KG/PC – PO UoM", route: "/mm/po", description: "PO – UoM from material master – PO UoM" },
+        { code: "PPOC", label: "Purchase Order – PPOC (legacy ME21N) – uses UoM – KG/PC – PO UoM", route: "/mm/po", description: "PO – UoM from material master – PO UoM" },
         { code: "LTCC", label: "Lot Control – batch/lot – uses UoM – KG/PC – lot", route: "/foundation/lots", description: "Lot – batch/lot – uses UoM – lot quantity in UoM" },
       ]}
     />

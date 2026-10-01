@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
         code: 'EMTC',
         aliasCodes: ['MTC', 'MM01', 'FND-MAT-CR'],
         helperCode: 'EMTC',
-        functionDescription: 'Product Catalog – EMTC/EMTE/EMTV/EMTL – Legal-safe own IP (was MM01/MM02/MM03)',
+        functionDescription: 'Product Catalog – EMTC/EMTE/EMTV/EMTL – Legal-safe own IP (was EMTC (legacy MM01)/EMTE (legacy MM02)/EMTV (legacy MM03))',
         table: 'prod_item',
         materials: result.rows,
         count: result.rows.length,
@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
       });
     } catch (newErr: any) {
       // Fallback to old tables
-      console.warn('New prod_item table not yet migrated, fallback to ent_material_master:', newErr.message);
+      console.warn('New prod_item table not yet migrated, fallback to prod_item:', newErr.message);
       let query = sql`
         SELECT 
           m.id,
@@ -126,9 +126,9 @@ export async function GET(req: NextRequest) {
           mp.standard_price,
           mp.total_stock_qty,
           mp.total_stock_value
-        FROM ent_material_master m
-        LEFT JOIN ent_material_group mg ON m.group_id = mg.id
-        LEFT JOIN ent_material_plant mp ON m.id = mp.material_id
+        FROM prod_item m
+        LEFT JOIN prod_category mg ON m.group_id = mg.id
+        LEFT JOIN prod_item_plant mp ON m.id = mp.material_id
         WHERE 1=1
       `;
 
@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
         code: 'EMTC',
         aliasCodes: ['MTC', 'MM01', 'FND-MAT-CR'],
         helperCode: 'EMTC',
-        functionDescription: 'Material Master – MM01/MM02/MM03 (legacy ent_material_master – migrating to prod_item)',
+        functionDescription: 'Material Master – EMTC (legacy MM01)/EMTE (legacy MM02)/EMTV (legacy MM03) (legacy prod_item – migrating to prod_item)',
         materials: result.rows,
         count: result.rows.length,
         source: 'db-legacy',
@@ -283,7 +283,7 @@ export async function POST(req: NextRequest) {
         else {
           // Try legacy
           try {
-            const legacyGroup = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = ${finalGroupCode} LIMIT 1`);
+            const legacyGroup = await db.execute(sql`SELECT id FROM prod_category WHERE code = ${finalGroupCode} LIMIT 1`);
             if (legacyGroup.rows.length > 0) {
               // Create in new table
               const newCat = await db.execute(sql`INSERT INTO prod_category (code, name) VALUES (${finalGroupCode}, ${finalGroupCode}) ON CONFLICT (code) DO UPDATE SET name=${finalGroupCode} RETURNING id`);
@@ -302,7 +302,7 @@ export async function POST(req: NextRequest) {
             const fRes = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${fc} LIMIT 1`);
             if (fRes.rows.length > 0) facilityIds.push((fRes.rows[0] as any).id);
             else {
-              const legacyPlant = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${fc} LIMIT 1`);
+              const legacyPlant = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${fc} LIMIT 1`);
               if (legacyPlant.rows.length > 0) facilityIds.push((legacyPlant.rows[0] as any).id);
             }
           } catch {}
@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
           const fRes = await db.execute(sql`SELECT id FROM org_facility ORDER BY code LIMIT 1`);
           if (fRes.rows.length > 0) facilityIds = [(fRes.rows[0] as any).id];
           else {
-            const plantRes = await db.execute(sql`SELECT id FROM ent_plant WHERE code IN ('FAC-1000','1000') ORDER BY CASE code WHEN 'FAC-1000' THEN 0 WHEN '1000' THEN 1 ELSE 2 END LIMIT 1`);
+            const plantRes = await db.execute(sql`SELECT id FROM org_facility WHERE code IN ('FAC-1000','1000') ORDER BY CASE code WHEN 'FAC-1000' THEN 0 WHEN '1000' THEN 1 ELSE 2 END LIMIT 1`);
             if (plantRes.rows.length > 0) facilityIds = [(plantRes.rows[0] as any).id];
           }
         } catch {}
@@ -450,7 +450,7 @@ export async function POST(req: NextRequest) {
       // Fallback to old tables – keep backward compat
       let groupId = null;
       if (finalGroupCode) {
-        const groupRes = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = ${finalGroupCode} LIMIT 1`);
+        const groupRes = await db.execute(sql`SELECT id FROM prod_category WHERE code = ${finalGroupCode} LIMIT 1`);
         if (groupRes.rows.length > 0) groupId = (groupRes.rows[0] as any).id;
       }
 
@@ -461,21 +461,21 @@ export async function POST(req: NextRequest) {
       const legacyPlantCodes = facility_codes || plant_codes;
       if (legacyPlantCodes && Array.isArray(legacyPlantCodes) && legacyPlantCodes.length > 0) {
         for (const pc of legacyPlantCodes) {
-          const plantRes = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${pc} LIMIT 1`);
+          const plantRes = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${pc} LIMIT 1`);
           if (plantRes.rows.length > 0) plantIds.push((plantRes.rows[0] as any).id);
         }
       } else {
         let plantId: any = null;
         if (reqPlantCode) {
-          const plantRes = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${reqPlantCode} LIMIT 1`);
+          const plantRes = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${reqPlantCode} LIMIT 1`);
           plantId = plantRes.rows.length > 0 ? (plantRes.rows[0] as any).id : null;
         }
         if (!plantId && reqCompanyCode) {
-          const plantRes = await db.execute(sql`SELECT p.id FROM ent_plant p JOIN ent_company_code cc ON p.company_code_id = cc.id WHERE cc.code = ${reqCompanyCode} LIMIT 1`);
+          const plantRes = await db.execute(sql`SELECT p.id FROM org_facility p JOIN org_legal_entity cc ON p.company_code_id = cc.id WHERE cc.code = ${reqCompanyCode} LIMIT 1`);
           plantId = plantRes.rows.length > 0 ? (plantRes.rows[0] as any).id : null;
         }
         if (!plantId) {
-          const plantRes = await db.execute(sql`SELECT id FROM ent_plant WHERE code IN ('KP01','1000') ORDER BY CASE code WHEN 'KP01' THEN 0 WHEN '1000' THEN 1 ELSE 2 END LIMIT 1`);
+          const plantRes = await db.execute(sql`SELECT id FROM org_facility WHERE code IN ('KP01','1000') ORDER BY CASE code WHEN 'KP01' THEN 0 WHEN '1000' THEN 1 ELSE 2 END LIMIT 1`);
           plantId = plantRes.rows.length > 0 ? (plantRes.rows[0] as any).id : null;
         }
         if (plantId) plantIds = [plantId];
@@ -489,7 +489,7 @@ export async function POST(req: NextRequest) {
       const oldProcType = finalProcMethod === 'BUY' ? 'F' : finalProcMethod === 'MAKE' ? 'E' : 'X';
 
       const insertRes = await db.execute(sql`
-        INSERT INTO ent_material_master (
+        INSERT INTO prod_item (
           material_number, type, group_id, base_uom, description, description_long,
           is_batch_managed, shelf_life_days, expiry_control, 
           is_kit, is_phantom_kit, valuation_class, is_hazardous, landed_cost_relevance, is_active
@@ -501,7 +501,7 @@ export async function POST(req: NextRequest) {
         )
         ON CONFLICT (material_number) DO UPDATE SET
           description = ${description},
-          description_long = COALESCE(${description_long || null}, ent_material_master.description_long),
+          description_long = COALESCE(${description_long || null}, prod_item.description_long),
           type = ${oldType}::material_type,
           base_uom = ${finalBaseUnit},
           shelf_life_days = ${shelf_life_days || 30},
@@ -513,7 +513,7 @@ export async function POST(req: NextRequest) {
 
       for (const pId of plantIds) {
         await db.execute(sql`
-          INSERT INTO ent_material_plant (
+          INSERT INTO prod_item_plant (
             material_id, plant_id, price_control, moving_avg_price, standard_price, 
             total_stock_qty, total_stock_value,
             safety_stock, reorder_point,
@@ -589,8 +589,8 @@ export async function POST(req: NextRequest) {
         await db.execute(sql`
           INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description)
           VALUES (
-            'ent_material_master', ${materialId}, ${finalItemNumber}, 'INSERT',
-            ${JSON.stringify(body)}::jsonb, ${`Material CREATE MM01 ERP Views: ${finalItemNumber} ${description} Type ${oldType} (legal-safe ${finalType})`}
+            'prod_item', ${materialId}, ${finalItemNumber}, 'INSERT',
+            ${JSON.stringify(body)}::jsonb, ${`Material CREATE EMTC (legacy MM01) ERP Views: ${finalItemNumber} ${description} Type ${oldType} (legal-safe ${finalType})`}
           )
         `);
       } catch {}
@@ -601,7 +601,7 @@ export async function POST(req: NextRequest) {
         message: `Material ${finalItemNumber} created with legacy tables (migrating to prod_item) – Type ${oldType} (new ${finalType})`,
         code: 'EMTC',
         legalSafe: false,
-        migrationNote: 'Created in legacy ent_material_master – will be migrated to prod_item'
+        migrationNote: 'Created in legacy prod_item – will be migrated to prod_item'
       });
     }
 
@@ -691,28 +691,28 @@ export async function PUT(req: NextRequest) {
     // Fallback legacy
     let existing: any = null;
     if (id) {
-      const res = await db.execute(sql`SELECT * FROM ent_material_master WHERE id = ${id} LIMIT 1`);
+      const res = await db.execute(sql`SELECT * FROM prod_item WHERE id = ${id} LIMIT 1`);
       if (res.rows.length > 0) existing = res.rows[0];
     } else if (finalItemNumber) {
-      const res = await db.execute(sql`SELECT * FROM ent_material_master WHERE material_number = ${finalItemNumber} LIMIT 1`);
+      const res = await db.execute(sql`SELECT * FROM prod_item WHERE material_number = ${finalItemNumber} LIMIT 1`);
       if (res.rows.length > 0) existing = res.rows[0];
     }
 
     if (!existing) {
-      return NextResponse.json({ error: 'Material not found in prod_item nor ent_material_master' }, { status: 404 });
+      return NextResponse.json({ error: 'Material not found in prod_item nor prod_item' }, { status: 404 });
     }
 
     let groupId = existing.group_id;
     const finalGroupCode = category_code || group_code;
     if (finalGroupCode) {
-      const groupRes = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = ${finalGroupCode} LIMIT 1`);
+      const groupRes = await db.execute(sql`SELECT id FROM prod_category WHERE code = ${finalGroupCode} LIMIT 1`);
       if (groupRes.rows.length > 0) groupId = (groupRes.rows[0] as any).id;
     }
 
     const finalOldType = type ? mapTypeNewToOld(mapTypeOldToNew(type)) : existing.type;
 
     const updated = await db.execute(sql`
-      UPDATE ent_material_master SET
+      UPDATE prod_item SET
         description = COALESCE(${description}, description),
         type = COALESCE(${finalOldType}::material_type, type),
         base_uom = COALESCE(${base_unit || base_uom}, base_uom),
@@ -731,10 +731,10 @@ export async function PUT(req: NextRequest) {
       await db.execute(sql`
         INSERT INTO audit_log (table_name, record_id, record_number, action, old_values, new_values, description)
         VALUES (
-          'ent_material_master', ${existing.id}, ${existing.material_number}, 'UPDATE',
+          'prod_item', ${existing.id}, ${existing.material_number}, 'UPDATE',
           ${JSON.stringify(existing)}::jsonb,
           ${JSON.stringify(body)}::jsonb,
-          ${`Material CHANGE MM02: ${existing.material_number} -> ${description || existing.description} old_data->new_data JSON`}
+          ${`Material CHANGE EMTE (legacy MM02): ${existing.material_number} -> ${description || existing.description} old_data->new_data JSON`}
         )
       `);
     } catch {}
@@ -744,7 +744,7 @@ export async function PUT(req: NextRequest) {
       material: updated.rows[0],
       code: 'EMTE',
       aliasCodes: ['MTE', 'MM02'],
-      message: `Material ${existing.material_number} updated successfully (MM02 legacy, EMTE new)`,
+      message: `Material ${existing.material_number} updated successfully (EMTE (legacy MM02) legacy, EMTE new)`,
     });
   } catch (e: any) {
     console.error('Update material failed:', e);
@@ -777,7 +777,7 @@ export async function DELETE(req: NextRequest) {
         try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_pr_line WHERE material_id = ${itemId}`); prCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
         try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_po_line WHERE material_id = ${itemId}`); poCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
         try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_gr_line WHERE material_id = ${itemId}`); grCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM pp_bom_line WHERE component_material_id = ${itemId}`); bomCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
+        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mfg_bom_line WHERE component_material_id = ${itemId}`); bomCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
         // Also check new tables
         try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM inv_stock WHERE item_id = ${itemId}`); stockCount += parseInt((r.rows[0] as any).cnt || '0'); } catch {}
         try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM inv_lot WHERE item_id = ${itemId}`); stockCount += parseInt((r.rows[0] as any).cnt || '0'); } catch {}
@@ -809,7 +809,7 @@ export async function DELETE(req: NextRequest) {
     let matId = id;
     let matNum = material_number;
     if (!matId && matNum) {
-      const r = await db.execute(sql`SELECT id, material_number FROM ent_material_master WHERE material_number = ${matNum} LIMIT 1`);
+      const r = await db.execute(sql`SELECT id, material_number FROM prod_item WHERE material_number = ${matNum} LIMIT 1`);
       if (r.rows.length > 0) { matId = (r.rows[0] as any).id; matNum = (r.rows[0] as any).material_number; }
     }
 
@@ -820,10 +820,10 @@ export async function DELETE(req: NextRequest) {
     try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_pr_line WHERE material_id = ${matId}`); prCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
     try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_po_line WHERE material_id = ${matId}`); poCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
     try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_gr_line WHERE material_id = ${matId}`); grCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-    try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM pp_bom_line WHERE component_material_id = ${matId}`); bomCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
+    try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mfg_bom_line WHERE component_material_id = ${matId}`); bomCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
 
     if (stockCount > 0 || prCount > 0 || poCount > 0 || grCount > 0 || bomCount > 0) {
-      await db.execute(sql`UPDATE ent_material_master SET is_active = false WHERE id = ${matId}`);
+      await db.execute(sql`UPDATE prod_item SET is_active = false WHERE id = ${matId}`);
       return NextResponse.json({
         success: true,
         softDeleted: true,
@@ -831,8 +831,8 @@ export async function DELETE(req: NextRequest) {
       });
     }
 
-    await db.execute(sql`DELETE FROM ent_material_plant WHERE material_id = ${matId}`).catch(()=>{});
-    await db.execute(sql`DELETE FROM ent_material_master WHERE id = ${matId}`);
+    await db.execute(sql`DELETE FROM prod_item_plant WHERE material_id = ${matId}`).catch(()=>{});
+    await db.execute(sql`DELETE FROM prod_item WHERE id = ${matId}`);
 
     return NextResponse.json({ success: true, message: `Material ${matNum || matId} deleted – only allowed when no transactions` });
   } catch (e: any) {

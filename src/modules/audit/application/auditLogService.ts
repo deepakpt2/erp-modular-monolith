@@ -1,7 +1,7 @@
 /**
  * Audit Log Service - WORM-lite System-Wide Audit
  * Ensures old_data and new_data JSON payloads for critical state changes
- * Tables: fi_document, inv_stock, pi_document, mm_purchase_order, etc
+ * Tables: fin_universal_ledger, inv_stock, pi_document, mm_purchase_order, etc
  */
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
@@ -82,7 +82,7 @@ export class AuditLogService {
     userEmail?: string
   ) {
     await this.logChange({
-      tableName: 'fi_document',
+      tableName: 'fin_universal_ledger',
       recordId: newDoc.id || oldDoc.id,
       recordNumber: newDoc.document_number || oldDoc.document_number,
       action,
@@ -206,11 +206,11 @@ export class AuditLogService {
    */
   static getMockAuditLogs() {
     return Array.from({ length: 500 }, (_, i) => {
-      const tables = ['fi_document', 'inv_stock', 'pi_document', 'mm_purchase_order', 'mm_goods_receipt', 'sd_sales_order', 'hr_payroll_run'];
+      const tables = ['fin_universal_ledger', 'inv_stock', 'pi_document', 'mm_purchase_order', 'mm_goods_receipt', 'sd_sales_order', 'hr_payroll_run'];
       const actions = ['INSERT', 'UPDATE', 'POST', 'APPROVE', 'REJECT'];
       const table = tables[i % tables.length];
       
-      const oldData = table === 'fi_document' 
+      const oldData = table === 'fin_universal_ledger' 
         ? { status: 'DRAFT', total_debit: 0 }
         : table === 'inv_stock'
         ? { quantity: Math.floor(Math.random()*100), stock_status: 'UNRESTRICTED' }
@@ -218,7 +218,7 @@ export class AuditLogService {
         ? { status: 'DRAFT', total_amount: 0 }
         : { status: 'CREATED' };
 
-      const newData = table === 'fi_document'
+      const newData = table === 'fin_universal_ledger'
         ? { status: 'POSTED', total_debit: (Math.random()*1000).toFixed(3), document_number: `FI${1000000000 + i}` }
         : table === 'inv_stock'
         ? { quantity: Math.floor(Math.random()*100), stock_status: 'UNRESTRICTED', material_id: `MAT-${1000000000 + i%8}` }

@@ -80,7 +80,7 @@ export default function Page(){
           <button onClick={()=>setOperations([...operations,{operation_number: String((operations.length+1)*10).padStart(4,'0'), work_center_code: "", description: "", setup_time: "10", machine_time: "30", labor_time: "30"}])} className="mt-2 border-2 border-black px-3 py-1 bg-zinc-100">+ ADD OPERATION</button>
         </div>
         <button onClick={create} className="mt-3 bg-black text-white px-3 py-1 w-full">CREATE ROUTING MRTC – ALIAS CA01 – GENERAL ERP – T0 BLOCKING</button>
-        <div className="text-[9px] text-zinc-500 mt-1">T0 BLOCKING – Routing operations copied to Manufacturing Order MMOC (alias CO01) on creation – NO DANGLING – used in capacity CM01 + costing CK40N + confirmation CO11N</div>
+        <div className="text-[9px] text-zinc-500 mt-1">T0 BLOCKING – Routing operations copied to Manufacturing Order MMOC (alias MMOC (legacy CO01)) on creation – NO DANGLING – used in capacity CM01 + costing CK40N + confirmation MMOC (legacy CO11N)</div>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
@@ -122,7 +122,7 @@ export default function Page(){
         <div className="mt-4"><label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DESCRIPTION – General ERP</label><input value={header.description} onChange={e=>setHeader({...header,description:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
 
         <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
-          <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-3">Operations – T0 BLOCKING – General ERP Manufacturing Steps – Copied to Manufacturing Order – NO DANGLING – Used in Capacity + Costing + Confirmation CO11N</h4>
+          <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-3">Operations – T0 BLOCKING – General ERP Manufacturing Steps – Copied to Manufacturing Order – NO DANGLING – Used in Capacity + Costing + Confirmation MMOC (legacy CO11N)</h4>
           {operations.map((op,idx)=>(
             <div key={idx} className="grid grid-cols-1 md:grid-cols-6 gap-3 mt-3 bg-white rounded-xl border p-3">
               <div><label className="text-[11px] font-medium">OP No *</label><input value={op.operation_number} onChange={e=>{const n=[...operations]; n[idx].operation_number=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
@@ -137,7 +137,7 @@ export default function Page(){
         </div>
 
         <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Manufacturing Routing MRTC – Alias CA01 – General ERP – T0 BLOCKING</button>
-        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – Routing operations copied to Manufacturing Order MMOC (alias CO01) on creation – used in capacity CM01 + costing CK40N + confirmation CO11N – NO DANGLING – General ERP terminology, SAP CA01 kept as alias</div>
+        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – Routing operations copied to Manufacturing Order MMOC (alias MMOC (legacy CO01)) on creation – used in capacity CM01 + costing CK40N + confirmation MMOC (legacy CO11N) – NO DANGLING – General ERP terminology, SAP CA01 kept as alias</div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">

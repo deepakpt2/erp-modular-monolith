@@ -259,7 +259,7 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
             </div>
             <div className="p-2 max-h-[60vh] overflow-auto text-xs text-zinc-500">
               {searchQuery.trim().length < 2 ? (
-                <div className="p-4 text-center">Type at least 2 characters – search uses FUNCTIONS list – e.g., MM01, ME21N, VA01, OB29, OBBO, OB52, FBN1, FS00</div>
+                <div className="p-4 text-center">Type at least 2 characters – search uses FUNCTIONS list – e.g., EMTC (legacy MM01), PPOC (legacy ME21N), VA01, FFYC (legacy OB29), FPPC (legacy OBBO), FPPE (legacy OB52), FNRC (legacy FBN1), FGLC (legacy FS00)</div>
               ) : (
                 <FunctionSearchResults query={searchQuery} companyCode={companyCode} onSelect={()=>setSearchOpen(false)} />
               )}
@@ -284,7 +284,7 @@ export default function CompanyClientLayout({ children, companyCode, userEmail, 
                 <div className="text-xs text-zinc-600 mt-3">
                   <div>User: <b>{me?.email}</b> – simpleRole <b>{me?.simpleRole}</b> – roles [{me?.roles?.join(', ')}]</div>
                   <div className="mt-1">Required permission: <b>{rbacDenied.requiredPermission}</b> – required roles [{rbacDenied.requiredRoles?.join(', ')}]</div>
-                  <div className="mt-2 text-[11px] text-zinc-500">If code is used show error message instead of formdata per your request – completely block view – master data manager cannot access HR payroll or Inventory if requires WAREHOUSE/MATERIAL_MANAGER – SoD – payroll sensitive salary data, inventory sensitive stock – only allowed roles can access – contact administrator to grant role via /admin/roles and /admin/authorizations – FRPC own IP alias PFCG/SU01 – industry standard</div>
+                  <div className="mt-2 text-[11px] text-zinc-500">If code is used show error message instead of formdata per your request – completely block view – master data manager cannot access HR payroll or Inventory if requires WAREHOUSE/MATERIAL_MANAGER – SoD – payroll sensitive salary data, inventory sensitive stock – only allowed roles can access – contact administrator to grant role via /admin/roles and /admin/authorizations – FRPC own IP alias FROC (legacy PFCG)/FUSC (legacy SU01) – industry standard</div>
                 </div>
               </div>
               <div className="mt-4 p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-[11px]">

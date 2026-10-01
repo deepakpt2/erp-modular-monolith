@@ -15,26 +15,26 @@ import * as bcrypt from 'bcryptjs';
 export async function seedFmcg() {
   console.log('🏭 Starting FMCG Sample Data seed for small production company...');
 
-  const clientRes = await db.execute(sql`SELECT id FROM ent_client WHERE code = '100'`);
-  const companyRes = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = '1000'`);
+  const clientRes = await db.execute(sql`SELECT id FROM core_tenant WHERE code = '100'`);
+  const companyRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = '1000'`);
   if (clientRes.rows.length === 0 || companyRes.rows.length === 0) {
     console.log('❌ Run db:push and init-prod first');
     return;
   }
   const companyCodeId = (companyRes.rows[0] as any).id;
-  const plantRes = await db.execute(sql`SELECT id FROM ent_plant WHERE code = '1000'`);
+  const plantRes = await db.execute(sql`SELECT id FROM org_facility WHERE code = '1000'`);
   const plantId = plantRes.rows.length > 0 ? (plantRes.rows[0] as any).id : null;
   if (!plantId) {
     console.log('❌ Plant 1000 not found, run init-prod first');
     return;
   }
 
-  const slocRes = await db.execute(sql`SELECT id, code FROM ent_storage_location WHERE plant_id = ${plantId}`);
+  const slocRes = await db.execute(sql`SELECT id, code FROM org_inventory_location WHERE plant_id = ${plantId}`);
   const mainSloc = slocRes.rows.find((r: any) => r.code === '0001') as any;
   const coldSloc = slocRes.rows.find((r: any) => r.code === '0002') as any;
   const mainSlocId = mainSloc?.id || (slocRes.rows[0] as any)?.id;
 
-  const groupRes = await db.execute(sql`SELECT id, code FROM ent_material_group`);
+  const groupRes = await db.execute(sql`SELECT id, code FROM prod_category`);
   const foodGroup = groupRes.rows.find((r: any) => r.code === 'FOOD') as any;
   const menuGroup = groupRes.rows.find((r: any) => r.code === 'MENU') as any;
   const kitsGroup = groupRes.rows.find((r: any) => r.code === 'KITS') as any;
@@ -57,7 +57,7 @@ export async function seedFmcg() {
 
   for (const v of vendors) {
     await db.execute(sql`
-      INSERT INTO ent_business_partner (bp_number, name1, role, address)
+      INSERT INTO partner_account (bp_number, name1, role, address)
       VALUES (${v.num}, ${v.name}, 'VENDOR', ${v.city})
       ON CONFLICT (bp_number) DO UPDATE SET name1 = ${v.name}, address = ${v.city}
     `);
@@ -74,7 +74,7 @@ export async function seedFmcg() {
 
   for (const c of customers) {
     await db.execute(sql`
-      INSERT INTO ent_business_partner (bp_number, name1, role, address)
+      INSERT INTO partner_account (bp_number, name1, role, address)
       VALUES (${c.num}, ${c.name}, 'CUSTOMER', ${c.city})
       ON CONFLICT (bp_number) DO UPDATE SET name1 = ${c.name}
     `);
@@ -114,7 +114,7 @@ export async function seedFmcg() {
 
   for (const m of fmcgMaterials) {
     await db.execute(sql`
-      INSERT INTO ent_material_master (
+      INSERT INTO prod_item (
         material_number, type, group_id, base_uom, description,
         is_batch_managed, shelf_life_days, expiry_control,
         is_kit, is_phantom_kit, valuation_class, is_active
@@ -131,13 +131,13 @@ export async function seedFmcg() {
     `);
   }
 
-  // Create material_plant extensions with MAP - ent_material_plant has no is_active, only is_qm_active
-  const matRes = await db.execute(sql`SELECT id, material_number, type FROM ent_material_master WHERE material_number LIKE 'FMCG-%'`);
+  // Create material_plant extensions with MAP - prod_item_plant has no is_active, only is_qm_active
+  const matRes = await db.execute(sql`SELECT id, material_number, type FROM prod_item WHERE material_number LIKE 'FMCG-%'`);
   for (const mat of matRes.rows as any[]) {
     const fmcgMat = fmcgMaterials.find(f => f.num === mat.material_number);
     const mapPrice = fmcgMat ? parseFloat(fmcgMat.price) : 1.0;
     await db.execute(sql`
-      INSERT INTO ent_material_plant (material_id, plant_id, price_control, moving_avg_price, standard_price, total_stock_qty, total_stock_value)
+      INSERT INTO prod_item_plant (material_id, plant_id, price_control, moving_avg_price, standard_price, total_stock_qty, total_stock_value)
       VALUES (${mat.id}, ${plantId}, ${mat.type === 'FERT' ? 'S' : 'V'}, ${mapPrice}, ${mapPrice}, 0, 0)
       ON CONFLICT (material_id, plant_id) DO NOTHING
     `);
@@ -146,25 +146,25 @@ export async function seedFmcg() {
   // 4. BOMs for FMCG
   console.log('📋 Creating FMCG BOMs...');
   // Biscuit Dough Mix Kit
-  const doughMixId = (await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = 'FMCG-KIT-001'`)).rows[0] as any;
-  const flourId = (await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = 'FMCG-ROH-001'`)).rows[0] as any;
-  const sugarId = (await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = 'FMCG-ROH-002'`)).rows[0] as any;
-  const oilId = (await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = 'FMCG-ROH-003'`)).rows[0] as any;
-  const milkId = (await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = 'FMCG-ROH-004'`)).rows[0] as any;
-  const cocoaId = (await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = 'FMCG-ROH-005'`)).rows[0] as any;
+  const doughMixId = (await db.execute(sql`SELECT id FROM prod_item WHERE material_number = 'FMCG-KIT-001'`)).rows[0] as any;
+  const flourId = (await db.execute(sql`SELECT id FROM prod_item WHERE material_number = 'FMCG-ROH-001'`)).rows[0] as any;
+  const sugarId = (await db.execute(sql`SELECT id FROM prod_item WHERE material_number = 'FMCG-ROH-002'`)).rows[0] as any;
+  const oilId = (await db.execute(sql`SELECT id FROM prod_item WHERE material_number = 'FMCG-ROH-003'`)).rows[0] as any;
+  const milkId = (await db.execute(sql`SELECT id FROM prod_item WHERE material_number = 'FMCG-ROH-004'`)).rows[0] as any;
+  const cocoaId = (await db.execute(sql`SELECT id FROM prod_item WHERE material_number = 'FMCG-ROH-005'`)).rows[0] as any;
 
   if (doughMixId && flourId) {
     await db.execute(sql`
-      INSERT INTO pp_bom_header (bom_number, material_id, plant_id, type, status, base_quantity, base_uom, is_kit, is_phantom)
+      INSERT INTO mfg_bom_header (bom_number, material_id, plant_id, type, status, base_quantity, base_uom, is_kit, is_phantom)
       VALUES ('BOM-FMCG-DOUGH', ${doughMixId.id}, ${plantId}, 'KIT_STOCKED', 'ACTIVE', 10, 'KG', true, false)
       ON CONFLICT (bom_number) DO NOTHING
     `);
-    const bomRes = await db.execute(sql`SELECT id FROM pp_bom_header WHERE bom_number = 'BOM-FMCG-DOUGH'`);
+    const bomRes = await db.execute(sql`SELECT id FROM mfg_bom_header WHERE bom_number = 'BOM-FMCG-DOUGH'`);
     if (bomRes.rows.length > 0) {
       const bomId = (bomRes.rows[0] as any).id;
-      await db.execute(sql`DELETE FROM pp_bom_line WHERE bom_header_id = ${bomId}`);
+      await db.execute(sql`DELETE FROM mfg_bom_line WHERE bom_header_id = ${bomId}`);
       await db.execute(sql`
-        INSERT INTO pp_bom_line (bom_header_id, line_number, component_material_id, quantity, uom, is_batch_tracked)
+        INSERT INTO mfg_bom_line (bom_header_id, line_number, component_material_id, quantity, uom, is_batch_tracked)
         VALUES
           (${bomId}, 10, ${flourId.id}, 6, 'KG', true),
           (${bomId}, 20, ${sugarId.id}, 2, 'KG', true),
@@ -176,21 +176,21 @@ export async function seedFmcg() {
   }
 
   // Chocolate Biscuit FERT BOM
-  const chocBiscuitId = (await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = 'FMCG-FERT-001'`)).rows[0] as any;
-  const packFilmId = (await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = 'FMCG-PACK-001'`)).rows[0] as any;
+  const chocBiscuitId = (await db.execute(sql`SELECT id FROM prod_item WHERE material_number = 'FMCG-FERT-001'`)).rows[0] as any;
+  const packFilmId = (await db.execute(sql`SELECT id FROM prod_item WHERE material_number = 'FMCG-PACK-001'`)).rows[0] as any;
   
   if (chocBiscuitId && doughMixId) {
     await db.execute(sql`
-      INSERT INTO pp_bom_header (bom_number, material_id, plant_id, type, status, base_quantity, base_uom, is_kit, is_phantom)
+      INSERT INTO mfg_bom_header (bom_number, material_id, plant_id, type, status, base_quantity, base_uom, is_kit, is_phantom)
       VALUES ('BOM-FMCG-CHOC', ${chocBiscuitId.id}, ${plantId}, 'STANDARD', 'ACTIVE', 100, 'PC', false, false)
       ON CONFLICT (bom_number) DO NOTHING
     `);
-    const bomRes = await db.execute(sql`SELECT id FROM pp_bom_header WHERE bom_number = 'BOM-FMCG-CHOC'`);
+    const bomRes = await db.execute(sql`SELECT id FROM mfg_bom_header WHERE bom_number = 'BOM-FMCG-CHOC'`);
     if (bomRes.rows.length > 0) {
       const bomId = (bomRes.rows[0] as any).id;
-      await db.execute(sql`DELETE FROM pp_bom_line WHERE bom_header_id = ${bomId}`);
+      await db.execute(sql`DELETE FROM mfg_bom_line WHERE bom_header_id = ${bomId}`);
       await db.execute(sql`
-        INSERT INTO pp_bom_line (bom_header_id, line_number, component_material_id, quantity, uom, is_batch_tracked, is_phantom_explode)
+        INSERT INTO mfg_bom_line (bom_header_id, line_number, component_material_id, quantity, uom, is_batch_tracked, is_phantom_explode)
         VALUES
           (${bomId}, 10, ${doughMixId.id}, 8, 'KG', true, true),
           (${bomId}, 20, ${packFilmId.id}, 0.1, 'KG', true, false)
@@ -209,21 +209,21 @@ export async function seedFmcg() {
   ];
 
   for (const s of stockMaterials) {
-    const matRes = await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = ${s.num}`);
+    const matRes = await db.execute(sql`SELECT id FROM prod_item WHERE material_number = ${s.num}`);
     if (matRes.rows.length === 0) continue;
     const matId = (matRes.rows[0] as any).id;
     
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + s.expiryDays);
     
-    // Create batch - ent_batch has no is_active column
+    // Create batch - inv_lot has no is_active column
     await db.execute(sql`
-      INSERT INTO ent_batch (batch_number, material_id, plant_id, expiry_date, is_expired)
+      INSERT INTO inv_lot (batch_number, material_id, plant_id, expiry_date, is_expired)
       VALUES (${s.batch}, ${matId}, ${plantId}, ${expiryDate}, false)
       ON CONFLICT (batch_number, material_id, plant_id) DO NOTHING
     `);
     
-    const batchRes = await db.execute(sql`SELECT id FROM ent_batch WHERE batch_number = ${s.batch} AND material_id = ${matId} AND plant_id = ${plantId}`);
+    const batchRes = await db.execute(sql`SELECT id FROM inv_lot WHERE batch_number = ${s.batch} AND material_id = ${matId} AND plant_id = ${plantId}`);
     const batchId = batchRes.rows.length > 0 ? (batchRes.rows[0] as any).id : null;
     
     if (batchId && mainSlocId) {

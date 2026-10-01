@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
         const res = await db.execute(sql`
           SELECT re.*, coa.code as chart_code, coa.name as chart_name
           FROM fi_retained_earnings re
-          JOIN fi_chart_of_accounts coa ON re.coa_id = coa.id
+          JOIN fin_chart coa ON re.coa_id = coa.id
           ORDER BY coa.code, re.account_number
         `);
         rows = res.rows as any[];
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, retainedEarnings: res.rows[0], code: 'FRGC', message: `Retained earnings ${account_number} for chart ${finalChartCode.toUpperCase()} created – FRGC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
       console.warn('fin_retained_earnings insert failed fallback fi_retained_earnings:', newErr.message);
-      const chartRes = await db.execute(sql`SELECT id FROM fi_chart_of_accounts WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
+      const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
       if (chartRes.rows.length === 0) return NextResponse.json({ error: `Chart ${finalChartCode} not found` }, { status: 404 });
       const chartId = (chartRes.rows[0] as any).id;
 

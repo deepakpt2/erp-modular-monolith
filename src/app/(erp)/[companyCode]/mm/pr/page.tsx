@@ -59,12 +59,12 @@ export default function Page(){
 
   async function create(){
     if(!facilityCode){
-      setMsg('❌ Facility required – EFCC OX10 – e.g., 1000 – plant – org wiring – T0 BLOCKING');
+      setMsg('❌ Facility required – EFCC EFCC (legacy OX10) – e.g., 1000 – plant – org wiring – T0 BLOCKING');
       return;
     }
     const filteredLines = lines.filter(l=>l.item_number && Number(l.quantity)>0);
     if(filteredLines.length===0){
-      setMsg('❌ At least one line with material and quantity >0 required – EMTC MM01 – e.g., 10000001 MAT-SPICE-001 qty 10 PC – T0');
+      setMsg('❌ At least one line with material and quantity >0 required – EMTC EMTC (legacy MM01) – e.g., 10000001 MAT-SPICE-001 qty 10 PC – T0');
       return;
     }
 
@@ -74,7 +74,7 @@ export default function Page(){
       legal_entity_code: legalEntityCode || companyCode,
       company_code: legalEntityCode || companyCode,
       required_date: requiredDate,
-      header_text: headerText || `PR for ${facilityCode} – PPRC ME51N – ${companyCode}`,
+      header_text: headerText || `PR for ${facilityCode} – PPRC PPRC (legacy ME51N) – ${companyCode}`,
       currency_code: currencyCode,
       currency: currencyCode,
       lines: filteredLines.map((l,i)=>({
@@ -109,9 +109,9 @@ export default function Page(){
         lockObject: 'PR',
         lockObjectId: facilityCode,
         onDirectSuccess: (j:any)=>{
-          setMsg(`✅ PR ${j.prNumber || j.pr?.pr_number || 'created'} created – ${filteredLines.length} lines – Facility ${facilityCode} – Legal Entity ${legalEntityCode} – PPRC ME51N – posting period M OB52 checked – number range PR 1000000000 numeric only – T0 BLOCKING – workflow will auto-start for approval ME54N if amount > threshold`);
+          setMsg(`✅ PR ${j.prNumber || j.pr?.pr_number || 'created'} created – ${filteredLines.length} lines – Facility ${facilityCode} – Legal Entity ${legalEntityCode} – PPRC PPRC (legacy ME51N) – posting period M FPPE (legacy OB52) checked – number range PR 1000000000 numeric only – T0 BLOCKING – workflow will auto-start for approval PPRL (legacy ME54N) if amount > threshold`);
           load();
-          // Auto-start workflow for approval ME54N
+          // Auto-start workflow for approval PPRL (legacy ME54N)
           try{
             fetch('/api/workflow', {
               method: 'PUT',
@@ -126,43 +126,43 @@ export default function Page(){
                 currency: currencyCode,
               }),
             }).then(r=>r.json()).then(wf=>{
-              if(wf.instanceId) setMsg(prev=>prev + ` – Workflow started ${wf.instanceId.slice(0,8)} – ${wf.stepsCreated} tasks – SBWP inbox – ME54N release`);
+              if(wf.instanceId) setMsg(prev=>prev + ` – Workflow started ${wf.instanceId.slice(0,8)} – ${wf.stepsCreated} tasks – SBWP inbox – PPRL (legacy ME54N) release`);
             }).catch(()=>{});
           }catch{}
           setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
           setHeaderText('');
         },
         onBackgroundCreated: (newJobId:string)=>{
-          setMsg(`⏳ PR for ${facilityCode} moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – header Jobs icon shows – no timeout – SM37 – auto-promote 10s ALL`);
+          setMsg(`⏳ PR for ${facilityCode} moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – header Jobs icon shows – no timeout – FBJM (legacy SM37) – auto-promote 10s ALL`);
         },
       });
     }catch(err:any){
-      setMsg(`❌ ${err.message} – check posting period OB52 open for account type M, facility EFCC exists, material EMTC exists, inventory location EILC exists – T0 BLOCKING – NO DANGLING`);
+      setMsg(`❌ ${err.message} – check posting period FPPE (legacy OB52) open for account type M, facility EFCC exists, material EMTC exists, inventory location EILC exists – T0 BLOCKING – NO DANGLING`);
     }
   }
 
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING ME51N – PPRC – fetching PRs via /api/pr – SAP standard – posting period M OB52 – number range PR 1000000000 – facility EFCC – material EMTC – org wiring...</div>;
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING PPRC (legacy ME51N) – PPRC – fetching PRs via /api/pr – SAP standard – posting period M FPPE (legacy OB52) – number range PR 1000000000 – facility EFCC – material EMTC – org wiring...</div>;
   const items = data?.purchaseRequisitions || data?.data || [];
 
   const classicContent = (
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPRC PURCHASE REQUISITIONS – ME51N – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – ORG WIRED</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPRC PURCHASE REQUISITIONS – PPRC (legacy ME51N) – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – ORG WIRED</div>
         <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
-          <div className="font-bold">⚠️ SAP STANDARD – PPRC ME51N – T0 BLOCKING – ORG WIRED</div>
-          <div>• Facility EFCC OX10 required – e.g., 1000 – plant – org_facility – T0</div>
-          <div>• Legal Entity ELEC OX02 required – e.g., {companyCode} – company code – org_legal_entity – T0</div>
-          <div>• Material EMTC MM01 required – e.g., 10000001 MAT-SPICE-001 – prod_item – T0 – valuation_class determines BSX</div>
-          <div>• Posting Period OB52 M must be open – else error – FPPE – F_BKPF_BUP – T0</div>
-          <div>• Number Range PR 1000000000 numeric only – assignment per company – error_and_extend – FNRC FBN1 – always_auto</div>
-          <div>• Workflow auto-start ME54N – PR created → wf_instance PENDING_APPROVAL + wf_task PENDING for manager/owner → SBWP inbox → Approve → PR status APPROVED → can convert to PO PPOC ME21N</div>
+          <div className="font-bold">⚠️ SAP STANDARD – PPRC PPRC (legacy ME51N) – T0 BLOCKING – ORG WIRED</div>
+          <div>• Facility EFCC EFCC (legacy OX10) required – e.g., 1000 – plant – org_facility – T0</div>
+          <div>• Legal Entity ELEC ELEC (legacy OX02) required – e.g., {companyCode} – company code – org_legal_entity – T0</div>
+          <div>• Material EMTC EMTC (legacy MM01) required – e.g., 10000001 MAT-SPICE-001 – prod_item – T0 – valuation_class determines BSX</div>
+          <div>• Posting Period FPPE (legacy OB52) M must be open – else error – FPPE – F_BKPF_BUP – T0</div>
+          <div>• Number Range PR 1000000000 numeric only – assignment per company – error_and_extend – FNRC FNRC (legacy FBN1) – always_auto</div>
+          <div>• Workflow auto-start PPRL (legacy ME54N) – PR created → wf_instance PENDING_APPROVAL + wf_task PENDING for manager/owner → SBWP inbox → Approve → PR status APPROVED → can convert to PO PPOC PPOC (legacy ME21N)</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">FACILITY * – EFCC OX10 – plant – 1000</div><input value={facilityCode} onChange={e=>setFacilityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
-          <div><div className="text-[9px] text-zinc-500">LEGAL_ENTITY * – ELEC OX02 – company code – {companyCode}</div><input value={legalEntityCode} onChange={e=>setLegalEntityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
-          <div><div className="text-[9px] text-zinc-500">REQUIRED_DATE * – OB52</div><input type="date" value={requiredDate} onChange={e=>setRequiredDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
-          <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC OY03 – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">FACILITY * – EFCC EFCC (legacy OX10) – plant – 1000</div><input value={facilityCode} onChange={e=>setFacilityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">LEGAL_ENTITY * – ELEC ELEC (legacy OX02) – company code – {companyCode}</div><input value={legalEntityCode} onChange={e=>setLegalEntityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">REQUIRED_DATE * – FPPE (legacy OB52)</div><input type="date" value={requiredDate} onChange={e=>setRequiredDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
+          <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC FCYC (legacy OY03) – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div className="col-span-2"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
         </div>
         <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
@@ -182,7 +182,7 @@ export default function Page(){
           ))}
           <button onClick={addLine} className="mt-1 border-2 border-black px-2 py-0.5 bg-white">+ ADD LINE</button>
         </div>
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE PR – ME51N – PPRC – T0 BLOCKING – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – WORKFLOW ME54N – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE PR – PPRC (legacy ME51N) – PPRC – T0 BLOCKING – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – WORKFLOW PPRL (legacy ME54N) – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}</button>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
@@ -204,14 +204,14 @@ export default function Page(){
         <div className="flex gap-2">
           <span className="text-xl">⚠️</span>
           <div>
-            <div className="font-bold text-sm text-zinc-800">SAP Standard – PPRC ME51N – T0 BLOCKING – Org Wired – Workflow ME54N – Fixed from dummy API</div>
+            <div className="font-bold text-sm text-zinc-800">SAP Standard – PPRC PPRC (legacy ME51N) – T0 BLOCKING – Org Wired – Workflow PPRL (legacy ME54N) – Fixed from dummy API</div>
             <div className="text-xs text-zinc-700 mt-1 space-y-1">
-              <div>• <b>Facility EFCC OX10</b> required – e.g., 1000 – plant – org_facility – T0 – was missing in old page that only asked PRODUCT, QUANTITY, FACILITY, COMPANY_CODE – now fixed with full org wiring</div>
-              <div>• <b>Legal Entity ELEC OX02</b> required – e.g., {companyCode} – company code – org_legal_entity – chart CA-IN-01 fiscal K4 posting PPV-1000 credit CRED-1000 – T0</div>
-              <div>• <b>Material EMTC MM01</b> required – e.g., 10000001 MAT-SPICE-001 – prod_item – valuation_class RAW→1400000001 BSX – T0 – determines BSX in GR</div>
-              <div>• <b>Posting Period OB52 M</b> must be open for account type M – else error – FPPE – F_BKPF_BUP – T0 – posting period enforcement via enforcePostingPeriod</div>
-              <div>• <b>Number Range PR 1000000000</b> numeric only – assignment per company – error_and_extend – FNRC FBN1 – always_auto – user cannot type random – PO 4500000000 PR 1000000000 GR 5000000000 always auto</div>
-              <div>• <b>Workflow ME54N SBWP</b> – PR created → wf_instance PENDING_APPROVAL + wf_task PENDING for manager/owner → SBWP inbox → Approve → PR status APPROVED → can convert to PO PPOC ME21N – auto-start if amount &gt; threshold</div>
+              <div>• <b>Facility EFCC EFCC (legacy OX10)</b> required – e.g., 1000 – plant – org_facility – T0 – was missing in old page that only asked PRODUCT, QUANTITY, FACILITY, COMPANY_CODE – now fixed with full org wiring</div>
+              <div>• <b>Legal Entity ELEC ELEC (legacy OX02)</b> required – e.g., {companyCode} – company code – org_legal_entity – chart CA-IN-01 fiscal K4 posting PPV-1000 credit CRED-1000 – T0</div>
+              <div>• <b>Material EMTC EMTC (legacy MM01)</b> required – e.g., 10000001 MAT-SPICE-001 – prod_item – valuation_class RAW→1400000001 BSX – T0 – determines BSX in GR</div>
+              <div>• <b>Posting Period FPPE (legacy OB52) M</b> must be open for account type M – else error – FPPE – F_BKPF_BUP – T0 – posting period enforcement via enforcePostingPeriod</div>
+              <div>• <b>Number Range PR 1000000000</b> numeric only – assignment per company – error_and_extend – FNRC FNRC (legacy FBN1) – always_auto – user cannot type random – PO 4500000000 PR 1000000000 GR 5000000000 always auto</div>
+              <div>• <b>Workflow PPRL (legacy ME54N) SBWP</b> – PR created → wf_instance PENDING_APPROVAL + wf_task PENDING for manager/owner → SBWP inbox → Approve → PR status APPROVED → can convert to PO PPOC PPOC (legacy ME21N) – auto-start if amount &gt; threshold</div>
             </div>
           </div>
         </div>
@@ -221,14 +221,14 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📋</div>
           <div>
-            <div className="font-semibold">Purchase Requisitions – PPRC (alias ME51N) – SAP Standard – Org Wired – Workflow ME54N</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} PRs • COMPANY_CODE {companyCode} • API: POST /api/pr – facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + posting period M OB52 – T0 BLOCKING – number range PR 1000000000 – workflow SBWP</div>
+            <div className="font-semibold">Purchase Requisitions – PPRC (alias PPRC (legacy ME51N)) – SAP Standard – Org Wired – Workflow PPRL (legacy ME54N)</div>
+            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} PRs • COMPANY_CODE {companyCode} • API: POST /api/pr – facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + posting period M FPPE (legacy OB52) – T0 BLOCKING – number range PR 1000000000 – workflow SBWP</div>
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <DbAutocomplete
-            label="FACILITY * – EFCC OX10 – plant – 1000"
+            label="FACILITY * – EFCC EFCC (legacy OX10) – plant – 1000"
             value={facilityCode}
             onChange={v=>setFacilityCode(v)}
             apiUrl="/api/facilities"
@@ -241,7 +241,7 @@ export default function Page(){
             companyCode={companyCode}
           />
           <DbAutocomplete
-            label="LEGAL_ENTITY * – ELEC OX02 – company code"
+            label="LEGAL_ENTITY * – ELEC ELEC (legacy OX02) – company code"
             value={legalEntityCode}
             onChange={v=>setLegalEntityCode(v)}
             apiUrl="/api/legal-entities"
@@ -254,12 +254,12 @@ export default function Page(){
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">REQUIRED_DATE * – OB52 – F_BKPF_BUP</label>
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">REQUIRED_DATE * – FPPE (legacy OB52) – F_BKPF_BUP</label>
             <input type="date" value={requiredDate} onChange={e=>setRequiredDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
             <p className="text-[10px] text-zinc-400 mt-1">Posting period must be open for account type M – else error – FPPE</p>
           </div>
           <DbAutocomplete
-            label="CURRENCY – FCYC OY03 – INR"
+            label="CURRENCY – FCYC FCYC (legacy OY03) – INR"
             value={currencyCode}
             onChange={v=>setCurrencyCode(v)}
             apiUrl="/api/currencies"
@@ -351,9 +351,9 @@ export default function Page(){
         </div>
 
         <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">
-          Create PR – ME51N – PPRC – T0 BLOCKING – Posting Period M OB52 – Number Range PR 1000000000 – Workflow ME54N SBWP – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}
+          Create PR – PPRC (legacy ME51N) – PPRC – T0 BLOCKING – Posting Period M FPPE (legacy OB52) – Number Range PR 1000000000 – Workflow PPRL (legacy ME54N) SBWP – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}
         </button>
-        <p className="text-[10px] text-zinc-400 mt-2 text-center">PR requires facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC – posting period M OB52 must be open – number range PR 1000000000 numeric only assignment per company error_and_extend – workflow auto-start ME54N SBWP – flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired</p>
+        <p className="text-[10px] text-zinc-400 mt-2 text-center">PR requires facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC – posting period M FPPE (legacy OB52) must be open – number range PR 1000000000 numeric only assignment per company error_and_extend – workflow auto-start PPRL (legacy ME54N) SBWP – flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -361,19 +361,19 @@ export default function Page(){
           <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
             <div className="flex justify-between items-start">
               <div className="font-semibold text-sm">{it.pr_number || it.code} – {it.status} – Facility {it.facility_code || it.plant_code} – {it.company_code}</div>
-              <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">ME51N</span>
+              <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">PPRC (legacy ME51N)</span>
             </div>
             <div className="mt-2 text-xs text-zinc-500">{it.material_number || it.item_number} – Qty {it.quantity} {it.uom} – Price {it.estimated_price} – Total {it.total_amount} – {it.currency} – Requester {it.requester_first_name}</div>
             <div className="mt-2 flex gap-2">
               <Link href={`/${companyCode}/mm/po`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">PPOC PO from PR →</Link>
-              <Link href={`/${companyCode}/workflow/inbox`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">SBWP Release PR ME54N →</Link>
+              <Link href={`/${companyCode}/workflow/inbox`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">SBWP Release PR PPRL (legacy ME54N) →</Link>
             </div>
           </div>
         ))}
         {(!items || (Array.isArray(items) && items.length===0)) && (
           <div className="col-span-2 bg-white rounded-2xl border border-dashed border-zinc-300 p-8 text-center">
-            <div className="text-sm text-zinc-500">No PR yet – create first via ME51N – PPRC – requires facility + legal entity + material – org wired – posting period M OB52 – number range PR 1000000000 – workflow ME54N</div>
-            <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Flow: PPRC ME51N PR → PPOC ME21N PO → IGRC MIGO 101 GR → PIVC MIRO IV → FPYP F110 Payment</div>
+            <div className="text-sm text-zinc-500">No PR yet – create first via PPRC (legacy ME51N) – PPRC – requires facility + legal entity + material – org wired – posting period M FPPE (legacy OB52) – number range PR 1000000000 – workflow PPRL (legacy ME54N)</div>
+            <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Flow: PPRC PPRC (legacy ME51N) PR → PPOC PPOC (legacy ME21N) PO → IGRC IGRC GR_PO (legacy IGRC (legacy MIGO) 101) GR → PIVC PIVC (legacy MIRO) IV → FPYP FPYA (legacy F110) Payment</div>
           </div>
         )}
       </div>
@@ -381,23 +381,23 @@ export default function Page(){
       <div className="bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
         <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related Masters – auto from dependencies – low importance – Org Wired</h4>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Material – MM01 – required – T0 – valuation_class BSX</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/foundation/facilities`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EFCC</span><span>Facility – OX10 – plant – required – T0</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/foundation/inventory-locations`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EILC</span><span>Inventory Location – OX09 – SLOC – SL01</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/foundation/uom`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EUOC</span><span>UoM – CUNI – KG/PC/BOX – base UoM</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/currencies`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FCYC</span><span>Currency – OY03 – INR/USD/EUR/KWD – decimal_places</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO uses PR – ME21N – PPOC – ELIKZ</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/workflow/inbox`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SBWP</span><span>Workflow Inbox – ME54N Release PR – approval</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/number-ranges`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FNRC</span><span>Number Ranges – FBN1 – PR 1000000000 – assignment per company</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Material – EMTC (legacy MM01) – required – T0 – valuation_class BSX</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/facilities`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EFCC</span><span>Facility – EFCC (legacy OX10) – plant – required – T0</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/inventory-locations`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EILC</span><span>Inventory Location – EILC (legacy OX09) – SLOC – SL01</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/uom`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EUOC</span><span>UoM – EUOC (legacy CUNI) – KG/PC/BOX – base UoM</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/currencies`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FCYC</span><span>Currency – FCYC (legacy OY03) – INR/USD/EUR/KWD – decimal_places</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO uses PR – PPOC (legacy ME21N) – PPOC – ELIKZ</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/workflow/inbox`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">SBWP</span><span>Workflow Inbox – PPRL (legacy ME54N) Release PR – approval</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/number-ranges`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FNRC</span><span>Number Ranges – FNRC (legacy FBN1) – PR 1000000000 – assignment per company</span><span className="text-zinc-400">→</span></Link>
         </div>
-        <p className="text-[10px] text-zinc-400 mt-2">Flow: PR (ME51N PPRC) → PO (ME21N PPOC) → GR (MIGO 101 IGRC) → IV (MIRO PIVC) → Payment (F110 FPYP) – industry standard MM – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + procurement division EPDC + buyer team EBTC + cost center FCOC + GL FGLC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC + payment terms FAPT</p>
+        <p className="text-[10px] text-zinc-400 mt-2">Flow: PR (PPRC (legacy ME51N) PPRC) → PO (PPOC (legacy ME21N) PPOC) → GR (IGRC GR_PO (legacy IGRC (legacy MIGO) 101) IGRC) → IV (PIVC (legacy MIRO) PIVC) → Payment (FPYA (legacy F110) FPYP) – industry standard MM – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + procurement division EPDC + buyer team EBTC + cost center FCOC + GL FGLC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC + payment terms FAPT</p>
       </div>
     </div>
   );
 
   return (
     <RoleGuard requiredPermission="PR_CREATE" requiredRoles={['PURCHASER','ADMIN','OWNER','MANAGER']}>
-      <ModernModuleShell title="Purchase Requisitions" subtitle={`${Array.isArray(items)?items.length:0} PRs • ${companyCode} • ME51N – Org Wired – Posting Period M – Number Range PR 1000000000 – Workflow ME54N`} code="PPRC" module="MM" classicChildren={classicContent}>
+      <ModernModuleShell title="Purchase Requisitions" subtitle={`${Array.isArray(items)?items.length:0} PRs • ${companyCode} • PPRC (legacy ME51N) – Org Wired – Posting Period M – Number Range PR 1000000000 – Workflow PPRL (legacy ME54N)`} code="PPRC" module="MM" classicChildren={classicContent}>
         {modernContent}
       </ModernModuleShell>
     </RoleGuard>

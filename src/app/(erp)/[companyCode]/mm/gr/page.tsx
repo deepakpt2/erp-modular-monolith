@@ -47,7 +47,7 @@ export default function Page(){
   const [poLines, setPoLines] = useState<POLine[]>([]);
   const [selectedLines, setSelectedLines] = useState<Record<string, { checked: boolean; qty: string; sloc: string; batch: string }>>({});
   const [postingDate, setPostingDate] = useState(new Date().toISOString().split('T')[0]);
-  const [movementType, setMovementType] = useState('101');
+  const [movementType, setMovementType] = useState('GR_PO');
   const [headerText, setHeaderText] = useState('');
   const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
 
@@ -76,7 +76,7 @@ export default function Page(){
         const poList = poRes.pos || poRes.purchaseOrders || [];
         const found = poList.find((p:any)=>p.po_number===poNumber) || poList[0];
         if (!found) {
-          setMsg(`❌ PO ${poNumber} not found – create via PPOC ME21N first – SAP standard requires PO reference for MIGO 101`);
+          setMsg(`❌ PO ${poNumber} not found – create via PPOC PPOC (legacy ME21N) first – SAP standard requires PO reference for IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101))`);
           return;
         }
         setPoId(found.id);
@@ -122,7 +122,7 @@ export default function Page(){
           }
         });
         setSelectedLines(sel);
-        setMsg(`✅ PO ${found.po_number} loaded – ${enriched.length} lines – vendor ${found.vendor_name} – plant ${found.facility_code || found.plant_code} – SAP standard MIGO requires PO reference`);
+        setMsg(`✅ PO ${found.po_number} loaded – ${enriched.length} lines – vendor ${found.vendor_name} – plant ${found.facility_code || found.plant_code} – SAP standard IGRC (legacy MIGO) requires PO reference`);
       }catch(e:any){
         setMsg(`❌ Failed to load PO ${poNumber}: ${e.message}`);
       }
@@ -132,7 +132,7 @@ export default function Page(){
 
   async function create(){
     if(!poId && !poNumber){
-      setMsg('❌ PO Number required – SAP standard MIGO 101 requires PO reference – e.g., 4500000001 – create PO via PPOC ME21N first – T0 BLOCKING');
+      setMsg('❌ PO Number required – SAP standard IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) requires PO reference – e.g., 4500000001 – create PO via PPOC PPOC (legacy ME21N) first – T0 BLOCKING');
       return;
     }
     const linesToPost = Object.entries(selectedLines)
@@ -153,7 +153,7 @@ export default function Page(){
       });
 
     if(linesToPost.length===0){
-      setMsg('❌ Select at least one PO line with quantity >0 – SAP standard MIGO requires PO line reference');
+      setMsg('❌ Select at least one PO line with quantity >0 – SAP standard IGRC (legacy MIGO) requires PO line reference');
       return;
     }
 
@@ -164,7 +164,7 @@ export default function Page(){
       plant_id: poDetails?.plant_code,
       posting_date: postingDate,
       document_date: postingDate,
-      header_text: headerText || `GR for PO ${poNumber} – MIGO 101 – IGRC`,
+      header_text: headerText || `GR for PO ${poNumber} – IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – IGRC`,
       movement_type: movementType,
       company_code: companyCode,
       lines: linesToPost,
@@ -188,7 +188,7 @@ export default function Page(){
         lockObject: 'PO',
         lockObjectId: poNumber,
         onDirectSuccess: (j:any)=>{
-          setMsg(`✅ GR ${j.grNumber || j.gr?.gr_number || 'created'} created for PO ${poNumber} – ${linesToPost.length} lines – Movement ${movementType} – IGRC MIGO 101 – BSX/WRX posted – stock updated – T0 BLOCKING`);
+          setMsg(`✅ GR ${j.grNumber || j.gr?.gr_number || 'created'} created for PO ${poNumber} – ${linesToPost.length} lines – Movement ${movementType} – IGRC IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) posted – stock updated – T0 BLOCKING`);
           load();
           setPoNumber('');
           setPoId('');
@@ -197,33 +197,33 @@ export default function Page(){
           setSelectedLines({});
         },
         onBackgroundCreated: (newJobId:string)=>{
-          setMsg(`⏳ GR for PO ${poNumber} moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – you can close → redirect to last page – header Jobs icon shows – no timeout – SM37`);
+          setMsg(`⏳ GR for PO ${poNumber} moved to background – job ${newJobId.slice(0,8)} – took >10 sec – popup shows steps – you can close → redirect to last page – header Jobs icon shows – no timeout – FBJM (legacy SM37)`);
         },
       });
     }catch(err:any){
-      setMsg(`❌ ${err.message} – check posting period OB52 open for account type M, movement type 101 exists via FMTM, auto account OBYC BSX/WRX exists via FAUC – T0 BLOCKING`);
+      setMsg(`❌ ${err.message} – check posting period FPPE (legacy OB52) open for account type M, movement type 101 exists via FMTM, auto account FAUC (legacy OBYC) INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) exists via FAUC – T0 BLOCKING`);
     }
   }
 
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING MIGO – IGRC – fetching GRs via /api/gr – SAP standard requires PO reference...</div>;
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING IGRC (legacy MIGO) – IGRC – fetching GRs via /api/gr – SAP standard requires PO reference...</div>;
   const items = data?.data || data?.grs || data?.goodsReceipts || [];
 
   const classicContent = (
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">IGRC INVENTORY RECEIPTS – MIGO – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD REQUIRES PO</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">IGRC INVENTORY RECEIPTS – IGRC (legacy MIGO) – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD REQUIRES PO</div>
         <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
-          <div className="font-bold">⚠️ SAP STANDARD – MIGO 101 REQUIRES PO REFERENCE – T0 BLOCKING</div>
-          <div>• PO Number required – e.g., 4500000001 – create via PPOC ME21N – PPOC → IGRC → PIVC flow – industry standard</div>
-          <div>• Movement Type 101 – Goods Receipt for PO – OMJJ – requires OBYC BSX/WRX auto account – FAUC valuation class</div>
-          <div>• Posting Period OB52 must be open for account type M – else error – create via FPPE</div>
-          <div>• Stock update – MMBE – MAP recalc – BSX inventory debit, WRX GR/IR credit – T0 BLOCKING – NO DANGLING</div>
+          <div className="font-bold">⚠️ SAP STANDARD – IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) REQUIRES PO REFERENCE – T0 BLOCKING</div>
+          <div>• PO Number required – e.g., 4500000001 – create via PPOC PPOC (legacy ME21N) – PPOC → IGRC → PIVC flow – industry standard</div>
+          <div>• Movement Type GR_PO (legacy 101) – Goods Receipt for PO – FMTM (legacy OMJJ) – requires FAUC (legacy OBYC) INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) auto account – FAUC valuation class</div>
+          <div>• Posting Period FPPE (legacy OB52) must be open for account type M – else error – create via FPPE</div>
+          <div>• Stock update – ISTV (legacy MMBE) – MAP recalc – BSX inventory debit, WRX GR/IR credit – T0 BLOCKING – NO DANGLING</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">PO_NUMBER * – SAP STANDARD – MIGO REQUIRES PO – PPOC</div><input value={poNumber} onChange={e=>setPoNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
-          <div><div className="text-[9px] text-zinc-500">POSTING_DATE * – OB52</div><input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
-          <div><div className="text-[9px] text-zinc-500">MOVEMENT_TYPE * – OMJJ – 101 GR PO</div><select value={movementType} onChange={e=>setMovementType(e.target.value)} className="w-full border-2 border-black px-1 py-1"><option value="101">101 – GR for PO – BSX/WRX</option><option value="102">102 – GR Reversal</option><option value="103">103 – GR for PO – GR blocked</option></select></div>
+          <div><div className="text-[9px] text-zinc-500">PO_NUMBER * – SAP STANDARD – IGRC (legacy MIGO) REQUIRES PO – PPOC</div><input value={poNumber} onChange={e=>setPoNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">POSTING_DATE * – FPPE (legacy OB52)</div><input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
+          <div><div className="text-[9px] text-zinc-500">MOVEMENT_TYPE * – FMTM (legacy OMJJ) – 101 GR PO</div><select value={movementType} onChange={e=>setMovementType(e.target.value)} className="w-full border-2 border-black px-1 py-1"><option value="GR_PO">GR_PO – Goods Receipt for PO (legacy 101) – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)</option><option value="GR_PO_REV">GR_PO_REV – GR Reversal (legacy 102)</option><option value="GR_BLOCK">GR_BLOCK – GR Blocked (legacy 103)</option></select></div>
           <div className="col-span-3"><div className="text-[9px] text-zinc-500">HEADER_TEXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
         </div>
         {poDetails && (
@@ -245,13 +245,13 @@ export default function Page(){
             </div>
           </div>
         )}
-        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE GR – MIGO 101 – REQUIRES PO – T0 BLOCKING – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}</button>
+        <button onClick={create} className="mt-2 bg-black text-white px-3 py-1 w-full">CREATE GR – IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – REQUIRES PO – T0 BLOCKING – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}</button>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white border-2 border-black p-2">
             <div className="font-bold">{it.gr_number || it.code} – PO {it.po_number} – {it.status}</div>
-            <div className="text-[10px] text-zinc-600">{it.vendor_name} – Plant {it.plant_code || it.facility_code} – Qty {it.total_qty} – Lines {it.line_count} – BSX/WRX posted</div>
+            <div className="text-[10px] text-zinc-600">{it.vendor_name} – Plant {it.plant_code || it.facility_code} – Qty {it.total_qty} – Lines {it.line_count} – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) posted</div>
           </div>
         ))}
       </div>
@@ -267,12 +267,12 @@ export default function Page(){
         <div className="flex gap-2">
           <span className="text-xl">⚠️</span>
           <div>
-            <div className="font-bold text-sm text-zinc-800">SAP Standard – MIGO 101 Requires PO Reference – T0 BLOCKING – Fixed per your report</div>
+            <div className="font-bold text-sm text-zinc-800">SAP Standard – IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) Requires PO Reference – T0 BLOCKING – Fixed per your report</div>
             <div className="text-xs text-zinc-700 mt-1 space-y-1">
-              <div>• <b>PO Number required</b> – e.g., 4500000001 – create PO via PPOC ME21N first – flow: PPRC (ME51N PR) → PPOC (ME21N PO) → IGRC (MIGO 101 GR) → PIVC (MIRO IV) → FPYP (F110 Payment) – industry standard MM</div>
-              <div>• <b>Movement Type 101</b> – Goods Receipt for Purchase Order – OMJJ – requires auto account OBYC BSX (Inventory) / WRX (GR/IR) – FAUC valuation class – T0 BLOCKING – NO DANGLING</div>
-              <div>• <b>Posting Period OB52</b> must be open for account type M – else error: Posting period closed – create via FPPE – OB52 – F_BKPF_BUP</div>
-              <div>• <b>Stock Update</b> – MMBE – MAP recalc if price control V, PRD price diff if S – BSX debit inventory, WRX credit GR/IR – universal ledger FULC – stock ledger FSTL – T0 BLOCKING</div>
+              <div>• <b>PO Number required</b> – e.g., 4500000001 – create PO via PPOC PPOC (legacy ME21N) first – flow: PPRC (PPRC (legacy ME51N) PR) → PPOC (PPOC (legacy ME21N) PO) → IGRC (IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) GR) → PIVC (PIVC (legacy MIRO) IV) → FPYP (FPYA (legacy F110) Payment) – industry standard MM</div>
+              <div>• <b>Movement Type GR_PO (legacy 101)</b> – Goods Receipt for Purchase Order – FMTM (legacy OMJJ) – requires auto account FAUC (legacy OBYC) BSX (Inventory) / WRX (GR/IR) – FAUC valuation class – T0 BLOCKING – NO DANGLING</div>
+              <div>• <b>Posting Period FPPE (legacy OB52)</b> must be open for account type M – else error: Posting period closed – create via FPPE – FPPE (legacy OB52) – F_BKPF_BUP</div>
+              <div>• <b>Stock Update</b> – ISTV (legacy MMBE) – MAP recalc if price control V, PRD price diff if S – BSX debit inventory, WRX credit GR/IR – universal ledger FULC – stock ledger FSTL – T0 BLOCKING</div>
               <div>• Previously IGRC page only asked PRODUCT, QUANTITY, FACILITY, STORAGE_LOCATION – <b>no PO</b> – now fixed to require PO per SAP standard – you reported correctly</div>
             </div>
           </div>
@@ -283,14 +283,14 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
           <div>
-            <div className="font-semibold">Inventory Receipts – IGRC (alias MIGO) – General ERP – SAP Standard – Requires PO</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} GRs • COMPANY_CODE {companyCode} • API: POST /api/gr – requires po_id/po_number + lines with po_line_id – T0 BLOCKING – Movement 101 OMJJ + OBYC BSX/WRX</div>
+            <div className="font-semibold">Inventory Receipts – IGRC (alias IGRC (legacy MIGO)) – General ERP – SAP Standard – Requires PO</div>
+            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} GRs • COMPANY_CODE {companyCode} • API: POST /api/gr – requires po_id/po_number + lines with po_line_id – T0 BLOCKING – Movement GR_PO (legacy 101) FMTM (legacy OMJJ) + FAUC (legacy OBYC) INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)</div>
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
-            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">PO_NUMBER * – SAP STANDARD – MIGO REQUIRES PO – PPOC ME21N – T0 BLOCKING</label>
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">PO_NUMBER * – SAP STANDARD – IGRC (legacy MIGO) REQUIRES PO – PPOC PPOC (legacy ME21N) – T0 BLOCKING</label>
             <div className="mt-1.5 flex gap-2">
               <div className="flex-1">
                 <DbAutocomplete
@@ -309,22 +309,22 @@ export default function Page(){
               </div>
               <Link href={`/${companyCode}/mm/po`} className="px-3 py-2.5 rounded-xl border bg-zinc-50 text-xs hover:bg-zinc-100">PPOC →</Link>
             </div>
-            <p className="text-[10px] text-zinc-400 mt-1">PO FK – proc_purchase_order – po_number 4500000001 – must exist – SAP standard MIGO reference – if not found, create via PPOC ME21N – flow PR→PO→GR→IV</p>
+            <p className="text-[10px] text-zinc-400 mt-1">PO FK – proc_purchase_order – po_number 4500000001 – must exist – SAP standard IGRC (legacy MIGO) reference – if not found, create via PPOC PPOC (legacy ME21N) – flow PR→PO→GR→IV</p>
           </div>
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">POSTING_DATE * – OB52 – F_BKPF_BUP</label>
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">POSTING_DATE * – FPPE (legacy OB52) – F_BKPF_BUP</label>
             <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
             <p className="text-[10px] text-zinc-400 mt-1">Posting period must be open for account type M – else error – FPPE</p>
           </div>
           <div>
-            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">MOVEMENT_TYPE * – OMJJ – FMTM</label>
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">MOVEMENT_TYPE * – FMTM (legacy OMJJ) – FMTM</label>
             <select value={movementType} onChange={e=>setMovementType(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black">
-              <option value="101">101 – GR for PO – BSX/WRX – T0 BLOCKING</option>
-              <option value="102">102 – GR Reversal – for GRRE</option>
-              <option value="103">103 – GR for PO – GR blocked stock</option>
-              <option value="105">105 – GR for PO – release blocked</option>
+              <option value="GR_PO">GR_PO – Goods Receipt for PO (legacy 101) – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – T0 BLOCKING</option>
+              <option value="GR_PO_REV">GR_PO_REV – GR Reversal (legacy 102) – for GRRE</option>
+              <option value="GR_BLOCK">GR_BLOCK – GR Blocked (legacy 103) stock</option>
+              <option value="GR_BLOCK_REL">105 – GR for PO – release blocked</option>
             </select>
-            <p className="text-[10px] text-zinc-400 mt-1">Movement 101 requires OBYC BSX/WRX – FAUC – auto account – T0</p>
+            <p className="text-[10px] text-zinc-400 mt-1">Movement GR_PO (legacy 101) requires FAUC (legacy OBYC) INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – FAUC – auto account – T0</p>
           </div>
           <div className="md:col-span-4">
             <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">HEADER_TEXT – BKTXT</label>
@@ -337,7 +337,7 @@ export default function Page(){
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-bold text-sm">PO {poDetails.po_number} – {poDetails.vendor_name} – Plant {poDetails.facility_code || poDetails.plant_code} – Status {poDetails.status}</div>
-                <div className="text-xs text-zinc-600 mt-1">SAP standard MIGO – reference PO – shows PO lines with ordered/received/open – ELIKZ delivery completed flag – select lines to receive</div>
+                <div className="text-xs text-zinc-600 mt-1">SAP standard IGRC (legacy MIGO) – reference PO – shows PO lines with ordered/received/open – ELIKZ delivery completed flag – select lines to receive</div>
               </div>
               <span className="text-[10px] bg-blue-600 text-white rounded-full px-2 py-1">{poLines.length} lines</span>
             </div>
@@ -361,7 +361,7 @@ export default function Page(){
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">Ordered / Received / Open + Tolerance</div>
                         <div className="text-xs"><span className="font-bold">{line.quantity}</span> / {line.quantity_received} / <span className="text-zinc-900 font-bold">{line.quantity_open}</span> {line.uom_code} – Over {line.overdelivery_tolerance_percent || 10}% Under {line.underdelivery_tolerance_percent || 10}% – Max {(line.quantity * (1 + (line.overdelivery_tolerance_percent || 10)/100)).toFixed(2)} Min {(line.quantity * (1 - (line.underdelivery_tolerance_percent || 10)/100)).toFixed(2)}</div>
-                        <div className="text-[10px] text-zinc-400">PO Qty – GR Qty = Open – MIGO shows open – over/under tolerance UEBTO/UNTTO – if GR qty {'>'} maxAllowed {line.quantity}*(1+over/100) block 400 – if final ELIKZ and total {'<'} minAllowed block – partial GR allowed – ELIKZ delivery_completed</div>
+                        <div className="text-[10px] text-zinc-400">PO Qty – GR Qty = Open – IGRC (legacy MIGO) shows open – over/under tolerance UEBTO/UNTTO – if GR qty {'>'} maxAllowed {line.quantity}*(1+over/100) block 400 – if final ELIKZ and total {'<'} minAllowed block – partial GR allowed – ELIKZ delivery_completed</div>
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">GR Qty * – tolerance check – over {line.overdelivery_tolerance_percent || 10}%</div>
@@ -385,9 +385,9 @@ export default function Page(){
         )}
 
         <button onClick={create} disabled={!poNumber} className={`mt-6 w-full rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors ${poNumber ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
-          {poNumber ? `Create GR for PO ${poNumber} – MIGO 101 – Movement ${movementType} – T0 BLOCKING – BSX/WRX – ${elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}` : 'Select PO first – SAP standard requires PO reference – PPOC ME21N'}
+          {poNumber ? `Create GR for PO ${poNumber} – IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – Movement ${movementType} – T0 BLOCKING – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – ${elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}` : 'Select PO first – SAP standard requires PO reference – PPOC ME21N'}
         </button>
-        <p className="text-[10px] text-zinc-400 mt-2 text-center">PO required – SAP standard MIGO – previously only asked PRODUCT, QUANTITY, FACILITY, STORAGE_LOCATION – no PO – now fixed per your report – T0 BLOCKING – NO DANGLING – OBYC BSX/WRX + OMJJ 101 + OB52 posting period</p>
+        <p className="text-[10px] text-zinc-400 mt-2 text-center">PO required – SAP standard IGRC (legacy MIGO) – previously only asked PRODUCT, QUANTITY, FACILITY, STORAGE_LOCATION – no PO – now fixed per your report – T0 BLOCKING – NO DANGLING – FAUC (legacy OBYC) INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) + FMTM GR_PO (legacy FMTM (legacy OMJJ) 101) + FPPE (legacy OB52) posting period</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -395,7 +395,7 @@ export default function Page(){
           <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
             <div className="flex justify-between items-start">
               <div className="font-semibold text-sm">{it.gr_number || it.code} – PO {it.po_number} – {it.status}</div>
-              <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">MIGO 101</span>
+              <span className="text-[10px] bg-zinc-900 text-white rounded-full px-2 py-0.5">IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101))</span>
             </div>
             <div className="mt-2 text-xs text-zinc-500">{it.vendor_name} – Plant {it.plant_code || it.facility_code} – Qty {it.total_qty} – Lines {it.line_count} – BSX {it.bsx_gl || '5000000001'} WRX {it.wrx_gl || '2000000001'} – MAP recalc – universal ledger posted</div>
             <div className="mt-2 flex gap-2">
@@ -406,7 +406,7 @@ export default function Page(){
         ))}
         {(!items || (Array.isArray(items) && items.length===0)) && (
           <div className="col-span-2 bg-white rounded-2xl border border-dashed border-zinc-300 p-8 text-center">
-            <div className="text-sm text-zinc-500">No GR yet – create first via MIGO 101 – requires PO reference – SAP standard</div>
+            <div className="text-sm text-zinc-500">No GR yet – create first via IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – requires PO reference – SAP standard</div>
             <div className="text-xs text-zinc-400 mt-1">COMPANY_CODE {companyCode} • Flow: PPRC → PPOC → IGRC → PIVC → FPYP</div>
           </div>
         )}
@@ -415,21 +415,21 @@ export default function Page(){
       <div className="bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
         <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2">Related Masters – auto from dependencies – low importance</h4>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO – required – ME21N – SAP standard MIGO reference</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Material – MM01 – M_MATE_MAR</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/auto-account-determination`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">OBYC</span><span>Auto Account – BSX/WRX – FAUC – T0 BLOCKING</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/movement-types`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FMTM</span><span>Movement Types – OMJJ – 101/102 – T0</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/posting-periods`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FPPE</span><span>Posting Period – OB52 – M – T0</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/mm/iv`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PIVC</span><span>IV uses GR – MIRO – M_RECH_BUK</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/mm/po`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PPOC</span><span>PO – required – PPOC (legacy ME21N) – SAP standard IGRC (legacy MIGO) reference</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/foundation/materials`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">EMTC</span><span>Material – EMTC (legacy MM01) – M_MATE_MAR</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/auto-account-determination`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FAUC (legacy OBYC)</span><span>Auto Account – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX) – FAUC – T0 BLOCKING</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/movement-types`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FMTM</span><span>Movement Types – FMTM (legacy OMJJ) – 101/102 – T0</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/posting-periods`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FPPE</span><span>Posting Period – FPPE (legacy OB52) – M – T0</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/mm/iv`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">PIVC</span><span>IV uses GR – PIVC (legacy MIRO) – M_RECH_BUK</span><span className="text-zinc-400">→</span></Link>
         </div>
-        <p className="text-[10px] text-zinc-400 mt-2">Flow: PR (ME51N PPRC) → PO (ME21N PPOC) → GR (MIGO 101 IGRC) → IV (MIRO PIVC) → Payment (F110 FPYP) – industry standard MM – T0 BLOCKING – NO DANGLING – BSX/WRX/GBB/PRD auto – MAP recalc – stock ledger FSTL</p>
+        <p className="text-[10px] text-zinc-400 mt-2">Flow: PR (PPRC (legacy ME51N) PPRC) → PO (PPOC (legacy ME21N) PPOC) → GR (IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) IGRC) → IV (PIVC (legacy MIRO) PIVC) → Payment (FPYA (legacy F110) FPYP) – industry standard MM – T0 BLOCKING – NO DANGLING – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/GBB/PRD auto – MAP recalc – stock ledger FSTL</p>
       </div>
     </div>
   );
 
   return (
     <RoleGuard requiredPermission="GR_POST" requiredRoles={['WAREHOUSE','ADMIN','OWNER','MANAGER']}>
-      <ModernModuleShell title="Inventory Receipts" subtitle={`${Array.isArray(items)?items.length:0} GRs • ${companyCode} • MIGO 101 – Requires PO – SAP Standard`} code="IGRC" module="MM" classicChildren={classicContent}>
+      <ModernModuleShell title="Inventory Receipts" subtitle={`${Array.isArray(items)?items.length:0} GRs • ${companyCode} • IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – Requires PO – SAP Standard`} code="IGRC" module="MM" classicChildren={classicContent}>
         {modernContent}
       </ModernModuleShell>
     </RoleGuard>

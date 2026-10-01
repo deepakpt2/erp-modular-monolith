@@ -9,7 +9,7 @@ import { auth } from '@/auth';
  * Supports: Foodics, Square, Shopify, WooCommerce, Custom API
  * New: sales_order + sales_order_line + sales_pos_webhook_log (was sd_sales_order + sd_sales_line + sd_pos_webhook_log) – salesNumber SO-10000001, facilityId FAC-1000 was plant_id, partnerId SCUC was customer_id, itemId EMTC was material_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, uomCode EUOC, currencyCode INR default was KWD, source MANUAL/POS_FOODICS/POS_SQUARE/ECOM_SHOPIFY/ECOM_WOOCOM/API
  * Helper code: SPWC POS Webhook Create (alias PWC) + SSOC Sales Order Create (alias SOC, VA01)
- * Fallback to legacy ent_plant/ent_company_code if org_* not yet
+ * Fallback to legacy org_facility/org_legal_entity if org_* not yet
  */
 
 export async function POST(req: NextRequest) {
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         } catch {}
         if (!legalEntityId) {
           try {
-            const ccRes = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = ${finalCode} LIMIT 1`);
+            const ccRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${finalCode} LIMIT 1`);
             if (ccRes.rows.length > 0) legalEntityId = (ccRes.rows[0] as any).id;
           } catch {}
         }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
           if (anyLe.rows.length > 0) legalEntityId = (anyLe.rows[0] as any).id;
         } catch {
           try {
-            const anyCc = await db.execute(sql`SELECT id FROM ent_company_code LIMIT 1`);
+            const anyCc = await db.execute(sql`SELECT id FROM org_legal_entity LIMIT 1`);
             if (anyCc.rows.length > 0) legalEntityId = (anyCc.rows[0] as any).id;
           } catch {}
         }
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         } catch {}
         if (!facilityId) {
           try {
-            const pRes = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${finalFacCode} LIMIT 1`);
+            const pRes = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${finalFacCode} LIMIT 1`);
             if (pRes.rows.length > 0) facilityId = (pRes.rows[0] as any).id;
           } catch {}
         }
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
           if (anyF.rows.length > 0) facilityId = (anyF.rows[0] as any).id;
         } catch {
           try {
-            const anyP = await db.execute(sql`SELECT id FROM ent_plant LIMIT 1`);
+            const anyP = await db.execute(sql`SELECT id FROM org_facility LIMIT 1`);
             if (anyP.rows.length > 0) facilityId = (anyP.rows[0] as any).id;
           } catch {}
         }
@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
             } catch {}
             if (!itemId) {
               try {
-                const itRes = await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = ${it.sku || it.item_number} LIMIT 1`);
+                const itRes = await db.execute(sql`SELECT id FROM prod_item WHERE material_number = ${it.sku || it.item_number} LIMIT 1`);
                 if (itRes.rows.length > 0) itemId = (itRes.rows[0] as any).id;
               } catch {}
             }

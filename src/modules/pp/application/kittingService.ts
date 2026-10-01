@@ -33,9 +33,9 @@ export class KittingService {
     const bomResult = await db.execute(`
       SELECT h.id, h.is_phantom, h.is_kit, h.type, l.component_material_id, l.quantity, l.uom, l.is_phantom_explode,
              cm.is_phantom_kit, cm.is_kit, cm.description
-      FROM pp_bom_header h
-      JOIN pp_bom_line l ON h.id = l.bom_header_id
-      JOIN ent_material_master cm ON l.component_material_id = cm.id
+      FROM mfg_bom_header h
+      JOIN mfg_bom_line l ON h.id = l.bom_header_id
+      JOIN prod_item cm ON l.component_material_id = cm.id
       WHERE h.material_id = $1 AND h.plant_id = $2 AND h.status = 'ACTIVE'
         AND (h.valid_to IS NULL OR h.valid_to > NOW())
       ORDER BY l.line_number
@@ -84,8 +84,8 @@ export class KittingService {
       // Get BOM lines
       const bomLines = await tx.execute(`
         SELECT l.component_material_id, l.quantity, l.uom, m.description
-        FROM pp_bom_line l
-        JOIN ent_material_master m ON l.component_material_id = m.id
+        FROM mfg_bom_line l
+        JOIN prod_item m ON l.component_material_id = m.id
         WHERE l.bom_header_id = $1
       ` as any);
 
@@ -100,8 +100,8 @@ export class KittingService {
         const stockResult = await tx.execute(`
           SELECT s.batch_id, b.expiry_date, s.quantity, s.sloc_id, mp.moving_avg_price
           FROM inv_stock s
-          LEFT JOIN ent_batch b ON s.batch_id = b.id
-          JOIN ent_material_plant mp ON s.material_id = mp.material_id AND s.plant_id = mp.plant_id
+          LEFT JOIN inv_lot b ON s.batch_id = b.id
+          JOIN prod_item_plant mp ON s.material_id = mp.material_id AND s.plant_id = mp.plant_id
           WHERE s.material_id = $1 AND s.plant_id = $2 AND s.stock_status = 'UNRESTRICTED' AND s.quantity > 0
           ORDER BY b.expiry_date ASC NULLS LAST
         ` as any);
@@ -136,7 +136,7 @@ export class KittingService {
 
       // Get BOM header for expiry rule
       const bomHeader = await tx.execute(`
-        SELECT expiry_rule, fixed_shelf_life_days FROM pp_bom_header WHERE id = $1
+        SELECT expiry_rule, fixed_shelf_life_days FROM mfg_bom_header WHERE id = $1
       ` as any);
       const header = (bomHeader.rows[0] as any);
       
@@ -153,7 +153,7 @@ export class KittingService {
       // Create new batch for kit
       const batchNumber = `KIT-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       const batchResult = await tx.execute(`
-        INSERT INTO ent_batch (batch_number, material_id, plant_id, manufacturing_date, expiry_date)
+        INSERT INTO inv_lot (batch_number, material_id, plant_id, manufacturing_date, expiry_date)
         VALUES ($1, $2, $3, NOW(), $4)
         RETURNING id
       ` as any);
@@ -241,7 +241,7 @@ export class KittingService {
           const toIssue = Math.min(parseFloat(stock.quantity), remaining);
           
           await InventoryService.postMovement({
-            movementType: '261',
+            movementType: 'GI_PROD',
             materialId: comp.materialId,
             plantId: order.plant_id,
             slocId: stock.sloc_id,
@@ -265,9 +265,9 @@ export class KittingService {
 
       // Receipt of finished goods via 453
       const slocResult = await tx.execute(`
-        SELECT id FROM ent_storage_location WHERE plant_id = $1 AND type = 'SHOP_FLOOR' LIMIT 1
+        SELECT id FROM org_inventory_location WHERE plant_id = $1 AND type = 'SHOP_FLOOR' LIMIT 1
       ` as any);
-      const slocId = (slocResult.rows[0] as any)?.id || (await tx.execute(`SELECT id FROM ent_storage_location WHERE plant_id = $1 LIMIT 1` as any)).rows[0].id;
+      const slocId = (slocResult.rows[0] as any)?.id || (await tx.execute(`SELECT id FROM org_inventory_location WHERE plant_id = $1 LIMIT 1` as any)).rows[0].id;
 
       await InventoryService.postMovement({
         movementType: '453',
@@ -285,7 +285,7 @@ export class KittingService {
       // Scrap via 551
       if (params.scrapQuantity && params.scrapQuantity > 0) {
         await InventoryService.postMovement({
-          movementType: '551',
+          movementType: 'GI_SCRAP',
           materialId: order.material_id,
           plantId: order.plant_id,
           slocId,

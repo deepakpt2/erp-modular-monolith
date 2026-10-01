@@ -19,7 +19,7 @@ export default function Page() {
       relatedLinks={[
         { code: "EMTC", label: "Product Master – EMTC – uses Category – CAT-SPICE – T0", route: "/foundation/materials", description: "Product – EMTC – category_code CAT-SPICE – groups products – used in FRAD revenue account determination and pricing" },
         { code: "EMTP", label: "Product Types – EMTP – RAW/FINISHED/SEMI – OMS2", route: "/foundation/material-types", description: "Product Types – RAW/FINISHED/SEMI – determines valuation class" },
-        { code: "EUOC", label: "Base UoM – EUOC – KG/PC/BOX – CUNI", route: "/foundation/uom", description: "Base UoM – EUOC CUNI – KG/PC/BOX" },
+        { code: "EUOC", label: "Base UoM – EUOC – KG/PC/BOX – CUNI", route: "/foundation/uom", description: "Base UoM – EUOC EUOC (legacy CUNI) – KG/PC/BOX" },
         { code: "FAUC", label: "Auto Account – VKOA revenue – uses category – KOFI/KOFK", route: "/fico/auto-account-determination", description: "Auto Account – VKOA – revenue account determination – chart + sales org + customer group + material group → GL – KOFI/KOFK" },
       ]}
     />

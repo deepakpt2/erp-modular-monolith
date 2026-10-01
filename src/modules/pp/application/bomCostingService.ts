@@ -55,10 +55,10 @@ export class BomCostingService {
       SELECT h.id, h.base_quantity, h.base_uom, l.component_material_id, l.quantity, l.uom, l.is_phantom_explode, l.scrap_factor,
              cm.material_number, cm.description, cm.is_phantom_kit,
              mp.moving_avg_price, mp.standard_price, mp.price_control
-      FROM pp_bom_header h
-      JOIN pp_bom_line l ON h.id = l.bom_header_id
-      JOIN ent_material_master cm ON l.component_material_id = cm.id
-      JOIN ent_material_plant mp ON cm.id = mp.material_id AND mp.plant_id = h.plant_id
+      FROM mfg_bom_header h
+      JOIN mfg_bom_line l ON h.id = l.bom_header_id
+      JOIN prod_item cm ON l.component_material_id = cm.id
+      JOIN prod_item_plant mp ON cm.id = mp.material_id AND mp.plant_id = h.plant_id
       WHERE h.material_id = ${materialId} AND h.plant_id = ${plantId} AND h.status = 'ACTIVE'
         AND (h.valid_to IS NULL OR h.valid_to > NOW())
       ORDER BY l.line_number
@@ -119,8 +119,8 @@ export class BomCostingService {
   static async getCostRollup(materialId: string, plantId: string): Promise<BomCostRollup> {
     const matRes = await db.execute(sql`
       SELECT m.id, m.material_number, m.description, mp.standard_price, mp.moving_avg_price
-      FROM ent_material_master m
-      JOIN ent_material_plant mp ON m.id = mp.material_id AND mp.plant_id = ${plantId}
+      FROM prod_item m
+      JOIN prod_item_plant mp ON m.id = mp.material_id AND mp.plant_id = ${plantId}
       WHERE m.id = ${materialId}
     `);
 
@@ -128,7 +128,7 @@ export class BomCostingService {
 
     const mat = matRes.rows[0] as any;
     const bomHeaderRes = await db.execute(sql`
-      SELECT id, base_quantity FROM pp_bom_header 
+      SELECT id, base_quantity FROM mfg_bom_header 
       WHERE material_id = ${materialId} AND plant_id = ${plantId} AND status = 'ACTIVE'
       LIMIT 1
     `);
@@ -189,9 +189,9 @@ export class BomCostingService {
       // Get FERT materials with active BOM
       let matQuery = sql`
         SELECT DISTINCT m.id, m.material_number, m.description, mp.standard_price
-        FROM ent_material_master m
-        JOIN ent_material_plant mp ON m.id = mp.material_id AND mp.plant_id = ${params.plantId}
-        JOIN pp_bom_header h ON m.id = h.material_id AND h.plant_id = ${params.plantId}
+        FROM prod_item m
+        JOIN prod_item_plant mp ON m.id = mp.material_id AND mp.plant_id = ${params.plantId}
+        JOIN mfg_bom_header h ON m.id = h.material_id AND h.plant_id = ${params.plantId}
         WHERE m.type = 'FERT' AND h.status = 'ACTIVE'
       `;
 
@@ -217,7 +217,7 @@ export class BomCostingService {
           // If STANDARD type, update material master standard price
           if ((params.type || 'STANDARD') === 'STANDARD') {
             await tx.execute(sql`
-              UPDATE ent_material_plant 
+              UPDATE prod_item_plant 
               SET standard_price = ${rollup.newStandardPrice}, updated_at = NOW()
               WHERE material_id = ${mat.id} AND plant_id = ${params.plantId}
             `);
@@ -261,14 +261,14 @@ export class BomCostingService {
     const runRes = await db.execute(sql`
       SELECT r.*, p.code as plant_code, p.name as plant_name
       FROM co_costing_run r
-      JOIN ent_plant p ON r.plant_id = p.id
+      JOIN org_facility p ON r.plant_id = p.id
       WHERE r.id = ${runId}
     `);
 
     const linesRes = await db.execute(sql`
       SELECT l.*, m.material_number, m.description
       FROM co_costing_run_line l
-      JOIN ent_material_master m ON l.material_id = m.id
+      JOIN prod_item m ON l.material_id = m.id
       WHERE l.costing_run_id = ${runId}
       ORDER BY m.material_number
     `);

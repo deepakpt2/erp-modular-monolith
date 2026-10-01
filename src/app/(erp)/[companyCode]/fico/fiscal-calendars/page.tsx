@@ -26,7 +26,7 @@ export default function Page() {
         { code: "ELEC", label: "Legal Entity uses FFYC – K4", route: "/foundation/legal-entities", description: "Legal Entity requires fiscal calendar – K4 – fiscal_year_variant" },
         { code: "FCOA", label: "Chart of Accounts CA-IN-01", route: "/fico/chart-of-accounts", description: "Chart of Accounts must exist before ELEC – CA-IN-01 language EN" },
         { code: "FPPC", label: "Posting Period Variant PPV-1000", route: "/fico/posting-period-variants", description: "Posting Period Variant – must exist before ELEC" },
-        { code: "FCPC", label: "Credit Control Area CRED-1000", route: "/foundation/credit-policy-areas", description: "Credit Control Area must exist before OB13/ELEC" },
+        { code: "FCPC", label: "Credit Control Area CRED-1000", route: "/foundation/credit-policy-areas", description: "Credit Control Area must exist before FCOA (legacy OB13)/ELEC" },
       ]}
     />
   );

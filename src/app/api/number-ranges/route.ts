@@ -7,7 +7,7 @@ import { sql } from 'drizzle-orm';
  * Number Ranges API – FNRC – Industry standard NUMBERING – NO PREFIX
  *  Standard: Number ranges are purely numeric intervals – NO PREFIX in range itself
  * Example : PO 4500000000, PR 1000000000, MAT 10000000 – numeric only
- * In  FBN1/SNRO: Interval defined by From Number, To Number, Current Number – all numeric
+ * In  FNRC (legacy FBN1)/SNRO: Interval defined by From Number, To Number, Current Number – all numeric
  * Prefix handling: REMOVED for  compliance – prefix field forced to '' always
  * Industry standard locking (per user confirmation):
  * - Used if current_number > from_number
@@ -40,10 +40,10 @@ export async function GET(req: NextRequest) {
       }));
     } catch (newErr: any) {
       source = 'db-legacy';
-      table = 'ent_number_range';
+      table = 'core_number_range';
       legalSafe = false;
       try {
-        const res = await db.execute(sql`SELECT * FROM ent_number_range ORDER BY object_type, code`);
+        const res = await db.execute(sql`SELECT * FROM core_number_range ORDER BY object_type, code`);
         rows = res.rows as any[];
         rows = rows.map((r: any) => ({
           ...r,
@@ -70,9 +70,9 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Number Ranges – FNRC – Industry standard – purely numeric intervals – no prefix – FBN1/SNRO like – shows next available number, locked badge if used',
+      functionDescription: 'Number Ranges – FNRC – Industry standard – purely numeric intervals – no prefix – FNRC (legacy FBN1)/SNRO like – shows next available number, locked badge if used',
       sapStandard: {
-        numbering: 'Purely numeric – no prefix –  FBN1/SNRO standard – From/To/Current are numeric – e.g., PO 4500000000, PR 1000000000, MAT 10000000',
+        numbering: 'Purely numeric – no prefix –  FNRC (legacy FBN1)/SNRO standard – From/To/Current are numeric – e.g., PO 4500000000, PR 1000000000, MAT 10000000',
         prefix: 'REMOVED –  does not store prefix in number range – prefix field forced to empty for compliance',
         nextNumber: 'Next available = current_number + 1 – shown in FNRC page like  – e.g., current 4500000000 → next 4500000001',
         locking: 'If current > from, range is used → locked badge 🔒 instead of Edit/Delete – Industry standard',
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         fiscalYear: 'Lock per code+year – e.g., PO-01 FY 2026 locked only if 2026 used, FY 2025 can still be edited',
         ui: 'FNRC page shows next available number like  – locked badge 🔒 replaces Edit/Delete buttons when used',
       },
-      explanation: 'Number ranges – Industry standard – purely numeric, no prefix – next number displayed – locked badge if used – FBN1/SNRO',
+      explanation: 'Number ranges – Industry standard – purely numeric, no prefix – next number displayed – locked badge if used – FNRC (legacy FBN1)/SNRO',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, data: [], numberRanges: [] }, { status: 500 });
@@ -162,9 +162,9 @@ export async function POST(req: NextRequest) {
       const row = res.rows[0] as any;
       return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1, used_count: 0, is_locked: false }, code: 'FNRC', message: `Number range ${upperCode}${finalFiscalYear ? ` FY ${finalFiscalYear}` : ''} created – Industry standard numeric – next ${Number(row.current_number)+1}`, legalSafe: true, sap_standard: true });
     } catch (newErr: any) {
-      console.warn('core_number_range insert failed fallback ent_number_range:', newErr.message);
+      console.warn('core_number_range insert failed fallback core_number_range:', newErr.message);
       try {
-        const exLegacy = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number FROM ent_number_range WHERE code = ${upperCode} LIMIT 1`);
+        const exLegacy = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number FROM core_number_range WHERE code = ${upperCode} LIMIT 1`);
         if (exLegacy.rows.length > 0) {
           const existing = exLegacy.rows[0] as any;
           const isUsed = Number(existing.current_number) > Number(existing.from_number);
@@ -180,13 +180,13 @@ export async function POST(req: NextRequest) {
         }
       } catch {}
       const res = await db.execute(sql`
-        INSERT INTO ent_number_range (code, object_type, prefix, from_number, to_number, current_number, company_code_id, year, description)
+        INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number, company_code_id, year, description)
         VALUES (${upperCode}, ${upperObjType}, '', ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${description || null})
         ON CONFLICT (code) DO UPDATE SET object_type = ${upperObjType}, prefix = '', from_number = ${from_number || 1}, to_number = ${to_number || 9999999999}, current_number = ${current_number || from_number || 1}, description = ${description || null}
         RETURNING id, code, object_type, current_number, from_number, to_number
       `);
       const row = res.rows[0] as any;
-      return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1 }, code: 'FNRC', message: `Number range ${upperCode} created – FBN1 legacy –  numeric – next ${Number(row.current_number)+1}`, legalSafe: false });
+      return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1 }, code: 'FNRC', message: `Number range ${upperCode} created – FNRC (legacy FBN1) legacy –  numeric – next ${Number(row.current_number)+1}`, legalSafe: false });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -272,8 +272,8 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 400 });
       }
       let res;
-      if (id) res = await db.execute(sql`UPDATE ent_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '' WHERE id = ${id} RETURNING id, code, object_type, current_number`);
-      else res = await db.execute(sql`UPDATE ent_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '' WHERE code = ${code.toUpperCase()} RETURNING id, code, object_type, current_number`);
+      if (id) res = await db.execute(sql`UPDATE core_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '' WHERE id = ${id} RETURNING id, code, object_type, current_number`);
+      else res = await db.execute(sql`UPDATE core_number_range SET current_number = COALESCE(${current_number}, current_number), from_number = COALESCE(${from_number}, from_number), to_number = COALESCE(${to_number}, to_number), prefix = '' WHERE code = ${code.toUpperCase()} RETURNING id, code, object_type, current_number`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Number range not found' }, { status: 404 });
       return NextResponse.json({ success: true, numberRange: { ...(res.rows[0] as any), next_number: Number((res.rows[0] as any).current_number)+1 }, message: `Range ${(res.rows[0] as any).code} updated – legacy – next ${Number((res.rows[0] as any).current_number)+1}` });
     }
@@ -335,8 +335,8 @@ export async function DELETE(req: NextRequest) {
       if (err.message?.includes('used') || err.message?.includes('cannot delete') || err.message?.includes('locked')) {
         return NextResponse.json({ error: err.message }, { status: 400 });
       }
-      if (id) await db.execute(sql`DELETE FROM ent_number_range WHERE id = ${id}`);
-      else await db.execute(sql`DELETE FROM ent_number_range WHERE code = ${code}`);
+      if (id) await db.execute(sql`DELETE FROM core_number_range WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM core_number_range WHERE code = ${code}`);
     }
     return NextResponse.json({ success: true, code: 'FNRC', message: `Range ${code || id}${fiscal_year ? ` FY ${fiscal_year}` : ''} deleted – was not used yet (current == from) – Industry standard` });
   } catch (e: any) {

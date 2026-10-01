@@ -12,7 +12,7 @@
  * PURCHASER = ME51N/ME21N/ME28 – PR/PO create/view – GR view – not material create, not FI post
  * WAREHOUSE = MIGO/MMBE/MI01/VL01N – GR post, stock overview, delivery, physical inventory – not PR/PO create
  * SALES = VA01/VL01N/VF01/XD01 – sales order, delivery, billing, customer master – not purchasing
- * ACCOUNTANT = FS00/FB01/MIRO/OBYC – GL, AP, AR, costing, tax, payment – not MM/SD creation
+ * ACCOUNTANT = FS00/FB01/PIVC (legacy MIRO)/OBYC – GL, AP, AR, costing, tax, payment – not MM/SD creation
  * PRODUCTION = CS01/CR01/CA01/CO01/MD01 – BOM, work center, routing, prod order, MRP
  * HR/HR_MANAGER = PA30/PA20 – employee master – sensitive PII
  * PAYROLL_MANAGER = PC00 – payroll run – sensitive salary – HR only
@@ -78,22 +78,22 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { code: 'OBA0', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Tolerance Groups – GL – OBA0 – GL_POST – SAP standard – ACCOUNTANT/ADMIN only – OBA0' },
   { code: 'OBA4', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Tolerance Groups – Customers/Vendors – OBA4 – GL_POST – SAP standard – ACCOUNTANT/ADMIN only' },
   { code: 'OBA7', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Document Types – OBA7 – GL_POST – SAP standard – ACCOUNTANT/ADMIN only' },
-  { code: 'OBYC', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Automatic Account Determination – OBYC – GL_POST – SAP standard – ACCOUNTANT/ADMIN only – BSX/GBB' },
+  { code: 'FAUC', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Automatic Account Determination – FAUC (legacy OBYC) – GL_POST – SAP standard – ACCOUNTANT/ADMIN only – INV_POSTING/INV_OFFSET (legacy BSX/GBB)' },
   { code: 'FAPT', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Payment Terms – OBB8 – FAPT – GL_VIEW – ACCOUNTANT/ADMIN only' },
   { code: 'FPYP', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Payment Processing – F110 – FPYP – GL_POST – SAP standard – ACCOUNTANT/ADMIN only' },
   { code: 'CCUL', permission: 'CCA_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'FICO', description: 'Cost Center Actuals – KSB1 – CCUL – CCA_VIEW – SAP standard – ACCOUNTANT/ADMIN/MANAGER' },
   { code: 'CCRP', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'PRODUCTION'], module: 'FICO', description: 'Product Costing Run – CK40N – CCRP – GL_POST – SAP standard – ACCOUNTANT/PRODUCTION' },
 
-  // ========== MM – Materials Management – ME51N/ME21N/MIGO/MIRO – PURCHASER/WAREHOUSE/ACCOUNTANT ==========
+  // ========== MM – Materials Management – ME51N/ME21N/MIGO/PIVC (legacy MIRO) – PURCHASER/WAREHOUSE/ACCOUNTANT ==========
   { code: 'PPRC', permission: 'PR_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Purchase Requisition Create – ME51N – PPRC – PR_CREATE – SAP standard – PURCHASER only – MDM NOT allowed – M_BEST_BSA' },
   { code: 'PPRE', permission: 'PR_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Purchase Requisition Change – ME52N – PPRE – PR_CREATE – PURCHASER only' },
   { code: 'PPRV', permission: 'PR_VIEW', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER', 'WAREHOUSE', 'ACCOUNTANT'], module: 'MM', description: 'Purchase Requisition Display – ME53N – PPRV – PR_VIEW – view all' },
   { code: 'PPOC', permission: 'PO_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Purchase Order Create – ME21N – PPOC – PO_CREATE – SAP standard – PURCHASER only – MDM NOT allowed – M_BEST_BSA' },
   { code: 'PPOE', permission: 'PO_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Purchase Order Change – ME22N – PPOE – PO_CREATE – PURCHASER only' },
   { code: 'PPOV', permission: 'PO_VIEW', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER', 'WAREHOUSE', 'ACCOUNTANT'], module: 'MM', description: 'Purchase Order Display – ME23N – PPOV – PO_VIEW' },
-  { code: 'IGRC', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Goods Receipt – MIGO 101 – IGRC – GR_POST – SAP standard – WAREHOUSE only – MDM NOT allowed – M_MSEG_BWA 101 – T0 BLOCKING' },
-  { code: 'GRRE', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Goods Receipt Reversal – MIGO 102 – GRRE – GR_POST – SAP standard – WAREHOUSE only – 102 reversal' },
-  { code: 'PIVC', permission: 'IV_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Invoice Verification – MIRO – PIVC – IV_POST – SAP standard – ACCOUNTANT only – MDM NOT allowed – M_RECH_BUK' },
+  { code: 'IGRC', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Goods Receipt – IGRC (legacy MIGO) GR_PO (legacy 101) – IGRC – GR_POST – SAP standard – WAREHOUSE only – MDM NOT allowed – M_MSEG_BWA 101 – T0 BLOCKING' },
+  { code: 'GRRE', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Goods Receipt Reversal – GRRE (legacy MIGO 102) GR_PO_REV (legacy 102) – GRRE – GR_POST – SAP standard – WAREHOUSE only – 102 reversal' },
+  { code: 'PIVC', permission: 'IV_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Invoice Verification – PIVC (legacy MIRO) – PIVC – IV_POST – SAP standard – ACCOUNTANT only – MDM NOT allowed – M_RECH_BUK' },
   { code: 'IVRE', permission: 'IV_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Invoice Reversal – MR8M – IVRE – IV_POST – SAP standard – ACCOUNTANT only' },
   { code: 'PSTC', permission: 'PO_CREATE', roles: ['PURCHASER', 'WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Stock Transport Order – ME21N STO – PSTC – PO_CREATE – SAP standard – PURCHASER/WAREHOUSE – UB/NB' },
   { code: 'PSTD', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'STO Delivery – VL10B – PSTD – DELIVERY_CREATE – SAP standard – WAREHOUSE only – STO delivery' },
@@ -103,7 +103,7 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { code: 'SSOC', permission: 'SALES_CREATE', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Sales Order Create – VA01 – SSOC – SALES_CREATE – SAP standard – SALES only – MDM NOT allowed – V_VBAK_AAT' },
   { code: 'SSOE', permission: 'SALES_CREATE', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Sales Order Change – VA02 – SSOE – SALES_CREATE – SALES only' },
   { code: 'SSOV', permission: 'SALES_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT', 'WAREHOUSE'], module: 'SD', description: 'Sales Order Display – VA03 – SSOV – SALES_VIEW' },
-  { code: 'SDLC', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Outbound Deliveries – VL01N – SDLC – T0 BLOCKING – PGI 601 + COGS GBB/BSX – DELIVERY_CREATE – SAP standard LE – V_LIKP_VST – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
+  { code: 'SDLC', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Outbound Deliveries – VL01N – SDLC – T0 BLOCKING – PGI 601 + COGS INV_OFFSET/INV_POSTING (legacy GBB/BSX) – DELIVERY_CREATE – SAP standard LE – V_LIKP_VST – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
   { code: 'SBLC', permission: 'BILLING_CREATE', roles: ['SALES', 'ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Billing Document – VF01 – SBLC – BILLING_CREATE – SAP standard – SALES/ACCOUNTANT – MDM NOT allowed – V_VBRK_FKA' },
   { code: 'BLRE', permission: 'BILLING_CREATE', roles: ['SALES', 'ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Billing Reversal – VF11 – BLRE – BILLING_CREATE – SAP standard – SALES/ACCOUNTANT' },
   { code: 'PRIC', permission: 'PRICING_MAINTAIN', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Pricing Procedure – VK11 – PRIC – PRICING_MAINTAIN – SAP standard – SALES only – V_KONH_VKS – condition' },

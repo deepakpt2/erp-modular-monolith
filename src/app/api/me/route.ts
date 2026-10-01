@@ -27,12 +27,12 @@ export async function GET(req: NextRequest) {
       } catch {}
     }
 
-    // Also get detailed roles from ent_user_role
+    // Also get detailed roles from auth_user_role
     let detailedRoles: any[] = [];
     try {
       if (userId) {
         const res = await db.execute(sql`
-          SELECT r.code, r.name FROM ent_user_role ur JOIN ent_role r ON ur.role_id = r.id WHERE ur.user_id = ${userId}
+          SELECT r.code, r.name FROM auth_user_role ur JOIN auth_role r ON ur.role_id = r.id WHERE ur.user_id = ${userId}
         `);
         detailedRoles = res.rows;
         // Merge into roles

@@ -366,7 +366,7 @@ export async function POST(req: NextRequest) {
         `);
         if (jobCheck.rows.length > 0) {
           return NextResponse.json({
-            error: `🔒 Locked – ${finalLockObject} ${finalLockObjectId} already has background job ${(jobCheck.rows[0] as any).id} RUNNING/QUEUED by ${lb} – prevents double entry – e.g., GR for same PO – check header Jobs icon or System Jobs page FBJM own IP (alias SM37) – try after completion or 5 min inactivity`,
+            error: `🔒 Locked – ${finalLockObject} ${finalLockObjectId} already has background job ${(jobCheck.rows[0] as any).id} RUNNING/QUEUED by ${lb} – prevents double entry – e.g., GR for same PO – check header Jobs icon or System Jobs page FBJM own IP (alias FBJM (legacy SM37)) – try after completion or 5 min inactivity`,
             locked: true,
             locked_by: lb,
             code: 'DOUBLE_ENTRY_LOCKED',

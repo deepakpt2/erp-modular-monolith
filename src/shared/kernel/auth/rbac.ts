@@ -16,10 +16,10 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
   try {
     const res = await db.execute(sql`
       SELECT DISTINCT p.code
-      FROM ent_user_role ur
-      JOIN ent_role r ON ur.role_id = r.id
-      JOIN ent_role_permission rp ON r.id = rp.role_id
-      JOIN ent_permission p ON rp.permission_id = p.id
+      FROM auth_user_role ur
+      JOIN auth_role r ON ur.role_id = r.id
+      JOIN auth_role_permission rp ON r.id = rp.role_id
+      JOIN auth_permission p ON rp.permission_id = p.id
       WHERE ur.user_id = ${userId}
     `);
     return res.rows.map((r: any) => r.code);
@@ -33,8 +33,8 @@ export async function getUserRoles(userId: string): Promise<string[]> {
   try {
     const res = await db.execute(sql`
       SELECT DISTINCT r.code
-      FROM ent_user_role ur
-      JOIN ent_role r ON ur.role_id = r.id
+      FROM auth_user_role ur
+      JOIN auth_role r ON ur.role_id = r.id
       WHERE ur.user_id = ${userId}
     `);
     return res.rows.map((r: any) => r.code);

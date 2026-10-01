@@ -6,7 +6,7 @@ export default function LegalEntitiesPage() {
       code="ELEC"
       sapAlias="OX02"
       title="Legal Entity"
-      description="Define Legal Entity – statutory company code – needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FFSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000 – per real guide – posting period variant controls OB52 open/close, fiscal calendar calculates FY/Period"
+      description="Define Legal Entity – statutory company code – needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FFSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000 – per real guide – posting period variant controls FPPE (legacy OB52) open/close, fiscal calendar calculates FY/Period"
       apiEndpoint="/api/legal-entities"
       initialForm={{
         code: '', name: '', company_group_code: '', currency_code: 'INR', country_code: 'IN', country: 'IN', city: '',
@@ -24,8 +24,8 @@ export default function LegalEntitiesPage() {
         { key: 'fiscal_year_variant', label: 'FISCAL_YEAR_VARIANT', required: true, type: 'autocomplete', apiUrl: '/api/fiscal-calendars', dataKey: 'fiscalCalendars', codeField: 'code', placeholder: '', createUrl: '/fico/fiscal-calendars', createCode: 'FFYC', description: 'Fiscal Year Variant – K4 per guide – fiscal_year_variant K4 – calculates FY/Period' },
         { key: 'field_status_variant', label: 'FIELD_STATUS_VARIANT', required: true, placeholder: '', description: 'Field Status Variant – FFSV-1000 per guide' },
         { key: 'posting_period_variant', label: 'POSTING_PERIOD_VARIANT', required: true, type: 'autocomplete', apiUrl: '/api/posting-period-variants', dataKey: 'postingPeriodVariants', codeField: 'code', placeholder: '', createUrl: '/fico/posting-period-variants', createCode: 'FPPC', description: 'Posting Period Variant – PPV-1000 per guide – posting_period_variant PPV-1000' },
-        { key: 'credit_control_area', label: 'CREDIT_CONTROL_AREA', required: true, type: 'autocomplete', apiUrl: '/api/credit-policy-areas', dataKey: 'creditPolicyAreas', codeField: 'code', placeholder: '', createUrl: '/foundation/credit-policy-areas', createCode: 'FCPC', description: 'Credit Control Area – CRED-1000 per guide – credit_control_area CRED-1000 didnt create before OB13 – must exist – OB45' },
-        { key: 'language', label: 'LANGUAGE', required: true, placeholder: '', description: 'Language – EN per guide – OB13 language' },
+        { key: 'credit_control_area', label: 'CREDIT_CONTROL_AREA', required: true, type: 'autocomplete', apiUrl: '/api/credit-policy-areas', dataKey: 'creditPolicyAreas', codeField: 'code', placeholder: '', createUrl: '/foundation/credit-policy-areas', createCode: 'FCPC', description: 'Credit Control Area – CRED-1000 per guide – credit_control_area CRED-1000 didnt create before FCOA (legacy OB13) – must exist – OB45' },
+        { key: 'language', label: 'LANGUAGE', required: true, placeholder: '', description: 'Language – EN per guide – FCOA (legacy OB13) language' },
         { key: 'city', label: 'CITY', placeholder: '' },
         { key: 'tax_id', label: 'TAX_ID', placeholder: '' },
         { key: 'gst_number', label: 'GST_NUMBER', placeholder: '' },
@@ -38,7 +38,7 @@ export default function LegalEntitiesPage() {
         { code: 'FFYC', label: 'Fiscal Year Variant K4', route: '/fico/fiscal-calendars', description: 'Create K4 before ELEC – fiscal_year_variant' },
         { code: 'FFSV', label: 'Field Status Variant FFSV-1000', route: '/fico/field-status-variants', description: 'Create FFSV-1000 before ELEC' },
         { code: 'FPPC', label: 'Posting Period Variant PPV-1000', route: '/fico/posting-period-variants', description: 'Create PPV-1000 before ELEC' },
-        { code: 'FCPC', label: 'Credit Control Area CRED-1000 – OB45', route: '/foundation/credit-policy-areas', description: 'Create CRED-1000 before OB13/ELEC – credit_control_area didnt create before ob13' },
+        { code: 'FCPC', label: 'Credit Control Area CRED-1000 – OB45', route: '/foundation/credit-policy-areas', description: 'Create CRED-1000 before FCOA (legacy OB13)/ELEC – credit_control_area didnt create before ob13' },
         { code: 'FCYC', label: 'Currency – required', route: '/fico/currencies', description: 'Currency master OY03' },
         { code: 'EFCC', label: 'Facility uses ELEC', route: '/foundation/facilities', description: 'Facility requires Legal Entity' },
       ]}

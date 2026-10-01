@@ -119,7 +119,7 @@ export async function POST(req: NextRequest){
         // RELEASE – update standard price in material plant
         try{
           // Try update in prod_item or material master
-          await db.execute(sql`UPDATE ent_material_plant SET standard_price = ${est.new_price || est.total_cost} WHERE material_id = ${est.material_id} OR plant_id = ${est.plant_id || est.facility_id} LIMIT 1`).catch(()=>{});
+          await db.execute(sql`UPDATE prod_item_plant SET standard_price = ${est.new_price || est.total_cost} WHERE material_id = ${est.material_id} OR plant_id = ${est.plant_id || est.facility_id} LIMIT 1`).catch(()=>{});
           await db.execute(sql`UPDATE prod_item SET standard_price = ${est.new_price || est.total_cost} WHERE id = ${est.material_id} OR item_number = ${est.material_code || est.material_id} LIMIT 1`).catch(()=>{});
         }catch(e){ console.warn('std price update fallback:', e); }
         await db.execute(sql`UPDATE co_cost_estimate SET released = true, status = 'RELEASED' WHERE estimate_number = ${estimateNumber}`);

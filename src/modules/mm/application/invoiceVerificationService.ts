@@ -69,7 +69,7 @@ export class InvoiceVerificationService {
         // Get material plant for MAP adjustment
         const matPlantRes = await tx.execute(`
           SELECT id, price_control, moving_avg_price, total_stock_qty, total_stock_value, total_landed_cost
-          FROM ent_material_plant
+          FROM prod_item_plant
           WHERE material_id = $1
           FOR UPDATE
         ` as any);
@@ -92,7 +92,7 @@ export class InvoiceVerificationService {
               const newLanded = oldLanded + landedTotal;
 
               await tx.execute(`
-                UPDATE ent_material_plant
+                UPDATE prod_item_plant
                 SET moving_avg_price = $1, total_stock_value = $2, total_landed_cost = $3, updated_at = NOW()
                 WHERE id = $4
               ` as any);
@@ -120,7 +120,7 @@ export class InvoiceVerificationService {
       const companyCodeId = (poRes.rows[0] as any).company_code_id;
 
       const fiDocRes = await tx.execute(`
-        INSERT INTO fi_document (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id)
+        INSERT INTO fin_universal_ledger (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id)
         VALUES ($1,$2,'RE',NOW(),NOW(),$3,$4,$5,$5,'KWD','POSTED','IV',$6)
         RETURNING id
       ` as any);

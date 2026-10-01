@@ -15,7 +15,7 @@ export async function register() {
         try {
           const { startJobWorker } = await import('@/shared/kernel/enterprise/jobWorker');
           startJobWorker(10000); // Poll every 10s
-          console.log('[INSTRUMENTATION] Job worker started - polling ent_job_queue every 10s');
+          console.log('[INSTRUMENTATION] Job worker started - polling core_job_queue every 10s');
         } catch (e: any) {
           console.warn('[INSTRUMENTATION] Job worker start failed (DB not available in build):', e.message);
         }
@@ -30,10 +30,10 @@ export async function register() {
     console.log('  - Credit Check OB45/OB38 via checkCreditLimit()');
     console.log('  - ATP + PI Blocking + Expiry BLOCK via checkATP()');
     console.log('  - Number Ranges FBN1 FOR UPDATE locking via getNextNumberForUpdate()');
-    console.log('  - OBYC Auto Account table-driven');
+    console.log('  - FAUC (legacy OBYC) Auto Account own IP table-driven');
     console.log('  - WORM Audit Logs via DB triggers prevent_audit_update()');
-    console.log('  - Job Queue ent_job_queue async for PAYROLL_RUN/COSTING_RUN/MRP_RUN');
-    console.log('  - Exchange Rates TCURR ent_exchange_rate + convertCurrency() for KWD/INR/USD/EUR');
+    console.log('  - Job Queue core_job_queue async for PAYROLL_RUN/COSTING_RUN/MRP_RUN');
+    console.log('  - Exchange Rates TCURR core_exchange_rate + convertCurrency() for KWD/INR/USD/EUR');
     console.log('  - RBAC 12 roles 26 permissions + 500 employees hierarchical 10% app access');
   }
 }

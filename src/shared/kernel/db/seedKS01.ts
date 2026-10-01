@@ -13,30 +13,30 @@ export async function seedKS01() {
   console.log('🌱 Starting KS01 - Kerala Spices & Exports seed per PDF guide...');
 
   // 1. Client (use existing 100 or create KS01 client)
-  await db.execute(sql`INSERT INTO ent_client (code, name) VALUES ('100', 'Main Client') ON CONFLICT (code) DO NOTHING`);
-  await db.execute(sql`INSERT INTO ent_client (code, name) VALUES ('KS01', 'Kerala Spices & Exports') ON CONFLICT (code) DO NOTHING`);
-  const clientRes = await db.execute(sql`SELECT id FROM ent_client WHERE code = '100' LIMIT 1`);
+  await db.execute(sql`INSERT INTO core_tenant (code, name) VALUES ('100', 'Main Client') ON CONFLICT (code) DO NOTHING`);
+  await db.execute(sql`INSERT INTO core_tenant (code, name) VALUES ('KS01', 'Kerala Spices & Exports') ON CONFLICT (code) DO NOTHING`);
+  const clientRes = await db.execute(sql`SELECT id FROM core_tenant WHERE code = '100' LIMIT 1`);
   const clientId = (clientRes.rows[0] as any).id;
 
   // 2. Company Code KS01 - Kerala Spices & Exports Pvt Ltd, INR, Palakkad, India
   await db.execute(sql`
-    INSERT INTO ent_company_code (client_id, code, name, currency_code, city, country, is_active)
+    INSERT INTO org_legal_entity (client_id, code, name, currency_code, city, country, is_active)
     VALUES (${clientId}, 'KS01', 'Kerala Spices & Exports Pvt Ltd', 'INR', 'Palakkad', 'IN', true)
     ON CONFLICT (code) DO UPDATE SET name = 'Kerala Spices & Exports Pvt Ltd', currency_code = 'INR', city = 'Palakkad', country = 'IN'
   `);
-  const ccRes = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = 'KS01'`);
+  const ccRes = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = 'KS01'`);
   const companyCodeId = (ccRes.rows[0] as any).id;
   console.log(`   Company Code KS01: ${companyCodeId}`);
 
   // 3. Currency INR
   await db.execute(sql`
-    INSERT INTO ent_currency (code, name, decimal_places, symbol)
+    INSERT INTO core_currency (code, name, decimal_places, symbol)
     VALUES ('INR', 'Indian Rupee', 2, '₹')
     ON CONFLICT (code) DO UPDATE SET name = 'Indian Rupee', decimal_places = 2, symbol = '₹'
   `);
 
   // 4. Fiscal Year Variant K4 April-March India (custom table if exists, else store in number range or config)
-  // For our ERP, we store fiscal year variant as config in ent_number_range year logic + custom table
+  // For our ERP, we store fiscal year variant as config in core_number_range year logic + custom table
   // We'll create fiscal year variant config in a generic way via audit_log or dedicated table
   // For simplicity, create table if not exists and insert
   try {
@@ -81,7 +81,7 @@ export async function seedKS01() {
   // 5. Posting Period Variant KS01
   try {
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS fi_posting_period_variant (
+      CREATE TABLE IF NOT EXISTS fin_posting_calendar (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         code VARCHAR(10) UNIQUE NOT NULL,
         name VARCHAR(100),
@@ -89,15 +89,15 @@ export async function seedKS01() {
       )
     `);
     await db.execute(sql`
-      INSERT INTO fi_posting_period_variant (code, name)
+      INSERT INTO fin_posting_calendar (code, name)
       VALUES ('KS01', 'Kerala Spices Posting Period')
       ON CONFLICT (code) DO NOTHING
     `);
     // Open/Close periods OB52 - store in posting_period table
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS fi_posting_period (
+      CREATE TABLE IF NOT EXISTS fin_posting_calendar_period (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        variant_code VARCHAR(10) REFERENCES fi_posting_period_variant(code),
+        variant_code VARCHAR(10) REFERENCES fin_posting_calendar(code),
         account_type VARCHAR(2) NOT NULL,
         from_period INTEGER, from_year INTEGER, to_period INTEGER, to_year INTEGER,
         from_period2 INTEGER, from_year2 INTEGER, to_period2 INTEGER, to_year2 INTEGER
@@ -106,7 +106,7 @@ export async function seedKS01() {
     const accountTypes = ['+', 'A', 'D', 'K', 'M', 'S'];
     for (const at of accountTypes) {
       await db.execute(sql`
-        INSERT INTO fi_posting_period (variant_code, account_type, from_period, from_year, to_period, to_year, from_period2, from_year2, to_period2, to_year2)
+        INSERT INTO fin_posting_calendar_period (variant_code, account_type, from_period, from_year, to_period, to_year, from_period2, from_year2, to_period2, to_year2)
         VALUES ('KS01', ${at}, 1, 2024, 12, 2025, 1, 2024, 12, 2025)
         ON CONFLICT DO NOTHING
       `);
@@ -134,17 +134,17 @@ export async function seedKS01() {
 
   // 7. Plant KP01 Palakkad Spice Plant
   await db.execute(sql`
-    INSERT INTO ent_plant (company_code_id, code, name, description, is_active)
+    INSERT INTO org_facility (company_code_id, code, name, description, is_active)
     VALUES (${companyCodeId}, 'KP01', 'Palakkad Spice Plant', 'Kerala Spices Palakkad Plant - Plot No 45 Industrial Estate Kalmandapam PIN 678001', true)
     ON CONFLICT (code) DO UPDATE SET name = 'Palakkad Spice Plant', description = 'Kerala Spices Palakkad Plant', company_code_id = ${companyCodeId}
   `);
-  const plantRes = await db.execute(sql`SELECT id FROM ent_plant WHERE code = 'KP01'`);
+  const plantRes = await db.execute(sql`SELECT id FROM org_facility WHERE code = 'KP01'`);
   const plantId = (plantRes.rows[0] as any).id;
   console.log(`   Plant KP01: ${plantId}`);
 
   // 8. Storage Locations KS01 Main Store, KS02 Raw Material Store, KS03 Finished Goods Store
   await db.execute(sql`
-    INSERT INTO ent_storage_location (plant_id, code, name, type, is_active)
+    INSERT INTO org_inventory_location (plant_id, code, name, type, is_active)
     VALUES
       (${plantId}, 'KS01', 'Main Store Palakkad', 'MAIN', true),
       (${plantId}, 'KS02', 'Raw Material Store', 'RAW', true),
@@ -183,7 +183,7 @@ export async function seedKS01() {
       VALUES ('KPG', 'Kerala Purchase Group', '491-2555001', '491-2555002')
       ON CONFLICT (code) DO NOTHING
     `);
-    // Assign Plant to Company Code OX18 already via ent_plant.company_code_id
+    // Assign Plant to Company Code OX18 already via org_facility.company_code_id
     // Assign Purch Org to Company Code OX01 and Plant OX17 - store in assignment table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS mm_purch_org_assignment (
@@ -259,7 +259,7 @@ export async function seedKS01() {
   // Number Ranges 50-54 already exist as FI_DOC but we create specific for KS01
   const year = new Date().getFullYear();
   await db.execute(sql`
-    INSERT INTO ent_number_range (object_type, company_code_id, year, prefix, from_number, to_number, current_number, is_active)
+    INSERT INTO core_number_range (object_type, company_code_id, year, prefix, from_number, to_number, current_number, is_active)
     VALUES
       ('FI_DOC_50', ${companyCodeId}, ${year}, '', 5000000000, 5099999999, 5000000000, true),
       ('FI_DOC_51', ${companyCodeId}, ${year}, '', 5100000000, 5199999999, 5100000000, true),
@@ -282,20 +282,20 @@ export async function seedKS01() {
 
   // 12. Chart of Accounts KSCA
   await db.execute(sql`
-    INSERT INTO fi_chart_of_accounts (code, name, description)
+    INSERT INTO fin_chart (code, name, description)
     VALUES ('KSCA', 'Kerala Spices Chart of Accounts', 'Kerala Spices & Exports Chart per PDF')
     ON CONFLICT (code) DO NOTHING
   `);
-  const coaRes = await db.execute(sql`SELECT id FROM fi_chart_of_accounts WHERE code = 'KSCA'`);
+  const coaRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'KSCA'`);
   const coaId = (coaRes.rows[0] as any).id;
-  await db.execute(sql`UPDATE ent_company_code SET coa_id = ${coaId} WHERE id = ${companyCodeId}`);
+  await db.execute(sql`UPDATE org_legal_entity SET coa_id = ${coaId} WHERE id = ${companyCodeId}`);
 
   // Account Groups KASS, KLIA, KREV, KEXP, KMAT, KREC, KTAX, KCSH
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fi_account_group (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        coa_id UUID REFERENCES fi_chart_of_accounts(id),
+        coa_id UUID REFERENCES fin_chart(id),
         code VARCHAR(10) NOT NULL,
         name VARCHAR(100),
         from_account VARCHAR(20),
@@ -320,7 +320,7 @@ export async function seedKS01() {
 
   // 13. G/L Accounts per PDF Section 3.15
   await db.execute(sql`
-    INSERT INTO fi_gl_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
+    INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
     VALUES
       (${coaId}, '5000000001', 'Raw Materials Stock', 'ASSET', true, false, false),
       (${coaId}, '5000000002', 'Finished Goods Stock', 'ASSET', true, false, false),
@@ -349,7 +349,7 @@ export async function seedKS01() {
 
   // 14. Cost Centers for KS01
   await db.execute(sql`
-    INSERT INTO fi_cost_center (code, name, company_code_id)
+    INSERT INTO fin_cost_center (code, name, company_code_id)
     VALUES
       ('KS-CC-01', 'Production - Palakkad', ${companyCodeId}),
       ('KS-CC-02', 'Quality Control', ${companyCodeId}),
@@ -361,7 +361,7 @@ export async function seedKS01() {
 
   // 15. Tax Codes GST India
   await db.execute(sql`
-    INSERT INTO fi_tax_code (code, description, rate, type)
+    INSERT INTO fin_tax_rule (code, description, rate, type)
     VALUES
       ('GST0', 'GST 0%', 0, 'INPUT'),
       ('GST5', 'GST 5% Spices', 5, 'INPUT'),
@@ -376,41 +376,41 @@ export async function seedKS01() {
 
   // 16. UoM - ensure exists for KS01
   await db.execute(sql`
-    INSERT INTO ent_uom (code, name, dimension)
+    INSERT INTO core_unit_measure (code, name, dimension)
     VALUES ('KG', 'Kilogram', 'WEIGHT'), ('G', 'Gram', 'WEIGHT'), ('PC', 'Piece', 'QUANTITY'), ('BOX', 'Box', 'QUANTITY'), ('PACK', 'Pack', 'QUANTITY')
     ON CONFLICT (code) DO NOTHING
   `);
 
   // Auto Account Determination for KS01 - per PDF Section 4 MM config OBYC equivalent
-  // Map BSX/WRX/PRD/GBB to GL 5000000001 series
+  // Map INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/PRD/GBB to GL 5000000001 series
   try {
-    const ksGlRes = await db.execute(sql`SELECT id, account_number FROM fi_gl_account WHERE coa_id = ${coaId}`);
+    const ksGlRes = await db.execute(sql`SELECT id, account_number FROM fin_ledger_account WHERE coa_id = ${coaId}`);
     const ksGlMap = new Map((ksGlRes.rows as any[]).map((r: any) => [r.account_number, r.id]));
     const getKsGl = (num: string) => ksGlMap.get(num);
     if (getKsGl('5000000001')) {
       await db.execute(sql`
-        INSERT INTO fi_auto_account_determination (company_code_id, transaction_key, valuation_class, gl_account_id, description)
+        INSERT INTO fin_auto_account (company_code_id, transaction_key, valuation_class, gl_account_id, description)
         VALUES
-          (${companyCodeId}, 'BSX', 'ROH', ${getKsGl('5000000001')}, 'Raw Materials Stock KS01'),
-          (${companyCodeId}, 'BSX', 'FERT', ${getKsGl('5000000002')}, 'Finished Goods Stock KS01'),
-          (${companyCodeId}, 'BSX', 'HALB', ${getKsGl('5000000001')}, 'Raw Mat Stock HALB KS01'),
-          (${companyCodeId}, 'WRX', 'ROH', ${getKsGl('5000000003')}, 'GR/IR Clearing KS01 ROH'),
-          (${companyCodeId}, 'WRX', 'FERT', ${getKsGl('5000000003')}, 'GR/IR Clearing KS01 FERT'),
-          (${companyCodeId}, 'WRX', 'HALB', ${getKsGl('5000000003')}, 'GR/IR Clearing KS01 HALB'),
-          (${companyCodeId}, 'PRD', 'ROH', ${getKsGl('5000000005')}, 'Price Diff KS01 ROH'),
-          (${companyCodeId}, 'PRD', 'FERT', ${getKsGl('5000000005')}, 'Price Diff KS01 FERT'),
-          (${companyCodeId}, 'GBB', 'ROH', ${getKsGl('5000000006')}, 'Material Consumption KS01'),
-          (${companyCodeId}, 'GBB', 'FERT', ${getKsGl('4000000000')}, 'COGS FERT KS01'),
-          (${companyCodeId}, 'BSV', 'ROH', ${getKsGl('5000000004')}, 'Stock in Transit KS01')
+          (${companyCodeId}, 'INV_POSTING', 'ROH', ${getKsGl('5000000001')}, 'Raw Materials Stock KS01'),
+          (${companyCodeId}, 'INV_POSTING', 'FERT', ${getKsGl('5000000002')}, 'Finished Goods Stock KS01'),
+          (${companyCodeId}, 'INV_POSTING', 'HALB', ${getKsGl('5000000001')}, 'Raw Mat Stock HALB KS01'),
+          (${companyCodeId}, 'GR_IR_CLEARING', 'ROH', ${getKsGl('5000000003')}, 'GR/IR Clearing KS01 ROH'),
+          (${companyCodeId}, 'GR_IR_CLEARING', 'FERT', ${getKsGl('5000000003')}, 'GR/IR Clearing KS01 FERT'),
+          (${companyCodeId}, 'GR_IR_CLEARING', 'HALB', ${getKsGl('5000000003')}, 'GR/IR Clearing KS01 HALB'),
+          (${companyCodeId}, 'PRICE_DIFF', 'ROH', ${getKsGl('5000000005')}, 'Price Diff KS01 ROH'),
+          (${companyCodeId}, 'PRICE_DIFF', 'FERT', ${getKsGl('5000000005')}, 'Price Diff KS01 FERT'),
+          (${companyCodeId}, 'INV_OFFSET', 'ROH', ${getKsGl('5000000006')}, 'Material Consumption KS01'),
+          (${companyCodeId}, 'INV_OFFSET', 'FERT', ${getKsGl('4000000000')}, 'COGS FERT KS01'),
+          (${companyCodeId}, 'INV_DIFF', 'ROH', ${getKsGl('5000000004')}, 'Stock in Transit KS01')
         ON CONFLICT DO NOTHING
       `);
-      console.log('   Auto Account Determination BSX/WRX/PRD/GBB/BSV for KS01 mapped to 5000000001-5000000006');
+      console.log('   Auto Account Determination INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/PRD/GBB/BSV for KS01 mapped to 5000000001-5000000006');
     }
   } catch (e) { console.warn('Auto account determination KS01 failed', e); }
 
   // 17. Material Groups for Spices
   await db.execute(sql`
-    INSERT INTO ent_material_group (code, name)
+    INSERT INTO prod_category (code, name)
     VALUES
       ('SPICE_RAW', 'Raw Spices'),
       ('SPICE_POWDER', 'Spice Powders'),
@@ -422,9 +422,9 @@ export async function seedKS01() {
   `);
 
   // 18. Materials for Kerala Spices - as per spices business
-  const spiceRawGroupRes = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = 'SPICE_RAW'`);
-  const spicePowderGroupRes = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = 'SPICE_POWDER'`);
-  const fgGroupRes = await db.execute(sql`SELECT id FROM ent_material_group WHERE code = 'FG'`);
+  const spiceRawGroupRes = await db.execute(sql`SELECT id FROM prod_category WHERE code = 'SPICE_RAW'`);
+  const spicePowderGroupRes = await db.execute(sql`SELECT id FROM prod_category WHERE code = 'SPICE_POWDER'`);
+  const fgGroupRes = await db.execute(sql`SELECT id FROM prod_category WHERE code = 'FG'`);
   const spiceRawGroupId = (spiceRawGroupRes.rows[0] as any).id;
   const spicePowderGroupId = (spicePowderGroupRes.rows[0] as any).id;
   const fgGroupId = (fgGroupRes.rows[0] as any).id;
@@ -444,14 +444,14 @@ export async function seedKS01() {
 
   for (const mat of spicesMaterials) {
     await db.execute(sql`
-      INSERT INTO ent_material_master (material_number, type, group_id, base_uom, description, is_batch_managed, shelf_life_days, valuation_class, expiry_control, is_active)
+      INSERT INTO prod_item (material_number, type, group_id, base_uom, description, is_batch_managed, shelf_life_days, valuation_class, expiry_control, is_active)
       VALUES (${mat.num}, ${mat.type}, ${mat.group}, ${mat.uom}, ${mat.desc}, true, ${mat.shelf}, ${mat.valuation}, 'BLOCK', true)
       ON CONFLICT (material_number) DO UPDATE SET description = ${mat.desc}, type = ${mat.type}
     `);
-    const matRes = await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = ${mat.num}`);
+    const matRes = await db.execute(sql`SELECT id FROM prod_item WHERE material_number = ${mat.num}`);
     const matId = (matRes.rows[0] as any).id;
     await db.execute(sql`
-      INSERT INTO ent_material_plant (material_id, plant_id, price_control, moving_avg_price, standard_price, total_stock_qty, total_stock_value)
+      INSERT INTO prod_item_plant (material_id, plant_id, price_control, moving_avg_price, standard_price, total_stock_qty, total_stock_value)
       VALUES (${matId}, ${plantId}, ${mat.type === 'FERT' || mat.type === 'HALB' ? 'S' : 'V'}, 0, 0, 0, 0)
       ON CONFLICT (material_id, plant_id) DO NOTHING
     `);
@@ -468,7 +468,7 @@ export async function seedKS01() {
   ];
   for (const bp of vendors) {
     await db.execute(sql`
-      INSERT INTO ent_business_partner (bp_number, name1, role, address, is_blocked, is_one_time)
+      INSERT INTO partner_account (bp_number, name1, role, address, is_blocked, is_one_time)
       VALUES (${bp.num}, ${bp.name}, ${bp.type === 'VENDOR' ? 'VENDOR' : bp.type === 'CUSTOMER' ? 'CUSTOMER' : 'BOTH'}::bp_role, ${bp.city + ', IN'}, false, false)
       ON CONFLICT (bp_number) DO UPDATE SET name1 = ${bp.name}
     `);

@@ -8,7 +8,7 @@ import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared
 
 /**
  * Sales Orders API – Legal-safe own IP – Module 8 SD Sales & Distribution
- * New: sales_order + sales_order_line (was sd_sales_order + sd_sales_line) – salesNumber SO-10000001, type B2B/B2C_CASH/B2C_CARD/POS_WEBHOOK/ECOM, status DRAFT/CONFIRMED/PARTIALLY_ISSUED/FULLY_ISSUED/INVOICED/CANCELLED, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, partnerId SCUC was customer_id, customerName cash sales, paymentType CASH/CARD/KNET/AR/ONLINE, isCashSale Dr Cash Cr Revenue vs Dr AR Cr Revenue, source MANUAL/POS_FOODICS/POS_SQUARE/ECOM_SHOPIFY/ECOM_WOOCOM/API, externalId POS external order ID, orderDate/postingDate/requiredDate, totalAmount/taxAmount/discountAmount/netAmount currencyCode INR default was KWD, universalLedgerId FULC was fi_document_id Revenue+COGS+AR/Cash, commercialOrgId CO-1000 was sales_org KSO1, salesChannelId CH-10 was distribution_channel K1, productLineId PL-00 was division K1, shippingPoint DP-1000 was KP01 VL01N, deliveryPriority 02, route ROUTE-01 was KROUTE01, billingType F2, paymentTerms 0001, shipToPartnerId billToPartnerId payerPartnerId, costUnitId ECUC was cost_center profitUnitId EPUC was profit_center, itemId EMTC was material_id FERT, facilityId, inventoryLocationId was sloc_id, lotId ELTC was batch_id, lotNumber was batch_number, uomCode EUOC was uom, taxRuleId FTXC was tax_code
+ * New: sales_order + sales_order_line (was sd_sales_order + sd_sales_line) – salesNumber SO-10000001, type B2B/B2C_CASH/B2C_CARD/POS_WEBHOOK/ECOM, status DRAFT/CONFIRMED/PARTIALLY_ISSUED/FULLY_ISSUED/INVOICED/CANCELLED, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, partnerId SCUC was customer_id, customerName cash sales, paymentType CASH/CARD/KNET/AR/ONLINE, isCashSale Dr Cash Cr Revenue vs Dr AR Cr Revenue, source MANUAL/POS_FOODICS/POS_SQUARE/ECOM_SHOPIFY/ECOM_WOOCOM/API, externalId POS external order ID, orderDate/postingDate/requiredDate, totalAmount/taxAmount/discountAmount/netAmount currencyCode INR default was KWD, universalLedgerId FULC was fi_document_id Revenue+COGS+AR/Cash, commercialOrgId CO-1000 was sales_org KSO1, salesChannelId CH-10 was distribution_channel K1, productLineId PL-00 was division K1, shippingPoint DP-1000 was KP01 SDLC (legacy VL01N), deliveryPriority 02, route ROUTE-01 was KROUTE01, billingType F2, paymentTerms 0001, shipToPartnerId billToPartnerId payerPartnerId, costUnitId ECUC was cost_center profitUnitId EPUC was profit_center, itemId EMTC was material_id FERT, facilityId, inventoryLocationId was sloc_id, lotId ELTC was batch_id, lotNumber was batch_number, uomCode EUOC was uom, taxRuleId FTXC was tax_code
  * Helper code: SSOC Sales Order Create (alias SOC, VA01, FIN-SO-CR) – 4-char MOOA S=Sales, SO=SalesOrder, C=Create – same length as VA01 but own IP, module grouped, intuitive
  * Fallback to legacy sd_sales_order
  */
@@ -97,9 +97,9 @@ export async function GET(req: NextRequest) {
           cc.code as company_code,
           (SELECT COUNT(*) FROM sd_sales_line WHERE sales_order_id = so.id) as line_count
         FROM sd_sales_order so
-        LEFT JOIN ent_plant p ON so.plant_id = p.id
-        LEFT JOIN ent_business_partner bp ON so.customer_id = bp.id
-        LEFT JOIN ent_company_code cc ON so.company_code_id = cc.id
+        LEFT JOIN org_facility p ON so.plant_id = p.id
+        LEFT JOIN partner_account bp ON so.customer_id = bp.id
+        LEFT JOIN org_legal_entity cc ON so.company_code_id = cc.id
         WHERE 1=1
       `;
 
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // SAP-like posting period enforcement – OB52 – check if period open for account type D
+    // SAP-like posting period enforcement – FPPE (legacy OB52) – check if period open for account type D
     try {
       const postingDate = body.posting_date || body.posting_date || new Date().toISOString();
       const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';

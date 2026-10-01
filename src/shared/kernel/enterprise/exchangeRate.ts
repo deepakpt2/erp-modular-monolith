@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Multi-Currency Exchange Rates - TCURR Equivalent
- * Table: ent_exchange_rate (from_currency, to_currency, valid_from, rate, rateType)
+ * Table: core_exchange_rate (from_currency, to_currency, valid_from, rate, rateType)
  * Supports KWD <-> INR, USD <-> KWD/INR, EUR <-> KWD/INR etc
  */
 
@@ -22,7 +22,7 @@ export async function getExchangeRate(fromCurrency: string, toCurrency: string, 
     // Try direct rate fromCurrency -> toCurrency where valid_from <= postingDate ORDER BY valid_from DESC
     const directRes = await db.execute(sql`
       SELECT rate, valid_from
-      FROM ent_exchange_rate
+      FROM core_exchange_rate
       WHERE from_currency = ${fromCurrency}
         AND to_currency = ${toCurrency}
         AND rate_type = ${rateType}
@@ -38,7 +38,7 @@ export async function getExchangeRate(fromCurrency: string, toCurrency: string, 
     // Try inverse rate toCurrency -> fromCurrency, then invert
     const inverseRes = await db.execute(sql`
       SELECT rate, valid_from
-      FROM ent_exchange_rate
+      FROM core_exchange_rate
       WHERE from_currency = ${toCurrency}
         AND to_currency = ${fromCurrency}
         AND rate_type = ${rateType}
@@ -55,12 +55,12 @@ export async function getExchangeRate(fromCurrency: string, toCurrency: string, 
     // Try via USD as intermediate: from -> USD -> to
     // For example KWD->INR via USD: KWD->USD then USD->INR
     const viaUsd1 = await db.execute(sql`
-      SELECT rate FROM ent_exchange_rate
+      SELECT rate FROM core_exchange_rate
       WHERE from_currency = ${fromCurrency} AND to_currency = 'USD' AND valid_from <= ${postingDate}
       ORDER BY valid_from DESC LIMIT 1
     `);
     const viaUsd2 = await db.execute(sql`
-      SELECT rate FROM ent_exchange_rate
+      SELECT rate FROM core_exchange_rate
       WHERE from_currency = 'USD' AND to_currency = ${toCurrency} AND valid_from <= ${postingDate}
       ORDER BY valid_from DESC LIMIT 1
     `);
@@ -138,7 +138,7 @@ export async function createFiDocumentWithCurrency(params: {
   const year = postingDate.getFullYear();
   const fiNumRes = await tx.execute(sql`
     SELECT id, prefix, current_number, from_number, to_number
-    FROM ent_number_range
+    FROM core_number_range
     WHERE object_type = 'FI_DOC'
       AND (company_code_id = ${companyCodeId} OR company_code_id IS NULL)
       AND year = ${year}
@@ -152,11 +152,11 @@ export async function createFiDocumentWithCurrency(params: {
     const row = fiNumRes.rows[0] as any;
     const current = parseInt(row.current_number) + 1;
     docNumber = `${row.prefix || 'FI'}${current}`;
-    await tx.execute(sql`UPDATE ent_number_range SET current_number = ${current} WHERE id = ${row.id}`);
+    await tx.execute(sql`UPDATE core_number_range SET current_number = ${current} WHERE id = ${row.id}`);
   }
 
   const fiRes = await tx.execute(sql`
-    INSERT INTO fi_document (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number)
+    INSERT INTO fin_universal_ledger (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number)
     VALUES (${docNumber}, ${companyCodeId}, ${docType}, ${postingDate}, ${documentDate}, ${reference || null}, ${headerText || null}, ${convertedAmount}, ${convertedAmount}, ${companyCurrency}, 'POSTED', ${referenceDocType || null}, ${referenceDocId || null}, ${referenceDocNumber || null})
     RETURNING id, document_number
   `);
@@ -167,7 +167,7 @@ export async function createFiDocumentWithCurrency(params: {
   if (transactionCurrency !== companyCurrency) {
     await tx.execute(sql`
       INSERT INTO audit_log (table_name, record_id, record_number, action, new_values, description)
-      VALUES ('fi_document', ${fiDocumentId}, ${docNumber}, 'INSERT', ${JSON.stringify({ originalAmount: totalAmount, originalCurrency: transactionCurrency, convertedAmount, companyCurrency, rate, postingDate })}::jsonb, ${`FI Cross-Currency: ${totalAmount} ${transactionCurrency} -> ${convertedAmount.toFixed(3)} ${companyCurrency} @ rate ${rate} on ${postingDate.toISOString().substring(0,10)} Doc ${docNumber}`})
+      VALUES ('fin_universal_ledger', ${fiDocumentId}, ${docNumber}, 'INSERT', ${JSON.stringify({ originalAmount: totalAmount, originalCurrency: transactionCurrency, convertedAmount, companyCurrency, rate, postingDate })}::jsonb, ${`FI Cross-Currency: ${totalAmount} ${transactionCurrency} -> ${convertedAmount.toFixed(3)} ${companyCurrency} @ rate ${rate} on ${postingDate.toISOString().substring(0,10)} Doc ${docNumber}`})
     `).catch(()=>{});
   }
 

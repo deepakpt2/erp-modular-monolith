@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
         let query = sql`
           SELECT ag.*, coa.code as chart_code, coa.name as chart_name
           FROM fi_account_group ag
-          JOIN fi_chart_of_accounts coa ON ag.coa_id = coa.id
+          JOIN fin_chart coa ON ag.coa_id = coa.id
           WHERE 1=1
         `;
         if (coaCode && coaCode !== 'ALL') query = sql`${query} AND coa.code = ${coaCode}`;
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, accountGroup: res.rows[0], code: 'FAGC', message: `Account group ${code.toUpperCase()} created – FAGC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
       console.warn('fin_account_group insert failed fallback fi_account_group:', newErr.message);
-      const chartRes = await db.execute(sql`SELECT id FROM fi_chart_of_accounts WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
+      const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
       if (chartRes.rows.length === 0) return NextResponse.json({ error: `Chart ${finalChartCode} not found` }, { status: 404 });
       const chartId = (chartRes.rows[0] as any).id;
 

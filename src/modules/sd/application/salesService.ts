@@ -5,12 +5,12 @@
  * - sd_sales_order → sales_order – salesNumber SO-10000001, type B2B/B2C_CASH/B2C_CARD/POS_WEBHOOK/ECOM, status DRAFT/CONFIRMED/PARTIALLY_ISSUED/FULLY_ISSUED/INVOICED/CANCELLED, legalEntityId was company_code_id, facilityId FAC-1000 was plant_id, partnerId SCUC was customer_id, paymentType CASH/CARD/KNET/AR/ONLINE, isCashSale, source MANUAL/POS_FOODICS/POS_SQUARE/ECOM_SHOPIFY/ECOM_WOOCOM/API, externalId, totalAmount/taxAmount/netAmount currencyCode INR was KWD, universalLedgerId FULC was fi_document_id
  * - sd_sales_line → sales_order_line – salesOrderId, itemId EMTC was material_id, facilityId was plant_id, inventoryLocationId was sloc_id, lotId ELTC was batch_id, quantity, uomCode EUOC was uom, unitPrice, lineTotal, cogsPerUnit, stockLedgerId
  * - sd_pos_webhook_log → sales_pos_webhook_log
- * - ent_material_master → prod_item EMTC
- * - ent_plant → org_facility FAC-1000
- * - ent_storage_location → org_inventory_location
- * - ent_batch → inv_lot ELTC
+ * - prod_item → prod_item EMTC
+ * - org_facility → org_facility FAC-1000
+ * - org_inventory_location → org_inventory_location
+ * - inv_lot → inv_lot ELTC
  * - inv_stock → inv_stock_ledger? but keep inv_stock for now with fallback
- * - fi_document → fin_universal_journal FULC
+ * - fin_universal_ledger → fin_universal_journal FULC
  * Helper codes: SSOC Sales Order Create (alias SOC, VA01), SDLC Delivery Create (alias DLC, VL01N), SBLC Billing Create (alias BLC, VF01), SPWC POS Webhook Create (alias PWC)
  * 4-char MOOA S=Sales
  */
@@ -55,7 +55,7 @@ export class SalesService {
     return withTransaction(async (tx) => {
       const isCashSale = ['CASH', 'CARD', 'KNET', 'ONLINE'].includes(params.paymentType) || params.type !== 'B2B';
 
-      // Generate sales number – try new core_number_range then legacy ent_number_range
+      // Generate sales number – try new core_number_range then legacy core_number_range
       let salesNumber: string = `SO-${Date.now()}`;
       try {
         const nrRes = await tx.execute(sql`
@@ -71,14 +71,14 @@ export class SalesService {
         try {
           const salesNumberResult = await tx.execute(sql`
             SELECT current_number + 1 as next_num, prefix
-            FROM ent_number_range
+            FROM core_number_range
             WHERE object_type = 'SALES_ORDER' AND year = EXTRACT(YEAR FROM NOW())::int
             FOR UPDATE
           ` as any);
           if (salesNumberResult.rows && salesNumberResult.rows.length > 0) {
             const row = salesNumberResult.rows[0] as any;
             salesNumber = `${row.prefix}${String(row.next_num).padStart(8, '0')}`;
-            await tx.execute(sql`UPDATE ent_number_range SET current_number = ${row.next_num} WHERE object_type = 'SALES_ORDER' AND year = EXTRACT(YEAR FROM NOW())::int` as any);
+            await tx.execute(sql`UPDATE core_number_range SET current_number = ${row.next_num} WHERE object_type = 'SALES_ORDER' AND year = EXTRACT(YEAR FROM NOW())::int` as any);
           }
         } catch {}
       }
@@ -132,7 +132,7 @@ export class SalesService {
             const slocRes = await tx.execute(sql`SELECT id FROM org_inventory_location WHERE facility_id = ${facilityId} LIMIT 1` as any);
             if (slocRes.rows && slocRes.rows.length > 0) slocId = (slocRes.rows[0] as any).id;
             else {
-              const anySloc = await tx.execute(sql`SELECT id FROM ent_storage_location WHERE plant_id = ${facilityId} LIMIT 1` as any);
+              const anySloc = await tx.execute(sql`SELECT id FROM org_inventory_location WHERE plant_id = ${facilityId} LIMIT 1` as any);
               if (anySloc.rows && anySloc.rows.length > 0) slocId = (anySloc.rows[0] as any).id;
             }
           } catch {}
@@ -221,9 +221,9 @@ export class SalesService {
                      COALESCE(mp.expiry_control_override, m.expiry_control) as effective_control,
                      mp.moving_avg_price, mp.standard_price, m.description
               FROM inv_stock s
-              JOIN ent_material_master m ON s.material_id = m.id
-              JOIN ent_material_plant mp ON m.id = mp.material_id AND mp.plant_id = s.plant_id
-              LEFT JOIN ent_batch b ON s.batch_id = b.id
+              JOIN prod_item m ON s.material_id = m.id
+              JOIN prod_item_plant mp ON m.id = mp.material_id AND mp.plant_id = s.plant_id
+              LEFT JOIN inv_lot b ON s.batch_id = b.id
               WHERE s.material_id = ${materialId} AND s.plant_id = ${plantId} AND s.sloc_id = ${slocId} AND s.stock_status = 'UNRESTRICTED' AND s.quantity > 0
               ORDER BY b.expiry_date ASC NULLS LAST
             ` as any);
@@ -241,7 +241,7 @@ export class SalesService {
           try {
             const { InventoryService } = await import('../../foundation/inventory-state/application/inventoryService');
             const movement = await InventoryService.postMovement({
-              movementType: '601',
+              movementType: 'GI_SALES',
               materialId,
               plantId,
               slocId,
@@ -277,7 +277,7 @@ export class SalesService {
         }
       }
 
-      // FI posting – try new fin_universal_journal then legacy fi_document
+      // FI posting – try new fin_universal_journal then legacy fin_universal_ledger
       let fiDocId: string | null = null;
       try {
         const fiDocResult = await tx.execute(sql`
@@ -289,7 +289,7 @@ export class SalesService {
       } catch {
         try {
           const fiDocResult = await tx.execute(sql`
-            INSERT INTO fi_document (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number)
+            INSERT INTO fin_universal_ledger (document_number, company_code_id, doc_type, posting_date, document_date, reference, header_text, total_debit, total_credit, currency, status, reference_doc_type, reference_doc_id, reference_doc_number)
             VALUES (${`FI${Date.now()}`}, ${order.company_code_id}, 'RV', NOW(), NOW(), ${order.sales_number}, ${`GI for sales ${order.sales_number}`}, ${totalCogs}, ${totalCogs}, 'KWD', 'POSTED', 'SALES_ORDER', ${orderId}, ${order.sales_number})
             RETURNING id
           ` as any);
@@ -358,7 +358,7 @@ export class SalesService {
         } catch {}
         if (!matId) {
           try {
-            const matRes = await db.execute(sql`SELECT id, base_uom FROM ent_material_master WHERE material_number = ${materialNumber} LIMIT 1` as any);
+            const matRes = await db.execute(sql`SELECT id, base_uom FROM prod_item WHERE material_number = ${materialNumber} LIMIT 1` as any);
             if (matRes.rows && matRes.rows.length > 0) {
               matId = (matRes.rows[0] as any).id;
               baseUom = (matRes.rows[0] as any).base_uom || 'PC';

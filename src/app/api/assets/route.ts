@@ -54,8 +54,8 @@ export async function GET(req: NextRequest) {
           SELECT a.*, ac.code as asset_class_code, ac.name as asset_class_name, cc.code as company_code, gl.account_number, gl.name as gl_name
           FROM fi_asset a
           LEFT JOIN fi_asset_class ac ON a.asset_class_id = ac.id
-          LEFT JOIN ent_company_code cc ON a.company_code_id = cc.id
-          LEFT JOIN fi_gl_account gl ON a.gl_account_id = gl.id
+          LEFT JOIN org_legal_entity cc ON a.company_code_id = cc.id
+          LEFT JOIN fin_ledger_account gl ON a.gl_account_id = gl.id
           WHERE 1=1
         `;
         if (search) query = sql`${query} AND (a.asset_number ILIKE ${`%${search}%`} OR a.description ILIKE ${`%${search}%`})`;
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
           const le = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${finalLegalCode} LIMIT 1`);
           if (le.rows.length > 0) legalEntityId = (le.rows[0] as any).id;
           else {
-            const le2 = await db.execute(sql`SELECT id FROM ent_company_code WHERE code = ${finalLegalCode} LIMIT 1`);
+            const le2 = await db.execute(sql`SELECT id FROM org_legal_entity WHERE code = ${finalLegalCode} LIMIT 1`);
             if (le2.rows.length > 0) legalEntityId = (le2.rows[0] as any).id;
           }
         } catch {}
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
           const g = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${gl_account_number} LIMIT 1`);
           if (g.rows.length > 0) glId = (g.rows[0] as any).id;
         } catch {
-          const g = await db.execute(sql`SELECT id FROM fi_gl_account WHERE account_number = ${gl_account_number} LIMIT 1`);
+          const g = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${gl_account_number} LIMIT 1`);
           if (g.rows.length > 0) glId = (g.rows[0] as any).id;
         }
       }

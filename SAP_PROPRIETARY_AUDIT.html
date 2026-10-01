@@ -1,0 +1,205 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>SAP Proprietary Audit – Own IP Setup</title>
+<style>
+body{font-family: ui-sans-system, sans-serif; background:#fafaf9; padding:20px; color:#18181b; line-height:1.5}
+.card{background:white; border:1px solid #e4e4e7; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+table{width:100%; border-collapse:collapse; font-size:12px; margin-top:8px}
+th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#71717a; padding:8px; border-bottom:1px solid #e4e4e7}
+td{padding:8px; border-bottom:1px solid #f4f4f5; font-size:12px}
+.badge{font-family:monospace; font-size:10px; background:black; color:white; border-radius:9999px; padding:4px 10px; font-weight:bold}
+code{font-family:monospace; background:#f4f4f5; padding:2px 6px; border-radius:6px; font-size:11px}
+h1{font-size:18px; font-weight:600; margin:0}
+h2{font-size:14px; font-weight:600; margin:16px 0 8px}
+pre{background:#f4f4f5; padding:12px; border-radius:12px; font-size:11px; overflow:auto; white-space:pre-wrap}
+</style></head><body>
+<div class="card"><h1>SAP Proprietary Names Audit – Own IP Setup Proposal – Don't Implement Yet</h1>
+<p style="font-size:12px; color:#71717a">Full audit of DB + codebase for SAP proprietary names: T-Codes, movement types 101 etc, account keys BSX/WRX, field names ELIKZ, table names MARA etc. Own IP mapping proposed.</p>
+<div style="margin-top:8px"><span class="badge">1248+ OCCURRENCES</span> <span class="badge" style="background:white; color:black; border:1px solid #e4e4e7">OWN IP READY</span></div>
+</div>
+<div class="card">
+<h2>Top SAP Terms Found (grep)</h2>
+<table><tr><th>SAP Term</th><th>Count</th><th>Meaning</th><th>Own IP Proposed</th></tr>
+<tr><td><code>BSX</code></td><td>279</td><td>Inventory Posting</td><td><code>INV_POST</code></td></tr>
+<tr><td><code>WRX</code></td><td>251</td><td>GR/IR Clearing</td><td><code>GRIR_CLEAR</code></td></tr>
+<tr><td><code>GBB</code></td><td>147</td><td>Offsetting Entry</td><td><code>OFFSET</code></td></tr>
+<tr><td><code>OB52</code></td><td>136</td><td>Posting Periods T-Code</td><td><code>FPPE</code> / POST_PERIOD</td></tr>
+<tr><td><code>OBYC</code></td><td>135</td><td>Auto Account Determination</td><td><code>FAUC</code> / AUTO_ACCT</td></tr>
+<tr><td><code>K4</code></td><td>121</td><td>Fiscal Year Variant</td><td><code>FFYC</code></td></tr>
+<tr><td><code>PRD</code></td><td>113</td><td>Price Difference</td><td><code>PRICE_DIFF</code></td></tr>
+<tr><td><code>MIGO</code></td><td>104</td><td>Goods Movement T-Code</td><td><code>IGRC</code> / GR_CREATE</td></tr>
+<tr><td><code>ME21N</code></td><td>96</td><td>Create PO</td><td><code>PPOC</code> / PO_CREATE</td></tr>
+<tr><td><code>F110</code></td><td>85</td><td>Auto Payment</td><td><code>FAPP</code> / PAY_AUTO</td></tr>
+<tr><td><code>MIRO</code></td><td>78</td><td>Invoice Verification</td><td><code>PIVC</code> / IV_CREATE</td></tr>
+<tr><td><code>OX02</code></td><td>77</td><td>Company Code</td><td><code>ELEC</code> / COMP_CODE</td></tr>
+<tr><td><code>VKOA</code></td><td>74</td><td>Revenue Acct Det</td><td><code>REV_DET</code></td></tr>
+<tr><td><code>KOFI</code></td><td>73</td><td>Revenue Det</td><td><code>REV_DET</code></td></tr>
+<tr><td><code>ELIKZ</code></td><td>66</td><td>Delivery Completed</td><td><code>DELIV_COMPLETED</code> / delivery_completed</td></tr>
+<tr><td><code>ME51N</code></td><td>54</td><td>Create PR</td><td><code>PPRC</code> / PR_CREATE</td></tr>
+<tr><td><code>OMJJ</code></td><td>46</td><td>Movement Types</td><td><code>FMTM</code> / MOVE_TYPE</td></tr>
+<tr><td><code>OX10</code></td><td>42</td><td>Plant</td><td><code>EFCC</code> / PLANT</td></tr>
+<tr><td><code>F-53</code></td><td>33</td><td>Vendor Payment</td><td><code>FPYP</code> / PAY_VENDOR</td></tr>
+<tr><td><code>101 transfer etc</code></td><td>Many</td><td>Movement Type 101 GR for PO</td><td><code>GR_PO</code></td></tr>
+</table>
+</div>
+<div class="card">
+<h2>Own IP Setup – Movement Types (101 etc)</h2>
+<table><tr><th>SAP Move</th><th>Own IP Code</th><th>Description</th><th>Account Modifier Own IP</th></tr>
+<tr><td>101</td><td><code>GR_PO</code></td><td>Goods Receipt for PO</td><td>INV_POST / GRIR_CLEAR (was BSX/WRX)</td></tr>
+<tr><td>102</td><td><code>GR_PO_REV</code></td><td>GR Reversal</td><td>INV_POST / GRIR_CLEAR</td></tr>
+<tr><td>103</td><td><code>GR_BLOCK</code></td><td>GR Blocked Stock</td><td>INV_POST / GRIR_CLEAR</td></tr>
+<tr><td>122/124</td><td><code>GR_RETURN</code></td><td>Return to Vendor</td><td>INV_POST / GRIR_CLEAR</td></tr>
+<tr><td>261</td><td><code>GI_PROD</code></td><td>Goods Issue for Production Order (CO11N)</td><td>OFFSET / INV_POST (was GBB/BSX)</td></tr>
+<tr><td>262</td><td><code>GI_PROD_REV</code></td><td>GI Reversal Prod</td><td>OFFSET</td></tr>
+<tr><td>601</td><td><code>GI_SALES</code></td><td>Goods Issue for Sales PGI (VL02N) – COGS</td><td>OFFSET / INV_POST</td></tr>
+<tr><td>602</td><td><code>GI_SALES_REV</code></td><td>GI Reversal Sales (VL09)</td><td>OFFSET</td></tr>
+<tr><td>701/702</td><td><code>PI_DIFF_PLUS/MINUS</code></td><td>Physical Inventory Diff</td><td>INV_DIFF (was BSV)</td></tr>
+</table>
+</div>
+<div class="card">
+<h2>Own IP – Account Determination Keys (BSX etc)</h2>
+<table><tr><th>SAP Key</th><th>Own IP Key</th><th>Description</th></tr>
+<tr><td>BSX</td><td><code>INV_POST</code></td><td>Inventory Posting – Dr Inventory on GR_PO</td></tr>
+<tr><td>WRX</td><td><code>GRIR_CLEAR</code></td><td>GR/IR Clearing – Cr GR/IR on GR, Dr on IV</td></tr>
+<tr><td>GBB</td><td><code>OFFSET</code></td><td>Offsetting Entry – GI</td></tr>
+<tr><td>PRD</td><td><code>PRICE_DIFF</code></td><td>Price Difference – PO vs MAP/Standard</td></tr>
+<tr><td>BSV</td><td><code>INV_DIFF</code></td><td>Inventory Difference – PI</td></tr>
+<tr><td>FRE</td><td><code>FREIGHT</code></td><td>Freight Landed Cost</td></tr>
+<tr><td>ZOL</td><td><code>CUSTOMS</code></td><td>Customs Landed Cost</td></tr>
+<tr><td>KDM</td><td><code>EXCH_DIFF</code></td><td>Exchange Rate Difference</td></tr>
+<tr><td>KOFI/KOFK</td><td><code>REV_DET</code></td><td>Revenue Determination – VKOA</td></tr>
+</table>
+</div>
+<div class="card">
+<h2>DB Schema – SAP Names Found</h2>
+<pre>
+- mm_purchase_requisition comment: ME51N/ME52N... → should be PPRC
+- mm_purchase_order comment: ME21N/ME22N... → PPOC
+- Index idx_po_line_elikz → idx_po_line_delivery_completed (contains ELIKZ)
+- Index idx_proc_po_line_elikz → idx_proc_po_line_delivery_completed
+- Column fiDocumentId comment: Auto BSX/WRX → Auto INV_POST/GRIR_CLEAR
+- Column quantityIssued comment: MIGO 351 → TR_POST / GI_PROD
+- Column quantityReceived comment: MIGO 101 → GR_PO
+- fin_auto_account_determination.transaction_key stores BSX, WRX, GBB, PRD etc → should be INV_POST, GRIR_CLEAR, OFFSET, PRICE_DIFF
+- movement_types.code stores 101, 102, 261, 601 etc → should be GR_PO, GR_PO_REV, GI_PROD, GI_SALES
+- Comments with MARA, MARC, MSEG, MKPF, BKPF, BSEG → should be ent_material_master, mm_gr_line, mm_goods_receipt, fin_universal_ledger
+</pre>
+</div>
+<div class="card">
+<h2>Full Markdown Audit</h2>
+<pre># SAP Proprietary Names Audit – DB + Codebase – Own IP Setup Proposal
+**Date:** 2026-09-30
+**Scope:** Full codebase src/ + drizzle/migrations – DB schema, enums, indexes, comments, API routes, UI pages
+**Instruction:** Don't implement yet – show list – create own IP setup
+
+---
+
+## 1. Summary Counts (grep -rho)
+- BSX: 279 occurrences (inventory posting)
+- WRX: 251 (GR/IR clearing)
+- GBB: 147 (offsetting)
+- OB52: 136 (posting periods)
+- OBYC: 135 (auto account determination)
+- K4: 121 (fiscal year variant)
+- PRD: 113 (price diff)
+- MIGO: 104 (goods receipt t-code)
+- ME21N: 96 (create PO t-code)
+- F110: 85 (auto payment)
+- MIRO: 78 (invoice verification)
+- OX02: 77 (company code t-code)
+- VKOA: 74 (revenue acct det)
+- KOFI: 73
+- ELIKZ: 66 (delivery completed)
+- KOFK: 60
+- KDM: 59
+- ME51N: 54 (create PR)
+- OMJJ: 46 (movement types)
+- OX10: 42 (plant)
+- F-53: 33 (vendor payment)
+- ME28: 31 (PO release)
+- FB05: 22 (post with clearing)
+- F-44: 17
+- MB51: 3, UNTTO/UEBTO: 2 each
+- Total SAP-related tokens: 1248+ lines
+
+---
+
+## 2. Categories of SAP Proprietary Names Found
+
+### A. SAP Transaction Codes (T-Codes) – SAP IP – Found in comments, UI, API messages
+| SAP T-Code | Meaning (SAP) | Found In | Own IP (Existing in App) | Proposed Own IP (Final) |
+|------------|---------------|----------|--------------------------|-------------------------|
+| MIGO | Goods Movement (GR) | mm/gr/page.tsx, goodsReceiptService.ts, comments | IGRC (Inventory Goods Receipt) | GR_CREATE / IGRC – keep IGRC as own IP |
+| MIRO | Invoice Verification | mm/iv/page.tsx, invoiceVerificationService.ts | PIVC (Purchase Invoice Verification) | IV_CREATE / PIVC – keep PIVC |
+| ME21N | Create Purchase Order | mm/po/page.tsx, procurementFoundationSchema.ts | PPOC (Procurement PO Create) | PO_CREATE / PPOC |
+| ME51N | Create Purchase Requisition | mm/pr/page.tsx | PPRC (Procurement PR Create) | PR_CREATE / PPRC |
+| ME28 | Release PO | mm/po/page.tsx | – | PO_RELEASE |
+| ME27 | Create STO | mm/sto/page.tsx, schema | PSTC (STO Create) | STO_CREATE / PSTC |
+| MMBE | Stock Overview | mm/reports, inventory | – | STOCK_OVERVIEW / ISTV |
+| MB51 | Material Document List | – | – | MAT_DOC_LIST |
+| VL02N | Change Delivery | sd/delivery-change | – | DELIVERY_CHANGE / SDLC |
+| VL10B | Delivery Due List | sto | – | DELIVERY_DUE |
+| CO11N | Confirm Production Order | pp | – | PROD_CONFIRM |
+| F-53 | Outgoing Payment (Vendor) | fico/payment | FPYP (Payment Proposal?) actually F-53 is manual payment | PAY_VENDOR / FPYP – keep FPYP as own IP for payment |
+| F110 | Automatic Payment Program | fico/payment, payment-proposal | FPYP / FAPP | PAY_AUTO / FAPP |
+| F-44 | Clear Vendor | fico | – | CLEAR_VENDOR |
+| FB05 | Post with Clearing | fico | – | POST_CLEARING |
+| OB52 | Posting Periods (FI) | fico/posting-periods, gr, iv | FPPE (Posting Period) / FPPC (Variant) | POST_PERIOD / FPPE – keep FPPE |
+| OBYC | Automatic Account Determination | fico/auto-account-determination | FAUC (Auto Account) ? Actually FAUC is valuation class, OBYC is auto acct | AUTO_ACCT / FAUC – keep FAUC |
+| OMJJ | Movement Types | fico/movement-types | FMTM (Movement Types) | MOVE_TYPE / FMTM – keep FMTM |
+| OX02 | Company Code | foundation/legal-entities, enterprise-structure | ELEC (Legal Entity) / FCOM? | COMP_CODE / ELEC – keep ELEC |
+| OX10 | Plant / Facility | foundation/facilities | EFCC (Facility) | PLANT / EFCC – keep EFCC |
+| OX09 | Storage Location | foundation/inventory-locations | EILC (Inventory Location) | SLOC / EILC – keep EILC |
+| OVX2 | Commercial Org? | foundation/commercial-orgs | ECOC | COMM_ORG / ECOC |
+| FBN1 | Number Ranges | fico/number-ranges | FNRC | NUM_RANGE / FNRC – keep FNRC |
+| OB13 | Chart of Accounts? | foundation/legal-entities | FCOA | COA / FCOA |
+| OB29 | Fiscal Calendar? | fico/fiscal-calendars | FFYC | FISC_CAL / FFYC |
+| OX06 | Controlling Area? | – | – | CTRL_AREA |
+| OME4 | Purchasing Group? | – | – | PURCH_GROUP |
+| OX08 | Purchasing Org? | – | – | PURCH_ORG |
+| etc | | | | |
+
+**Note:** App already has own 4-char helper codes: PPRC, PPOC, IGRC, PIVC, FPYP, FNRC, FPPE, FMTM, FAUC, ELEC, EFCC, EILC, ECOC, EMTC, etc – these are own IP, same length as SAP T-codes but not SAP IP. SAP T-codes appear in comments, UI help text, error messages – need to replace with own IP in user-facing text, keep only in internal mapping table for reference if needed.
+
+### B. SAP Movement Types – SAP Standard – Numeric Codes – Proprietary
+| SAP Move Type | SAP Meaning | Found In | Own IP Code | Own IP Description |
+|---------------|-------------|----------|-------------|--------------------|
+| 101 | GR for PO | gr/page.tsx, movement-types, auto-account-determination, goodsReceiptService.ts | GR_PO / INBOUND_PO | Goods Receipt for Purchase Order – stock + value + |
+| 102 | GR Reversal (for 101) | gr-reversal, movement-types | GR_PO_REV | GR Reversal |
+| 103 | GR Blocked Stock | gr/page.tsx | GR_BLOCK | GR to Blocked Stock |
+| 105 | Release Blocked Stock | – | GR_BLOCK_REL | Release Blocked |
+| 122 | Return to Vendor | – | GR_RETURN | Return Delivery to Vendor |
+| 124 | Return after GR? | – | GR_RETURN_POST | Return after posting |
+| 261 | GI for Production Order (CO11N) | fico/auto-account-determination, pp | GI_PROD / ISSUE_PROD | Goods Issue for Production Order – stock - value - |
+| 262 | GI Reversal for 261 | – | GI_PROD_REV | |
+| 351 | Transfer Posting? | sto | TR_POST | Transfer Posting |
+| 601 | PGI for Sales (VL02N) | auto-account-determination | GI_SALES / PGI_SALES | Goods Issue for Sales – COGS |
+| 602 | PGI Reversal (VL09) | – | GI_SALES_REV | |
+| 701 | PI Difference + | physical-inventory | PI_DIFF_PLUS | Physical Inventory Difference + |
+| 702 | PI Difference - | – | PI_DIFF_MINUS | |
+| etc | | | | |
+
+**DB Impact:** movement-types table `code` column currently stores "101", "102" etc – SAP numeric – should be own IP like "GR_PO", "GR_REV" etc – but need mapping table to keep SAP compatibility if needed. Proposal: keep numeric as legacy alias, primary own IP code is GR_PO, etc, with `sap_alias` column for backward compat.
+
+### C. SAP Account Determination Transaction Keys – SAP Proprietary (OBYC)
+| SAP Key | SAP Meaning | Found In | Own IP Key | Own IP Description |
+|---------|-------------|----------|------------|--------------------|
+| BSX | Inventory Posting (GR) – stock + | auto-account-determination, gr, iv, schema | INV_POST / STOCK_POST | Inventory Posting – Dr Inventory |
+| WRX | GR/IR Clearing | same | GRIR_CLEAR | GR/IR Clearing – Cr GR/IR on GR, Dr on IV |
+| GBB | Offsetting Entry (GI) – 261, 601, etc | same | OFFSET / ISSUE_OFFSET | Offsetting – Cr Inventory on GI |
+| PRD | Price Difference – PO vs MAP/Standard | invoiceVerificationService, schema | PRICE_DIFF | Price Difference – variance |
+| BSV | Inventory Difference (PI) – 701/702 | movement-types | INV_DIFF | Inventory Difference |
+| FRE | Freight (Landed Cost) | po, iv | FREIGHT | Freight |
+| ZOL | Customs (Landed Cost) | po, iv | CUSTOMS | Customs |
+| KDM | Exchange Rate Difference | fico | EXCH_DIFF | Exchange Difference |
+| KOFI / KOFK | Revenue Account Determination (VKOA) – billing | sd/billing | REV_DET | Revenue Determination |
+| VKOA | Revenue Account Determination T-Code | sd/billing | – | (T-Code) – own IP RBAC? |
+| BSA etc | | | | |
+
+**DB Impact:** `fin_auto_account_determination` table `transaction_key` column stores BSX, WRX, etc – SAP IP – should be own IP: INV_POST, GRIR_CLEAR, OFFSET, PRICE_DIFF, etc – with sap_alias column.
+
+### D. SAP Field Names / Indicators – SAP Proprietary
+| SAP Field | SAP Meaning | Found In | Own IP Field | Own IP Description |
+|-----------|-------------|----------|--------------|--------------------|
+| ELIKZ | Delivery Completed Indicator (PO line) | mmPurchaseOrder line, mmPoLine, index idx_po_line_elikz, goodsReceiptService.ts | delivery_completed (already own IP) but index name still elikz, comment still mentions ELIKZ | Keep column delivery_completed, rename index to idx_po_line_delivery_comple</pre>
+<p>... see SAP_PROPRIETARY_AUDIT.md for full 600+ lines</p>
+</div>
+</body></html>

@@ -5,9 +5,9 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Posting Calendar API – Legal-safe own IP – Module 4
- * New: fin_posting_calendar + fin_posting_calendar_period (was ent_posting_period_variant + ent_posting_period) – fromPeriod/toPeriod/accountType ALL/ASSET/CUSTOMER/VENDOR/ITEM/GL was +/A/D/K/M/S, isOpen OB52, sample kept
- * Helper code: FPPC Posting Period Calendar Create (alias PPC, OBBO, FIN-PP-CR) – 4-char MOOA F=Financials, PP=PostingPeriod, C=Create – module grouped intuitive
- * Fallback to legacy ent_posting_period_variant
+ * New: fin_posting_calendar + fin_posting_calendar_period (was fin_posting_calendar + fin_posting_calendar_period) – fromPeriod/toPeriod/accountType ALL/ASSET/CUSTOMER/VENDOR/ITEM/GL was +/A/D/K/M/S, isOpen FPPE (legacy OB52), sample kept
+ * Helper code: FPPC Posting Period Calendar Create (alias PPC, FPPC (legacy OBBO), FIN-PP-CR) – 4-char MOOA F=Financials, PP=PostingPeriod, C=Create – module grouped intuitive
+ * Fallback to legacy fin_posting_calendar
  */
 
 export async function GET(req: NextRequest) {
@@ -28,15 +28,15 @@ export async function GET(req: NextRequest) {
         periods = perRes.rows as any[];
       } catch {}
     } catch (newErr: any) {
-      console.warn('fin_posting_calendar not yet, fallback ent_posting_period_variant:', newErr.message);
+      console.warn('fin_posting_calendar not yet, fallback fin_posting_calendar:', newErr.message);
       source = 'db-legacy';
-      table = 'ent_posting_period_variant';
+      table = 'fin_posting_calendar';
       legalSafe = false;
       try {
-        const calRes = await db.execute(sql`SELECT * FROM ent_posting_period_variant ORDER BY code`);
+        const calRes = await db.execute(sql`SELECT * FROM fin_posting_calendar ORDER BY code`);
         calendars = calRes.rows as any[];
         try {
-          const perRes = await db.execute(sql`SELECT * FROM ent_posting_period ORDER BY posting_period_variant_id, from_period`);
+          const perRes = await db.execute(sql`SELECT * FROM fin_posting_calendar_period ORDER BY posting_period_variant_id, from_period`);
           periods = perRes.rows as any[];
         } catch {}
       } catch (e: any) {
@@ -58,12 +58,12 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Posting Calendar – FPPC legal-safe own IP (was OBBO) – fromPeriod/toPeriod/accountType ALL/ASSET/CUSTOMER/VENDOR/ITEM/GL (was +/A/D/K/M/S), isOpen OB52, sample kept',
+      functionDescription: 'Posting Calendar – FPPC legal-safe own IP (was FPPC (legacy OBBO)) – fromPeriod/toPeriod/accountType ALL/ASSET/CUSTOMER/VENDOR/ITEM/GL (was +/A/D/K/M/S), isOpen FPPE (legacy OB52), sample kept',
       erpDefaults: [
-        { code: '0001', name: 'Standard Posting Calendar', periods: '1-12 open, 13-16 special', accountType: 'ALL', isOpen: true, helperCode: 'FPPC', note: 'Sample kept – OB52 open/close' },
+        { code: '0001', name: 'Standard Posting Calendar', periods: '1-12 open, 13-16 special', accountType: 'ALL', isOpen: true, helperCode: 'FPPC', note: 'Sample kept – FPPE (legacy OB52) open/close' },
         { code: 'KSCA', name: 'Kerala Spices Posting Calendar', periods: '1-12 open', accountType: 'ALL', helperCode: 'FPPC' },
       ],
-      explanation: 'Posting calendar legal-safe fin_posting_calendar + fin_posting_calendar_period – fromPeriod/toPeriod/accountType ALL/ASSET/CUSTOMER/VENDOR/ITEM/GL was +/A/D/K/M/S, isOpen OB52 – Code FPPC primary alias PPC/OBBO – 4-char MOOA F=Financials PP=PostingPeriod C=Create – module grouped intuitive – sample data kept for user convenience per requirement fresh empty but common sample data like coa, gl, tax, currencies, UoM kept.',
+      explanation: 'Posting calendar legal-safe fin_posting_calendar + fin_posting_calendar_period – fromPeriod/toPeriod/accountType ALL/ASSET/CUSTOMER/VENDOR/ITEM/GL was +/A/D/K/M/S, isOpen FPPE (legacy OB52) – Code FPPC primary alias PPC/FPPC (legacy OBBO) – 4-char MOOA F=Financials PP=PostingPeriod C=Create – module grouped intuitive – sample data kept for user convenience per requirement fresh empty but common sample data like coa, gl, tax, currencies, UoM kept.',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, data: [], postingCalendars: [] }, { status: 500 });
@@ -120,14 +120,14 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ success: true, postingCalendar: res.rows[0], code: 'FPPC', aliasCodes: ['PPC','OBBO'], message: `Posting Calendar ${code.toUpperCase()} created – FPPC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
-      console.warn('fin_posting_calendar insert failed fallback ent_posting_period_variant:', newErr.message);
+      console.warn('fin_posting_calendar insert failed fallback fin_posting_calendar:', newErr.message);
       const res = await db.execute(sql`
-        INSERT INTO ent_posting_period_variant (tenant_id, code, name, description)
+        INSERT INTO fin_posting_calendar (tenant_id, code, name, description)
         VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
         ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}
         RETURNING id, code, name
       `);
-      return NextResponse.json({ success: true, postingCalendar: res.rows[0], code: 'FPPC', aliasCodes: ['OBBO'], message: `Posting Calendar ${code.toUpperCase()} created – OBBO legacy (migrating to FPPC)`, legalSafe: false });
+      return NextResponse.json({ success: true, postingCalendar: res.rows[0], code: 'FPPC', aliasCodes: ['OBBO'], message: `Posting Calendar ${code.toUpperCase()} created – FPPC (legacy OBBO) legacy (migrating to FPPC)`, legalSafe: false });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -150,10 +150,10 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: true, postingCalendar: res.rows[0], code: 'FPPC', message: `Posting Calendar ${res.rows[0].code} updated – FPPC legal-safe` });
     } catch {
       let res;
-      if (id) res = await db.execute(sql`UPDATE ent_posting_period_variant SET code = COALESCE(${code?.toUpperCase()}, code), name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE id = ${id} RETURNING id, code, name`);
-      else res = await db.execute(sql`UPDATE ent_posting_period_variant SET name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+      if (id) res = await db.execute(sql`UPDATE fin_posting_calendar SET code = COALESCE(${code?.toUpperCase()}, code), name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE id = ${id} RETURNING id, code, name`);
+      else res = await db.execute(sql`UPDATE fin_posting_calendar SET name = COALESCE(${name}, name), description = COALESCE(${description}, description) WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Posting Calendar not found' }, { status: 404 });
-      return NextResponse.json({ success: true, postingCalendar: res.rows[0], message: `Posting Calendar ${res.rows[0].code} updated – OBBO legacy` });
+      return NextResponse.json({ success: true, postingCalendar: res.rows[0], message: `Posting Calendar ${res.rows[0].code} updated – FPPC (legacy OBBO) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -173,8 +173,8 @@ export async function DELETE(req: NextRequest) {
       if (id) await db.execute(sql`DELETE FROM fin_posting_calendar WHERE id = ${id}`);
       else await db.execute(sql`DELETE FROM fin_posting_calendar WHERE code = ${code}`);
     } catch {
-      if (id) await db.execute(sql`DELETE FROM ent_posting_period_variant WHERE id = ${id}`);
-      else await db.execute(sql`DELETE FROM ent_posting_period_variant WHERE code = ${code}`);
+      if (id) await db.execute(sql`DELETE FROM fin_posting_calendar WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM fin_posting_calendar WHERE code = ${code}`);
     }
 
     return NextResponse.json({ success: true, code: 'FPPC', message: `Posting Calendar ${code || id} deleted – FPPC legal-safe` });

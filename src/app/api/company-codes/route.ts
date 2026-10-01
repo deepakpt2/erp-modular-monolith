@@ -5,8 +5,8 @@ import { sql } from 'drizzle-orm';
 
 /**
  * Company Codes / Legal Entities API – Legal-safe own IP – Module 1 + Module 4 – Fixed for production
- * New: org_legal_entity (was ent_company_code) – code LE-1000, name, currency_code INR default was KWD, country, city, coa_id was chart_id, legal_form, tax_id, gst_number, is_active – ELEC Legal Entity Create alias O02/OX02
- * Fallback to legacy ent_company_code
+ * New: org_legal_entity (was org_legal_entity) – code LE-1000, name, currency_code INR default was KWD, country, city, coa_id was chart_id, legal_form, tax_id, gst_number, is_active – ELEC Legal Entity Create alias O02/ELEC (legacy OX02)
+ * Fallback to legacy org_legal_entity
  * Also supports company-groups via org_company_group? Actually company group is separate
  * Returns both legal entities and company codes for backward compat
  */
@@ -38,9 +38,9 @@ export async function GET(req: NextRequest) {
       `);
       rows = result.rows as any[];
     } catch (newErr: any) {
-      console.warn('org_legal_entity not yet, fallback ent_company_code:', newErr.message);
+      console.warn('org_legal_entity not yet, fallback org_legal_entity:', newErr.message);
       source = 'db-legacy';
-      table = 'ent_company_code';
+      table = 'org_legal_entity';
       legalSafe = false;
       try {
         const result = await db.execute(sql`
@@ -49,17 +49,17 @@ export async function GET(req: NextRequest) {
             cc.address, cc.street, cc.postal_code, cc.region, cc.tax_id, cc.gst_number, cc.pan, cc.cin, cc.phone, cc.email, cc.website, cc.legal_form, cc.registration_number, cc.is_active,
             coa.code as coa_code, coa.name as coa_name,
             c.code as client_code, c.name as client_name,
-            (SELECT COUNT(*) FROM ent_plant WHERE company_code_id = cc.id) as plant_count,
-            (SELECT COUNT(*) FROM fi_cost_center WHERE company_code_id = cc.id) as cost_center_count,
-            (SELECT COUNT(*) FROM ent_number_range WHERE company_code_id = cc.id) as number_range_count
-          FROM ent_company_code cc
-          LEFT JOIN fi_chart_of_accounts coa ON cc.coa_id = coa.id
-          LEFT JOIN ent_client c ON cc.client_id = c.id
+            (SELECT COUNT(*) FROM org_facility WHERE company_code_id = cc.id) as plant_count,
+            (SELECT COUNT(*) FROM fin_cost_center WHERE company_code_id = cc.id) as cost_center_count,
+            (SELECT COUNT(*) FROM core_number_range WHERE company_code_id = cc.id) as number_range_count
+          FROM org_legal_entity cc
+          LEFT JOIN fin_chart coa ON cc.coa_id = coa.id
+          LEFT JOIN core_tenant c ON cc.client_id = c.id
           ORDER BY cc.code
         `);
         rows = result.rows as any[];
       } catch (legacyErr: any) {
-        console.warn('ent_company_code also failed, trying fin_chart + core_tenant fallback:', legacyErr.message);
+        console.warn('org_legal_entity also failed, trying fin_chart + core_tenant fallback:', legacyErr.message);
         // Try minimal fallback – maybe only core_tenant exists
         try {
           const tRes = await db.execute(sql`SELECT id, code, name FROM core_tenant ORDER BY code`);
@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
             table: 'org_legal_entity',
             source: 'none',
             legalSafe: true,
-            message: 'No legal entity / company code tables yet – fresh empty – ELEC legal-safe – run db:init-prod or db:create-admin – tables org_legal_entity (was ent_company_code) code LE-1000',
+            message: 'No legal entity / company code tables yet – fresh empty – ELEC legal-safe – run db:init-prod or db:create-admin – tables org_legal_entity (was org_legal_entity) code LE-1000',
             error: e.message,
           });
         }
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
       postingVariants = pv.rows as any[];
     } catch {
       try {
-        const pv = await db.execute(sql`SELECT code, name FROM fi_posting_period_variant ORDER BY code`);
+        const pv = await db.execute(sql`SELECT code, name FROM fin_posting_calendar ORDER BY code`);
         postingVariants = pv.rows as any[];
       } catch {}
     }
@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
       currencies = cur.rows as any[];
     } catch {
       try {
-        const cur = await db.execute(sql`SELECT code, name, decimal_places, symbol, is_active FROM ent_currency ORDER BY code`);
+        const cur = await db.execute(sql`SELECT code, name, decimal_places, symbol, is_active FROM core_currency ORDER BY code`);
         currencies = cur.rows as any[];
       } catch {}
     }
@@ -155,8 +155,8 @@ export async function GET(req: NextRequest) {
       creditControlAreas: creditControlAreas,
       currencies: currencies,
       defaultCurrency: 'INR',
-      functionCodes: 'OX15 Company, OX02 Company Code / Legal Entity, OX16 Assign Company->Company Code, OB45 Credit Control Area, OY03 Currencies INR default',
-      explanation: 'Legal Entity / Company Code legal-safe org_legal_entity (was ent_company_code) – code LE-1000, name, currency_code INR default was KWD, country, city, coa_id was chart_id, is_active – ELEC primary alias O02/OX02 – 4-char MOOA E=Enterprise L=Legal E=Entity C=Create – module grouped intuitive – fallback new→legacy→minimal – never 500, returns empty if no tables.',
+      functionCodes: 'OX15 Company, ELEC (legacy OX02) Company Code / Legal Entity, OX16 Assign Company->Company Code, OB45 Credit Control Area, FCYC (legacy OY03) Currencies INR default',
+      explanation: 'Legal Entity / Company Code legal-safe org_legal_entity (was org_legal_entity) – code LE-1000, name, currency_code INR default was KWD, country, city, coa_id was chart_id, is_active – ELEC primary alias O02/ELEC (legacy OX02) – 4-char MOOA E=Enterprise L=Legal E=Entity C=Create – module grouped intuitive – fallback new→legacy→minimal – never 500, returns empty if no tables.',
     });
   } catch (e: any) {
     console.error('Company codes API fatal:', e.message);
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
           if (coaRes.rows.length > 0) coaId = (coaRes.rows[0] as any).id;
         } catch {
           try {
-            const coaRes = await db.execute(sql`SELECT id FROM fi_chart_of_accounts WHERE code = ${coa_code} LIMIT 1`);
+            const coaRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${coa_code} LIMIT 1`);
             if (coaRes.rows.length > 0) coaId = (coaRes.rows[0] as any).id;
           } catch {}
         }
@@ -224,36 +224,36 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ success: true, companyCode: res.rows[0], legalEntity: res.rows[0], code: 'ELEC', message: `Legal Entity ${code.toUpperCase()} created – ELEC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
-      console.warn('org_legal_entity insert failed, fallback ent_company_code:', newErr.message);
+      console.warn('org_legal_entity insert failed, fallback org_legal_entity:', newErr.message);
       // Fallback old
       let clientId: any = null;
       if (client_code) {
-        const cRes = await db.execute(sql`SELECT id FROM ent_client WHERE code = ${client_code} LIMIT 1`);
+        const cRes = await db.execute(sql`SELECT id FROM core_tenant WHERE code = ${client_code} LIMIT 1`);
         if (cRes.rows.length > 0) clientId = (cRes.rows[0] as any).id;
       }
       if (!clientId) {
-        const cRes = await db.execute(sql`SELECT id FROM ent_client WHERE code = '100' LIMIT 1`);
+        const cRes = await db.execute(sql`SELECT id FROM core_tenant WHERE code = '100' LIMIT 1`);
         clientId = cRes.rows.length > 0 ? (cRes.rows[0] as any).id : null;
         if (!clientId) {
-          const newClient = await db.execute(sql`INSERT INTO ent_client (code, name) VALUES ('100', 'Main Client') ON CONFLICT (code) DO UPDATE SET name='Main Client' RETURNING id`);
+          const newClient = await db.execute(sql`INSERT INTO core_tenant (code, name) VALUES ('100', 'Main Client') ON CONFLICT (code) DO UPDATE SET name='Main Client' RETURNING id`);
           clientId = (newClient.rows[0] as any).id;
         }
       }
 
       let coaId: any = null;
       if (coa_code) {
-        const coaRes = await db.execute(sql`SELECT id FROM fi_chart_of_accounts WHERE code = ${coa_code} LIMIT 1`);
+        const coaRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${coa_code} LIMIT 1`);
         if (coaRes.rows.length > 0) coaId = (coaRes.rows[0] as any).id;
       }
 
       const res = await db.execute(sql`
-        INSERT INTO ent_company_code (client_id, code, name, currency_code, city, country, coa_id, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number)
+        INSERT INTO org_legal_entity (client_id, code, name, currency_code, city, country, coa_id, address, street, postal_code, region, tax_id, gst_number, pan, cin, phone, email, website, legal_form, registration_number)
         VALUES (${clientId}, ${code}, ${name}, ${currency_code || 'INR'}, ${city || null}, ${country || 'IN'}, ${coaId}, ${address || null}, ${street || null}, ${postal_code || null}, ${region || null}, ${tax_id || null}, ${gst_number || null}, ${pan || null}, ${cin || null}, ${phone || null}, ${email || null}, ${website || null}, ${legal_form || null}, ${registration_number || null})
         ON CONFLICT (code) DO UPDATE SET name=${name}, currency_code=${currency_code || 'INR'}, city=${city || null}, country=${country || 'IN'}, updated_at=NOW()
         RETURNING id, code
       `);
 
-      return NextResponse.json({ success: true, companyCode: res.rows[0], message: `Company Code ${code} created (OX02) – legacy`, legalSafe: false });
+      return NextResponse.json({ success: true, companyCode: res.rows[0], message: `Company Code ${code} created (ELEC (legacy OX02)) – legacy`, legalSafe: false });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -277,8 +277,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: true, companyCode: res.rows[0], code: 'ELEC', message: `Legal Entity ${res.rows[0].code} updated – ELEC legal-safe` });
     } catch {
       let res;
-      if (id) res = await db.execute(sql`UPDATE ent_company_code SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), city=COALESCE(${city},city), country=COALESCE(${country},country), is_active=COALESCE(${is_active},is_active) WHERE id=${id} RETURNING id, code`);
-      else res = await db.execute(sql`UPDATE ent_company_code SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), city=COALESCE(${city},city), country=COALESCE(${country},country), is_active=COALESCE(${is_active},is_active) WHERE code=${code.toUpperCase()} RETURNING id, code`);
+      if (id) res = await db.execute(sql`UPDATE org_legal_entity SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), city=COALESCE(${city},city), country=COALESCE(${country},country), is_active=COALESCE(${is_active},is_active) WHERE id=${id} RETURNING id, code`);
+      else res = await db.execute(sql`UPDATE org_legal_entity SET name=COALESCE(${name},name), currency_code=COALESCE(${currency_code},currency_code), city=COALESCE(${city},city), country=COALESCE(${country},country), is_active=COALESCE(${is_active},is_active) WHERE code=${code.toUpperCase()} RETURNING id, code`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Company code not found' }, { status: 404 });
       return NextResponse.json({ success: true, companyCode: res.rows[0], message: `Company Code ${res.rows[0].code} updated – legacy` });
     }
@@ -301,8 +301,8 @@ export async function DELETE(req: NextRequest) {
       if (id) await db.execute(sql`DELETE FROM org_legal_entity WHERE id=${id}`);
       else await db.execute(sql`DELETE FROM org_legal_entity WHERE code=${code?.toUpperCase()}`);
     } catch {
-      if (id) await db.execute(sql`DELETE FROM ent_company_code WHERE id=${id}`);
-      else await db.execute(sql`DELETE FROM ent_company_code WHERE code=${code?.toUpperCase()}`);
+      if (id) await db.execute(sql`DELETE FROM org_legal_entity WHERE id=${id}`);
+      else await db.execute(sql`DELETE FROM org_legal_entity WHERE code=${code?.toUpperCase()}`);
     }
 
     return NextResponse.json({ success: true, code: 'ELEC', message: `Legal Entity ${code || id} deleted – ELEC legal-safe` });

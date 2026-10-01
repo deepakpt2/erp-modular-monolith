@@ -43,26 +43,26 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
 
   // ========== MM – Purchasing – M_BEST_BSA – PURCHASER only ==========
   { pattern: /^\/api\/pr/, method: ['GET'], permission: 'PR_VIEW', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER', 'WAREHOUSE', 'ACCOUNTANT'], description: 'PR View – ME53N – PR_VIEW – PURCHASER view – MDM NOT allowed' },
-  { pattern: /^\/api\/pr/, method: ['POST'], permission: 'PR_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], description: 'PR Create – ME51N – PR_CREATE – PURCHASER only – M_BEST_BSA – MDM NOT allowed' },
+  { pattern: /^\/api\/pr/, method: ['POST'], permission: 'PR_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], description: 'PR Create – PPRC (legacy ME51N) – PR_CREATE – PURCHASER only – M_BEST_BSA – MDM NOT allowed' },
   { pattern: /^\/api\/pr/, method: ['PUT', 'DELETE'], permission: 'PR_APPROVE', roles: ['MANAGER', 'ADMIN', 'OWNER'], description: 'PR Approve/Change – ME52N/ME54N – PR_APPROVE – MANAGER only' },
 
   { pattern: /^\/api\/po/, method: ['GET'], permission: 'PO_VIEW', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER', 'WAREHOUSE', 'ACCOUNTANT'], description: 'PO View – ME23N – PO_VIEW' },
-  { pattern: /^\/api\/po/, method: ['POST'], permission: 'PO_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], description: 'PO Create – ME21N – PO_CREATE – PURCHASER only – M_BEST_BSA' },
+  { pattern: /^\/api\/po/, method: ['POST'], permission: 'PO_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], description: 'PO Create – PPOC (legacy ME21N) – PO_CREATE – PURCHASER only – M_BEST_BSA' },
   { pattern: /^\/api\/po/, method: ['PUT', 'DELETE'], permission: 'PO_APPROVE', roles: ['MANAGER', 'ADMIN', 'OWNER'], description: 'PO Approve – ME28 – PO_APPROVE – MANAGER only' },
 
-  { pattern: /^\/api\/gr/, method: ['GET'], permission: 'GR_VIEW', roles: ['WAREHOUSE', 'PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], description: 'GR View – MIGO display – GR_VIEW – WAREHOUSE/PURCHASER' },
-  { pattern: /^\/api\/gr/, method: '*', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], description: 'GR Post – MIGO 101 – GR_POST – WAREHOUSE only – M_MSEG_BWA 101 – MDM NOT allowed – T0 BLOCKING' },
+  { pattern: /^\/api\/gr/, method: ['GET'], permission: 'GR_VIEW', roles: ['WAREHOUSE', 'PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], description: 'GR View – IGRC (legacy MIGO) display – GR_VIEW – WAREHOUSE/PURCHASER' },
+  { pattern: /^\/api\/gr/, method: '*', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], description: 'GR Post – IGRC (legacy MIGO) GR_PO (legacy 101) – GR_POST – WAREHOUSE only – M_MSEG_BWA 101 – MDM NOT allowed – T0 BLOCKING' },
 
-  { pattern: /^\/api\/iv/, method: ['GET'], permission: 'IV_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER', 'PURCHASER'], description: 'IV View – MIRO display – IV_VIEW' },
-  { pattern: /^\/api\/iv/, method: '*', permission: 'IV_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], description: 'IV Post – MIRO – IV_POST – ACCOUNTANT only – M_RECH_BUK – MDM NOT allowed' },
+  { pattern: /^\/api\/iv/, method: ['GET'], permission: 'IV_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER', 'PURCHASER'], description: 'IV View – PIVC (legacy MIRO) display – IV_VIEW' },
+  { pattern: /^\/api\/iv/, method: '*', permission: 'IV_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], description: 'IV Post – PIVC (legacy MIRO) – IV_POST – ACCOUNTANT only – M_RECH_BUK – MDM NOT allowed' },
 
-  { pattern: /^\/api\/sto/, method: '*', permission: 'PO_CREATE', roles: ['PURCHASER', 'WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], description: 'STO – Stock Transport Order – ME21N UB/NB – PO_CREATE – PURCHASER/WAREHOUSE' },
+  { pattern: /^\/api\/sto/, method: '*', permission: 'PO_CREATE', roles: ['PURCHASER', 'WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], description: 'STO – Stock Transport Order – PPOC (legacy ME21N) UB/NB – PO_CREATE – PURCHASER/WAREHOUSE' },
   { pattern: /^\/api\/physical-inventory/, method: '*', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], description: 'Physical Inventory – MI01/MI04/MI07 – GR_POST – WAREHOUSE only' },
 
   // ========== SD – Sales – V_VBAK_AAT/V_LIKP_VST/V_VBRK_FKA – SALES/WAREHOUSE/ACCOUNTANT ==========
   { pattern: /^\/api\/sales/, method: ['GET'], permission: 'SALES_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT', 'WAREHOUSE'], description: 'Sales View – VA03 – SALES_VIEW – SALES only – MDM NOT allowed' },
   { pattern: /^\/api\/sales/, method: '*', permission: 'SALES_CREATE', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], description: 'Sales Create – VA01 – SALES_CREATE – SALES only – V_VBAK_AAT – MDM NOT allowed' },
-  { pattern: /^\/api\/delivery/, method: '*', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], description: 'Outbound Deliveries – VL01N – SDLC – T0 BLOCKING – PGI 601 + COGS GBB/BSX – DELIVERY_CREATE – SAP standard LE V_LIKP_VST – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
+  { pattern: /^\/api\/delivery/, method: '*', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], description: 'Outbound Deliveries – VL01N – SDLC – T0 BLOCKING – PGI 601 + COGS INV_OFFSET/INV_POSTING (legacy GBB/BSX) – DELIVERY_CREATE – SAP standard LE V_LIKP_VST – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
   { pattern: /^\/api\/billing/, method: '*', permission: 'BILLING_CREATE', roles: ['ACCOUNTANT', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], description: 'Billing – VF01 – SBLC – BILLING_CREATE – SALES/ACCOUNTANT – MDM NOT allowed – V_VBRK_FKA' },
 
   // ========== FICO – Financials – F_BKPF_BUK/F_BKPF_KTO – ACCOUNTANT/ADMIN only ==========
@@ -76,7 +76,7 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   { pattern: /^\/api\/profit-units/, method: '*', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], description: 'Profit Centers – KE51 – GL_VIEW – ACCOUNTANT/ADMIN only' },
   { pattern: /^\/api\/cost-units/, method: '*', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], description: 'Cost Units – GL_VIEW – ACCOUNTANT/ADMIN only' },
 
-  { pattern: /^\/api\/auto-account-determination/, method: '*', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], description: 'Auto Account – OBYC – GL_POST – ACCOUNTANT only – BSX/GBB – sensitive' },
+  { pattern: /^\/api\/auto-account-determination/, method: '*', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], description: 'Auto Account – FAUC (legacy OBYC) – GL_POST – ACCOUNTANT only – INV_POSTING/INV_OFFSET (legacy BSX/GBB) – sensitive' },
   { pattern: /^\/api\/posting-period/, method: '*', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], description: 'Posting Period – OB52/OBBO – GL_POST – ACCOUNTANT only – F_BKPF_BUP' },
   { pattern: /^\/api\/fiscal-calendars/, method: '*', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], description: 'Fiscal Calendars – OB29 – FFYC – GL_VIEW – ACCOUNTANT/ADMIN only' },
   { pattern: /^\/api\/field-status/, method: '*', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], description: 'Field Status – OBC4 – FFSV/FFSG – GL_POST – ACCOUNTANT/ADMIN only' },

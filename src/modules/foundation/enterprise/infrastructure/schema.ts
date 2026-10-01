@@ -10,20 +10,20 @@ export const expiryControlEnum = pgEnum('expiry_control', ['BLOCK', 'WARNING', '
 export const landedCostRelevanceEnum = pgEnum('landed_cost_relevance', ['NONE', 'FREIGHT', 'CUSTOMS', 'FREIGHT_CUSTOMS', 'ALL']);
 
 // Client (Mandant) - Single for now but kept for ERP familiarity
-export const entClient = pgTable('ent_client', {
+export const entClient = pgTable('core_tenant', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 3 }).notNull().unique(), // e.g., '100'
   name: varchar('name', { length: 100 }).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const entCompanyCode = pgTable('ent_company_code', {
+export const entCompanyCode = pgTable('org_legal_entity', {
   id: uuid('id').primaryKey().defaultRandom(),
   clientId: uuid('client_id').notNull().references(() => entClient.id),
   code: varchar('code', { length: 4 }).notNull().unique(), // e.g., '1000'
   name: varchar('name', { length: 100 }).notNull(),
   currencyCode: varchar('currency_code', { length: 3 }).notNull().default('KWD'),
-  coaId: uuid('coa_id'), // FK to fi_chart_of_accounts, added later
+  coaId: uuid('coa_id'), // FK to fin_chart, added later
   city: varchar('city', { length: 100 }),
   country: varchar('country', { length: 2 }).default('KW'),
   // --- Legal Entity Details - Multi-plant tax compliance (GST across states) ---
@@ -45,7 +45,7 @@ export const entCompanyCode = pgTable('ent_company_code', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const entPlant = pgTable('ent_plant', {
+export const entPlant = pgTable('org_facility', {
   id: uuid('id').primaryKey().defaultRandom(),
   companyCodeId: uuid('company_code_id').notNull().references(() => entCompanyCode.id),
   code: varchar('code', { length: 4 }).notNull().unique(), // e.g., '1000' main kitchen, '1100' storage
@@ -56,7 +56,7 @@ export const entPlant = pgTable('ent_plant', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const entStorageLocation = pgTable('ent_storage_location', {
+export const entStorageLocation = pgTable('org_inventory_location', {
   id: uuid('id').primaryKey().defaultRandom(),
   plantId: uuid('plant_id').notNull().references(() => entPlant.id),
   code: varchar('code', { length: 4 }).notNull(), // e.g., '0001' main, '0002' cold
@@ -68,7 +68,7 @@ export const entStorageLocation = pgTable('ent_storage_location', {
   uniquePlantSloc: uniqueIndex('uq_plant_sloc').on(t.plantId, t.code),
 }));
 
-export const entUom = pgTable('ent_uom', {
+export const entUom = pgTable('core_unit_measure', {
   code: varchar('code', { length: 10 }).primaryKey(), // KG, L, PC, BOX
   name: varchar('name', { length: 50 }).notNull(),
   dimension: varchar('dimension', { length: 20 }), // WEIGHT, VOLUME, QUANTITY
@@ -76,21 +76,21 @@ export const entUom = pgTable('ent_uom', {
   isActive: boolean('is_active').default(true).notNull(),
 });
 
-export const entCurrency = pgTable('ent_currency', {
+export const entCurrency = pgTable('core_currency', {
   code: varchar('code', { length: 3 }).primaryKey(), // KWD, USD
   name: varchar('name', { length: 50 }).notNull(),
   decimalPlaces: integer('decimal_places').notNull().default(3), // KWD = 3
   symbol: varchar('symbol', { length: 5 }),
 });
 
-export const entMaterialGroup = pgTable('ent_material_group', {
+export const entMaterialGroup = pgTable('prod_category', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 10 }).notNull().unique(),
   name: varchar('name', { length: 100 }).notNull(),
   parentId: uuid('parent_id').references((): any => entMaterialGroup.id),
 });
 
-export const entMaterialMaster = pgTable('ent_material_master', {
+export const entMaterialMaster = pgTable('prod_item', {
   id: uuid('id').primaryKey().defaultRandom(),
   materialNumber: varchar('material_number', { length: 20 }).notNull().unique(), // Number range
   type: materialTypeEnum('type').notNull(),
@@ -117,7 +117,7 @@ export const entMaterialMaster = pgTable('ent_material_master', {
   idxKit: index('idx_mat_kit').on(t.isKit, t.isPhantomKit),
 }));
 
-export const entMaterialPlant = pgTable('ent_material_plant', {
+export const entMaterialPlant = pgTable('prod_item_plant', {
   id: uuid('id').primaryKey().defaultRandom(),
   materialId: uuid('material_id').notNull().references(() => entMaterialMaster.id),
   plantId: uuid('plant_id').notNull().references(() => entPlant.id),
@@ -205,7 +205,7 @@ export const entMaterialQuality = pgTable('ent_material_quality', {
   uniqueMatPlantQm: uniqueIndex('uq_mat_plant_qm').on(t.materialId, t.plantId),
 }));
 
-export const entBatch = pgTable('ent_batch', {
+export const entBatch = pgTable('inv_lot', {
   id: uuid('id').primaryKey().defaultRandom(),
   batchNumber: varchar('batch_number', { length: 30 }).notNull(),
   materialId: uuid('material_id').notNull().references(() => entMaterialMaster.id),
@@ -221,7 +221,7 @@ export const entBatch = pgTable('ent_batch', {
   idxExpiry: index('idx_batch_expiry').on(t.expiryDate),
 }));
 
-export const entBusinessPartner = pgTable('ent_business_partner', {
+export const entBusinessPartner = pgTable('partner_account', {
   id: uuid('id').primaryKey().defaultRandom(),
   bpNumber: varchar('bp_number', { length: 20 }).notNull().unique(),
   role: bpRoleEnum('role').notNull(),
@@ -237,7 +237,7 @@ export const entBusinessPartner = pgTable('ent_business_partner', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const entBpVendorExt = pgTable('ent_bp_vendor_ext', {
+export const entBpVendorExt = pgTable('partner_vendor_profile', {
   id: uuid('id').primaryKey().defaultRandom(),
   bpId: uuid('bp_id').notNull().unique().references(() => entBusinessPartner.id),
   paymentTermsDays: integer('payment_terms_days').default(30),
@@ -246,7 +246,7 @@ export const entBpVendorExt = pgTable('ent_bp_vendor_ext', {
   isQmRelevant: boolean('is_qm_relevant').default(false),
 });
 
-export const entBpCustomerExt = pgTable('ent_bp_customer_ext', {
+export const entBpCustomerExt = pgTable('partner_customer_profile', {
   id: uuid('id').primaryKey().defaultRandom(),
   bpId: uuid('bp_id').notNull().unique().references(() => entBusinessPartner.id),
   paymentTermsDays: integer('payment_terms_days').default(0),

@@ -5,7 +5,7 @@ import { FUNCTIONS } from '@/shared/lib/functions';
 /**
  * Functions API – New Intuitive Helper Code System
  * Primary codes: FND-*, PUR-*, INV-*, MFG-*, SAL-*, FIN-*, CST-*, HRM-*, AUD-* – own IP
- * Old codes (OX02, MM01, ME21N etc) kept as aliases in searchable keywords
+ * Old codes (ELEC (legacy OX02), EMTC (legacy MM01), PPOC (legacy ME21N) etc) kept as aliases in searchable keywords
  * Function is destination, helper code is just identifier
  */
 
@@ -94,10 +94,10 @@ export async function GET() {
         RL: 'Release / Approve',
         AS: 'Assign',
       },
-      example: 'FND-LE-CR = Foundation Legal Entity Create (alias OX02), PUR-PO-CR = Procurement Purchase Order Create (alias ME21N)',
+      example: 'FND-LE-CR = Foundation Legal Entity Create (alias ELEC (legacy OX02)), PUR-PO-CR = Procurement Purchase Order Create (alias PPOC (legacy ME21N))',
       autoGeneration: 'When new function implemented, generate code as MODULE-OBJECT-ACTION, add old SAP-like code (if any) as alias for backward search compatibility',
     },
-    rule: 'Function is destination, new intuitive helper code (e.g., FND-LE-CR, PUR-PO-CR) is primary identifier – old codes (OX02, ME21N, MM01 etc) kept as searchable aliases, not primary',
+    rule: 'Function is destination, new intuitive helper code (e.g., FND-LE-CR, PUR-PO-CR) is primary identifier – old codes (ELEC (legacy OX02), PPOC (legacy ME21N), EMTC (legacy MM01) etc) kept as searchable aliases, not primary',
     enforcement: {
       guideline: 'Every new API route must have new intuitive helper code as primary and be added to FUNCTION_MAP and FUNCTIONS with aliases for old codes if applicable',
       uiRequirement: 'Every new page must use ModernModuleShell with code prop = new intuitive code (FND-*, PUR-*, etc) – old alias shown as secondary muted badge',
@@ -109,9 +109,9 @@ export async function GET() {
         '3. Add to src/shared/lib/functions.ts FUNCTIONS array with code = new intuitive, aliases = [old codes]',
         '4. API response must include { code: newCode, aliases: oldCodes, functionName }',
         '5. UI page must use ModernModuleShell with code = new intuitive primary',
-        '6. Search for old alias (e.g., OX02) should still find new function via alias',
+        '6. Search for old alias (e.g., ELEC (legacy OX02)) should still find new function via alias',
       ],
     },
-    note: 'Old helper codes like OX02, MM01, ME21N, MIGO etc are now aliases, not primary – new system FND-LE-CR, FND-MAT-CR, PUR-PO-CR, INV-GR-PS etc is primary own IP, intuitive, legal-safe',
+    note: 'Old helper codes like ELEC (legacy OX02), EMTC (legacy MM01), PPOC (legacy ME21N), IGRC (legacy MIGO) etc are now aliases, not primary – new system FND-LE-CR, FND-MAT-CR, PUR-PO-CR, INV-GR-PS etc is primary own IP, intuitive, legal-safe',
   });
 }

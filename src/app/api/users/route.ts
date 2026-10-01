@@ -11,7 +11,7 @@ import { auth } from '@/auth';
  * POST /api/users - Create new user (ADMIN only)
  * PUT /api/users - Update user role, active status, reset password
  * 
- * Tables: auth_user, ent_user_role, ent_role, hr_employee
+ * Tables: auth_user, auth_user_role, auth_role, hr_employee
  * Access: ADMIN role or ADMIN_ALL permission required for write operations
  */
 
@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
       LEFT JOIN hr_employee emp ON emp.user_id = u.id
       LEFT JOIN hr_employee e ON e.user_id = u.id
       LEFT JOIN hr_position p ON e.position_id = p.id
-      LEFT JOIN ent_company_code cc ON e.company_code_id = cc.id
-      LEFT JOIN ent_plant plant ON e.plant_id = plant.id
-      LEFT JOIN ent_user_role ur ON ur.user_id = u.id
-      LEFT JOIN ent_role r ON ur.role_id = r.id
+      LEFT JOIN org_legal_entity cc ON e.company_code_id = cc.id
+      LEFT JOIN org_facility plant ON e.plant_id = plant.id
+      LEFT JOIN auth_user_role ur ON ur.user_id = u.id
+      LEFT JOIN auth_role r ON ur.role_id = r.id
       WHERE 1=1
     `;
 
@@ -57,10 +57,10 @@ export async function GET(req: NextRequest) {
       try {
         const rolesRes = await db.execute(sql`
           SELECT r.id, r.code, r.name, ur.company_code_id, ur.plant_id, cc.code as company_code, pl.code as plant_code
-          FROM ent_user_role ur
-          JOIN ent_role r ON ur.role_id = r.id
-          LEFT JOIN ent_company_code cc ON ur.company_code_id = cc.id
-          LEFT JOIN ent_plant pl ON ur.plant_id = pl.id
+          FROM auth_user_role ur
+          JOIN auth_role r ON ur.role_id = r.id
+          LEFT JOIN org_legal_entity cc ON ur.company_code_id = cc.id
+          LEFT JOIN org_facility pl ON ur.plant_id = pl.id
           WHERE ur.user_id = ${user.id}
         `);
         return { ...user, detailed_roles: rolesRes.rows };
@@ -76,8 +76,8 @@ export async function GET(req: NextRequest) {
       users: usersWithRoles,
       count: usersWithRoles.length,
       source: 'db',
-      rbac: 'auth_user + ent_user_role + ent_role + hr_employee + hr_position',
-      hint: 'Simple role in auth_user.role, granular roles in ent_user_role'
+      rbac: 'auth_user + auth_user_role + auth_role + hr_employee + hr_position',
+      hint: 'Simple role in auth_user.role, granular roles in auth_user_role'
     });
   } catch (e: any) {
     console.error('List users failed:', e);
@@ -104,14 +104,14 @@ export async function POST(req: NextRequest) {
   try {
     if (currentUserId) {
       const roleRes = await db.execute(sql`
-        SELECT r.code FROM ent_user_role ur JOIN ent_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId}
+        SELECT r.code FROM auth_user_role ur JOIN auth_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId}
       `);
       detailedRoles = roleRes.rows.map((r: any) => r.code);
     }
   } catch {}
 
   if (!canCreateUsers(currentUserRole, detailedRoles)) {
-    return NextResponse.json({ error: 'Forbidden - ADMIN, OWNER, HR, MANAGER required to create users', code: 'FORBIDDEN', whereStored: 'ent_user_role + ent_role', allowedRoles: ['ADMIN','OWNER','HR','HR_MANAGER','MANAGER'] }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden - ADMIN, OWNER, HR, MANAGER required to create users', code: 'FORBIDDEN', whereStored: 'auth_user_role + auth_role', allowedRoles: ['ADMIN','OWNER','HR','HR_MANAGER','MANAGER'] }, { status: 403 });
   }
 
   try {
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
       for (const roleId of roleIds) {
         try {
           await db.execute(sql`
-            INSERT INTO ent_user_role (user_id, role_id, company_code_id, plant_id, assigned_by)
+            INSERT INTO auth_user_role (user_id, role_id, company_code_id, plant_id, assigned_by)
             VALUES (${userId}, ${roleId}, ${companyCodeId || null}, ${plantId || null}, ${(session?.user as any)?.id || null})
           `);
         } catch (e: any) { console.warn('Assign role failed', e); }
@@ -158,11 +158,11 @@ export async function POST(req: NextRequest) {
     } else if (role) {
       // Auto-assign role by code
       try {
-        const roleRes = await db.execute(sql`SELECT id FROM ent_role WHERE code = ${role} LIMIT 1`);
+        const roleRes = await db.execute(sql`SELECT id FROM auth_role WHERE code = ${role} LIMIT 1`);
         if (roleRes.rows.length > 0) {
           const roleId = (roleRes.rows[0] as any).id;
           await db.execute(sql`
-            INSERT INTO ent_user_role (user_id, role_id, company_code_id, plant_id, assigned_by)
+            INSERT INTO auth_user_role (user_id, role_id, company_code_id, plant_id, assigned_by)
             VALUES (${userId}, ${roleId}, ${companyCodeId || null}, ${plantId || null}, ${(session?.user as any)?.id || null})
           `);
         }
@@ -199,7 +199,7 @@ export async function PUT(req: NextRequest) {
   let detailedRoles: string[] = [];
   try {
     if (currentUserId) {
-      const roleRes = await db.execute(sql`SELECT r.code FROM ent_user_role ur JOIN ent_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId}`);
+      const roleRes = await db.execute(sql`SELECT r.code FROM auth_user_role ur JOIN auth_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId}`);
       detailedRoles = roleRes.rows.map((r: any) => r.code);
     }
   } catch {}

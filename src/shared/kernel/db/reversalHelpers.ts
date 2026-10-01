@@ -7,10 +7,10 @@ import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } f
  * Edit = Reversal or Adjustment document, not direct UPDATE – immutable audit trail
  * 
  * Legal-safe codes (MOOA 4-char):
- * PORE = Procurement Order Reversal (was ME21N reversal)
+ * PORE = Procurement Order Reversal (was ME21N reversal – own IP PPOC)
  * POAD = Procurement Order Adjustment (was PO change after GR)
  * POCO = Procurement Order Correction
- * GRRE = Goods Receipt Reversal (was MIGO 102 reversal of 101)
+ * GRRE = Goods Receipt Reversal (was MIGO 102 reversal of 101 – own IP GR_PO_REV (legacy 102) reversal of GR_PO (legacy 101))
  * GRAD = Goods Receipt Adjustment
  * GRCO = Goods Receipt Correction
  * IVRE = Invoice Verification Reversal (was MR8M)
@@ -61,7 +61,7 @@ export function getReversalDescription(originalType: string, reversalType: strin
     'PORE': `Procurement Order Reversal – Reverses ${originalNumber} – Legal-safe own IP (was PO reversal)`,
     'POAD': `Procurement Order Adjustment – Adjusts ${originalNumber} – Legal-safe own IP`,
     'POCO': `Procurement Order Correction – Corrects ${originalNumber}`,
-    'GRRE': `Goods Receipt Reversal – Reverses ${originalNumber} – Legal-safe own IP (was MIGO 102)`,
+    'GRRE': `Goods Receipt Reversal – Reverses ${originalNumber} – Legal-safe own IP (was MIGO 102 – own IP GRRE/GR_PO_REV)`,
     'GRAD': `Goods Receipt Adjustment – Adjusts ${originalNumber}`,
     'GRCO': `Goods Receipt Correction – Corrects ${originalNumber}`,
     'IVRE': `Invoice Verification Reversal – Reverses ${originalNumber} – Legal-safe own IP (was MR8M)`,

@@ -28,8 +28,8 @@ export default function CompanyMasterRedirectPage() {
             <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">🏢</div>
             <div>
               <h1 className={modern ? "text-xl font-bold tracking-tight" : "text-lg font-bold"}>Company Master – Redirect to Legal Entity – One Code One Page</h1>
-              <p className="text-sm text-zinc-500">Company: <b>{companyCode}</b> – Previously OX02 Company Master – now dedicated page Legal Entity ELEC – strict ERP usage no dummy</p>
-              <p className="text-[11px] text-zinc-400 mt-1">General ERP terminology – Legal Entity not Company Code – but OX02 kept as searchable alias – Navigator tree replaces sidebar</p>
+              <p className="text-sm text-zinc-500">Company: <b>{companyCode}</b> – Previously ELEC (legacy OX02) Company Master – now dedicated page Legal Entity ELEC – strict ERP usage no dummy</p>
+              <p className="text-[11px] text-zinc-400 mt-1">General ERP terminology – Legal Entity not Company Code – but ELEC (legacy OX02) kept as searchable alias – Navigator tree replaces sidebar</p>
             </div>
           </div>
         </div>
@@ -37,10 +37,10 @@ export default function CompanyMasterRedirectPage() {
         <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 space-y-4" : "border p-4 space-y-3 bg-white"}>
           <h3 className={modern ? "font-semibold text-sm" : "font-semibold text-xs"}>Company Master Moved to Dedicated Page – One Code One Page</h3>
           <p className="text-sm text-zinc-500 leading-relaxed">
-            Previously company-master page had multiple forms – now split into dedicated page <b>Legal Entity ELEC OX02 → /foundation/legal-entities</b> with single form CODE* NAME* COMPANY_GROUP_CODE* FK ECGC CURRENCY_CODE* FK FCYC FISCAL_CALENDAR_CODE* FK FFYC POSTING_PERIOD_VARIANT_CODE* FK FPPC – strict usage: fiscal calendar calculates FY/Period from posting date K4 2026-05-15 → FY2026 P02, posting period variant controls posting period open/close – each page has single form with modes Create/Change/Display/List – border yellow empty green valid red invalid – short button Create Legal Entity – code in heading badge – bottom Related Masters low importance auto FK – e.g., ELEC page bottom shows ECGC, FCYC, FFYC, FPPC links – muted small – helps create necessary data – data strictly used in practice – no dummy – general ERP terminology – SAP aliases for search only – Navigator tree replaces sidebar.
+            Previously company-master page had multiple forms – now split into dedicated page <b>Legal Entity ELEC ELEC (legacy OX02) → /foundation/legal-entities</b> with single form CODE* NAME* COMPANY_GROUP_CODE* FK ECGC CURRENCY_CODE* FK FCYC FISCAL_CALENDAR_CODE* FK FFYC POSTING_PERIOD_VARIANT_CODE* FK FPPC – strict usage: fiscal calendar calculates FY/Period from posting date K4 2026-05-15 → FY2026 P02, posting period variant controls posting period open/close – each page has single form with modes Create/Change/Display/List – border yellow empty green valid red invalid – short button Create Legal Entity – code in heading badge – bottom Related Masters low importance auto FK – e.g., ELEC page bottom shows ECGC, FCYC, FFYC, FPPC links – muted small – helps create necessary data – data strictly used in practice – no dummy – general ERP terminology – SAP aliases for search only – Navigator tree replaces sidebar.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Link href={`/${companyCode}/foundation/legal-entities`} className={modern ? "px-5 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-zinc-800" : "border px-4 py-1.5 text-xs bg-black text-white"}>Go to Legal Entity ELEC OX02 → /foundation/legal-entities</Link>
+            <Link href={`/${companyCode}/foundation/legal-entities`} className={modern ? "px-5 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-zinc-800" : "border px-4 py-1.5 text-xs bg-black text-white"}>Go to Legal Entity ELEC ELEC (legacy OX02) → /foundation/legal-entities</Link>
             <Link href={`/${companyCode}/foundation/company-groups`} className={modern ? "px-4 py-2 rounded-full border text-xs hover:bg-zinc-50" : "border px-3 py-1 text-xs"}>Company Group ECGC OX15</Link>
             <Link href={`/${companyCode}/navigator`} className={modern ? "px-4 py-2 rounded-full border text-xs hover:bg-zinc-50" : "border px-3 py-1 text-xs"}>🌳 Navigator</Link>
           </div>

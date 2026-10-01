@@ -69,7 +69,7 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
   { pattern: /\/fico\/tolerance-groups-gl/, permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], code: 'OBA0', description: 'Tolerance Groups GL – OBA0 – GL_POST – ACCOUNTANT/ADMIN only' },
   { pattern: /\/fico\/tolerance-groups-cv/, permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], code: 'OBA4', description: 'Tolerance Groups Customers/Vendors – OBA4 – GL_POST – ACCOUNTANT/ADMIN only' },
   { pattern: /\/fico\/document-types/, permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], code: 'OBA7', description: 'Document Types – OBA7 – GL_POST – ACCOUNTANT/ADMIN only' },
-  { pattern: /\/fico\/auto-account-determination/, permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], code: 'OBYC', description: 'Auto Account Determination – OBYC – GL_POST – ACCOUNTANT/ADMIN only – BSX/GBB' },
+  { pattern: /\/fico\/auto-account-determination/, permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], code: 'FAUC', description: 'Auto Account Determination – FAUC (legacy OBYC) – GL_POST – ACCOUNTANT/ADMIN only – BSX/GBB' },
   { pattern: /\/fico\/payment-terms/, permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], code: 'FAPT', description: 'Payment Terms – OBB8 – FAPT – GL_VIEW – ACCOUNTANT/ADMIN only' },
   { pattern: /\/fico\/payment/, permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], code: 'FPYP', description: 'Payment Processing – F110 – FPYP – GL_POST – ACCOUNTANT/ADMIN only' },
   { pattern: /\/fico\/cca-report/, permission: 'CCA_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], code: 'CCUL', description: 'Cost Center Actuals – KSB1 – CCUL – CCA_VIEW – ACCOUNTANT/ADMIN/MANAGER' },
@@ -89,7 +89,7 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
 
   // ========== SD – VA01/VL01N/VF01 – SALES/WAREHOUSE/ACCOUNTANT ==========
   { pattern: /\/sales/, permission: 'SALES_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT', 'WAREHOUSE'], code: 'SSOC', description: 'Sales Order – VA01 – SSOC – SALES_VIEW – SALES only – MDM NOT allowed' },
-  { pattern: /\/sd\/delivery/, permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], code: 'SDLC', description: 'Outbound Deliveries – VL01N – SDLC – T0 BLOCKING – PGI 601 + COGS GBB/BSX – DELIVERY_CREATE – SAP standard LE – V_LIKP_VST – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
+  { pattern: /\/sd\/delivery/, permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], code: 'SDLC', description: 'Outbound Deliveries – VL01N – SDLC – T0 BLOCKING – PGI 601 + COGS INV_OFFSET/INV_POSTING (legacy GBB/BSX) – DELIVERY_CREATE – SAP standard LE – V_LIKP_VST – requires WAREHOUSE,SALES – MASTER_DATA_MANAGER NOT allowed – SoD' },
   { pattern: /\/sd\/billing/, permission: 'BILLING_CREATE', roles: ['ACCOUNTANT', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], code: 'SBLC', description: 'Billing Document – VF01 – SBLC – BILLING_CREATE – SALES/ACCOUNTANT – MDM NOT allowed' },
   { pattern: /\/sd\/billing-reversal/, permission: 'BILLING_CREATE', roles: ['ACCOUNTANT', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], code: 'BLRE', description: 'Billing Reversal – VF11 – BLRE – BILLING_CREATE – SALES/ACCOUNTANT' },
   { pattern: /\/sd\/pricing-procedure/, permission: 'PRICING_MAINTAIN', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], code: 'PRIC', description: 'Pricing Procedure – VK11 – PRIC – PRICING_MAINTAIN – SALES only – V_KONH_VKS' },

@@ -4,7 +4,7 @@ import { orgFacility } from './orgStructureSchema';
 
 /**
  * Module 2 – Product Catalog – Legal-Safe Own IP
- * Replaces ent_material_master, ent_material_group, ent_uom, ent_batch etc
+ * Replaces prod_item, prod_category, core_unit_measure, inv_lot etc
  * Fresh empty for items, but sample UoM, categories kept for convenience (KG, L, PC, BOX, FOOD, SPICE etc)
  * Helper codes: EMTC/EMTE/EMTV/EMTL (alias MTC, MM01, FND-MAT-CR), EMGC (alias OMSF), EUOC (alias CUNI), LTCC (alias Batch)
  * All tables use neutral naming: prod_*, core_*, inv_*
@@ -20,7 +20,7 @@ export const planningTypeEnum = pgEnum('prod_planning_type', ['MRP', 'MANUAL_REO
 export const lotSizingEnum = pgEnum('prod_lot_sizing', ['LOT_FOR_LOT', 'FIXED', 'MAX_LEVEL', 'REPLENISH']);
 export const procurementMethodEnum = pgEnum('prod_procurement_method', ['BUY', 'MAKE', 'BOTH', 'TRANSFER']);
 
-// Core Unit Measure – replaces ent_uom (CUNI) – sample data kept: KG, G, L, ML, PC, BOX, PACK, KIT, M, TON
+// Core Unit Measure – replaces core_unit_measure (CUNI) – sample data kept: KG, G, L, ML, PC, BOX, PACK, KIT, M, TON
 export const coreUnitMeasure = pgTable('core_unit_measure', {
   code: varchar('code', { length: 20 }).primaryKey(), // KG, L, PC, BOX – not SAP MENGENEINHEIT
   name: varchar('name', { length: 100 }).notNull(), // Kilogram, Liter, Piece
@@ -31,7 +31,7 @@ export const coreUnitMeasure = pgTable('core_unit_measure', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Product Category – replaces ent_material_group (OMSF) – sample FOOD, SPICE, KITS, FG, RAW kept for convenience
+// Product Category – replaces prod_category (OMSF) – sample FOOD, SPICE, KITS, FG, RAW kept for convenience
 export const prodCategory = pgTable('prod_category', {
   id: uuid('id').primaryKey().defaultRandom(),
   code: varchar('code', { length: 20 }).notNull().unique(), // FOOD, SPICE, KITS – neutral
@@ -55,7 +55,7 @@ export const prodItemType = pgTable('prod_item_type', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Product Item – replaces ent_material_master (MM01) – central master with contextual views, not separate per module
+// Product Item – replaces prod_item (MM01) – central master with contextual views, not separate per module
 export const prodItem = pgTable('prod_item', {
   id: uuid('id').primaryKey().defaultRandom(),
   itemNumber: varchar('item_number', { length: 30 }).notNull().unique(), // was material_number – neutral item_number
@@ -67,7 +67,7 @@ export const prodItem = pgTable('prod_item', {
   isLotManaged: boolean('is_lot_managed').notNull().default(true), // was is_batch_managed – lot managed for expiry
   isActive: boolean('is_active').default(true).notNull(),
   shelfLifeDays: integer('shelf_life_days'), // for perishables
-  inventoryValuationClass: varchar('inventory_valuation_class', { length: 20 }).notNull().default('RAW'), // was valuation_class – for FI auto determination BSX/WRX
+  inventoryValuationClass: varchar('inventory_valuation_class', { length: 20 }).notNull().default('RAW'), // was valuation_class – for FI auto determination INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)
   lotControl: lotControlEnum('lot_control').notNull().default('BLOCKED'), // was expiry_control BLOCK/WARNING/RESTRICTED_USE -> BLOCKED/WARN/RESTRICTED
   isKit: boolean('is_kit').default(false).notNull(),
   isPhantomKit: boolean('is_phantom_kit').default(false).notNull(),
@@ -88,7 +88,7 @@ export const prodItem = pgTable('prod_item', {
   idxKit: index('idx_prod_item_kit').on(t.isKit, t.isPhantomKit),
 }));
 
-// Product Facility Profile – replaces ent_material_plant – facility-specific data (MRP, purchasing, accounting, costing)
+// Product Facility Profile – replaces prod_item_plant – facility-specific data (MRP, purchasing, accounting, costing)
 export const prodFacilityProfile = pgTable('prod_facility_profile', {
   id: uuid('id').primaryKey().defaultRandom(),
   itemId: uuid('item_id').notNull().references(() => prodItem.id),
@@ -175,7 +175,7 @@ export const prodQualityProfile = pgTable('prod_quality_profile', {
   uniqueItemFacility: uniqueIndex('uq_prod_quality_item_facility').on(t.itemId, t.facilityId),
 }));
 
-// Inventory Lot – replaces ent_batch – lot tracking for expiry, manufacturing date
+// Inventory Lot – replaces inv_lot – lot tracking for expiry, manufacturing date
 export const invLot = pgTable('inv_lot', {
   id: uuid('id').primaryKey().defaultRandom(),
   lotNumber: varchar('lot_number', { length: 30 }).notNull(), // was batch_number

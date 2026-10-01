@@ -76,9 +76,9 @@ export async function GET(req: NextRequest) {
                cc.code as legal_entity_code,
                (SELECT COUNT(*) FROM pi_line WHERE pi_document_id = d.id) as line_count
         FROM pi_document d
-        LEFT JOIN ent_plant p ON d.plant_id = p.id
-        LEFT JOIN ent_storage_location sl ON d.sloc_id = sl.id
-        LEFT JOIN ent_company_code cc ON d.company_code_id = cc.id
+        LEFT JOIN org_facility p ON d.plant_id = p.id
+        LEFT JOIN org_inventory_location sl ON d.sloc_id = sl.id
+        LEFT JOIN org_legal_entity cc ON d.company_code_id = cc.id
         WHERE 1=1
       `;
       if (search) query = sql`${query} AND d.pi_number ILIKE ${`%${search}%`}`;
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       } catch {}
       if (!inventoryLocationIdResolved) {
         try {
-          const locRes = await db.execute(sql`SELECT id FROM ent_storage_location WHERE plant_id = ${facilityIdResolved} LIMIT 1`);
+          const locRes = await db.execute(sql`SELECT id FROM org_inventory_location WHERE plant_id = ${facilityIdResolved} LIMIT 1`);
           if (locRes.rows.length > 0) inventoryLocationIdResolved = (locRes.rows[0] as any).id;
         } catch {}
       }

@@ -39,7 +39,7 @@ export const hrEmployee = pgTable('hr_employee', {
   managerId: uuid('manager_id').references((): any => hrEmployee.id), // Reporting hierarchy
   plantId: uuid('plant_id').references(() => entPlant.id),
   companyCodeId: uuid('company_code_id').references(() => entCompanyCode.id),
-  costCenterId: uuid('cost_center_id'), // FK to fi_cost_center later
+  costCenterId: uuid('cost_center_id'), // FK to fin_cost_center later
   status: employmentStatusEnum('status').notNull().default('ACTIVE'),
   hireDate: date('hire_date').notNull(),
   terminationDate: date('termination_date'),

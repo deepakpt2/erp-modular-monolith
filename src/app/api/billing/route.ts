@@ -9,7 +9,7 @@ import { createReversalOrAdjustmentDocument, getReversalDocType } from '@/shared
 /**
  * Billing API – Legal-safe own IP – Module 8 SD
  * New: sales_billing + sales_billing_line (was sd_billing + sd_billing_line) – billingNumber BILL-90000001 was 90*, type F2/F1/CREDIT/DEBIT, status DRAFT/POSTED/CANCELLED, salesOrderId, deliveryId, legalEntityId was company_code_id, partnerId SCUC was customer_id, billingDate, totalAmount/taxAmount/netAmount currencyCode INR default was KWD, universalLedgerId FULC was fi_document_id Dr AR Cr Revenue+Tax, dueDate isPaid, billingType F2, billingBlock, paymentTerms 0001, incoterms EXW, pricingDate, accountAssignmentGroup 01 costUnitId ECUC profitUnitId EPUC, line: billingId deliveryLineId salesLineId lineNumber itemId EMTC was material_id quantity unitPrice lineTotal taxAmount cogsPerUnit
- * Helper code: SBLC Billing Create (alias BLC, VF01, FIN-BL-CR) – 4-char MOOA S=Sales B=Billing L? Actually SBLC = Sales Billing Create – module grouped intuitive, same length as VF01 but own IP
+ * Helper code: SBLC Billing Create (alias BLC, SBLC (legacy VF01), FIN-BL-CR) – 4-char MOOA S=Sales B=Billing L? Actually SBLC = Sales Billing Create – module grouped intuitive, same length as SBLC (legacy VF01) but own IP
  * Fallback to legacy sd_billing
  */
 
@@ -90,8 +90,8 @@ export async function GET(req: NextRequest) {
         FROM sd_billing b
         LEFT JOIN sd_sales_order so ON b.sales_order_id = so.id
         LEFT JOIN sd_delivery d ON b.delivery_id = d.id
-        LEFT JOIN ent_business_partner bp ON b.customer_id = bp.id
-        LEFT JOIN ent_company_code cc ON b.company_code_id = cc.id
+        LEFT JOIN partner_account bp ON b.customer_id = bp.id
+        LEFT JOIN org_legal_entity cc ON b.company_code_id = cc.id
         WHERE 1=1
       `;
 
@@ -115,8 +115,8 @@ export async function GET(req: NextRequest) {
       table,
       source: dbSource,
       legalSafe,
-      functionDescription: 'Billing – SBLC legal-safe own IP (was VF01) – billingNumber BILL-90000001 was 90*, salesOrderId, deliveryId, legalEntityId was company_code_id, partnerId SCUC was customer_id, currencyCode INR default was KWD, itemId EMTC was material_id',
-      explanation: 'Billing legal-safe sales_billing – billingNumber BILL-90000001 was 90* Billing, type F2/F1/CREDIT/DEBIT, status DRAFT/POSTED/CANCELLED, salesOrderId, deliveryId, legalEntityId was company_code_id, partnerId SCUC was customer_id, billingDate, totalAmount/taxAmount/netAmount currencyCode INR default was KWD, universalLedgerId FULC was fi_document_id Dr AR Cr Revenue+Tax, dueDate isPaid, billingType F2, paymentTerms 0001, itemId EMTC was material_id, quantity unitPrice lineTotal taxAmount cogsPerUnit – Code SBLC primary alias BLC/VF01 – 4-char MOOA S=Sales B=Billing C=Create – module grouped intuitive, same length as VF01 but own IP.',
+      functionDescription: 'Billing – SBLC legal-safe own IP (was SBLC (legacy VF01)) – billingNumber BILL-90000001 was 90*, salesOrderId, deliveryId, legalEntityId was company_code_id, partnerId SCUC was customer_id, currencyCode INR default was KWD, itemId EMTC was material_id',
+      explanation: 'Billing legal-safe sales_billing – billingNumber BILL-90000001 was 90* Billing, type F2/F1/CREDIT/DEBIT, status DRAFT/POSTED/CANCELLED, salesOrderId, deliveryId, legalEntityId was company_code_id, partnerId SCUC was customer_id, billingDate, totalAmount/taxAmount/netAmount currencyCode INR default was KWD, universalLedgerId FULC was fi_document_id Dr AR Cr Revenue+Tax, dueDate isPaid, billingType F2, paymentTerms 0001, itemId EMTC was material_id, quantity unitPrice lineTotal taxAmount cogsPerUnit – Code SBLC primary alias BLC/SBLC (legacy VF01) – 4-char MOOA S=Sales B=Billing C=Create – module grouped intuitive, same length as SBLC (legacy VF01) but own IP.',
     });
   } catch (e: any) {
     console.error('Billing API fatal, returning empty to avoid 500:', e.message);
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // SAP-like posting period enforcement – OB52 – check if period open for account type D
+    // SAP-like posting period enforcement – FPPE (legacy OB52) – check if period open for account type D
     try {
       const postingDate = body.posting_date || body.posting_date || new Date().toISOString();
       const companyCodeForPosting = body.company_code || body.legal_entity_code || body.companyCode || '1000';
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
           customer_group: customerGroup,
           material_group: materialGroup,
           account_assignment_group: acctAssignGroup,
-          transaction_key: 'KOFI'
+          transaction_key: 'REVENUE'
         });
         const revenueKOFK = await getRevenueAccount({
           chart_of_accounts: chartOfAccounts,
@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
           customer_group: customerGroup,
           material_group: materialGroup,
           account_assignment_group: acctAssignGroup,
-          transaction_key: 'KOFK'
+          transaction_key: 'REVENUE'
         });
 
         (body as any)._auto_gl_revenue_kofi = revenueKOFI.gl_account;
@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
         console.log(`Billing VKOA Revenue Account Determination: KOFI=${revenueKOFI.gl_account} (${revenueKOFI.message}) fallback=${revenueKOFI.fallback_used}, KOFK=${revenueKOFK.gl_account}`);
 
         // Also get AR account – for customer reconciliation
-        const arAccount = await getAutoAccount({ transaction_key: 'BSX', chart_of_accounts: chartOfAccounts, valuation_class: 'FINISHED', company_code: companyCodeForPosting });
+        const arAccount = await getAutoAccount({ transaction_key: 'INV_POSTING', chart_of_accounts: chartOfAccounts, valuation_class: 'FINISHED', company_code: companyCodeForPosting });
         // Actually AR should be from customer master, but fallback to BSX for now, will use KOFI for revenue
         (body as any)._auto_gl_revenue = revenueKOFI.gl_account || '3000000001';
         (body as any)._auto_gl_ar = body.ar_gl_account || '1000000001'; // placeholder AR
@@ -416,7 +416,7 @@ export async function PUT(req: NextRequest) {
       if (id) res = await db.execute(sql`UPDATE sd_billing SET status = ${status}::billing_status, updated_at = NOW() WHERE id = ${id} RETURNING id, billing_number, status`);
       else res = await db.execute(sql`UPDATE sd_billing SET status = ${status}::billing_status, updated_at = NOW() WHERE billing_number = ${billing_number} RETURNING id, billing_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'Billing not found' }, { status: 404 });
-      return NextResponse.json({ success: true, billing: res.rows[0], message: `Billing ${res.rows[0].billing_number} status ${status} – VF01 legacy` });
+      return NextResponse.json({ success: true, billing: res.rows[0], message: `Billing ${res.rows[0].billing_number} status ${status} – SBLC (legacy VF01) legacy` });
     }
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

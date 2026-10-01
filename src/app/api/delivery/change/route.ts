@@ -4,8 +4,8 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * VL02N Change Delivery + VL03N Display + VL10C Delivery Due List + VL09 Reverse GI – T1 REQUIRED
- * VL02N: Change delivery – update picking qty, batch, shipping point, route
+ * SDLC (legacy VL02N) Change Delivery + VL03N Display + VL10C Delivery Due List + VL09 Reverse GI – T1 REQUIRED
+ * SDLC (legacy VL02N): Change delivery – update picking qty, batch, shipping point, route
  * VL03N: Display – already GET /api/delivery
  * VL10C: Delivery Due List – sales orders due for delivery – SO with status OPEN/CONFIRMED, delivery not yet created
  * VL09: Reverse Goods Issue – cancel PGI – reverse inventory + COGS posting
@@ -44,9 +44,9 @@ export async function GET(req: NextRequest){
           dueRows = res2.rows as any[];
         }catch{}
       }
-      return NextResponse.json({ success:true, code:'VL10C', alias:'VL10C', due_list: dueRows, data: dueRows, count: dueRows.length, message:`VL10C Delivery Due List – ${dueRows.length} sales orders due for delivery – T1 REQUIRED – NO DANGLING – SO status OPEN/CONFIRMED, delivery not yet created – used for VL01N delivery creation` });
+      return NextResponse.json({ success:true, code:'VL10C', alias:'VL10C', due_list: dueRows, data: dueRows, count: dueRows.length, message:`VL10C Delivery Due List – ${dueRows.length} sales orders due for delivery – T1 REQUIRED – NO DANGLING – SO status OPEN/CONFIRMED, delivery not yet created – used for SDLC (legacy VL01N) delivery creation` });
     }
-    return NextResponse.json({ success:true, code:'VL02N', message:'VL02N Change Delivery – use POST to update delivery – T1 REQUIRED' });
+    return NextResponse.json({ success:true, code:'VL02N', message:'SDLC (legacy VL02N) Change Delivery – use POST to update delivery – T1 REQUIRED' });
   }catch(e:any){
     return NextResponse.json({ error:e.message }, {status:500});
   }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest){
   try{
     const body = await req.json();
     const { delivery_number, action, quantity_picked, picking_status, shipping_point, route, reversal_reason } = body;
-    if(!delivery_number) return NextResponse.json({ error:'delivery_number required – VL02N/VL09 – T1 REQUIRED' }, {status:400});
+    if(!delivery_number) return NextResponse.json({ error:'delivery_number required – SDLC (legacy VL02N)/VL09 – T1 REQUIRED' }, {status:400});
 
     if(action === 'VL09' || action === 'REVERSE_GI'){
       // VL09 Reverse Goods Issue – cancel PGI – reverse inventory + COGS posting
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest){
       }
     }
 
-    // VL02N Change Delivery
+    // SDLC (legacy VL02N) Change Delivery
     try{
       await db.execute(sql`
         UPDATE sales_delivery SET
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest){
           await db.execute(sql`UPDATE sales_delivery_line SET quantity_picked = ${quantity_picked} WHERE delivery_id = (SELECT id FROM sales_delivery WHERE delivery_number = ${delivery_number} LIMIT 1) LIMIT 1`).catch(()=>{});
         }catch{}
       }
-      return NextResponse.json({ success:true, code:'VL02N', delivery_number, message:`VL02N Change Delivery – delivery ${delivery_number} updated – picking_status ${picking_status} shipping_point ${shipping_point} route ${route} qty_picked ${quantity_picked} – T1 REQUIRED – NO DANGLING – delivery fields used in PGI + billing` });
+      return NextResponse.json({ success:true, code:'VL02N', delivery_number, message:`SDLC (legacy VL02N) Change Delivery – delivery ${delivery_number} updated – picking_status ${picking_status} shipping_point ${shipping_point} route ${route} qty_picked ${quantity_picked} – T1 REQUIRED – NO DANGLING – delivery fields used in PGI + billing` });
     }catch(e:any){
       return NextResponse.json({ error:e.message }, {status:500});
     }

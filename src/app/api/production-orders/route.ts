@@ -6,13 +6,13 @@ import { getNextDocumentNumber, createDocumentEntry } from '@/shared/kernel/db/d
 import { getAutoAccount, getMovementType, validateMovementAllowed } from '@/shared/kernel/db/postingPeriodHelpers';
 
 /**
- * Production Orders API – General ERP terminology – Manufacturing Order – MMOC alias CO01 – T0 BLOCKING – No Dangling
- * General ERP: Manufacturing Order, alias Production Order CO01
+ * Production Orders API – General ERP terminology – Manufacturing Order – MMOC alias MMOC (legacy CO01) – T0 BLOCKING – No Dangling
+ * General ERP: Manufacturing Order, alias Production Order MMOC (legacy CO01)
  * Tables: mfg_production_order (new) + mfg_production_order_component (components from BOM) + mfg_routing_line copy as operations
  * Strict usage:
  * - CREATED – header + operations from routing MRTC + components from BOM MBMC – copied, not dangling
  * - RELEASED – checks component availability via stock, creates reservation
- * - CONFIRMED – posts goods movements 261 component consumption GBB/BSX + 101 finished good receipt BSX via OBYC + MAP update + confirmation table
+ * - CONFIRMED – posts goods movements 261 component consumption INV_OFFSET/INV_POSTING (legacy GBB/BSX) + 101 finished good receipt BSX via FAUC (legacy OBYC) + MAP update + confirmation table
  * - CLOSED – closes order
  */
 
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
         } else throw e;
       }
     }
-    return NextResponse.json({ data: rows, productionOrders: rows, count: rows.length, code: 'MMOC', aliasCodes: ['CO01'], table: 'mfg_production_order', functionDescription: 'Manufacturing Order – MMOC alias CO01 – General ERP – T0 BLOCKING – BOM components + Routing operations copied – NO DANGLING' });
+    return NextResponse.json({ data: rows, productionOrders: rows, count: rows.length, code: 'MMOC', aliasCodes: ['CO01'], table: 'mfg_production_order', functionDescription: 'Manufacturing Order – MMOC alias MMOC (legacy CO01) – General ERP – T0 BLOCKING – BOM components + Routing operations copied – NO DANGLING' });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, data: [] }, { status: 500 });
   }
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       await createDocumentEntry({ document_type: 'PROD', document_number: orderNumber.toUpperCase(), company_code: company_code || '1000', reference: `Manufacturing Order for ${finalMaterialCode} – BOM ${bomHeaderId ? 'found' : 'not found'} ${bomLines.length} comps, Routing ${routingHeaderId ? 'found' : 'not found'} ${routingOps.length} ops – T0`, created_by: 'system', payload: { material_code: finalMaterialCode, plant_code: finalPlantCode, quantity, bom_header_id: bomHeaderId, routing_header_id: routingHeaderId, components: bomLines.length, operations: routingOps.length, valuation_class: valuationClass } });
     } catch {}
 
-    return NextResponse.json({ success: true, data: { id: prodOrderId, order_number: orderNumber.toUpperCase(), material_code: finalMaterialCode, plant_code: finalPlantCode, quantity, status: 'CREATED', bom_header_id: bomHeaderId, routing_header_id: routingHeaderId, components: bomLines.length, operations: routingOps.length }, order_number: orderNumber.toUpperCase(), code: 'MMOC', aliasCodes: ['CO01'], message: `Manufacturing Order ${orderNumber.toUpperCase()} created – MMOC alias CO01 – General ERP – status CREATED – T0 BLOCKING – BOM ${bomLines.length} components copied, Routing ${routingOps.length} operations referenced – NO DANGLING`, legalSafe: true, bom_components: bomLines.length, routing_operations: routingOps.length, valuation_class: valuationClass });
+    return NextResponse.json({ success: true, data: { id: prodOrderId, order_number: orderNumber.toUpperCase(), material_code: finalMaterialCode, plant_code: finalPlantCode, quantity, status: 'CREATED', bom_header_id: bomHeaderId, routing_header_id: routingHeaderId, components: bomLines.length, operations: routingOps.length }, order_number: orderNumber.toUpperCase(), code: 'MMOC', aliasCodes: ['CO01'], message: `Manufacturing Order ${orderNumber.toUpperCase()} created – MMOC alias MMOC (legacy CO01) – General ERP – status CREATED – T0 BLOCKING – BOM ${bomLines.length} components copied, Routing ${routingOps.length} operations referenced – NO DANGLING`, legalSafe: true, bom_components: bomLines.length, routing_operations: routingOps.length, valuation_class: valuationClass });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
@@ -233,9 +233,9 @@ export async function PUT(req: NextRequest) {
         for (const comp of comps) {
           const qty = parseFloat(comp.quantity_required || '0');
           const valuationClass = comp.inventory_valuation_class || 'RAW';
-          const gbb = await getAutoAccount({ transaction_key: 'GBB', chart_of_accounts: 'KSCA', valuation_class: valuationClass });
-          const bsx = await getAutoAccount({ transaction_key: 'BSX', chart_of_accounts: 'KSCA', valuation_class: valuationClass });
-          await db.execute(sql`INSERT INTO inv_stock_ledger (movement_type, material_id, plant_id, quantity, reference_doc_type, reference_doc_number, posted_by, header_text) VALUES ('261', ${comp.item_id}, ${orderData.facility_id}, ${-qty}, 'PROD_ORDER', ${finalOrderNumber.toUpperCase()}, 'system', ${`GI 261 – Prod Order ${finalOrderNumber} – component ${comp.item_id} qty ${qty} – GBB/BSX – T0`})`).catch(()=>{});
+          const gbb = await getAutoAccount({ transaction_key: 'INV_OFFSET', chart_of_accounts: 'KSCA', valuation_class: valuationClass });
+          const bsx = await getAutoAccount({ transaction_key: 'INV_POSTING', chart_of_accounts: 'KSCA', valuation_class: valuationClass });
+          await db.execute(sql`INSERT INTO inv_stock_ledger (movement_type, material_id, plant_id, quantity, reference_doc_type, reference_doc_number, posted_by, header_text) VALUES ('GI_PROD', ${comp.item_id}, ${orderData.facility_id}, ${-qty}, 'PROD_ORDER', ${finalOrderNumber.toUpperCase()}, 'system', ${`GI 261 – Prod Order ${finalOrderNumber} – component ${comp.item_id} qty ${qty} – INV_OFFSET/INV_POSTING (legacy GBB/BSX) – T0`})`).catch(()=>{});
           await db.execute(sql`UPDATE mfg_production_order_component SET quantity_issued = quantity_required, is_backflushed = true WHERE id = ${comp.id}`);
           const postingDate = new Date();
           const cogsValue = qty * 10;
@@ -245,8 +245,8 @@ export async function PUT(req: NextRequest) {
         try {
           const finishedItemId = orderData.item_id;
           const finishedQty = parseFloat(orderData.quantity_planned || '0');
-          const bsxFinished = await getAutoAccount({ transaction_key: 'BSX', chart_of_accounts: 'KSCA', valuation_class: 'FINISHED' });
-          await db.execute(sql`INSERT INTO inv_stock_ledger (movement_type, material_id, plant_id, quantity, reference_doc_type, reference_doc_number, posted_by, header_text) VALUES ('101', ${finishedItemId}, ${orderData.facility_id}, ${finishedQty}, 'PROD_ORDER', ${finalOrderNumber.toUpperCase()}, 'system', ${`GR 101 – Prod Order ${finalOrderNumber} – finished receipt – BSX – T0`})`).catch(()=>{});
+          const bsxFinished = await getAutoAccount({ transaction_key: 'INV_POSTING', chart_of_accounts: 'KSCA', valuation_class: 'FINISHED' });
+          await db.execute(sql`INSERT INTO inv_stock_ledger (movement_type, material_id, plant_id, quantity, reference_doc_type, reference_doc_number, posted_by, header_text) VALUES ('GR_PO', ${finishedItemId}, ${orderData.facility_id}, ${finishedQty}, 'PROD_ORDER', ${finalOrderNumber.toUpperCase()}, 'system', ${`GR 101 – Prod Order ${finalOrderNumber} – finished receipt – BSX – T0`})`).catch(()=>{});
           const postingDate = new Date();
           const receiptValue = finishedQty * 20;
           await db.execute(sql`INSERT INTO fin_universal_ledger (document_number, document_type, posting_date, document_date, fiscal_year, fiscal_period, ledger_account_id, gl_account_id, debit, credit, amount, currency_code, reference_doc_type, reference_doc_number, text) VALUES (${finalOrderNumber.toUpperCase()}, 'GR'::fin_doc_type_new, ${postingDate}, ${postingDate}, ${postingDate.getFullYear()}, ${postingDate.getMonth()+1}, (SELECT id FROM fin_ledger_account WHERE account_number = ${bsxFinished.gl_account || '5000000002'} LIMIT 1), (SELECT id FROM fin_ledger_account WHERE account_number = ${bsxFinished.gl_account || '5000000002'} LIMIT 1), ${receiptValue}, 0, ${receiptValue}, 'INR', 'PROD_ORDER', ${finalOrderNumber.toUpperCase()}, ${`GR 101 BSX finished receipt – Prod Order ${finalOrderNumber}`})`).catch(()=>{});
@@ -273,7 +273,7 @@ export async function PUT(req: NextRequest) {
 
     if (!res || res.rows.length === 0) return NextResponse.json({ error: 'Manufacturing order not found' }, { status: 404 });
 
-    return NextResponse.json({ success: true, data: res.rows[0], order_number: finalOrderNumber.toUpperCase(), code: 'MMOC', message: `Manufacturing Order ${finalOrderNumber.toUpperCase()} status ${currentStatus} → ${newStatus} – MMOC alias CO01 – General ERP – ${newStatus === 'CONFIRMED' ? 'GI 261 GBB/BSX + GR 101 BSX posted via OBYC + MAP + movement OMJJ – T0 BLOCKING – NO DANGLING' : newStatus === 'RELEASED' ? 'Component availability checked – T0' : 'Status updated'}`, legalSafe: true });
+    return NextResponse.json({ success: true, data: res.rows[0], order_number: finalOrderNumber.toUpperCase(), code: 'MMOC', message: `Manufacturing Order ${finalOrderNumber.toUpperCase()} status ${currentStatus} → ${newStatus} – MMOC alias MMOC (legacy CO01) – General ERP – ${newStatus === 'CONFIRMED' ? 'GI 261 INV_OFFSET/INV_POSTING (legacy GBB/BSX) + GR 101 BSX posted via FAUC (legacy OBYC) + MAP + movement FMTM (legacy OMJJ) – T0 BLOCKING – NO DANGLING' : newStatus === 'RELEASED' ? 'Component availability checked – T0' : 'Status updated'}`, legalSafe: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

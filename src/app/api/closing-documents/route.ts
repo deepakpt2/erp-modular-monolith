@@ -6,7 +6,7 @@ import { sql } from 'drizzle-orm';
 /**
  * Closing Documents API – Legal-safe own IP – Module 10 FICO Extended – Completing Module5 to 100% + Module10 Final Audit & Closing
  * New: fin_closing_document (was MISSING) – closingNumber CLOSE-10000001, legalEntityId LE-1000 was company_code_id, fiscalYear, fiscalPeriod, closingType MM/SD/FICO/CO/ASSET/INVENTORY/PAYROLL/ALL, status OPEN/CLOSED/LOCKED, closedBy, closedAt, lockedAt
- * Helper code: FCDC Closing Document Create (alias CDC, OB52, FIN-CL-CR) – 4-char MOOA F=Financials CD=Closing Doc? Actually FCDC = Financials Closing Document Create – module grouped intuitive, same length as OB52 but own IP
+ * Helper code: FCDC Closing Document Create (alias CDC, FPPE (legacy OB52), FIN-CL-CR) – 4-char MOOA F=Financials CD=Closing Doc? Actually FCDC = Financials Closing Document Create – module grouped intuitive, same length as FPPE (legacy OB52) but own IP
  * Fresh empty per requirement but legalEntity/fiscal kept
  */
 
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         source: 'none',
         legalSafe: true,
         message: 'Table fin_closing_document fresh empty – FCDC legal-safe own IP – closingNumber CLOSE-10000001, legalEntityId LE-1000, fiscalYear, fiscalPeriod, closingType MM/SD/FICO/CO/ASSET/INVENTORY/PAYROLL/ALL, status OPEN/CLOSED/LOCKED – fresh empty per requirement',
-        explanation: 'Closing document legal-safe fin_closing_document – closingNumber CLOSE-10000001, legalEntityId LE-1000 was company_code_id, fiscalYear, fiscalPeriod, closingType MM/SD/FICO/CO/ASSET/INVENTORY/PAYROLL/ALL, status OPEN/CLOSED/LOCKED, closedBy, closedAt, lockedAt – Code FCDC primary alias CDC/OB52 – 4-char MOOA F=Financials CD=Closing Doc C=Create – module grouped intuitive – fresh empty but legalEntity/fiscal kept.',
+        explanation: 'Closing document legal-safe fin_closing_document – closingNumber CLOSE-10000001, legalEntityId LE-1000 was company_code_id, fiscalYear, fiscalPeriod, closingType MM/SD/FICO/CO/ASSET/INVENTORY/PAYROLL/ALL, status OPEN/CLOSED/LOCKED, closedBy, closedAt, lockedAt – Code FCDC primary alias CDC/FPPE (legacy OB52) – 4-char MOOA F=Financials CD=Closing Doc C=Create – module grouped intuitive – fresh empty but legalEntity/fiscal kept.',
       });
     }
 
@@ -68,8 +68,8 @@ export async function GET(req: NextRequest) {
       table,
       source: 'db-new',
       legalSafe,
-      functionDescription: 'Closing Document – FCDC legal-safe own IP (was OB52) – closingNumber CLOSE-10000001, legalEntityId LE-1000, fiscalYear, fiscalPeriod, closingType MM/SD/FICO/CO/ASSET/INVENTORY/PAYROLL/ALL, status OPEN/CLOSED/LOCKED',
-      explanation: 'Closing document legal-safe fin_closing_document – closingNumber CLOSE-10000001, legalEntityId LE-1000 was company_code_id, fiscalYear, fiscalPeriod, closingType MM/SD/FICO/CO/ASSET/INVENTORY/PAYROLL/ALL, status OPEN/CLOSED/LOCKED, closedBy, closedAt, lockedAt – Code FCDC primary alias CDC/OB52 – 4-char MOOA F=Financials CD=Closing Doc C=Create – module grouped intuitive – fresh empty but legalEntity/fiscal kept.',
+      functionDescription: 'Closing Document – FCDC legal-safe own IP (was FPPE (legacy OB52)) – closingNumber CLOSE-10000001, legalEntityId LE-1000, fiscalYear, fiscalPeriod, closingType MM/SD/FICO/CO/ASSET/INVENTORY/PAYROLL/ALL, status OPEN/CLOSED/LOCKED',
+      explanation: 'Closing document legal-safe fin_closing_document – closingNumber CLOSE-10000001, legalEntityId LE-1000 was company_code_id, fiscalYear, fiscalPeriod, closingType MM/SD/FICO/CO/ASSET/INVENTORY/PAYROLL/ALL, status OPEN/CLOSED/LOCKED, closedBy, closedAt, lockedAt – Code FCDC primary alias CDC/FPPE (legacy OB52) – 4-char MOOA F=Financials CD=Closing Doc C=Create – module grouped intuitive – fresh empty but legalEntity/fiscal kept.',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, data: [] }, { status: 500 });

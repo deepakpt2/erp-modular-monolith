@@ -6,9 +6,9 @@ import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } f
 
 /**
  * BOM API – Legal-safe own IP – Module 7 PP Manufacturing
- * New: mfg_bom_header + mfg_bom_line (was pp_bom_header + pp_bom_line) – bomNumber BOM-1001, itemId EMTC was material_id, facilityId FAC-1000 was plant_id, type STANDARD/KIT_STOCKED/KIT_PHANTOM, status DRAFT/ACTIVE/BLOCKED/EXPIRED, baseQuantity, baseUom EUOC, isPhantom, isKit, expiryRule MIN_COMPONENTS/FIXED_DAYS/MANUAL, componentItemId EMTC was component_material_id ROH, uomCode EUOC was uom, isBatchTracked ELTC, scrapFactor, workCenterId MWCC
+ * New: mfg_bom_header + mfg_bom_line (was mfg_bom_header + mfg_bom_line) – bomNumber BOM-1001, itemId EMTC was material_id, facilityId FAC-1000 was plant_id, type STANDARD/KIT_STOCKED/KIT_PHANTOM, status DRAFT/ACTIVE/BLOCKED/EXPIRED, baseQuantity, baseUom EUOC, isPhantom, isKit, expiryRule MIN_COMPONENTS/FIXED_DAYS/MANUAL, componentItemId EMTC was component_material_id ROH, uomCode EUOC was uom, isBatchTracked ELTC, scrapFactor, workCenterId MWCC
  * Helper code: MBMC BOM Create (alias BMC, CS01, FIN-BOM-CR) – 4-char MOOA M=Manufacturing, BM=BOM, C=Create – same length as CS01 but own IP, module grouped, intuitive
- * Fallback to legacy pp_bom_header
+ * Fallback to legacy mfg_bom_header
  */
 
 export async function GET(req: NextRequest) {
@@ -72,9 +72,9 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (newErr: any) {
-      console.warn('mfg_bom_header not yet fallback pp_bom_header:', newErr.message);
+      console.warn('mfg_bom_header not yet fallback mfg_bom_header:', newErr.message);
       source = 'db-legacy';
-      table = 'pp_bom_header';
+      table = 'mfg_bom_header';
       legalSafe = false;
 
       let query = sql`
@@ -83,11 +83,11 @@ export async function GET(req: NextRequest) {
           h.is_phantom, h.is_kit, h.expiry_rule, h.fixed_shelf_life_days, h.valid_from, h.valid_to,
           m.material_number, m.description as material_description, m.type as material_type, m.is_kit, m.is_phantom_kit,
           p.code as plant_code, p.name as plant_name,
-          (SELECT COUNT(*) FROM pp_bom_line WHERE bom_header_id = h.id) as line_count,
-          (SELECT SUM(quantity) FROM pp_bom_line WHERE bom_header_id = h.id) as total_component_qty
-        FROM pp_bom_header h
-        JOIN ent_material_master m ON h.material_id = m.id
-        JOIN ent_plant p ON h.plant_id = p.id
+          (SELECT COUNT(*) FROM mfg_bom_line WHERE bom_header_id = h.id) as line_count,
+          (SELECT SUM(quantity) FROM mfg_bom_line WHERE bom_header_id = h.id) as total_component_qty
+        FROM mfg_bom_header h
+        JOIN prod_item m ON h.material_id = m.id
+        JOIN org_facility p ON h.plant_id = p.id
         WHERE 1=1
       `;
 
@@ -106,8 +106,8 @@ export async function GET(req: NextRequest) {
             l.id, l.line_number, l.component_material_id, l.quantity, l.uom, l.is_batch_tracked, l.is_phantom_explode, l.scrap_factor, l.work_center_id,
             cm.material_number as component_number, cm.description as component_description, cm.type as component_type,
             wc.code as work_center_code, wc.name as work_center_name
-          FROM pp_bom_line l
-          JOIN ent_material_master cm ON l.component_material_id = cm.id
+          FROM mfg_bom_line l
+          JOIN prod_item cm ON l.component_material_id = cm.id
           LEFT JOIN pp_work_center wc ON l.work_center_id = wc.id
           WHERE l.bom_header_id = ${row.id}
           ORDER BY l.line_number
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
         const it = await db.execute(sql`SELECT id FROM prod_item WHERE item_number = ${item_number} LIMIT 1`);
         if (it.rows.length > 0) itemIdResolved = (it.rows[0] as any).id;
         else {
-          const it2 = await db.execute(sql`SELECT id FROM ent_material_master WHERE material_number = ${item_number} LIMIT 1`);
+          const it2 = await db.execute(sql`SELECT id FROM prod_item WHERE material_number = ${item_number} LIMIT 1`);
           if (it2.rows.length > 0) itemIdResolved = (it2.rows[0] as any).id;
         }
       } catch {}
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
         const f = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${facility_code || plant_code} LIMIT 1`);
         if (f.rows.length > 0) facilityIdResolved = (f.rows[0] as any).id;
         else {
-          const f2 = await db.execute(sql`SELECT id FROM ent_plant WHERE code = ${facility_code || plant_code} LIMIT 1`);
+          const f2 = await db.execute(sql`SELECT id FROM org_facility WHERE code = ${facility_code || plant_code} LIMIT 1`);
           if (f2.rows.length > 0) facilityIdResolved = (f2.rows[0] as any).id;
         }
       } catch {}
@@ -238,8 +238,8 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: true, bom: res.rows[0], code: 'MBMC', message: `BOM ${res.rows[0].bom_number} status ${status} – MBMC legal-safe` });
     } catch {
       let res;
-      if (id) res = await db.execute(sql`UPDATE pp_bom_header SET status = ${status}::bom_status, updated_at = NOW() WHERE id = ${id} RETURNING id, bom_number, status`);
-      else res = await db.execute(sql`UPDATE pp_bom_header SET status = ${status}::bom_status, updated_at = NOW() WHERE bom_number = ${bom_number} RETURNING id, bom_number, status`);
+      if (id) res = await db.execute(sql`UPDATE mfg_bom_header SET status = ${status}::bom_status, updated_at = NOW() WHERE id = ${id} RETURNING id, bom_number, status`);
+      else res = await db.execute(sql`UPDATE mfg_bom_header SET status = ${status}::bom_status, updated_at = NOW() WHERE bom_number = ${bom_number} RETURNING id, bom_number, status`);
       if (res.rows.length === 0) return NextResponse.json({ error: 'BOM not found' }, { status: 404 });
       return NextResponse.json({ success: true, bom: res.rows[0], message: `BOM ${res.rows[0].bom_number} status ${status} – CS01 legacy` });
     }
@@ -262,8 +262,8 @@ export async function DELETE(req: NextRequest) {
       if (id) await db.execute(sql`DELETE FROM mfg_bom_header WHERE id = ${id}`);
       else await db.execute(sql`DELETE FROM mfg_bom_header WHERE bom_number = ${bom_number}`);
     } catch {
-      if (id) await db.execute(sql`DELETE FROM pp_bom_header WHERE id = ${id}`);
-      else await db.execute(sql`DELETE FROM pp_bom_header WHERE bom_number = ${bom_number}`);
+      if (id) await db.execute(sql`DELETE FROM mfg_bom_header WHERE id = ${id}`);
+      else await db.execute(sql`DELETE FROM mfg_bom_header WHERE bom_number = ${bom_number}`);
     }
 
     return NextResponse.json({ success: true, code: 'MBMC', message: `BOM ${bom_number || id} deleted – MBMC legal-safe` });

@@ -53,10 +53,10 @@ export async function POST(req: NextRequest) {
     } else {
       // Resetting others password requires ADMIN/OWNER
       if (currentUserRole !== 'ADMIN' && currentUserRole !== 'OWNER') {
-        // Check ent_user_role for ADMIN
+        // Check auth_user_role for ADMIN
         try {
           const adminCheck = await db.execute(sql`
-            SELECT r.code FROM ent_user_role ur JOIN ent_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId} AND r.code IN ('ADMIN','OWNER') LIMIT 1
+            SELECT r.code FROM auth_user_role ur JOIN auth_role r ON ur.role_id = r.id WHERE ur.user_id = ${currentUserId} AND r.code IN ('ADMIN','OWNER') LIMIT 1
           `);
           if (adminCheck.rows.length === 0) {
             return NextResponse.json({ error: 'Forbidden - ADMIN required to reset others password' }, { status: 403 });
@@ -93,7 +93,7 @@ export async function GET() {
     endpoint: 'POST /api/auth/change-password',
     description: 'Change own password or ADMIN reset others',
     whoCanChangeOwn: 'Any authenticated user with currentPassword',
-    whoCanResetOthers: 'ADMIN or OWNER role (auth_user.role or ent_role ADMIN/OWNER)',
+    whoCanResetOthers: 'ADMIN or OWNER role (auth_user.role or auth_role ADMIN/OWNER)',
     bodyOwn: '{ currentPassword: "old", newPassword: "new123" }',
     bodyAdminReset: '{ userId: "uuid", newPassword: "new123" }',
     storage: 'auth_user.password_hash bcrypt',

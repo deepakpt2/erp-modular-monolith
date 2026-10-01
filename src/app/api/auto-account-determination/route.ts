@@ -4,7 +4,7 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Automatic Account Determination – General ERP terminology (was OBYC in SAP)
+ * Automatic Account Determination – General ERP terminology (was FAUC (legacy OBYC) in SAP)
  * New table: fin_auto_posting_rule – transaction_key, inventory_valuation_class, gl_account
  * Legacy fallback: fin_auto_account
  */
@@ -29,24 +29,25 @@ export async function GET(req: NextRequest) {
           await db.execute(sql`
             CREATE TABLE IF NOT EXISTS fin_auto_account (
               id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-              transaction_key VARCHAR(10) NOT NULL,
+              transaction_key VARCHAR(20) NOT NULL,
               chart_of_accounts VARCHAR(10) NOT NULL,
               valuation_class VARCHAR(10),
               gl_account VARCHAR(20) NOT NULL,
               company_code VARCHAR(10),
               description TEXT,
+              sap_legacy_key VARCHAR(10),
               created_at TIMESTAMPTZ DEFAULT NOW(),
               updated_at TIMESTAMPTZ DEFAULT NOW(),
               UNIQUE(transaction_key, chart_of_accounts, COALESCE(valuation_class,''), COALESCE(company_code,''))
             )
           `);
           await db.execute(sql`
-            INSERT INTO fin_auto_account (transaction_key, chart_of_accounts, valuation_class, gl_account, description) VALUES
-            ('BSX', 'KSCA', 'RAW', '5000000001', 'Inventory posting – raw'),
-            ('BSX', 'KSCA', 'FINISHED', '5000000002', 'Inventory posting – finished'),
-            ('WRX', 'KSCA', 'RAW', '2000000001', 'GR/IR clearing – raw'),
-            ('GBB', 'KSCA', 'RAW', '4000000001', 'Offsetting entry – raw'),
-            ('KOFI', 'KSCA', 'FINISHED', '3000000001', 'Revenue – KOFI')
+            INSERT INTO fin_auto_account (transaction_key, chart_of_accounts, valuation_class, gl_account, description, sap_legacy_key) VALUES
+            ('INV_POST', 'KSCA', 'RAW', '5000000001', 'Inventory posting – raw – legacy BSX', 'INV_POSTING'),
+            ('INV_POST', 'KSCA', 'FINISHED', '5000000002', 'Inventory posting – finished – legacy BSX', 'INV_POSTING'),
+            ('GRIR_CLEAR', 'KSCA', 'RAW', '2000000001', 'GR/IR clearing – raw – legacy WRX', 'GR_IR_CLEARING'),
+            ('OFFSET', 'KSCA', 'RAW', '4000000001', 'Offsetting entry – raw – legacy GBB', 'INV_OFFSET'),
+            ('REV_DET', 'KSCA', 'FINISHED', '3000000001', 'Revenue – REV_DET – legacy KOFI', 'KOFI')
             ON CONFLICT (transaction_key, chart_of_accounts, COALESCE(valuation_class,''), COALESCE(company_code,'')) DO NOTHING
           `);
           const res = await db.execute(sql`SELECT * FROM fin_auto_account ORDER BY transaction_key`);
@@ -61,18 +62,20 @@ export async function GET(req: NextRequest) {
       data: rows,
       autoAccounts: rows,
       count: rows.length,
-      code: 'OBYC',
+      code: 'FAUC',
+      sapAlias: 'OBYC',
       table: tableUsed,
-      functionDescription: 'Automatic Account Determination – defines GL per transaction key BSX/WRX/GBB/PRD',
+      functionDescription: 'Automatic Account Determination – FAUC own IP – defines GL per transaction key INV_POST/GRIR_CLEAR/OFFSET/PRICE_DIFF/INV_DIFF – legacy BSX/WRX/GBB/PRD/BSV – own IP with SAP aliases',
       transactionKeys: {
-        BSX: 'Inventory posting – debit inventory on GR 101',
-        WRX: 'GR/IR clearing – credit GR/IR on GR 101',
-        GBB: 'Offsetting entry – inventory offset – GBB VBR/VAX',
-        PRD: 'Price difference',
-        BSV: 'Inventory posting change – PI diff 701/702',
-        KDM: 'Exchange rate difference',
-        KOFI: 'Revenue – KOFI',
-        KOFK: 'Revenue – KOFK',
+        INV_POST: 'Inventory posting – debit inventory on GR_PO – legacy BSX – GR_PO 101',
+        GRIR_CLEAR: 'GR/IR clearing – credit GR/IR on GR_PO – legacy WRX – GR_PO 101',
+        OFFSET: 'Offsetting entry – inventory offset – legacy GBB – GI_PROD 261, GI_SALES 601',
+        PRICE_DIFF: 'Price difference – legacy PRD – IV variance',
+        INV_DIFF: 'Inventory posting change – PI diff – legacy BSV – PI_PLUS 701/PI_MINUS 702',
+        EXCH_DIFF: 'Exchange rate difference – legacy KDM',
+        REV_DET: 'Revenue – legacy KOFI/KOFK – billing',
+        FREIGHT: 'Freight – landed cost – legacy FRE/FR1',
+        CUSTOMS: 'Customs – landed cost – legacy ZOL',
       },
     });
   } catch (e: any) {
@@ -108,12 +111,13 @@ export async function POST(req: NextRequest) {
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS fin_auto_account (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          transaction_key VARCHAR(10) NOT NULL,
+          transaction_key VARCHAR(20) NOT NULL,
           chart_of_accounts VARCHAR(10) NOT NULL,
           valuation_class VARCHAR(10),
           gl_account VARCHAR(20) NOT NULL,
           company_code VARCHAR(10),
           description TEXT,
+          sap_legacy_key VARCHAR(10),
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW(),
           UNIQUE(transaction_key, chart_of_accounts, COALESCE(valuation_class,''), COALESCE(company_code,''))

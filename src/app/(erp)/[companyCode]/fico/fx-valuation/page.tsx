@@ -35,7 +35,7 @@ export default function Page(){
     };
     const res = await fetch('/api/fx-valuations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
     if(res.success){
-      setMsg(`✅ F.05 FX Valuation Run – ${form.currency_code} rate ${res.exchange_rate} – ${res.open_items_count} open items foreign ${res.total_foreign_amount} local new ${res.total_local_new} variance ${res.variance_amount} – KDM ${res.kdm_account} via OBYC – T1 REQUIRED – month-end revaluation – NO DANGLING – variance posted to universal ledger KDM exchange diff – General ERP – SAP F.05/FAGL_FC_VAL/KDM alias`);
+      setMsg(`✅ F.05 FX Valuation Run – ${form.currency_code} rate ${res.exchange_rate} – ${res.open_items_count} open items foreign ${res.total_foreign_amount} local new ${res.total_local_new} variance ${res.variance_amount} – KDM ${res.kdm_account} via FAUC (legacy OBYC) – T1 REQUIRED – month-end revaluation – NO DANGLING – variance posted to universal ledger KDM exchange diff – General ERP – SAP F.05/FAGL_FC_VAL/KDM alias`);
       load();
     } else setMsg('❌ '+(res.error||JSON.stringify(res)));
   }
@@ -47,20 +47,20 @@ export default function Page(){
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">F.05 FX VALUATION RUN – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS – T1 REQUIRED – F.05-FX-VAL + KDM + OBYC – FOREIGN CURRENCY VALUATION – NO DANGLING</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">F.05 FX VALUATION RUN – GENERAL ERP – {Array.isArray(items)?items.length:0} RECORDS – T1 REQUIRED – F.05-FX-VAL + KDM + FAUC (legacy OBYC) – FOREIGN CURRENCY VALUATION – NO DANGLING</div>
         <div className="grid grid-cols-3 gap-2">
           <div><div className="text-[9px] text-zinc-500">CURRENCY_CODE * (FCYC) – General ERP Currency – foreign USD/EUR – to be revalued – must exist</div><input value={form.currency_code} onChange={e=>setForm({...form,currency_code:e.target.value.toUpperCase()})} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">EXCHANGE_RATE – General ERP Exchange Rate – e.g., 83.5 USD→INR – from exchange rates or manual – used for revaluation</div><input value={form.exchange_rate} onChange={e=>setForm({...form,exchange_rate:e.target.value})} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">VALUATION_DATE – General ERP Valuation Date – month-end date – e.g., 2026-09-30</div><input type="date" value={form.valuation_date} onChange={e=>setForm({...form,valuation_date:e.target.value})} className="w-full border-2 border-black px-1 py-1" /></div>
         </div>
-        <button onClick={runValuation} className="mt-3 bg-black text-white px-3 py-1 w-full">RUN F.05 FX VALUATION – REVALUE FOREIGN CURRENCY OPEN ITEMS – KDM VIA OBYC – T1 REQUIRED</button>
-        <div className="text-[9px] text-zinc-500 mt-1">T1 REQUIRED – F.05: Foreign Currency Valuation Run – At month-end, revalues foreign currency open items using exchange rates, posts variance to KDM account – Reads fin_universal_ledger where currency_code = foreign and is_reversed false – calculates totalForeign, totalLocalOld, totalLocalNew = totalForeign * exchangeRate, variance = new - old – gets KDM account via OBYC auto account lookup KDM + chart + valuation_class – posts variance to universal ledger KDM exchange diff – T1 REQUIRED – NO DANGLING – KDM fields used in FI posting – month-end close – General ERP, SAP F.05/FAGL_FC_VAL/KDM alias</div>
+        <button onClick={runValuation} className="mt-3 bg-black text-white px-3 py-1 w-full">RUN F.05 FX VALUATION – REVALUE FOREIGN CURRENCY OPEN ITEMS – KDM VIA FAUC (legacy OBYC) – T1 REQUIRED</button>
+        <div className="text-[9px] text-zinc-500 mt-1">T1 REQUIRED – F.05: Foreign Currency Valuation Run – At month-end, revalues foreign currency open items using exchange rates, posts variance to KDM account – Reads fin_universal_ledger where currency_code = foreign and is_reversed false – calculates totalForeign, totalLocalOld, totalLocalNew = totalForeign * exchangeRate, variance = new - old – gets KDM account via FAUC (legacy OBYC) auto account lookup KDM + chart + valuation_class – posts variance to universal ledger KDM exchange diff – T1 REQUIRED – NO DANGLING – KDM fields used in FI posting – month-end close – General ERP, SAP F.05/FAGL_FC_VAL/KDM alias</div>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white border-2 border-black p-2">
             <div className="font-bold">{it.valuation_number} – {it.currency_code} rate {it.exchange_rate} – foreign {it.total_foreign_amount} local {it.total_local_amount} variance {it.variance_amount} – {it.status}</div>
-            <div className="text-[10px] text-zinc-600">KDM {it.kdm_account||''} via OBYC – T1 – variance posted to universal ledger</div>
+            <div className="text-[10px] text-zinc-600">KDM {it.kdm_account||''} via FAUC (legacy OBYC) – T1 – variance posted to universal ledger</div>
           </div>
         ))}
       </div>
@@ -69,7 +69,7 @@ export default function Page(){
         <div className="flex flex-wrap gap-1 mt-1">
           <Link href={`/${companyCode}/fico/currencies`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FCYC Currencies – USD/EUR →</Link>
           <Link href={`/${companyCode}/fico/exchange-rates`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FEXR Exchange Rates →</Link>
-          <Link href={`/${companyCode}/fico/auto-account-determination`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">OBYC Auto Account KDM →</Link>
+          <Link href={`/${companyCode}/fico/auto-account-determination`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FAUC (legacy OBYC) Auto Account KDM →</Link>
           <Link href={`/${companyCode}/fico/universal-ledger`} className="border-2 border-black px-1 py-0.5 text-[9px] bg-white">FULC Universal Ledger – KDM →</Link>
         </div>
       </div>
@@ -83,8 +83,8 @@ export default function Page(){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center">💱</div>
           <div>
-            <div className="font-semibold">FX Valuation – F.05 (alias F.05) – General ERP – T1 REQUIRED – F.05-FX-VAL + KDM + OBYC</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} valuations • {companyCode} • F.05 month-end revalues foreign currency open items using exchange rates, posts variance to KDM via OBYC – NO DANGLING – KDM exchange diff</div>
+            <div className="font-semibold">FX Valuation – F.05 (alias F.05) – General ERP – T1 REQUIRED – F.05-FX-VAL + KDM + FAUC (legacy OBYC)</div>
+            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} valuations • {companyCode} • F.05 month-end revalues foreign currency open items using exchange rates, posts variance to KDM via FAUC (legacy OBYC) – NO DANGLING – KDM exchange diff</div>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -92,15 +92,15 @@ export default function Page(){
           <div><label className="text-[11px] font-medium">EXCHANGE_RATE – USD→INR – e.g., 83.5 – from exchange rates</label><input value={form.exchange_rate} onChange={e=>setForm({...form,exchange_rate:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
           <div><label className="text-[11px] font-medium">VALUATION_DATE – month-end – e.g., 2026-09-30</label><input type="date" value={form.valuation_date} onChange={e=>setForm({...form,valuation_date:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" /></div>
         </div>
-        <button onClick={runValuation} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Run F.05 FX Valuation – Revalue Foreign Currency Open Items – KDM via OBYC – T1 REQUIRED</button>
-        <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – F.05: Foreign Currency Valuation Run – At month-end, revalues foreign currency open items using exchange rates, posts variance to KDM account – Reads fin_universal_ledger where currency_code = foreign and is_reversed false – calculates totalForeign, totalLocalOld, totalLocalNew = totalForeign * exchangeRate, variance = new - old – gets KDM account via OBYC auto account lookup KDM + chart + valuation_class – posts variance to universal ledger KDM exchange diff – T1 REQUIRED – NO DANGLING – KDM fields used in FI posting – month-end close – General ERP, SAP F.05/FAGL_FC_VAL/KDM alias – chain: open items foreign → exchange rate → variance → KDM → universal ledger</div>
+        <button onClick={runValuation} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Run F.05 FX Valuation – Revalue Foreign Currency Open Items – KDM via FAUC (legacy OBYC) – T1 REQUIRED</button>
+        <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – F.05: Foreign Currency Valuation Run – At month-end, revalues foreign currency open items using exchange rates, posts variance to KDM account – Reads fin_universal_ledger where currency_code = foreign and is_reversed false – calculates totalForeign, totalLocalOld, totalLocalNew = totalForeign * exchangeRate, variance = new - old – gets KDM account via FAUC (legacy OBYC) auto account lookup KDM + chart + valuation_class – posts variance to universal ledger KDM exchange diff – T1 REQUIRED – NO DANGLING – KDM fields used in FI posting – month-end close – General ERP, SAP F.05/FAGL_FC_VAL/KDM alias – chain: open items foreign → exchange rate → variance → KDM → universal ledger</div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
             <div className="flex justify-between items-start"><div className="font-semibold text-sm">{it.valuation_number} – {it.currency_code} rate {it.exchange_rate} – foreign {it.total_foreign_amount} local {it.total_local_amount} variance {it.variance_amount} – {it.status}</div><span className="text-[10px] bg-purple-600 text-white rounded-full px-2 py-0.5">F.05</span></div>
-            <div className="mt-2 text-xs text-zinc-500">KDM via OBYC – T1 – variance posted to universal ledger – {it.text}</div>
+            <div className="mt-2 text-xs text-zinc-500">KDM via FAUC (legacy OBYC) – T1 – variance posted to universal ledger – {it.text}</div>
           </div>
         ))}
       </div>
@@ -110,16 +110,16 @@ export default function Page(){
         <div className="flex flex-wrap gap-2">
           <Link href={`/${companyCode}/fico/currencies`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FCYC</span><span>Currencies – USD/EUR – FCYC</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/fico/exchange-rates`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FEXR</span><span>Exchange Rates – FEXR</span><span className="text-zinc-400">→</span></Link>
-          <Link href={`/${companyCode}/fico/auto-account-determination`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">OBYC</span><span>Auto Account KDM – exchange diff</span><span className="text-zinc-400">→</span></Link>
+          <Link href={`/${companyCode}/fico/auto-account-determination`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FAUC (legacy OBYC)</span><span>Auto Account KDM – exchange diff</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/fico/universal-ledger`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">FULC</span><span>Universal Ledger – KDM – ACDOCA alias</span><span className="text-zinc-400">→</span></Link>
         </div>
-        <p className="text-[10px] text-zinc-400 mt-2">General ERP terminology – FX Valuation, Currency, Exchange Rate, Auto Account, Universal Ledger, KDM Exchange Difference – SAP F.05/FAGL_FC_VAL/KDM/FCYC/FEXR/OBYC kept as alias – T1 REQUIRED – F.05 month-end revalues foreign currency open items using exchange rates, posts variance to KDM via OBYC – NO DANGLING – KDM fields used in FI posting – month-end close</p>
+        <p className="text-[10px] text-zinc-400 mt-2">General ERP terminology – FX Valuation, Currency, Exchange Rate, Auto Account, Universal Ledger, KDM Exchange Difference – SAP F.05/FAGL_FC_VAL/KDM/FCYC/FEXR/FAUC (legacy OBYC) kept as alias – T1 REQUIRED – F.05 month-end revalues foreign currency open items using exchange rates, posts variance to KDM via FAUC (legacy OBYC) – NO DANGLING – KDM fields used in FI posting – month-end close</p>
       </div>
     </div>
   );
 
   return (
-    <ModernModuleShell title="FX Valuation" subtitle={`${Array.isArray(items)?items.length:0} valuations • ${companyCode} • F.05 alias F.05 – General ERP – T1 REQUIRED – F.05-FX-VAL + KDM + OBYC`} code="F.05" module="FICO" classicChildren={classicContent}>
+    <ModernModuleShell title="FX Valuation" subtitle={`${Array.isArray(items)?items.length:0} valuations • ${companyCode} • F.05 alias F.05 – General ERP – T1 REQUIRED – F.05-FX-VAL + KDM + FAUC (legacy OBYC)`} code="F.05" module="FICO" classicChildren={classicContent}>
       {modernContent}
     </ModernModuleShell>
   );

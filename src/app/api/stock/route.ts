@@ -105,11 +105,11 @@ export async function GET(req: NextRequest) {
             END as expiry_status,
             EXTRACT(DAY FROM (b.expiry_date - NOW())) as days_to_expiry
           FROM inv_stock s
-          JOIN ent_material_master m ON s.material_id = m.id
-          JOIN ent_plant p ON s.plant_id = p.id
-          LEFT JOIN ent_storage_location sloc ON s.sloc_id = sloc.id
-          LEFT JOIN ent_batch b ON s.batch_id = b.id
-          LEFT JOIN ent_material_plant mp ON m.id = mp.material_id AND s.plant_id = mp.plant_id
+          JOIN prod_item m ON s.material_id = m.id
+          JOIN org_facility p ON s.plant_id = p.id
+          LEFT JOIN org_inventory_location sloc ON s.sloc_id = sloc.id
+          LEFT JOIN inv_lot b ON s.batch_id = b.id
+          LEFT JOIN prod_item_plant mp ON m.id = mp.material_id AND s.plant_id = mp.plant_id
           WHERE 1=1 AND s.quantity > 0
         `;
         if (search) query = sql`${query} AND (m.material_number ILIKE ${`%${search}%`} OR m.description ILIKE ${`%${search}%`} OR b.batch_number ILIKE ${`%${search}%`})`;
@@ -119,13 +119,13 @@ export async function GET(req: NextRequest) {
         if (status && status !== 'ALL') query = sql`${query} AND s.stock_status = ${status}`;
         query = sql`${query} ORDER BY b.expiry_date ASC NULLS LAST, m.material_number LIMIT ${limit}`;
         const result = await db.execute(query);
-        const plantsRes = await db.execute(sql`SELECT id, code, name FROM ent_plant ORDER BY code`);
-        const slocsRes = await db.execute(sql`SELECT id, code, name, plant_id FROM ent_storage_location ORDER BY code`);
+        const plantsRes = await db.execute(sql`SELECT id, code, name FROM org_facility ORDER BY code`);
+        const slocsRes = await db.execute(sql`SELECT id, code, name, plant_id FROM org_inventory_location ORDER BY code`);
         return NextResponse.json({
           code: 'ISTC',
           aliasCodes: ['MMBE', 'STC'],
           helperCode: 'MMBE',
-          functionDescription: 'Stock Overview – MMBE (legacy)',
+          functionDescription: 'Stock Overview – ISTV (legacy MMBE) (legacy)',
           stock: result.rows,
           count: result.rows.length,
           plants: plantsRes.rows,
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
     }
     const qty = parseFloat(quantity);
     if (qty <= 0) return NextResponse.json({ error: 'quantity must be >0' }, { status: 400 });
-    if (['101', '261', '601'].includes(movementType)) {
+    if (['GR_PO', 'GI_PROD', 'GI_SALES'].includes(movementType)) {
       try {
         const piBlock = await db.execute(sql`SELECT id FROM inventory_physical_document WHERE facility_id = ${finalFacilityId} AND status = 'COUNT_ENTERED'::inventory_physical_status_new AND is_blocking_active = true LIMIT 1`);
         if (piBlock.rows.length > 0) {

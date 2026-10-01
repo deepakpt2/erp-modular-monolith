@@ -19,10 +19,10 @@ export default function Page() {
         { key: "description", label: "DESCRIPTION", type: "textarea", description: "Description – used in reporting – cost unit purpose" },
       ]}
       relatedLinks={[
-        { code: "ELEC", label: "Legal Entity – required – company code", route: "/foundation/legal-entities", description: "Legal Entity OX02 – required" },
+        { code: "ELEC", label: "Legal Entity – required – company code", route: "/foundation/legal-entities", description: "Legal Entity ELEC (legacy OX02) – required" },
         { code: "FFSG", label: "Field Status Groups – cost unit required", route: "/fico/field-status-groups", description: "Field Status OBC5 – cost unit field required/suppressed" },
         { code: "CCUL", label: "Cost Actuals Report – uses Cost Unit", route: "/fico/cca-report", description: "CCA Report KSB1 – actual line items per cost unit" },
-        { code: "MMOC", label: "Manufacturing Order – uses Cost Unit", route: "/pp/production-orders", description: "Manufacturing Order CO01 – cost unit for costing" },
+        { code: "MMOC", label: "Manufacturing Order – uses Cost Unit", route: "/pp/production-orders", description: "Manufacturing Order MMOC (legacy CO01) – cost unit for costing" },
         { code: "HPYC", label: "Payroll Run – posts to Cost Unit", route: "/hr/payroll-run", description: "Payroll PC00 – salary expense to cost unit" },
       ]}
     />
