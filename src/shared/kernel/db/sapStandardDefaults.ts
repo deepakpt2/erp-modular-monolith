@@ -5,6 +5,7 @@
  * at the system level and do NOT belong to any specific company code. 
  * They are universal reference masters required for standard system operation:
  * 
+ * 0. System Client / Tenant (T000 / TEN-01 / core_tenant) - Standard Client 000, 100, 1000
  * 1. Currencies (TCURC / OY03 / FCYC) - ISO Currencies
  * 2. Units of Measure (T006 / CUNI / EUOC) - ISO Units of Measurement
  * 3. Fiscal Year Variants (T009 / OB29 / FFYC) - Standard Calendar & Non-calendar Variants
@@ -24,6 +25,33 @@ import { sql } from 'drizzle-orm';
 
 export async function seedSapStandardBaseline(): Promise<void> {
   console.log('🏛️  Applying Standard Baseline Configuration (SAP Client 000 baseline)...');
+
+  // 0. System Client / Tenant (SAP T000 / core_tenant)
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS core_tenant (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        code varchar(20) UNIQUE NOT NULL,
+        name varchar(100) NOT NULL,
+        description text,
+        is_active boolean DEFAULT true,
+        created_at timestamp DEFAULT NOW(),
+        updated_at timestamp DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`
+      INSERT INTO core_tenant (code, name, description, is_active)
+      VALUES
+        ('1000', 'Enterprise Client 1000', 'Default production enterprise client 1000', true),
+        ('100', 'Standard Client 100', 'Standard operating client 100', true),
+        ('TEN-100', 'Master Tenant 100', 'Master root tenant TEN-100', true),
+        ('000', 'SAP Reference Client 000', 'Golden baseline system client 000', true)
+      ON CONFLICT (code) DO NOTHING
+    `);
+    console.log('  ✅ Standard System Tenants ensured (T000: 1000, 100, TEN-100, 000)');
+  } catch (e: any) {
+    console.warn('  ⚠️ Tenant baseline note:', e.message);
+  }
 
   // 1. Currencies (TCURC / ISO 4217 / FCYC)
   try {
