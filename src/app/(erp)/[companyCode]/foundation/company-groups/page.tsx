@@ -1,7 +1,7 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function CompanyGroupsPage() {
+export default function CompanyGroupsPage({ defaultMode }: { defaultMode?: any } = {}) {
   return (
     <SingleCodePage
       code="ECGC"
@@ -9,7 +9,7 @@ export default function CompanyGroupsPage() {
       title="Company Group"
       description="Define Company Group – enterprise holding umbrella corporation group structure – root parent, used by Legal Entity – per real guide needs currency_code INR, country_code IN, language EN"
       apiEndpoint="/api/company-groups"
-      defaultMode="list"
+      defaultMode={defaultMode || "list"}
       initialForm={{ code: '', name: '', description: '', tenant_code: 'TEN-100', currency_code: 'INR', country_code: 'IN', language: 'EN' }}
       fields={[
         { key: 'code', label: 'COMPANY_GROUP_CODE', required: true, placeholder: '', description: 'Unique code – e.g., ECGC-FMCG-01 – used as FK in Legal Entity – Title/Code/Data copyable' },

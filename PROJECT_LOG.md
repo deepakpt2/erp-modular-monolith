@@ -763,5 +763,21 @@ Once you confirm, I will:
   - Linked `account_group_code` with autocomplete pointing to `/api/account-groups`.
   - Updated API (`GET`, `POST`, `PUT` in `/api/gl-accounts`) and migration seed to store and query `account_category` and `account_group_code`.
 
-
-
+**Architecture Update: Dedicated Pages for Create, Change (Edit), and List/Display (2026-10-01):**
+- Transitioned architecture from single monolithic views to dedicated physical page routes for distinct operations (`/change`, `/display`, `/list`):
+  - **FICO Cost Centers**: `/cost-centers` (CCUC Create), `/cost-centers/change` (CCUE Change), `/cost-centers/display` (CCUV Display), `/cost-centers/list` (List view)
+  - **FICO GL Accounts**: `/gl-accounts` (FGLC Create), `/gl-accounts/change` (FGLE Change), `/gl-accounts/display` (FGLV Display), `/gl-accounts/list` (List view)
+  - **FICO Account Groups**: `/account-groups` (FAGC Create), `/account-groups/change` (Change), `/account-groups/display` (Display), `/account-groups/list` (List view)
+  - **FICO Chart of Accounts**: `/chart-of-accounts` (FCOA Create), `/chart-of-accounts/change` (Change), `/chart-of-accounts/display` (Display), `/chart-of-accounts/list` (List view)
+  - **Foundation Materials**: `/materials` (EMTC Create), `/materials/change` (EMTE Change), `/materials/display` (EMTV Display), `/materials/list` (EMTL List)
+  - **Foundation Company Groups**: `/company-groups` (ECGC Create), `/company-groups/change` (ECGA Change), `/company-groups/display` (Display), `/company-groups/list` (List view)
+  - **Foundation Legal Entities**: `/legal-entities` (ELEC Create), `/legal-entities/change` (Change), `/legal-entities/display` (Display), `/legal-entities/list` (List view)
+  - **MM Purchase Requisitions**: `/mm/pr` (PPRC Create), `/mm/pr/change` (PPRE Change), `/mm/pr/display` (PPRV Display), `/mm/pr/list` (List view)
+  - **MM Purchase Orders**: `/mm/po` (PPOC Create), `/mm/po/change` (PPOE Change), `/mm/po/display` (PPOV Display), `/mm/po/list` (List view)
+  - **SD Sales Orders**: `/sales` (SSOC Create), `/sales/change` (SSOE Change), `/sales/display` (SSOV Display), `/sales/list` (List view)
+  - **PP Production Planning (BOM, Routings, Work Centers)**: Added dedicated subroutes `/change`, `/display`, `/list` for `pp/bom` (MBMC/MBME/MBMV), `pp/routings` (MRTC/MRTE/MRTV), and `pp/work-centers` (MWCC/MWCE/MWCV).
+- **Inline List Action Updates**:
+  - The "Edit" button inside the list view accordion row now directly links to the dedicated edit page (`/change?selected=<CODE>`).
+  - Added query param support (`?selected=...`) to auto-populate and open the target record on the edit page.
+- **Function Catalog Alignment (`src/shared/lib/functions.ts`)**:
+  - Updated all route paths to direct each transaction code to its dedicated physical page.

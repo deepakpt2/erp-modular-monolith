@@ -1,9 +1,10 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function Page() {
+export default function Page({ defaultMode }: { defaultMode?: any } = {}) {
   return (
     <SingleCodePage
+      defaultMode={defaultMode}
       code="FCOA"
       sapAlias="OB13"
       title="Chart of Accounts"

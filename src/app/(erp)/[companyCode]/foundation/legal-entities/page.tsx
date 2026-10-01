@@ -1,8 +1,9 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
-export default function LegalEntitiesPage() {
+export default function LegalEntitiesPage({ defaultMode }: { defaultMode?: any } = {}) {
   return (
     <SingleCodePage
+      defaultMode={defaultMode}
       code="ELEC"
       sapAlias="OX02"
       title="Legal Entity"

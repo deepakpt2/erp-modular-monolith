@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ModernModuleShell } from '@/shared/ui/modern-module-shell';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 
-export default function Page(){
+export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const params = useParams();
   const companyCode = params.companyCode as string;
   const [data,setData]=useState<any>(null);

@@ -92,12 +92,13 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   const companyCode = params.companyCode as string;
   const modeParam = (searchParams.get('mode') || defaultMode || 'create').toLowerCase();
   const mode = modeParam === 'display' ? 'list' : modeParam;
+  const querySelected = searchParams.get('selected');
   const [uiMode, setUiMode] = useState<'modern' | 'classic'>('modern');
   const [form, setForm] = useState<Record<string, any>>(initialForm);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
-  const [selectedCode, setSelectedCode] = useState<string>('');
+  const [selectedCode, setSelectedCode] = useState<string>(querySelected || '');
   const [expandedItem, setExpandedItem] = useState<any | null>(null);
   const [listSearch, setListSearch] = useState('');
   const [changeSearch, setChangeSearch] = useState('');
@@ -537,7 +538,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                                       <h4 className={modern ? "font-semibold text-[13px]" : "font-bold text-[11px] uppercase"}>View Details – {it.code || it.account_number || it.item_number}</h4>
                                       <div className="flex gap-1.5">
                                         <Link
-                                          href={`${typeof window !== 'undefined' ? window.location.pathname : ''}?mode=change`}
+                                          href={`${typeof window !== 'undefined' ? (window.location.pathname.replace(/\/(list|change|display)$/, '') + '/change') : ''}?selected=${encodeURIComponent(it.code || it.account_number || it.item_number || '')}`}
                                           onClick={() => setSelectedCode(it.code || it.account_number || it.item_number)}
                                           className={modern ? "h-[26px] px-3 rounded-full bg-black text-white text-[11px] inline-flex items-center font-medium hover:bg-zinc-800" : "border-2 border-black px-2 py-0.5 text-[10px] bg-black text-white uppercase font-bold"}
                                         >

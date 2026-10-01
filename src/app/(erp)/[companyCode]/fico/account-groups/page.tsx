@@ -1,7 +1,7 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function AccountGroupsPage() {
+export default function AccountGroupsPage({ defaultMode }: { defaultMode?: any } = {}) {
   return (
     <SingleCodePage
       code="FAGC"
@@ -9,7 +9,7 @@ export default function AccountGroupsPage() {
       title="Account Groups – GL Account Categories"
       description="Define Account Groups – classify GL accounts by category, specify number ranges (from_account to to_account), and assign field status controls. Groups include Balance Sheet, Non-operating P&L, Operating P&L, Primary & Secondary Cost Elements, Retained Earnings, Reconciliation, GR/IR, and Bank Clearing."
       apiEndpoint="/api/account-groups"
-      defaultMode="list"
+      defaultMode={defaultMode || "list"}
       initialForm={{
         code: '',
         name: '',

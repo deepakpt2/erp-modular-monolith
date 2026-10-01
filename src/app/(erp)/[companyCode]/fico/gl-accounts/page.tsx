@@ -1,7 +1,7 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function Page() {
+export default function Page({ defaultMode }: { defaultMode?: any } = {}) {
   return (
     <SingleCodePage
       code="FGLC"
@@ -9,7 +9,7 @@ export default function Page() {
       title="General Ledger Accounts – GL Master"
       description="Create & Maintain GL Account Master – Chart of Accounts, Account Number, Primary/Secondary Cost Elements, Balance Sheet, Non-operating & Operating P&L, Retained Earnings, Subledger Reconciliation (AP/AR/Asset), GR/IR Clearing, and Bank Clearing accounts."
       apiEndpoint="/api/gl-accounts"
-      defaultMode="list"
+      defaultMode={defaultMode || "list"}
       initialForm={{ 
         account_number: '', 
         name: '', 

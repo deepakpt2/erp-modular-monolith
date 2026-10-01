@@ -1,9 +1,10 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
-export default function Page() {
+export default function Page({ defaultMode }: { defaultMode?: any } = {}) {
   return (
     <SingleCodePage
+      defaultMode={defaultMode}
       code="FCCA"
       sapAlias="KS01"
       title="Cost Units – Cost Centers"
