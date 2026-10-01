@@ -731,3 +731,10 @@ Once you confirm, I will:
 - FUNCTIONS entries: `src/shared/lib/functions.ts` already own IP 4-char with SAP aliases – e.g., IGRC alias ['MIGO','INV-GR-PS','GRC'], PPOC alias ['ME21N','PUR-PO-CR','POC'], PPRC alias ['ME51N','PUR-PR-CR'], PIVC alias ['MIRO','INV-IV-CR'], FAUC alias ['OBYC','FIN-AA-CR'], FMTM alias ['OMJJ','FIN-MV-CR'], FPPE alias ['OB52','FIN-PP-OP'], FNRC alias ['FBN1','FIN-NR-CR'], ELEC alias ['OX02','ELEC'], etc – covers all SAP codes.
 - Seed script runnable: `docker compose run --rm migrator npx tsx manual-migrations/001_fictional_company_1000_fmcg_test_only.ts` – now uses own IP with legacy columns, inserts both enhanced and main tables, idempotent ON CONFLICT DO NOTHING, FULL_WIPE support.
 
+**Post-Implementation Bug Fixes & Schema Alignment:**
+- `9197cf7`: Fixed `prod_item` insert column misalignment and added null guards for `po_line` lookups.
+- `b094284`: Removed errant foreign key from `proc_pr_line.uom_code` referencing `core_currency.code`, enabling non-currency UoMs like 'KG'.
+- `995b6f8`: Added `proc_gr_line.total_value` with default '0', relaxed `inventory_location_id` to nullable in schema DDL to align with PR/PO lines.
+- `78ba65e`: Guarded `proc_iv_line` inserts and `fin_tax_rule` against missing/null tax rule IDs, preventing `, ,` SQL syntax errors.
+
+
