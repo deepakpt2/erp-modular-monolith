@@ -842,7 +842,12 @@ async function setupFictionalCompany() {
     await db.execute(sql`ALTER TABLE proc_po_line ADD COLUMN IF NOT EXISTS is_closed BOOLEAN DEFAULT false`);
     await db.execute(sql`CREATE TABLE IF NOT EXISTS proc_purchasing_condition (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), po_line_id uuid REFERENCES proc_po_line(id) ON DELETE CASCADE, condition_type varchar(20) NOT NULL, amount numeric DEFAULT 0, percentage numeric DEFAULT 0, currency_code varchar(3) DEFAULT 'INR', is_active boolean DEFAULT true, created_at timestamp DEFAULT NOW())`);
     await db.execute(sql`CREATE TABLE IF NOT EXISTS proc_goods_receipt (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, gr_number varchar(20) UNIQUE NOT NULL, po_id uuid REFERENCES proc_purchase_order(id), facility_id uuid, plant_id uuid, posting_date date DEFAULT CURRENT_DATE, document_date date DEFAULT CURRENT_DATE, header_text text, status varchar(30) DEFAULT 'POSTED', total_amount numeric DEFAULT 0, total_landed_cost numeric DEFAULT 0, created_at timestamp DEFAULT NOW(), updated_at timestamp DEFAULT NOW())`);
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS proc_gr_line (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), gr_id uuid REFERENCES proc_goods_receipt(id) ON DELETE CASCADE, po_line_id uuid REFERENCES proc_po_line(id), line_number integer NOT NULL, item_id uuid, facility_id uuid, inventory_location_id uuid, lot_id uuid, quantity numeric NOT NULL, uom_code varchar(20) DEFAULT 'PC', unit_price numeric DEFAULT 0, unit_landed_cost numeric DEFAULT 0, created_at timestamp DEFAULT NOW())`);
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS proc_gr_line (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), gr_id uuid REFERENCES proc_goods_receipt(id) ON DELETE CASCADE, po_line_id uuid REFERENCES proc_po_line(id), line_number integer NOT NULL, item_id uuid, facility_id uuid, inventory_location_id uuid, lot_id uuid, quantity numeric NOT NULL, uom_code varchar(20) DEFAULT 'PC', unit_price numeric DEFAULT 0, unit_landed_cost numeric DEFAULT 0, total_value numeric DEFAULT 0, stock_status varchar(30) DEFAULT 'UNRESTRICTED', created_at timestamp DEFAULT NOW())`);
+    await db.execute(sql`ALTER TABLE proc_gr_line ALTER COLUMN total_value SET DEFAULT 0`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE proc_gr_line ALTER COLUMN total_value DROP NOT NULL`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE proc_gr_line ALTER COLUMN inventory_location_id DROP NOT NULL`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE proc_gr_line ALTER COLUMN stock_status SET DEFAULT 'UNRESTRICTED'`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE proc_gr_line ALTER COLUMN stock_status DROP NOT NULL`).catch(()=>{});
     await db.execute(sql`CREATE TABLE IF NOT EXISTS proc_invoice_verification (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, iv_number varchar(20) UNIQUE NOT NULL, gr_id uuid, po_id uuid REFERENCES proc_purchase_order(id), partner_id uuid, vendor_id uuid, legal_entity_id uuid, company_code_id uuid, invoice_date date DEFAULT CURRENT_DATE, posting_date date DEFAULT CURRENT_DATE, vendor_invoice_number varchar(50), total_amount numeric DEFAULT 0, tax_amount numeric DEFAULT 0, freight_amount numeric DEFAULT 0, customs_amount numeric DEFAULT 0, other_charges numeric DEFAULT 0, document_type varchar(20) DEFAULT 'RE', is_credit_memo boolean DEFAULT false, is_debit_memo boolean DEFAULT false, payment_term_code varchar(20), due_date date, vendor_recon_account_id uuid, status varchar(30) DEFAULT 'POSTED', created_at timestamp DEFAULT NOW(), updated_at timestamp DEFAULT NOW())`);
     await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS document_type VARCHAR(20) DEFAULT 'RE'`);
     await db.execute(sql`ALTER TABLE proc_invoice_verification ADD COLUMN IF NOT EXISTS is_credit_memo BOOLEAN DEFAULT false`);
@@ -981,7 +986,16 @@ async function setupFictionalCompany() {
     const gr1aRes = await db.execute(sql`SELECT id FROM proc_goods_receipt WHERE gr_number='5000000000' LIMIT 1`);
     grId1a = (gr1aRes.rows[0] as any)?.id;
     if (grId1a && poLineId1) {
-      await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost) VALUES (${grId1a}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, ${invLocId}, 60, 'KG', 100, 125) ON CONFLICT DO NOTHING`);
+      try {
+        await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost, total_value, stock_status) VALUES (${grId1a}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, ${invLocId}, 60, 'KG', 100, 125, 6000, 'UNRESTRICTED'::proc_stock_status) ON CONFLICT DO NOTHING`);
+      } catch (e: any) {
+        console.warn('proc_gr_line 5000000000 insert failed, fallback:', e.message);
+        try {
+          await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost, total_value) VALUES (${grId1a}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, ${invLocId}, 60, 'KG', 100, 125, 6000) ON CONFLICT DO NOTHING`);
+        } catch (e2: any) {
+          await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, quantity, uom_code, unit_price, unit_landed_cost, total_value) VALUES (${grId1a}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, 60, 'KG', 100, 125, 6000) ON CONFLICT DO NOTHING`).catch(()=>{});
+        }
+      }
     }
     // GR 5000000001 – 40 KG final DELIV_COMPLETED – fixed
     await db.execute(sql`INSERT INTO proc_goods_receipt (gr_number, po_id, facility_id, posting_date, document_date, header_text, status, total_amount, total_landed_cost) VALUES ('5000000001', ${poId1}, ${facilityId}, '2026-10-11'::date, '2026-10-11'::date, 'GR for PO 4500000000 – 40 KG final – DELIV_COMPLETED (legacy ELIKZ) – Purchase 1 – IGRC (legacy MIGO) GR_PO (legacy 101) – own IP', 'POSTED', 4000, 5000) ON CONFLICT (gr_number) DO NOTHING`).catch(async (e:any)=>{
@@ -991,7 +1005,16 @@ async function setupFictionalCompany() {
     const gr1bRes = await db.execute(sql`SELECT id FROM proc_goods_receipt WHERE gr_number='5000000001' LIMIT 1`);
     grId1b = (gr1bRes.rows[0] as any)?.id;
     if (grId1b && poLineId1) {
-      await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost) VALUES (${grId1b}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, ${invLocId}, 40, 'KG', 100, 125) ON CONFLICT DO NOTHING`);
+      try {
+        await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost, total_value, stock_status) VALUES (${grId1b}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, ${invLocId}, 40, 'KG', 100, 125, 4000, 'UNRESTRICTED'::proc_stock_status) ON CONFLICT DO NOTHING`);
+      } catch (e: any) {
+        console.warn('proc_gr_line 5000000001 insert failed, fallback:', e.message);
+        try {
+          await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost, total_value) VALUES (${grId1b}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, ${invLocId}, 40, 'KG', 100, 125, 4000) ON CONFLICT DO NOTHING`);
+        } catch (e2: any) {
+          await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, quantity, uom_code, unit_price, unit_landed_cost, total_value) VALUES (${grId1b}, ${poLineId1}, 10, ${materialId1}, ${facilityId}, 40, 'KG', 100, 125, 4000) ON CONFLICT DO NOTHING`).catch(()=>{});
+        }
+      }
     }
     // Update facility stock to 100
     if (materialId1 && facilityId) {
@@ -1210,7 +1233,16 @@ async function setupFictionalCompany() {
     const gr2Res = await db.execute(sql`SELECT id FROM proc_goods_receipt WHERE gr_number='5000000002' LIMIT 1`);
     grId2 = (gr2Res.rows[0] as any)?.id;
     if (grId2 && poLineId2) {
-      await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost) VALUES (${grId2}, ${poLineId2}, 10, ${materialId2}, ${facilityId}, ${invLocId}, 200, 'KG', 80, 93.6) ON CONFLICT DO NOTHING`);
+      try {
+        await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost, total_value, stock_status) VALUES (${grId2}, ${poLineId2}, 10, ${materialId2}, ${facilityId}, ${invLocId}, 200, 'KG', 80, 93.6, 16000, 'UNRESTRICTED'::proc_stock_status) ON CONFLICT DO NOTHING`);
+      } catch (e: any) {
+        console.warn('proc_gr_line 5000000002 insert failed, fallback:', e.message);
+        try {
+          await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, inventory_location_id, quantity, uom_code, unit_price, unit_landed_cost, total_value) VALUES (${grId2}, ${poLineId2}, 10, ${materialId2}, ${facilityId}, ${invLocId}, 200, 'KG', 80, 93.6, 16000) ON CONFLICT DO NOTHING`);
+        } catch (e2: any) {
+          await db.execute(sql`INSERT INTO proc_gr_line (gr_id, po_line_id, line_number, item_id, facility_id, quantity, uom_code, unit_price, unit_landed_cost, total_value) VALUES (${grId2}, ${poLineId2}, 10, ${materialId2}, ${facilityId}, 200, 'KG', 80, 93.6, 16000) ON CONFLICT DO NOTHING`).catch(()=>{});
+        }
+      }
     }
     if (materialId2 && facilityId) {
       await db.execute(sql`UPDATE prod_facility_profile SET total_stock_qty=COALESCE(total_stock_qty,0)+200, total_stock_value=COALESCE(total_stock_value,0)+16000, moving_avg_price=80 WHERE item_id=${materialId2} AND facility_id=${facilityId}`).catch(()=>{});

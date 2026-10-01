@@ -215,7 +215,7 @@ export const procGrLine = pgTable('proc_gr_line', {
   materialId: uuid('material_id'), // legacy alias
   facilityId: uuid('facility_id').notNull().references(() => orgFacility.id), // was plant_id
   plantId: uuid('plant_id'), // legacy alias
-  inventoryLocationId: uuid('inventory_location_id').notNull().references(() => orgInventoryLocation.id), // was sloc_id
+  inventoryLocationId: uuid('inventory_location_id').references(() => orgInventoryLocation.id), // was sloc_id – nullable to match proc_po_line/proc_pr_line
   slocId: uuid('sloc_id'), // legacy alias
   lotId: uuid('lot_id').references(() => invLot.id), // was batch_id – inv_lot ELTC
   batchId: uuid('batch_id'), // legacy alias
@@ -226,8 +226,8 @@ export const procGrLine = pgTable('proc_gr_line', {
   uom: varchar('uom', { length: 10 }), // legacy alias
   unitPrice: numeric('unit_price', { precision: 15, scale: 4 }).notNull(),
   unitLandedCost: numeric('unit_landed_cost', { precision: 15, scale: 4 }).notNull().default('0'),
-  totalValue: numeric('total_value', { precision: 15, scale: 3 }).notNull(),
-  stockStatus: procStockStatusEnum('stock_status').notNull().default('UNRESTRICTED'), // UNRESTRICTED, QUALITY_INSPECTION, BLOCKED, IN_TRANSIT – was UNRESTRICTED/QI/BLOCKED
+  totalValue: numeric('total_value', { precision: 15, scale: 3 }).notNull().default('0'),
+  stockStatus: procStockStatusEnum('stock_status').default('UNRESTRICTED'), // UNRESTRICTED, QUALITY_INSPECTION, BLOCKED, IN_TRANSIT – was UNRESTRICTED/QI/BLOCKED
   stockStatusLegacy: varchar('stock_status_legacy', { length: 20 }), // legacy alias UNRESTRICTED/QI/BLOCKED
   expiryDate: timestamp('expiry_date'),
   stockLedgerId: uuid('stock_ledger_id'),
