@@ -24,6 +24,7 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
 
   // ========== ENTERPRISE STRUCTURE – IMG – OX02 – ADMIN only ==========
   { pattern: /\/foundation\/company-groups/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'ECGC', description: 'Company Group – OX02 – ECGC – ENTERPRISE_CONFIG – ADMIN only – enterprise structure' },
+  { pattern: /\/foundation\/company-group-assignment/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'ECGA', description: 'Assign Company Group to Legal Entity – OX16 – ECGA – ENTERPRISE_CONFIG' },
   { pattern: /\/foundation\/legal-entities/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'ELEC', description: 'Legal Entity – OX02 – ELEC – ENTERPRISE_CONFIG – ADMIN only' },
   { pattern: /\/foundation\/facilities/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'EFCC', description: 'Facility – OX02 – EFCC – ENTERPRISE_CONFIG – ADMIN only – plant' },
   { pattern: /\/foundation\/inventory-locations/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'WAREHOUSE', 'MATERIAL_MANAGER'], code: 'EILC', description: 'Inventory Location – OX09 – EILC – ENTERPRISE_CONFIG – ADMIN/WAREHOUSE' },

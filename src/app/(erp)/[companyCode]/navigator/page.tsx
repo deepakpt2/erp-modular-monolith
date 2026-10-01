@@ -118,6 +118,7 @@ export default function NavigatorPage() {
         { label: 'Company Group – Change', code: 'ECGE', route: `/foundation/company-groups/change` },
         { label: 'Company Group – Display', code: 'ECGV', route: `/foundation/company-groups/display` },
         { label: 'Company Group – List', code: 'ECGL', route: `/foundation/company-groups/list` },
+        { label: 'Assign Legal Entity to Company Group (OX16)', code: 'ECGA', route: `/foundation/company-group-assignment` },
         { label: 'Legal Entity – Create', code: 'ELEC', route: `/foundation/legal-entities`, count: counts['ELEC'] },
         { label: 'Legal Entity – Change', code: 'ELEE', route: `/foundation/legal-entities/change` },
         { label: 'Legal Entity – Display', code: 'ELEV', route: `/foundation/legal-entities/display` },

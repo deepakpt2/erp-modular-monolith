@@ -30,6 +30,7 @@ export interface PagePermission {
 export const PAGE_PERMISSIONS: PagePermission[] = [
   // ========== ENTERPRISE STRUCTURE – IMG config – SPRO – OX02/OX10 etc – ADMIN only per SAP standard ==========
   { code: 'ECGC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Company Group – OX02 – ECGC – ENTERPRISE_CONFIG – SAP standard IMG – ADMIN only – enterprise structure' },
+  { code: 'ECGA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Assign Company Group to Legal Entity – OX16 – ECGA – ENTERPRISE_CONFIG' },
   { code: 'ELEC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Legal Entity – OX02 – ELEC – ENTERPRISE_CONFIG – SAP standard IMG – ADMIN only' },
   { code: 'EFCC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Facility – OX02 – EFCC – ENTERPRISE_CONFIG – SAP standard IMG – ADMIN only – plant' },
   { code: 'EILC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'WAREHOUSE', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Inventory Location – OX09 – EILC – ENTERPRISE_CONFIG – SAP standard – ADMIN/WAREHOUSE – storage location' },

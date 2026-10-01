@@ -805,11 +805,15 @@ Once you confirm, I will:
   - Updated `FAGC` page form (`src/app/(erp)/[companyCode]/fico/account-groups/page.tsx`) to configure both Account Type and GL Category when defining an Account Group.
   - Updated `FGLC` GL Account Master creation page and `/api/gl-accounts`:
     - `ACCOUNT_GROUP_CODE` is elevated as the leading configuration field after `CHART_OF_ACCOUNTS_CODE`.
-    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**Clean Schema Auto-Migration & SAP Client 000 System Baseline (2026-10-01):**
-- Standardized startup migration so that upon fresh deployment (`docker compose up -d`), only system-level baseline configuration standard to SAP Client 000 is initialized:
-  - Created `src/shared/kernel/db/sapStandardDefaults.ts`: pre-populates universal system reference tables (Currencies `TCURC`, Units of Measure `T006`, Fiscal Variants `T009`, Document Types `OBA7`, Movement Types `OMJJ`, Base Tax Rules `FTXP`, Material Types `OMS2`, Field Status Variants `OBC4`).
-  - No company code, plant, mock vendor, demo customer, or sample transactions are auto-seeded.
-  - Initial root `admin` user is ensured.
+    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**SAP Parity: Dedicated OX16 Company Code to Company Assignment (2026-10-01):**
+- Decoupled Company Code creation from Company Group assignment matching SAP IMG standard (`OX02` vs. `OX16`):
+  - In `ELEC` (`OX02` / `src/app/(erp)/[companyCode]/foundation/legal-entities/page.tsx`), made `COMPANY_GROUP_CODE` optional, allowing independent legal entity creation without pre-existing holding companies.
+  - Created dedicated assignment API `/api/company-group-assignment` to query and assign Legal Entities (`org_legal_entity`) to Company Groups (`org_company_group`).
+  - Added dedicated UI pages for transaction `ECGA` (SAP alias `OX16`):
+    - `/{companyCode}/foundation/company-group-assignment`
+    - Dedicated subroutes `/change`, `/list`, and `/display`.
+  - Registered `ECGA` / `OX16` in `functions.ts`, Navigator tree, and permission configs (`pagePermissions.ts`, `frontendPermissions.ts`, `routePermissions.ts`).
+
 
 
 
