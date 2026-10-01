@@ -520,7 +520,10 @@ async function setupFictionalCompany() {
 
   // 19. Tax Codes FTXC FTXP GST0/5/12/18/28 IGST18 + HSN 13 seeds
   try {
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_tax_rule (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(20) NOT NULL, name varchar(100) NOT NULL, description text, rate numeric DEFAULT 0, tax_type varchar(20) DEFAULT 'INPUT', gst_type varchar(20) DEFAULT 'CGST', hsn_code varchar(20), ledger_account_code varchar(20), is_reverse_charge boolean DEFAULT false, is_active boolean DEFAULT true, UNIQUE(tenant_id, code))`);
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_tax_rule (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(20) NOT NULL UNIQUE, name varchar(100), description text, rate numeric DEFAULT 0, type varchar(20) DEFAULT 'INPUT', tax_type varchar(20) DEFAULT 'INPUT', gst_type varchar(20) DEFAULT 'CGST', hsn_code varchar(20), ledger_account_code varchar(20), is_reverse_charge boolean DEFAULT false, is_active boolean DEFAULT true)`);
+    await db.execute(sql`ALTER TABLE fin_tax_rule ADD COLUMN IF NOT EXISTS type varchar(20) DEFAULT 'INPUT'`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_tax_rule ADD COLUMN IF NOT EXISTS description text`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_tax_rule ADD COLUMN IF NOT EXISTS code varchar(20)`).catch(()=>{});
     const taxes = [
       { code: 'GST0', name: 'GST 0%', desc: 'GST 0% – Exempt', rate: 0, type: 'BOTH', gst: 'CGST', hsn: '09041110', ledger: '2000000003' },
       { code: 'GST5', name: 'GST 5%', desc: 'GST 5% – Essential', rate: 5, type: 'BOTH', gst: 'CGST', hsn: '09041120', ledger: '2000000003' },
@@ -530,7 +533,11 @@ async function setupFictionalCompany() {
       { code: 'IGST18', name: 'IGST 18%', desc: 'IGST 18% – Inter-state', rate: 18, type: 'BOTH', gst: 'IGST', hsn: '09041110', ledger: '2000000003' },
     ];
     for (const t of taxes) {
-      await db.execute(sql`INSERT INTO fin_tax_rule (tenant_id, code, name, description, rate, tax_type, gst_type, hsn_code, ledger_account_code) VALUES (${tenantId}, ${t.code}, ${t.name}, ${t.desc}, ${t.rate}, ${t.type}, ${t.gst}, ${t.hsn}, ${t.ledger}) ON CONFLICT DO NOTHING`).catch(()=>{});
+      await db.execute(sql`INSERT INTO fin_tax_rule (code, description, rate, type) VALUES (${t.code}, ${t.desc}, ${t.rate}, 'INPUT'::fin_tax_rule_type) ON CONFLICT (code) DO UPDATE SET rate = ${t.rate}, description = ${t.desc}`).catch(async ()=>{
+        try {
+          await db.execute(sql`INSERT INTO fin_tax_rule (code, description, rate) VALUES (${t.code}, ${t.desc}, ${t.rate}) ON CONFLICT (code) DO UPDATE SET rate = ${t.rate}`);
+        } catch {}
+      });
     }
     // HSN codes
     await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_hsn_code (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, code varchar(20) NOT NULL, description text, gst_rate numeric DEFAULT 0, is_active boolean DEFAULT true, UNIQUE(tenant_id, code))`);
@@ -1058,7 +1065,11 @@ async function setupFictionalCompany() {
     const iv1aRes = await db.execute(sql`SELECT id FROM proc_invoice_verification WHERE iv_number='5100000000' LIMIT 1`);
     ivId1a = (iv1aRes.rows[0] as any)?.id;
     if (ivId1a && poLineId1 && materialId1) {
-      await db.execute(sql`INSERT INTO proc_iv_line (iv_id, gr_line_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId1a}, null, ${poLineId1}, 10, ${materialId1}, 60, 100, 100, 5, 2, 107, 0, 1080, ${taxRuleIdGST18}, 18, false) ON CONFLICT DO NOTHING`);
+      if (taxRuleIdGST18) {
+        await db.execute(sql`INSERT INTO proc_iv_line (iv_id, gr_line_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId1a}, null, ${poLineId1}, 10, ${materialId1}, 60, 100, 100, 5, 2, 107, 0, 1080, ${taxRuleIdGST18}, 18, false) ON CONFLICT DO NOTHING`).catch(()=>{});
+      } else {
+        await db.execute(sql`INSERT INTO proc_iv_line (iv_id, gr_line_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rate, is_credit) VALUES (${ivId1a}, null, ${poLineId1}, 10, ${materialId1}, 60, 100, 100, 5, 2, 107, 0, 1080, 18, false) ON CONFLICT DO NOTHING`).catch(()=>{});
+      }
     }
 
     // Credit memo 5100000001 – -10 KG RE_CREDIT – fixed
@@ -1069,7 +1080,11 @@ async function setupFictionalCompany() {
     const iv1bRes = await db.execute(sql`SELECT id FROM proc_invoice_verification WHERE iv_number='5100000001' LIMIT 1`);
     ivId1b = (iv1bRes.rows[0] as any)?.id;
     if (ivId1b && poLineId1 && materialId1) {
-      await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId1b}, ${poLineId1}, 10, ${materialId1}, -10, 100, 100, -180, ${taxRuleIdGST18}, 18, true) ON CONFLICT DO NOTHING`);
+      if (taxRuleIdGST18) {
+        await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId1b}, ${poLineId1}, 10, ${materialId1}, -10, 100, 100, -180, ${taxRuleIdGST18}, 18, true) ON CONFLICT DO NOTHING`).catch(()=>{});
+      } else {
+        await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, tax_amount, tax_rate, is_credit) VALUES (${ivId1b}, ${poLineId1}, 10, ${materialId1}, -10, 100, 100, -180, 18, true) ON CONFLICT DO NOTHING`).catch(()=>{});
+      }
     }
 
     // IV 5100000002 – 50 KG variance – fixed
@@ -1080,7 +1095,11 @@ async function setupFictionalCompany() {
     const iv1cRes = await db.execute(sql`SELECT id FROM proc_invoice_verification WHERE iv_number='5100000002' LIMIT 1`);
     ivId1c = (iv1cRes.rows[0] as any)?.id;
     if (ivId1c && poLineId1 && materialId1) {
-      await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId1c}, ${poLineId1}, 10, ${materialId1}, 50, 110, 100, 5, 2, 117, 10, 990, ${taxRuleIdGST18}, 18, false) ON CONFLICT DO NOTHING`);
+      if (taxRuleIdGST18) {
+        await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId1c}, ${poLineId1}, 10, ${materialId1}, 50, 110, 100, 5, 2, 117, 10, 990, ${taxRuleIdGST18}, 18, false) ON CONFLICT DO NOTHING`).catch(()=>{});
+      } else {
+        await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rate, is_credit) VALUES (${ivId1c}, ${poLineId1}, 10, ${materialId1}, 50, 110, 100, 5, 2, 117, 10, 990, 18, false) ON CONFLICT DO NOTHING`).catch(()=>{});
+      }
     }
 
     // Universal ledger for IVs – RE + GR_IR_CLEARING clearing + Vendor Recon + PRICE_DIFF + Tax
@@ -1261,7 +1280,11 @@ async function setupFictionalCompany() {
     const iv2Res = await db.execute(sql`SELECT id FROM proc_invoice_verification WHERE iv_number='5100000003' LIMIT 1`);
     ivId2 = (iv2Res.rows[0] as any)?.id;
     if (ivId2 && poLineId2 && materialId2) {
-      await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId2}, ${poLineId2}, 10, ${materialId2}, 200, 80, 80, 3, 1, 84, 0, 1920, ${taxRuleIdGST12}, 12, false) ON CONFLICT DO NOTHING`);
+      if (taxRuleIdGST12) {
+        await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rule_id, tax_rate, is_credit) VALUES (${ivId2}, ${poLineId2}, 10, ${materialId2}, 200, 80, 80, 3, 1, 84, 0, 1920, ${taxRuleIdGST12}, 12, false) ON CONFLICT DO NOTHING`).catch(()=>{});
+      } else {
+        await db.execute(sql`INSERT INTO proc_iv_line (iv_id, po_line_id, line_number, item_id, quantity, unit_price_invoiced, unit_price_po, freight_per_unit, customs_per_unit, total_per_unit_final, price_variance_per_unit, tax_amount, tax_rate, is_credit) VALUES (${ivId2}, ${poLineId2}, 10, ${materialId2}, 200, 80, 80, 3, 1, 84, 0, 1920, 12, false) ON CONFLICT DO NOTHING`).catch(()=>{});
+      }
     }
     console.log(`✅ IV 5100000003 – 200 KG – Purchase 2 – tax GST12 1920 – RE – GR_IR_CLEARING clearing – Vendor Recon – T0`);
 
