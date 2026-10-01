@@ -9,7 +9,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
       title={titleOverride || "General Ledger Accounts – GL Master"}
       description="Create & Maintain GL Account Master – Chart of Accounts, Account Number, Primary/Secondary Cost Elements, Balance Sheet, Non-operating & Operating P&L, Retained Earnings, Subledger Reconciliation (AP/AR/Asset), GR/IR Clearing, and Bank Clearing accounts."
       apiEndpoint="/api/gl-accounts"
-      defaultMode={defaultMode || "list"}
+      defaultMode={defaultMode || "create"}
       initialForm={{ 
         account_number: '', 
         name: '', 
