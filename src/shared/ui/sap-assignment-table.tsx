@@ -219,6 +219,7 @@ export function SapAssignmentTable({
                                 <span className="font-mono font-medium px-2 py-1 text-zinc-700 bg-zinc-100 rounded">{editForm[col.key] || '—'}</span>
                               ) : col.type === 'autocomplete' && col.apiUrl ? (
                                 <DbAutocomplete
+                                  label={col.label}
                                   apiUrl={col.apiUrl}
                                   dataKey={col.dataKey || ''}
                                   codeField={col.codeField || 'code'}
@@ -279,6 +280,7 @@ export function SapAssignmentTable({
                       <td key={col.key} className="py-2 px-3">
                         {col.type === 'autocomplete' && col.apiUrl ? (
                           <DbAutocomplete
+                            label={col.label}
                             apiUrl={col.apiUrl}
                             dataKey={col.dataKey || ''}
                             codeField={col.codeField || 'code'}

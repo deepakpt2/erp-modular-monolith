@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiAuth } from '@/shared/kernel/auth/apiAuth';
 import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
+import { validateMaterialDeletion } from '@/shared/kernel/safety/deletionPrecheck';
 
 // Mapping old -like values to new legal-safe values
 const mapTypeOldToNew = (oldType: string): string => {
