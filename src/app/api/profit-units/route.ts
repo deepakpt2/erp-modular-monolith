@@ -104,6 +104,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateProfitCenterDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -112,6 +114,18 @@ export async function DELETE(req: NextRequest) {
     const code = searchParams.get('code');
     const id = searchParams.get('id');
     if (!code && !id) return NextResponse.json({ error: 'code or id required' }, { status: 400 });
+
+    // Industry Standard Pre-check
+    const precheck = await validateProfitCenterDeletion({ id, code });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'MSG_PU_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
+    }
+
     let res;
     if (id) {
       res = await db.execute(sql`DELETE FROM org_profit_unit WHERE id = ${id} RETURNING code`);

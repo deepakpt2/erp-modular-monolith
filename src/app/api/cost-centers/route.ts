@@ -114,6 +114,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateCostCenterDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -133,28 +135,15 @@ export async function DELETE(req: NextRequest) {
 
     if (!ccId) return NextResponse.json({ error: 'Cost center not found' }, { status: 404 });
 
-    // Security: check if has employees or postings – same restrictions as other masters
-    let empCount = 0, postingCount = 0;
-    try {
-      const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM hr_employee WHERE cost_center_id = ${ccId}`);
-      empCount = parseInt((r.rows[0] as any).cnt || '0');
-    } catch {}
-    try {
-      const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM fin_universal_ledger_line WHERE cost_center_id = ${ccId}`);
-      postingCount = parseInt((r.rows[0] as any).cnt || '0');
-    } catch {}
-
-    if (empCount > 0 || postingCount > 0) {
-      // Soft delete – blocked hard delete to maintain audit trail
-      await db.execute(sql`UPDATE fin_cost_center SET is_active = false WHERE id = ${ccId}`);
+    // Industry Standard Pre-check
+    const precheck = await validateCostCenterDeletion({ id: ccId, code: ccCode });
+    if (!precheck.canDelete) {
       return NextResponse.json({
-        error: `Cannot delete – cost center ${ccCode} has ${empCount} employees and ${postingCount} postings and cannot be deleted to maintain audit trail. Deactivated instead.`,
-        code: 'HAS_TRANSACTIONS',
-        empCount,
-        postingCount,
-        softDeleted: true,
-        message: `Cost center ${ccCode} deactivated (is_active=false) – has transactions, cannot be hard deleted to maintain audit trail`,
-      }, { status: 400 });
+        success: false,
+        errorCode: 'MSG_CC_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
     }
 
     await db.execute(sql`DELETE FROM fin_cost_center WHERE id = ${ccId}`);

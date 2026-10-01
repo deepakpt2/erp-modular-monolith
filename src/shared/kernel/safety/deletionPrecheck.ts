@@ -963,3 +963,463 @@ export async function validateStorageLocationDeletion(params: {
     } : undefined,
   };
 }
+
+/**
+ * =========================================================================
+ * PHASE 3: Controlling & Enterprise Organization Master Data Safeguards
+ * =========================================================================
+ */
+
+/**
+ * 8. Validate Cost Center Deletion (CCUC / KS01)
+ * Industry Standard Check:
+ * - Postings exist in fin_universal_ledger_line -> BLOCK
+ * - Assigned employees in hr_employee -> BLOCK
+ * Alternative: Lock / Set Inactive Flag (is_active = false)
+ */
+export async function validateCostCenterDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let ccRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM fin_cost_center WHERE id = ${id} LIMIT 1`);
+      ccRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM fin_cost_center WHERE code = ${code} LIMIT 1`);
+      ccRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = ccRecord?.id || id;
+  const effectiveCode = ccRecord?.code || code;
+
+  // 1. Check Universal Ledger Postings
+  try {
+    let postingCount = 0;
+    if (effectiveId) {
+      const pRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_universal_ledger_line 
+        WHERE cost_center_id = ${effectiveId}
+      `);
+      postingCount += Number(pRes.rows[0]?.cnt || 0);
+    }
+    if (postingCount === 0 && effectiveCode) {
+      const pRes2 = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_universal_ledger_line 
+        WHERE cost_center_code = ${effectiveCode}
+      `);
+      postingCount += Number(pRes2.rows[0]?.cnt || 0);
+    }
+
+    if (postingCount > 0) {
+      reasons.push({
+        code: 'ACTUAL_POSTINGS_EXIST',
+        message: `Universal Ledger actual postings exist for this Cost Center (${postingCount} line items).`,
+        resolution: 'Cost Centers with primary or secondary cost postings cannot be deleted. Set Posting Block / Deactivation instead.',
+        tcode: 'CCUL',
+        count: postingCount,
+      });
+    }
+  } catch {}
+
+  // 2. Check Employee Assignments
+  try {
+    let empCount = 0;
+    if (effectiveId) {
+      const eRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM hr_employee 
+        WHERE cost_center_id = ${effectiveId}
+      `);
+      empCount += Number(eRes.rows[0]?.cnt || 0);
+    }
+
+    if (empCount > 0) {
+      reasons.push({
+        code: 'EMPLOYEES_ASSIGNED',
+        message: `${empCount} Employee(s) are assigned to this Cost Center in HR master.`,
+        resolution: 'Reassign employees to another Cost Center in transaction HHEC before deleting.',
+        tcode: 'HHEC',
+        count: empCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Cost Center',
+    entityIdentifier: String(identifier),
+    errorTitle: `Cost Center ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'POSTING_BLOCK',
+      label: 'Set Cost Center Block & Inactive',
+      endpoint: '/api/cost-centers',
+      payload: {
+        id: effectiveId,
+        code: effectiveCode,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * 9. Validate Profit Center / Profit Unit Deletion (EPUC / KE51)
+ * Industry Standard Check:
+ * - Cost Centers assigned to this Profit Center -> BLOCK
+ * - Universal Ledger postings with this Profit Center -> BLOCK
+ * Alternative: Inactive Flag
+ */
+export async function validateProfitCenterDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let puRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM org_profit_unit WHERE id = ${id} LIMIT 1`);
+      puRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM org_profit_unit WHERE code = ${code} LIMIT 1`);
+      puRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = puRecord?.id || id;
+  const effectiveCode = puRecord?.code || code;
+
+  // 1. Check Assigned Cost Centers
+  try {
+    let ccCount = 0;
+    if (effectiveId) {
+      const ccRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_cost_center 
+        WHERE profit_center_id = ${effectiveId}
+      `);
+      ccCount += Number(ccRes.rows[0]?.cnt || 0);
+    }
+    if (ccCount === 0 && effectiveCode) {
+      const ccRes2 = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_cost_center 
+        WHERE profit_center_code = ${effectiveCode}
+      `);
+      ccCount += Number(ccRes2.rows[0]?.cnt || 0);
+    }
+
+    if (ccCount > 0) {
+      reasons.push({
+        code: 'COST_CENTERS_ASSIGNED',
+        message: `${ccCount} Cost Center(s) reference this Profit Center.`,
+        resolution: 'Reassign or unassign Cost Centers in transaction CCUE before deleting.',
+        tcode: 'CCUE',
+        count: ccCount,
+      });
+    }
+  } catch {}
+
+  // 2. Check Universal Ledger Postings
+  try {
+    let pCount = 0;
+    if (effectiveId) {
+      const pRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM fin_universal_ledger_line 
+        WHERE profit_center_id = ${effectiveId}
+      `);
+      pCount += Number(pRes.rows[0]?.cnt || 0);
+    }
+
+    if (pCount > 0) {
+      reasons.push({
+        code: 'FINANCIAL_POSTINGS_EXIST',
+        message: `Financial documents exist with this Profit Center (${pCount} ledger lines).`,
+        resolution: 'Profit centers with ledger postings must be retained for profitability reporting. Deactivate instead.',
+        tcode: 'FLCS',
+        count: pCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Profit Center / Profit Unit',
+    entityIdentifier: String(identifier),
+    errorTitle: `Profit Unit ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'DELETION_FLAG',
+      label: 'Set Inactive / Deactivation Flag',
+      endpoint: '/api/profit-units',
+      payload: {
+        id: effectiveId,
+        code: effectiveCode,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * 10. Validate Purchasing Organization Deletion (EPDC / OX08)
+ * Industry Standard Check:
+ * - Active Purchase Orders exist in proc_po -> BLOCK
+ * - Assigned to Company Code in org_purchasing_org_company_code -> BLOCK
+ * - Assigned to Plant in org_purchasing_org_plant -> BLOCK
+ */
+export async function validatePurchasingOrgDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let pdRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM org_procurement_division WHERE id = ${id} LIMIT 1`);
+      pdRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM org_procurement_division WHERE code = ${code} LIMIT 1`);
+      pdRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = pdRecord?.id || id;
+  const effectiveCode = pdRecord?.code || code;
+
+  // 1. Check Purchase Orders
+  try {
+    let poCount = 0;
+    if (effectiveCode) {
+      const poRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM proc_po 
+        WHERE purchasing_org_code = ${effectiveCode} OR procurement_division_code = ${effectiveCode}
+      `);
+      poCount += Number(poRes.rows[0]?.cnt || 0);
+    }
+
+    if (poCount > 0) {
+      reasons.push({
+        code: 'PURCHASE_ORDERS_EXIST',
+        message: `${poCount} Purchase Order(s) exist under this Purchasing Organization.`,
+        resolution: 'Active procurement records cannot be deleted. Deactivate or archive purchasing history.',
+        tcode: 'PPOV',
+        count: poCount,
+      });
+    }
+  } catch {}
+
+  // 2. Check Company Code Assignments (EPCA / OX01)
+  try {
+    let assignCount = 0;
+    if (effectiveCode) {
+      const aRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM org_purchasing_org_company_code 
+        WHERE purchasing_org_code = ${effectiveCode}
+      `);
+      assignCount += Number(aRes.rows[0]?.cnt || 0);
+    }
+
+    if (assignCount > 0) {
+      reasons.push({
+        code: 'ASSIGNED_TO_COMPANY_CODE',
+        message: `Purchasing Org is assigned to Company Code in Enterprise Structure.`,
+        resolution: 'Remove assignment in transaction EPCA before deleting.',
+        tcode: 'EPCA',
+        count: assignCount,
+      });
+    }
+  } catch {}
+
+  // 3. Check Plant Assignments (EPPA / OX17)
+  try {
+    let pCount = 0;
+    if (effectiveCode) {
+      const aRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM org_purchasing_org_plant 
+        WHERE purchasing_org_code = ${effectiveCode}
+      `);
+      pCount += Number(aRes.rows[0]?.cnt || 0);
+    }
+
+    if (pCount > 0) {
+      reasons.push({
+        code: 'ASSIGNED_TO_PLANT',
+        message: `Purchasing Org is assigned to Plant(s) in Enterprise Structure.`,
+        resolution: 'Remove plant assignments in transaction EPPA before deleting.',
+        tcode: 'EPPA',
+        count: pCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Purchasing Organization',
+    entityIdentifier: String(identifier),
+    errorTitle: `Purchasing Organization ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'DELETION_FLAG',
+      label: 'Set Inactive / Deactivation Flag',
+      endpoint: '/api/procurement-divisions',
+      payload: {
+        id: effectiveId,
+        code: effectiveCode,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * 11. Validate Sales Organization Deletion (ECOC / OVX2)
+ * Industry Standard Check:
+ * - Active Sales Orders exist in sales_order -> BLOCK
+ * - Assigned to Company Code in org_sales_org_company_code -> BLOCK
+ * - Assigned to Distribution Channel in org_channel_sales_org -> BLOCK
+ * - Assigned to Division in org_division_sales_org -> BLOCK
+ */
+export async function validateSalesOrgDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let soRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM org_commercial_org WHERE id = ${id} LIMIT 1`);
+      soRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM org_commercial_org WHERE code = ${code} LIMIT 1`);
+      soRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = soRecord?.id || id;
+  const effectiveCode = soRecord?.code || code;
+
+  // 1. Check Sales Orders
+  try {
+    let orderCount = 0;
+    if (effectiveCode) {
+      const soRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM sales_order 
+        WHERE sales_org_code = ${effectiveCode} OR commercial_org_code = ${effectiveCode}
+      `);
+      orderCount += Number(soRes.rows[0]?.cnt || 0);
+    }
+
+    if (orderCount > 0) {
+      reasons.push({
+        code: 'SALES_ORDERS_EXIST',
+        message: `${orderCount} Sales Order(s) exist under this Sales Organization.`,
+        resolution: 'Active commercial customer contracts cannot be deleted. Deactivate sales organization instead.',
+        tcode: 'SSOV',
+        count: orderCount,
+      });
+    }
+  } catch {}
+
+  // 2. Check Company Code Assignment (ESCA / OVX3)
+  try {
+    let assignCount = 0;
+    if (effectiveCode) {
+      const aRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM org_sales_org_company_code 
+        WHERE sales_org_code = ${effectiveCode}
+      `);
+      assignCount += Number(aRes.rows[0]?.cnt || 0);
+    }
+
+    if (assignCount > 0) {
+      reasons.push({
+        code: 'ASSIGNED_TO_COMPANY_CODE',
+        message: `Sales Org is assigned to Company Code in Enterprise Structure.`,
+        resolution: 'Remove Company Code assignment in transaction ESCA before deleting.',
+        tcode: 'ESCA',
+        count: assignCount,
+      });
+    }
+  } catch {}
+
+  // 3. Check Channel & Division Assignments (ECSA_ASSIGN, EDSA)
+  try {
+    let subAssignCount = 0;
+    if (effectiveCode) {
+      const cRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM org_channel_sales_org 
+        WHERE sales_org_code = ${effectiveCode}
+      `);
+      subAssignCount += Number(cRes.rows[0]?.cnt || 0);
+
+      const dRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM org_division_sales_org 
+        WHERE sales_org_code = ${effectiveCode}
+      `);
+      subAssignCount += Number(dRes.rows[0]?.cnt || 0);
+    }
+
+    if (subAssignCount > 0) {
+      reasons.push({
+        code: 'CHANNELS_DIVISIONS_ASSIGNED',
+        message: `${subAssignCount} Distribution Channel or Division assignment(s) reference this Sales Org.`,
+        resolution: 'Remove Distribution Channel (ECSA_ASSIGN) and Division (EDSA) assignments first.',
+        tcode: 'EDSA',
+        count: subAssignCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Sales Organization',
+    entityIdentifier: String(identifier),
+    errorTitle: `Sales Organization ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'DELETION_FLAG',
+      label: 'Set Inactive / Deactivation Flag',
+      endpoint: '/api/commercial-orgs',
+      payload: {
+        id: effectiveId,
+        code: effectiveCode,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
