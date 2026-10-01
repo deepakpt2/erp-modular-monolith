@@ -22,6 +22,8 @@ export const finAccountGroup = pgTable('fin_account_group', {
   name: varchar('name', { length: 150 }).notNull(), // Asset Accounts, Liability, Revenue – neutral
   fromAccount: varchar('from_account', { length: 30 }).notNull(), // 100000
   toAccount: varchar('to_account', { length: 30 }).notNull(), // 199999
+  accountType: varchar('account_type', { length: 50 }).default('ASSET'), // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE – financial statement type
+  accountCategory: varchar('account_category', { length: 50 }).default('BALANCE_SHEET'), // BALANCE_SHEET (X), NON_OPERATING_EXP_INC (N), PRIMARY_COST_ELEMENT (P), SECONDARY_COST_ELEMENT (S), CASH_ACCOUNT (C), RECONCILIATION, GR_IR_CLEARING, BANK_CLEARING
   description: text('description'),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

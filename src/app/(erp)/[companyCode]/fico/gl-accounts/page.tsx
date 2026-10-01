@@ -24,15 +24,16 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
         description: '' 
       }}
       fields={[
-        { key: "account_number", label: "GL_ACCOUNT_NUMBER", required: true, placeholder: "", description: "GL account number – 10-digit numeric (e.g., 1400000001 Inventory, 2000000001 GR/IR, 2000000000 Vendor Recon, 4000000001 COGS, 8000000001 Bank)" },
-        { key: "name", label: "GL_ACCOUNT_NAME", required: true, placeholder: "", description: "GL account name – e.g., Inventory Raw Materials, Trade Payables Recon, Outgoing Bank Clearing" },
         { key: "coa_code", label: "CHART_OF_ACCOUNTS_CODE", required: true, type: "autocomplete", apiUrl: "/api/chart-of-accounts", dataKey: "chartOfAccounts", codeField: "code", placeholder: "", createUrl: "/fico/chart-of-accounts", createCode: "FCOA", description: "Chart of Accounts – e.g., CA-IN-01" },
+        { key: "account_group_code", label: "ACCOUNT_GROUP_CODE", required: true, type: "autocomplete", apiUrl: "/api/account-groups", dataKey: "accountGroups", codeField: "code", placeholder: "", createUrl: "/fico/account-groups", createCode: "FAGC", description: "Account group (OBD4) – dictates number ranges and automatically inherits Account Type & Category" },
+        { key: "account_number", label: "GL_ACCOUNT_NUMBER", required: true, placeholder: "", description: "GL account number – within the Account Group number range (e.g., 1400000001 Inventory, 2000000001 GR/IR, 2000000000 Vendor Recon, 4000000001 COGS, 8000000001 Bank)" },
+        { key: "name", label: "GL_ACCOUNT_NAME", required: true, placeholder: "", description: "GL account name – e.g., Inventory Raw Materials, Trade Payables Recon, Outgoing Bank Clearing" },
         { 
           key: "account_category", 
           label: "GL_ACCOUNT_CATEGORY", 
-          required: true, 
           type: "select", 
           options: [
+            "INHERIT_FROM_GROUP",
             "BALANCE_SHEET", 
             "NON_OPERATING_EXP_INC", 
             "OPERATING_EXP_INC", 
@@ -43,10 +44,9 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
             "GR_IR_CLEARING", 
             "BANK_CLEARING"
           ], 
-          description: "Functional Account Category: Balance Sheet (assets/liabilities/equity), Non-operating P&L, Operating P&L, Primary Cost Element (CO operational cost), Secondary Cost Element (internal CO allocation), Retained Earnings, Reconciliation (subledger anchor AP/AR/AA), GR/IR clearing, Bank clearing" 
+          description: "Functional Account Category – inherits from Account Group (or override if specific)" 
         },
-        { key: "account_type", label: "ACCOUNT_TYPE", required: true, type: "select", options: ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"], placeholder: "", description: "Financial statement classification – ASSET / LIABILITY / EQUITY / REVENUE / EXPENSE" },
-        { key: "account_group_code", label: "ACCOUNT_GROUP_CODE", type: "autocomplete", apiUrl: "/api/account-groups", dataKey: "accountGroups", codeField: "code", placeholder: "", createUrl: "/fico/account-groups", createCode: "FAGC", description: "Account group – e.g., G001 Balance Sheet, G004 Sales, G005 Bank/Cash – defines number ranges and field status controls" },
+        { key: "account_type", label: "ACCOUNT_TYPE", type: "select", options: ["INHERIT_FROM_GROUP", "ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"], placeholder: "", description: "Financial statement classification – inherits from Account Group" },
         { key: "is_balance_sheet", label: "IS_BALANCE_SHEET", type: "select", options: ["true", "false"], placeholder: "", description: "Balance sheet account – true for balance sheet items carried forward, false for P&L accounts closed to Retained Earnings" },
         { key: "is_reconciliation", label: "IS_RECONCILIATION", type: "select", options: ["true", "false"], placeholder: "", description: "Subledger reconciliation anchor – true if automated subledger control account (e.g., Accounts Payable, Accounts Receivable, Asset Accounting)" },
         { key: "is_blocked", label: "IS_BLOCKED", type: "select", options: ["true", "false"], placeholder: "", description: "Blocked for posting – set true to prevent manual or automated postings" },

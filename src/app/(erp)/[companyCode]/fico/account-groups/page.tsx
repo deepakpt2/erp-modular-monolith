@@ -17,12 +17,40 @@ export default function AccountGroupsPage({ defaultMode, codeOverride, titleOver
         coa_code: 'CA-IN-01',
         from_account: '',
         to_account: '',
+        account_type: 'ASSET',
+        account_category: 'BALANCE_SHEET',
         description: '',
       }}
       fields={[
         { key: 'code', label: 'ACCOUNT_GROUP_CODE', required: true, placeholder: '', description: 'Unique account group code – e.g., G001, BS, RECON, GRIR, CASH' },
         { key: 'name', label: 'ACCOUNT_GROUP_NAME', required: true, placeholder: '', description: 'Descriptive name – e.g., Balance Sheet Accounts, Vendor Reconciliation, GR/IR Clearing' },
         { key: 'chart_code', label: 'CHART_OF_ACCOUNTS_CODE', required: true, type: 'autocomplete', apiUrl: '/api/chart-of-accounts', dataKey: 'chartOfAccounts', codeField: 'code', placeholder: '', createUrl: '/fico/chart-of-accounts', createCode: 'FCOA', description: 'Chart of Accounts – e.g., CA-IN-01' },
+        {
+          key: 'account_type',
+          label: 'ACCOUNT_TYPE',
+          required: true,
+          type: 'select',
+          options: ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'],
+          description: 'Financial statement classification – ASSET / LIABILITY / EQUITY / REVENUE / EXPENSE'
+        },
+        {
+          key: 'account_category',
+          label: 'GL_ACCOUNT_CATEGORY',
+          required: true,
+          type: 'select',
+          options: [
+            'BALANCE_SHEET',
+            'NON_OPERATING_EXP_INC',
+            'OPERATING_EXP_INC',
+            'PRIMARY_COST_ELEMENT',
+            'SECONDARY_COST_ELEMENT',
+            'RETAINED_EARNINGS',
+            'RECONCILIATION',
+            'GR_IR_CLEARING',
+            'BANK_CLEARING'
+          ],
+          description: 'SAP-standard GL category: Balance Sheet (X), Non-operating P&L (N), Primary Costs (P), Secondary Costs (S), Cash / Bank (C), etc. Fixed to this account group.'
+        },
         { key: 'from_account', label: 'FROM_ACCOUNT', required: true, placeholder: '', description: 'Starting GL account number in this range – e.g., 1000000000' },
         { key: 'to_account', label: 'TO_ACCOUNT', required: true, placeholder: '', description: 'Ending GL account number in this range – e.g., 1999999999' },
         { key: 'description', label: 'DESCRIPTION', type: 'textarea', placeholder: '', description: 'Details about accounts classified in this group' },

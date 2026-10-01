@@ -799,4 +799,13 @@ Once you confirm, I will:
   - Includes real-time search filtering across code, alias, title, and module tabs.
   - Registered `FDIR` in `src/shared/lib/functions.ts`, `src/shared/kernel/auth/pagePermissions.ts`, `src/shared/kernel/auth/frontendPermissions.ts`, and `src/app/(erp)/[companyCode]/navigator/page.tsx`.
 
+**SAP Alignment: Account Type & Category Fixed to Account Group (2026-10-01):**
+- Standardized Account Group (`FAGC` / OBD4) to define the `ACCOUNT_TYPE` (Asset, Liability, Equity, Revenue, Expense) and `GL_ACCOUNT_CATEGORY` (Balance Sheet X, Non-operating P&L N, Primary Costs P, Secondary Costs S, Cash/Bank C):
+  - Added `account_type` and `account_category` columns to `fin_account_group` schema and API handlers (`POST` and `PUT` in `/api/account-groups`).
+  - Updated `FAGC` page form (`src/app/(erp)/[companyCode]/fico/account-groups/page.tsx`) to configure both Account Type and GL Category when defining an Account Group.
+  - Updated `FGLC` GL Account Master creation page and `/api/gl-accounts`:
+    - `ACCOUNT_GROUP_CODE` is elevated as the leading configuration field after `CHART_OF_ACCOUNTS_CODE`.
+    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.
+
+
 

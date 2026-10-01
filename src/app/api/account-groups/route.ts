@@ -88,9 +88,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { coa_code, chart_code, code, name, from_account, to_account, description } = body;
+    const { coa_code, chart_code, code, name, from_account, to_account, account_type, account_category, description } = body;
     const finalChartCode = chart_code || coa_code;
     if (!finalChartCode || !code || !name || !from_account || !to_account) return NextResponse.json({ error: 'chart_code/coa_code, code, name, from_account, to_account required' }, { status: 400 });
+
+    try {
+      await db.execute(sql`ALTER TABLE fin_account_group ADD COLUMN IF NOT EXISTS account_type VARCHAR(50) DEFAULT 'ASSET'`);
+      await db.execute(sql`ALTER TABLE fin_account_group ADD COLUMN IF NOT EXISTS account_category VARCHAR(50) DEFAULT 'BALANCE_SHEET'`);
+    } catch {}
+
+    const finalAccountType = account_type || 'ASSET';
+    const finalAccountCategory = account_category || 'BALANCE_SHEET';
 
     try {
       const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
@@ -98,10 +106,10 @@ export async function POST(req: NextRequest) {
       const chartId = (chartRes.rows[0] as any).id;
 
       const res = await db.execute(sql`
-        INSERT INTO fin_account_group (chart_id, coa_id, code, name, from_account, to_account, description)
-        VALUES (${chartId}, ${chartId}, ${code.toUpperCase()}, ${name}, ${from_account}, ${to_account}, ${description || null})
-        ON CONFLICT (chart_id, code) DO UPDATE SET name = ${name}, from_account = ${from_account}, to_account = ${to_account}, description = ${description || null}, updated_at = NOW()
-        RETURNING id, code, name
+        INSERT INTO fin_account_group (chart_id, coa_id, code, name, from_account, to_account, account_type, account_category, description)
+        VALUES (${chartId}, ${chartId}, ${code.toUpperCase()}, ${name}, ${from_account}, ${to_account}, ${finalAccountType}, ${finalAccountCategory}, ${description || null})
+        ON CONFLICT (chart_id, code) DO UPDATE SET name = ${name}, from_account = ${from_account}, to_account = ${to_account}, account_type = ${finalAccountType}, account_category = ${finalAccountCategory}, description = ${description || null}, updated_at = NOW()
+        RETURNING id, code, name, account_type, account_category
       `);
       return NextResponse.json({ success: true, accountGroup: res.rows[0], code: 'FAGC', message: `Account group ${code.toUpperCase()} created – FAGC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
@@ -129,13 +137,18 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, code, name, from_account, to_account } = body;
+    const { id, code, name, from_account, to_account, account_type, account_category, description } = body;
     if (!id && !code) return NextResponse.json({ error: 'id or code required' }, { status: 400 });
 
     try {
+      await db.execute(sql`ALTER TABLE fin_account_group ADD COLUMN IF NOT EXISTS account_type VARCHAR(50) DEFAULT 'ASSET'`);
+      await db.execute(sql`ALTER TABLE fin_account_group ADD COLUMN IF NOT EXISTS account_category VARCHAR(50) DEFAULT 'BALANCE_SHEET'`);
+    } catch {}
+
+    try {
       let res;
-      if (id) res = await db.execute(sql`UPDATE fin_account_group SET name = COALESCE(${name}, name), from_account = COALESCE(${from_account}, from_account), to_account = COALESCE(${to_account}, to_account), updated_at = NOW() WHERE id = ${id} RETURNING id, code, name`);
-      else res = await db.execute(sql`UPDATE fin_account_group SET name = COALESCE(${name}, name), from_account = COALESCE(${from_account}, from_account), to_account = COALESCE(${to_account}, to_account), updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+      if (id) res = await db.execute(sql`UPDATE fin_account_group SET name = COALESCE(${name}, name), from_account = COALESCE(${from_account}, from_account), to_account = COALESCE(${to_account}, to_account), account_type = COALESCE(${account_type}, account_type), account_category = COALESCE(${account_category}, account_category), description = COALESCE(${description}, description), updated_at = NOW() WHERE id = ${id} RETURNING id, code, name, account_type, account_category`);
+      else res = await db.execute(sql`UPDATE fin_account_group SET name = COALESCE(${name}, name), from_account = COALESCE(${from_account}, from_account), to_account = COALESCE(${to_account}, to_account), account_type = COALESCE(${account_type}, account_type), account_category = COALESCE(${account_category}, account_category), description = COALESCE(${description}, description), updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, name, account_type, account_category`);
       if (res.rows.length === 0) throw new Error('Not found in fin_account_group');
       return NextResponse.json({ success: true, accountGroup: res.rows[0], code: 'FAGC', message: `Account group ${res.rows[0].code} updated – FAGC legal-safe` });
     } catch {

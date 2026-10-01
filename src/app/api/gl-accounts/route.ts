@@ -83,13 +83,18 @@ export async function GET(req: NextRequest) {
     // Account Groups
     let accountGroups: any[] = [];
     try {
-      const ag = await db.execute(sql`SELECT coa_id, code, name, from_account, to_account FROM fin_account_group ORDER BY code`);
+      const ag = await db.execute(sql`SELECT coa_id, code, name, from_account, to_account, account_type, account_category FROM fin_account_group ORDER BY code`);
       accountGroups = ag.rows;
     } catch {
       try {
-        const ag = await db.execute(sql`SELECT coa_id, code, name, from_account, to_account FROM fi_account_group ORDER BY code`);
+        const ag = await db.execute(sql`SELECT coa_id, code, name, from_account, to_account FROM fin_account_group ORDER BY code`);
         accountGroups = ag.rows;
-      } catch {}
+      } catch {
+        try {
+          const ag = await db.execute(sql`SELECT coa_id, code, name, from_account, to_account FROM fi_account_group ORDER BY code`);
+          accountGroups = ag.rows;
+        } catch {}
+      }
     }
 
     // Retained Earnings
@@ -178,13 +183,25 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { coa_code, chart_code, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code } = body;
+    let { coa_code, chart_code, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code } = body;
     try {
       await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category VARCHAR(50)`);
       await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code VARCHAR(50)`);
     } catch {}
     const finalCoaCode = coa_code || chart_code;
     if (!finalCoaCode || !account_number || !name) return NextResponse.json({ error: 'coa_code/chart_code, account_number, name required' }, { status: 400 });
+
+    // SAP parity: If account_group_code is provided, inherit account_category and account_type from the group
+    if (account_group_code) {
+      try {
+        const agRes = await db.execute(sql`SELECT account_type, account_category FROM fin_account_group WHERE code = ${account_group_code.toUpperCase()} LIMIT 1`);
+        if (agRes.rows.length > 0) {
+          const ag = agRes.rows[0] as any;
+          if (ag.account_category && !account_category) account_category = ag.account_category;
+          if (ag.account_type && !account_type) account_type = ag.account_type;
+        }
+      } catch {}
+    }
 
     try {
       const coaRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalCoaCode.toUpperCase()} LIMIT 1`);
@@ -195,7 +212,7 @@ export async function POST(req: NextRequest) {
         INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code)
         VALUES (${coaId}, ${account_number}, ${name}, ${account_type || 'ASSET'}::fin_ledger_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${account_category || null}, ${account_group_code || null})
         ON CONFLICT (chart_id, account_number) DO UPDATE SET name = ${name}, account_type = ${account_type || 'ASSET'}::fin_ledger_account_type, is_balance_sheet = ${is_balance_sheet || false}, account_category = COALESCE(${account_category || null}, fin_ledger_account.account_category), account_group_code = COALESCE(${account_group_code || null}, fin_ledger_account.account_group_code), updated_at = NOW()
-        RETURNING id, account_number, name
+        RETURNING id, account_number, name, account_type, account_category, account_group_code
       `);
       return NextResponse.json({ success: true, glAccount: res.rows[0], code: 'FGLC', message: `G/L Account ${account_number} created – FGLC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
