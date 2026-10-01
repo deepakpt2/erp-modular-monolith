@@ -9,13 +9,14 @@ export default function CompanyGroupsPage() {
       title="Company Group"
       description="Define Company Group – enterprise holding umbrella corporation group structure – root parent, used by Legal Entity – per real guide needs currency_code INR, country_code IN, language EN"
       apiEndpoint="/api/company-groups"
+      defaultMode="list"
       initialForm={{ code: '', name: '', description: '', tenant_code: 'TEN-100', currency_code: 'INR', country_code: 'IN', language: 'EN' }}
       fields={[
         { key: 'code', label: 'COMPANY_GROUP_CODE', required: true, placeholder: '', description: 'Unique code – e.g., ECGC-FMCG-01 – used as FK in Legal Entity – Title/Code/Data copyable' },
         { key: 'name', label: 'COMPANY_GROUP_NAME', required: true, placeholder: '', description: 'Name of company group – e.g., FMCG Group India' },
-        { key: 'currency_code', label: 'CURRENCY_CODE', required: true, placeholder: '', description: 'Currency – e.g., INR – required per guide – was missing' },
-        { key: 'country_code', label: 'COUNTRY_CODE', required: true, placeholder: '', description: 'Country – e.g., IN – required per guide' },
-        { key: 'language', label: 'LANGUAGE', required: true, placeholder: '', description: 'Language – e.g., EN – per FCOA (legacy OB13) language requirement' },
+        { key: 'currency_code', label: 'CURRENCY_CODE', required: true, type: 'autocomplete', apiUrl: '/api/currencies', dataKey: 'currencies', codeField: 'code', placeholder: '', createUrl: '/fico/currencies', createCode: 'FCYC', description: 'Currency FK – must exist in Currencies master (e.g., INR, USD, EUR) – FCYC' },
+        { key: 'country_code', label: 'COUNTRY_CODE', required: true, placeholder: '', description: 'Country – e.g., IN – ISO 2-letter country code' },
+        { key: 'language', label: 'LANGUAGE', required: true, placeholder: '', description: 'Language – e.g., EN – per chart of accounts language requirement' },
         { key: 'description', label: 'DESCRIPTION', type: 'textarea', placeholder: '' },
         { key: 'tenant_code', label: 'TENANT_CODE', required: true, placeholder: '', description: 'Tenant code – default TEN-100' },
       ]}

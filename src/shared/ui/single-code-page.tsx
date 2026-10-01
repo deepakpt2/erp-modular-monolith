@@ -30,6 +30,7 @@ export interface SingleCodePageProps {
   fields: FieldDef[];
   relatedLinks: { code: string; label: string; route: string; description: string; count?: number }[];
   initialForm: Record<string, any>;
+  defaultMode?: 'create' | 'list' | 'change';
 }
 
 // Auto-classify fields into tabs if form is large
@@ -85,11 +86,11 @@ function classifyFields(fields: FieldDef[]): TabDef[] {
   return result.length ? result : [{ key: 'basic', label: 'General', desc: 'All fields', fields }];
 }
 
-export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint, fields, relatedLinks, initialForm }: SingleCodePageProps) {
+export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint, fields, relatedLinks, initialForm, defaultMode }: SingleCodePageProps) {
   const params = useParams();
   const searchParams = useSearchParams();
   const companyCode = params.companyCode as string;
-  const modeParam = (searchParams.get('mode') || 'create').toLowerCase();
+  const modeParam = (searchParams.get('mode') || defaultMode || 'create').toLowerCase();
   const mode = modeParam === 'display' ? 'list' : modeParam;
   const [uiMode, setUiMode] = useState<'modern' | 'classic'>('modern');
   const [form, setForm] = useState<Record<string, any>>(initialForm);
@@ -515,36 +516,60 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                       <tr><th className="text-left py-2 font-medium">Code</th><th className="text-left py-2 font-medium">Name</th><th className="text-left py-2 font-medium">Details</th><th className="text-left py-2 font-medium">Action</th></tr>
                     </thead>
                     <tbody>
-                      {filteredListItems.map((it: any, i: number) => (
-                        <tr key={i} className={modern ? "border-b border-zinc-100 hover:bg-zinc-50 cursor-pointer" : "border-b border-black hover:bg-zinc-50 cursor-pointer"} onClick={() => setExpandedItem(it)}>
-                          <td className="py-2 font-mono text-[11px]">{it.code || it.account_number || it.item_number}</td>
-                          <td className="py-2 text-[12px]">{it.name || it.description || it.legal_name || ''}</td>
-                          <td className="py-2 text-[11px] text-zinc-500 truncate max-w-[180px]">{Object.keys(it).slice(0, 3).map(k => `${k}:${String(it[k]).slice(0, 15)}`).join(' ')}</td>
-                          <td className="py-2"><span className={modern ? "text-[11px] text-zinc-900 font-medium hover:underline" : "text-[10px] font-bold underline uppercase"}>View</span></td>
-                        </tr>
-                      ))}
+                      {filteredListItems.map((it: any, i: number) => {
+                        const isExpanded = expandedItem && (expandedItem.code === it.code || expandedItem.id === it.id || (expandedItem.account_number && expandedItem.account_number === it.account_number) || (expandedItem.item_number && expandedItem.item_number === it.item_number));
+                        return (
+                          <React.Fragment key={i}>
+                            <tr
+                              className={modern ? `border-b border-zinc-100 hover:bg-zinc-50 cursor-pointer ${isExpanded ? 'bg-zinc-50' : ''}` : `border-b border-black hover:bg-zinc-50 cursor-pointer ${isExpanded ? 'bg-zinc-100' : ''}`}
+                              onClick={() => setExpandedItem(isExpanded ? null : it)}
+                            >
+                              <td className="py-2 font-mono text-[11px] font-semibold">{it.code || it.account_number || it.item_number}</td>
+                              <td className="py-2 text-[12px]">{it.name || it.description || it.legal_name || ''}</td>
+                              <td className="py-2 text-[11px] text-zinc-500 truncate max-w-[180px]">{Object.keys(it).slice(0, 3).map(k => `${k}:${String(it[k]).slice(0, 15)}`).join(' ')}</td>
+                              <td className="py-2"><span className={modern ? "text-[11px] text-zinc-900 font-medium hover:underline" : "text-[10px] font-bold underline uppercase"}>{isExpanded ? 'Hide' : 'View'}</span></td>
+                            </tr>
+                            {isExpanded && (
+                              <tr className={modern ? "bg-zinc-50 border-b border-zinc-200" : "bg-zinc-50 border-b-2 border-black"}>
+                                <td colSpan={4} className="p-3">
+                                  <div className={modern ? "p-3 bg-white rounded-xl border border-zinc-200 shadow-sm" : "p-2 bg-white border border-black"}>
+                                    <div className="flex justify-between items-start mb-2">
+                                      <h4 className={modern ? "font-semibold text-[13px]" : "font-bold text-[11px] uppercase"}>View Details – {it.code || it.account_number || it.item_number}</h4>
+                                      <div className="flex gap-1.5">
+                                        <Link
+                                          href={`${typeof window !== 'undefined' ? window.location.pathname : ''}?mode=change`}
+                                          onClick={() => setSelectedCode(it.code || it.account_number || it.item_number)}
+                                          className={modern ? "h-[26px] px-3 rounded-full bg-black text-white text-[11px] inline-flex items-center font-medium hover:bg-zinc-800" : "border-2 border-black px-2 py-0.5 text-[10px] bg-black text-white uppercase font-bold"}
+                                        >
+                                          Edit
+                                        </Link>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); setExpandedItem(null); }}
+                                          className={modern ? "h-[26px] px-3 rounded-full border border-zinc-200 text-[11px] bg-white inline-flex items-center hover:bg-zinc-50" : "border-2 border-black px-2 py-0.5 text-[10px] bg-white uppercase font-bold"}
+                                        >
+                                          Close
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className={modern ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-[12px]" : "grid grid-cols-1 md:grid-cols-2 gap-1 text-[11px] font-mono"}>
+                                      {Object.entries(it).map(([k, v]) => (
+                                        <div key={k} className={modern ? "flex gap-2 border-b border-zinc-100 py-1" : "flex gap-2 border-b border-black py-1"}>
+                                          <span className={modern ? "font-medium text-zinc-500 min-w-[90px] text-[10px] uppercase tracking-wider" : "font-bold min-w-[80px] uppercase"}>{k}:</span>
+                                          <span className="truncate text-[11px] font-mono">{String(v ?? '').slice(0, 80)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-                {expandedItem && (
-                  <div className={modern ? "mt-3 p-4 bg-zinc-50 rounded-xl border border-zinc-200" : "mt-3 p-3 bg-white border-2 border-black"}>
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className={modern ? "font-semibold text-[13px]" : "font-bold text-[11px] uppercase"}>View – {expandedItem.code || expandedItem.item_number}</h4>
-                      <div className="flex gap-1.5">
-                        <Link href={`${typeof window !== 'undefined' ? window.location.pathname : ''}?mode=change`} onClick={() => setSelectedCode(expandedItem.code || expandedItem.item_number)} className={modern ? "h-[28px] px-3 rounded-full bg-black text-white text-[11px] inline-flex items-center font-medium" : "border-2 border-black px-2 py-1 text-[10px] bg-black text-white uppercase font-bold"}>Edit</Link>
-                        <button onClick={() => setExpandedItem(null)} className={modern ? "h-[28px] px-3 rounded-full border border-zinc-200 text-[11px] bg-white inline-flex items-center" : "border-2 border-black px-2 py-1 text-[10px] bg-white uppercase font-bold"}>Close</button>
-                      </div>
-                    </div>
-                    <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px]" : "grid grid-cols-1 md:grid-cols-2 gap-1 text-[11px] font-mono"}>
-                      {Object.entries(expandedItem).map(([k, v]) => (
-                        <div key={k} className={modern ? "flex gap-2 border-b border-zinc-100 py-1" : "flex gap-2 border-b border-black py-1"}>
-                          <span className={modern ? "font-medium text-zinc-500 min-w-[100px] text-[11px] uppercase tracking-widest" : "font-bold min-w-[90px] uppercase"}>{k}:</span>
-                          <span className="truncate">{String(v ?? '').slice(0, 80)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
             )}
           </div>

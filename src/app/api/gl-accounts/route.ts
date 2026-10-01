@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
       let query = sql`
         SELECT 
           gl.id, gl.account_number, gl.name, gl.account_type, gl.is_balance_sheet, gl.is_reconciliation, gl.is_tax_relevant, gl.is_blocked,
+          gl.account_category, gl.account_group_code,
           coa.code as coa_code, coa.name as coa_name,
           (SELECT COUNT(*) FROM fin_auto_posting_rule WHERE ledger_account_id = gl.id) as auto_det_count
         FROM fin_ledger_account gl
@@ -177,7 +178,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { coa_code, chart_code, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant } = body;
+    const { coa_code, chart_code, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code } = body;
+    try {
+      await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category VARCHAR(50)`);
+      await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code VARCHAR(50)`);
+    } catch {}
     const finalCoaCode = coa_code || chart_code;
     if (!finalCoaCode || !account_number || !name) return NextResponse.json({ error: 'coa_code/chart_code, account_number, name required' }, { status: 400 });
 
@@ -187,9 +192,9 @@ export async function POST(req: NextRequest) {
       const coaId = (coaRes.rows[0] as any).id;
 
       const res = await db.execute(sql`
-        INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
-        VALUES (${coaId}, ${account_number}, ${name}, ${account_type || 'ASSET'}::fin_ledger_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false})
-        ON CONFLICT (chart_id, account_number) DO UPDATE SET name = ${name}, account_type = ${account_type || 'ASSET'}::fin_ledger_account_type, is_balance_sheet = ${is_balance_sheet || false}, updated_at = NOW()
+        INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code)
+        VALUES (${coaId}, ${account_number}, ${name}, ${account_type || 'ASSET'}::fin_ledger_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${account_category || null}, ${account_group_code || null})
+        ON CONFLICT (chart_id, account_number) DO UPDATE SET name = ${name}, account_type = ${account_type || 'ASSET'}::fin_ledger_account_type, is_balance_sheet = ${is_balance_sheet || false}, account_category = COALESCE(${account_category || null}, fin_ledger_account.account_category), account_group_code = COALESCE(${account_group_code || null}, fin_ledger_account.account_group_code), updated_at = NOW()
         RETURNING id, account_number, name
       `);
       return NextResponse.json({ success: true, glAccount: res.rows[0], code: 'FGLC', message: `G/L Account ${account_number} created – FGLC legal-safe`, legalSafe: true });
@@ -218,7 +223,7 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, account_number, name, account_type, is_blocked, is_balance_sheet } = body;
+    const { id, account_number, name, account_type, is_blocked, is_balance_sheet, account_category, account_group_code } = body;
     if (!id && !account_number) return NextResponse.json({ error: 'id or account_number required' }, { status: 400 });
 
     try {
@@ -231,6 +236,8 @@ export async function PUT(req: NextRequest) {
             account_type = COALESCE(${account_type}::fin_ledger_account_type, account_type),
             is_blocked = COALESCE(${is_blocked}, is_blocked),
             is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+            account_category = COALESCE(${account_category ?? null}, account_category),
+            account_group_code = COALESCE(${account_group_code ?? null}, account_group_code),
             updated_at = NOW()
           WHERE id = ${id}
           RETURNING id, account_number, name

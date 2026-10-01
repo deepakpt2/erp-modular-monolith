@@ -45,6 +45,12 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const finalCurrency = (currency_code || 'INR').toUpperCase().trim();
+      const currCheck = await db.execute(sql`SELECT code FROM core_currency WHERE UPPER(code) = ${finalCurrency} LIMIT 1`);
+      if (currCheck.rows.length === 0) {
+        return NextResponse.json({ error: `CURRENCY_CODE '${finalCurrency}' is invalid or does not exist in Currencies master (core_currency). Please create it first via FCYC (/fico/currencies).` }, { status: 400 });
+      }
+
 if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
       let tenantId = tenant_id;
       if (!tenantId) {

@@ -737,4 +737,31 @@ Once you confirm, I will:
 - `995b6f8`: Added `proc_gr_line.total_value` with default '0', relaxed `inventory_location_id` to nullable in schema DDL to align with PR/PO lines.
 - `78ba65e`: Guarded `proc_iv_line` inserts and `fin_tax_rule` against missing/null tax rule IDs, preventing `, ,` SQL syntax errors.
 
+**UI Enhancements, Master Data Validations & GL Account Architecture (2026-10-01):**
+- `SingleCodePage`:
+  - Added support for `defaultMode` (e.g. `'list'`), defaulting pages like Company Groups, GL Accounts, and Account Groups directly to the list view.
+  - Converted table list row expansion into an inline accordion row (`<tr><td colSpan={4}>...</td></tr>`) inserted immediately beneath the selected record, eliminating jump-to-bottom behavior.
+- `Company Groups (ECGC / OX15)`:
+  - Added `DbAutocomplete` linking `CURRENCY_CODE` directly to `/api/currencies`.
+  - Added strict server-side validation in `POST /api/company-groups` checking `core_currency` table so invalid currencies like 'INC' are rejected with clear error guidance.
+- `Chart of Accounts & Legal Entity Linkage`:
+  - Verified relationship: `fin_chart` (CA-IN-01) $\rightarrow$ `fin_ledger_account` (chart_id) $\rightarrow$ `org_legal_entity` (chart_of_accounts_code). Legal entity creation requires existing chart of accounts; seed script ensures both are created and cross-linked.
+- `Account Groups (FAGC / OBD4)`:
+  - Created new dedicated master UI page at `src/app/(erp)/[companyCode]/fico/account-groups/page.tsx` for creating and managing Account Groups with number ranges (`from_account` to `to_account`).
+  - Added seed entries for `BS` (Balance Sheet), `G001` (Fixed/Current Assets), `RECON` (Subledger Reconciliation), `GRIR` (Clearing), `PL_OP` (Operating P&L), `PL_NON` (Non-operating P&L), `CO_PRI` (Primary Cost Elements), and `CO_SEC` (Secondary Cost Elements).
+- `GL Accounts Master (FGLC / FS00)`:
+  - Removed legacy placeholder fields and added comprehensive support for Functional Account Categories (`account_category`):
+    - Balance Sheet Accounts
+    - Non-operating Expense/Income
+    - Operating Expenses/Income
+    - Primary Cost Elements (Controlling operational costs)
+    - Secondary Cost Elements (Controlling internal assessments/allocations)
+    - Retained Earnings Account
+    - Reconciliation Accounts (Subledger anchors for AP/AR/Assets)
+    - GR/IR Clearing Accounts
+    - Bank Clearing Accounts
+  - Linked `account_group_code` with autocomplete pointing to `/api/account-groups`.
+  - Updated API (`GET`, `POST`, `PUT` in `/api/gl-accounts`) and migration seed to store and query `account_category` and `account_group_code`.
+
+
 

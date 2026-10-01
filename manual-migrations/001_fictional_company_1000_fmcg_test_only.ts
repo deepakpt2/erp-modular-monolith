@@ -324,27 +324,45 @@ async function setupFictionalCompany() {
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS tenant_id UUID`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS coa_code VARCHAR(20) DEFAULT 'CA-IN-01'`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS chart_id UUID`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category VARCHAR(50)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code VARCHAR(50)`).catch(()=>{});
+
+    // Seed Account Groups (FAGC / OBD4)
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS fin_account_group (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), chart_id uuid, coa_id uuid, code varchar(20) NOT NULL, name varchar(100) NOT NULL, from_account varchar(30) NOT NULL, to_account varchar(30) NOT NULL, description text, created_at timestamp DEFAULT NOW(), updated_at timestamp DEFAULT NOW(), UNIQUE(chart_id, code))`).catch(()=>{});
+    const accGroups = [
+      { code: 'BS', name: 'Balance Sheet Accounts', from: '1000000000', to: '3999999999', desc: 'Assets, liabilities, and equity' },
+      { code: 'G001', name: 'Fixed & Current Assets', from: '1000000000', to: '1999999999', desc: 'Material and cash assets' },
+      { code: 'RECON', name: 'Reconciliation Accounts', from: '2000000000', to: '2000000099', desc: 'Subledger anchors for AP/AR' },
+      { code: 'GRIR', name: 'Clearing Accounts', from: '2000000100', to: '2000000999', desc: 'GR/IR and interim clearing' },
+      { code: 'PL_OP', name: 'Operating P&L Accounts', from: '4000000000', to: '5999999999', desc: 'Core revenue, COGS, variances' },
+      { code: 'PL_NON', name: 'Non-Operating P&L Accounts', from: '7000000000', to: '7999999999', desc: 'Interest, investment gains/losses' },
+      { code: 'CO_PRI', name: 'Primary Cost Elements', from: '6000000000', to: '6999999999', desc: 'Operational costs linked to CO' },
+      { code: 'CO_SEC', name: 'Secondary Cost Elements', from: '8000000000', to: '8999999999', desc: 'Internal CO department assessments' },
+    ];
+    for (const ag of accGroups) {
+      await db.execute(sql`INSERT INTO fin_account_group (chart_id, coa_id, code, name, from_account, to_account, description) VALUES (${chartId}, ${chartId}, ${ag.code}, ${ag.name}, ${ag.from}, ${ag.to}, ${ag.desc}) ON CONFLICT DO NOTHING`).catch(()=>{});
+    }
 
     const glAccounts = [
-      { num: '1400000001', name: 'Inventory Raw Material INV_POSTING', type: 'ASSET', bs: true, recon: false },
-      { num: '2000000001', name: 'GR/IR Clearing GR_IR_CLEARING', type: 'LIABILITY', bs: true, recon: false },
-      { num: '2000000000', name: 'Vendor Reconciliation RE', type: 'LIABILITY', bs: true, recon: true },
-      { num: '1000000002', name: 'Customer Reconciliation', type: 'ASSET', bs: true, recon: true },
-      { num: '8000000001', name: 'Bank SBI', type: 'ASSET', bs: true, recon: false },
-      { num: '8000000000', name: 'Cash', type: 'ASSET', bs: true, recon: false },
-      { num: '4000000004', name: 'Price Difference PRICE_DIFF', type: 'EXPENSE', bs: false, recon: false },
-      { num: '2000000003', name: 'GST Tax', type: 'LIABILITY', bs: true, recon: false },
-      { num: '4000000001', name: 'Price Diff', type: 'EXPENSE', bs: false, recon: false },
-      { num: '4000001000', name: 'Inventory Adj REVENUE', type: 'EXPENSE', bs: false, recon: false },
-      { num: '4000002000', name: 'Exchange Diff EXCH_DIFF', type: 'EXPENSE', bs: false, recon: false },
-      { num: '5000000000', name: 'COGS', type: 'EXPENSE', bs: false, recon: false },
-      { num: '2500000001', name: 'Retained Earnings', type: 'EQUITY', bs: true, recon: false },
-      { num: '6000000000', name: 'Payroll', type: 'EXPENSE', bs: false, recon: false },
+      { num: '1400000001', name: 'Inventory Raw Material INV_POSTING', type: 'ASSET', bs: true, recon: false, category: 'BALANCE_SHEET', group: 'G001' },
+      { num: '2000000001', name: 'GR/IR Clearing GR_IR_CLEARING', type: 'LIABILITY', bs: true, recon: false, category: 'GR_IR_CLEARING', group: 'GRIR' },
+      { num: '2000000000', name: 'Vendor Reconciliation RE', type: 'LIABILITY', bs: true, recon: true, category: 'RECONCILIATION', group: 'RECON' },
+      { num: '1000000002', name: 'Customer Reconciliation', type: 'ASSET', bs: true, recon: true, category: 'RECONCILIATION', group: 'RECON' },
+      { num: '8000000001', name: 'Bank SBI', type: 'ASSET', bs: true, recon: false, category: 'BANK_CLEARING', group: 'G001' },
+      { num: '8000000000', name: 'Cash', type: 'ASSET', bs: true, recon: false, category: 'BALANCE_SHEET', group: 'G001' },
+      { num: '4000000004', name: 'Price Difference PRICE_DIFF', type: 'EXPENSE', bs: false, recon: false, category: 'OPERATING_EXP_INC', group: 'PL_OP' },
+      { num: '2000000003', name: 'GST Tax', type: 'LIABILITY', bs: true, recon: false, category: 'BALANCE_SHEET', group: 'BS' },
+      { num: '4000000001', name: 'Price Diff', type: 'EXPENSE', bs: false, recon: false, category: 'OPERATING_EXP_INC', group: 'PL_OP' },
+      { num: '4000001000', name: 'Inventory Adj REVENUE', type: 'EXPENSE', bs: false, recon: false, category: 'OPERATING_EXP_INC', group: 'PL_OP' },
+      { num: '4000002000', name: 'Exchange Diff EXCH_DIFF', type: 'EXPENSE', bs: false, recon: false, category: 'NON_OPERATING_EXP_INC', group: 'PL_NON' },
+      { num: '5000000000', name: 'COGS', type: 'EXPENSE', bs: false, recon: false, category: 'OPERATING_EXP_INC', group: 'PL_OP' },
+      { num: '2500000001', name: 'Retained Earnings', type: 'EQUITY', bs: true, recon: false, category: 'RETAINED_EARNINGS', group: 'BS' },
+      { num: '6000000000', name: 'Payroll', type: 'EXPENSE', bs: false, recon: false, category: 'PRIMARY_COST_ELEMENT', group: 'CO_PRI' },
     ];
     for (const gl of glAccounts) {
-      // Try new schema with chart_id
-      await db.execute(sql`INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_active) VALUES (${chartId}, ${gl.num}, ${gl.name}, ${gl.type}, ${gl.bs}, ${gl.recon}, true) ON CONFLICT DO NOTHING`).catch(async ()=>{
-        try { await db.execute(sql`INSERT INTO fin_ledger_account (tenant_id, chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, coa_code) VALUES (${tenantId}, ${chartId}, ${gl.num}, ${gl.name}, ${gl.type}, ${gl.bs}, ${gl.recon}, 'CA-IN-01') ON CONFLICT DO NOTHING`); } catch {
+      // Try new schema with chart_id, account_category and account_group_code
+      await db.execute(sql`INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, account_category, account_group_code, is_active) VALUES (${chartId}, ${gl.num}, ${gl.name}, ${gl.type}, ${gl.bs}, ${gl.recon}, ${gl.category}, ${gl.group}, true) ON CONFLICT DO NOTHING`).catch(async ()=>{
+        try { await db.execute(sql`INSERT INTO fin_ledger_account (tenant_id, chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, coa_code, account_category, account_group_code) VALUES (${tenantId}, ${chartId}, ${gl.num}, ${gl.name}, ${gl.type}, ${gl.bs}, ${gl.recon}, 'CA-IN-01', ${gl.category}, ${gl.group}) ON CONFLICT DO NOTHING`); } catch {
           try { await db.execute(sql`INSERT INTO fin_ledger_account (account_number, name, account_type) VALUES (${gl.num}, ${gl.name}, ${gl.type}) ON CONFLICT (account_number) DO NOTHING`); } catch {}
         }
       });
