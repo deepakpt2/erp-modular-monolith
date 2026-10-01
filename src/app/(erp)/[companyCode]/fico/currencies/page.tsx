@@ -11,12 +11,12 @@ export default function Page() {
       apiEndpoint="/api/currencies"
       initialForm={{ code: '', name: '', symbol: '', decimal_places: '2', is_active: 'true', description: '' }}
       fields={[
-        { key: "code", label: "CURRENCY_CODE", required: true, placeholder: "INR", description: "Currency code – e.g., INR Indian Rupee, USD US Dollar, EUR Euro, KWD Kuwaiti Dinar – ISO 4217 – 3-char – industry standard – own name – used in legal entity, partner, PO, SO, exchange rates – FCYC" },
-        { key: "name", label: "CURRENCY_NAME", required: true, placeholder: "Indian Rupee", description: "Currency name – e.g., Indian Rupee – descriptive" },
-        { key: "symbol", label: "CURRENCY_SYMBOL", placeholder: "₹", description: "Currency symbol – e.g., ₹ for INR, $ for USD, € for EUR – used in display – industry standard" },
-        { key: "decimal_places", label: "DECIMAL_PLACES", placeholder: "2", description: "Decimal places – e.g., 2 for INR/USD/EUR, 3 for KWD, 0 for JPY – industry standard – controls amount formatting – e.g., INR 2 decimals 100.00, KWD 3 decimals 100.000, JPY 0 decimals 100" },
-        { key: "is_active", label: "IS_ACTIVE", type: "select", options: ["true", "false"], placeholder: "true", description: "Active – true if currency active for use – industry standard" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Indian Rupee – INR – ₹ – 2 decimals – India", description: "Description – currency purpose – e.g., Indian Rupee for India" },
+        { key: "code", label: "CURRENCY_CODE", required: true, placeholder: "", description: "Currency code – e.g., INR Indian Rupee, USD US Dollar, EUR Euro, KWD Kuwaiti Dinar – ISO 4217 – 3-char – industry standard – own name – used in legal entity, partner, PO, SO, exchange rates – FCYC" },
+        { key: "name", label: "CURRENCY_NAME", required: true, placeholder: "", description: "Currency name – e.g., Indian Rupee – descriptive" },
+        { key: "symbol", label: "CURRENCY_SYMBOL", placeholder: "", description: "Currency symbol – e.g., ₹ for INR, $ for USD, € for EUR – used in display – industry standard" },
+        { key: "decimal_places", label: "DECIMAL_PLACES", placeholder: "", description: "Decimal places – e.g., 2 for INR/USD/EUR, 3 for KWD, 0 for JPY – industry standard – controls amount formatting – e.g., INR 2 decimals 100.00, KWD 3 decimals 100.000, JPY 0 decimals 100" },
+        { key: "is_active", label: "IS_ACTIVE", type: "select", options: ["true", "false"], placeholder: "", description: "Active – true if currency active for use – industry standard" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "", description: "Description – currency purpose – e.g., Indian Rupee for India" },
       ]}
       relatedLinks={[
         { code: "ELEC", label: "Legal Entity – company code – uses Currency – INR", route: "/foundation/legal-entities", description: "Legal Entity – LE-1000 – currency_code INR – company code" },

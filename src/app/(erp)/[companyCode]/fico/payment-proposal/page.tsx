@@ -107,7 +107,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center">💸</div>
           <div>
@@ -117,12 +117,12 @@ export default function Page(){
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete label="COMPANY_CODE – ELEC – Legal Entity – defines variant – OB52" value={form.company_code} onChange={v=>setForm({...form,company_code:v})} apiUrl="/api/company-codes" codeField="code" nameField="name" placeholder="" createUrl={`/${companyCode}/fico/company-master`} createCode="OX02" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium">PAYMENT_METHOD – BANK/CASH/CHEQUE – checks per vendor</label><select value={form.payment_method} onChange={e=>setForm({...form,payment_method:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>BANK</option><option>CASH</option><option>CHEQUE</option></select></div>
-          <div><label className="text-[11px] font-medium">HOUSE_BANK – FI12 – House Bank – e.g., SBI-001</label><input value={form.house_bank} onChange={e=>setForm({...form,house_bank:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">PAYMENT_METHOD – BANK/CASH/CHEQUE – checks per vendor</label><select value={form.payment_method} onChange={e=>setForm({...form,payment_method:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>BANK</option><option>CASH</option><option>CHEQUE</option></select></div>
+          <div><label className="text-[11px] font-medium">HOUSE_BANK – FI12 – House Bank – e.g., SBI-001</label><input value={form.house_bank} onChange={e=>setForm({...form,house_bank:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
         </div>
         <div className="flex gap-3 mt-6">
-          <button onClick={createProposal} className="flex-1 bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Proposal F110-PROP – Select Vendors Due – Tolerance OBA4 + Payment Terms FAPT + House Bank FI12</button>
-          <button onClick={runPayment} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Run F110-RUN – Create KZ Payment Docs – Dr Vendor Cr Bank – DME + Advice – T1</button>
+          <button onClick={createProposal} className="flex-1 bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Proposal F110-PROP – Select Vendors Due – Tolerance OBA4 + Payment Terms FAPT + House Bank FI12</button>
+          <button onClick={runPayment} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Run F110-RUN – Create KZ Payment Docs – Dr Vendor Cr Bank – DME + Advice – T1</button>
         </div>
         <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – F110 Proposal: selects vendors due, checks payment method, bank, tolerance OBA4, payment terms FAPT, house bank FI12 – F110 Run: creates payment docs KZ Dr Vendor Cr Bank, DME file, advice, clears AP open items – tolerance OBA4 checked, payment terms FAPT, house bank FI12 – AP automation – T1 REQUIRED – NO DANGLING – payment fields used in FI posting – General ERP, SAP F110/KZ/FI12/OBA4/FAPT alias – chain: AP open due → Proposal → Run → KZ doc → universal ledger → AP cleared</div>
       </div>

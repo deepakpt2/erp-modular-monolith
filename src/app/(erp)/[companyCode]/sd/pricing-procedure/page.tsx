@@ -11,12 +11,12 @@ export default function Page() {
       apiEndpoint="/api/pricing-procedure"
       initialForm={{ code: '', name: '', condition_type: 'PR00', sequence: '10', calculation_type: 'FIXED', gl_account: '', description: '' }}
       fields={[
-        { key: "code", label: "PRICING_PROCEDURE_CODE", required: true, placeholder: "PP-1000", description: "Pricing procedure code" },
-        { key: "name", label: "PRICING_PROCEDURE_NAME", required: true, placeholder: "Standard Pricing" },
-        { key: "condition_type", label: "CONDITION_TYPE", required: true, type: "select", options: ['PR00', 'K007', 'K005', 'MWST'], placeholder: "PR00", description: "PR00 price, K007 discount, MWST tax" },
-        { key: "sequence", label: "SEQUENCE", required: true, placeholder: "10", description: "Sequence – order of calculation" },
-        { key: "calculation_type", label: "CALCULATION_TYPE", type: "select", options: ['FIXED', 'PERCENT', 'QUANTITY'], placeholder: "FIXED" },
-        { key: "gl_account", label: "GL_ACCOUNT", type: "autocomplete", apiUrl: "/api/gl-accounts", dataKey: "glAccounts", codeField: "account_number", placeholder: "4000000001", createUrl: "/fico/gl-accounts", createCode: "FGLC", description: "GL account for condition" },
+        { key: "code", label: "PRICING_PROCEDURE_CODE", required: true, placeholder: "", description: "Pricing procedure code" },
+        { key: "name", label: "PRICING_PROCEDURE_NAME", required: true, placeholder: "" },
+        { key: "condition_type", label: "CONDITION_TYPE", required: true, type: "select", options: ['PR00', 'K007', 'K005', 'MWST'], placeholder: "", description: "PR00 price, K007 discount, MWST tax" },
+        { key: "sequence", label: "SEQUENCE", required: true, placeholder: "", description: "Sequence – order of calculation" },
+        { key: "calculation_type", label: "CALCULATION_TYPE", type: "select", options: ['FIXED', 'PERCENT', 'QUANTITY'], placeholder: "" },
+        { key: "gl_account", label: "GL_ACCOUNT", type: "autocomplete", apiUrl: "/api/gl-accounts", dataKey: "glAccounts", codeField: "account_number", placeholder: "", createUrl: "/fico/gl-accounts", createCode: "FGLC", description: "GL account for condition" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

@@ -11,8 +11,8 @@ export default function Page() {
       apiEndpoint="/api/posting-period-variants"
       initialForm={{ code: '', name: '', description: '' }}
       fields={[
-        { key: "code", label: "POSTING_PERIOD_VARIANT_CODE", required: true, placeholder: "1000", description: "Variant code – e.g., 1000 Standard" },
-        { key: "name", label: "POSTING_PERIOD_VARIANT_NAME", required: true, placeholder: "Standard Posting Period" },
+        { key: "code", label: "POSTING_PERIOD_VARIANT_CODE", required: true, placeholder: "", description: "Variant code – e.g., 1000 Standard" },
+        { key: "name", label: "POSTING_PERIOD_VARIANT_NAME", required: true, placeholder: "" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

@@ -70,7 +70,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center">📦</div>
           <div>
@@ -81,11 +81,11 @@ export default function Page(){
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <DbAutocomplete label="VENDOR_NUMBER * – PSUC – T2" value={form.partner_number} onChange={v=>setForm({...form,partner_number:v})} apiUrl="/api/business-partners" codeField="account_number" nameField="display_name" placeholder="" required createUrl={`/${companyCode}/foundation/suppliers`} createCode="PSUC" companyCode={companyCode} />
           <DbAutocomplete label="MATERIAL_NUMBER * – EMTC – T2" value={form.item_number} onChange={v=>setForm({...form,item_number:v})} apiUrl="/api/materials" codeField="material_code" nameField="name" placeholder="" required createUrl={`/${companyCode}/foundation/materials`} createCode="EMTC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium">FACILITY_CODE * – FAC-1000</label><input value={form.facility_code} onChange={e=>setForm({...form,facility_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">PRIORITY – 1=highest – MRP uses lowest first</label><input value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">IS_MRP_RELEVANT – MRP auto source if true</label><select value={form.is_mrp_relevant ? 'true':'false'} onChange={e=>setForm({...form,is_mrp_relevant:e.target.value==='true'})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option value="true">true</option><option value="false">false</option></select></div>
+          <div><label className="text-[11px] font-medium">FACILITY_CODE * – FAC-1000</label><input value={form.facility_code} onChange={e=>setForm({...form,facility_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">PRIORITY – 1=highest – MRP uses lowest first</label><input value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">IS_MRP_RELEVANT – MRP auto source if true</label><select value={form.is_mrp_relevant ? 'true':'false'} onChange={e=>setForm({...form,is_mrp_relevant:e.target.value==='true'})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option value="true">true</option><option value="false">false</option></select></div>
         </div>
-        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create ME01 Source List – Material/Plant/Vendor – MRP Source Determination – T2 GOOD – NO DANGLING</button>
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create ME01 Source List – Material/Plant/Vendor – MRP Source Determination – T2 GOOD – NO DANGLING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T2 GOOD – Source List ME01/ME02/ME03 – material/plant/vendor valid from/to, MRP relevant, blocked, priority – MRP auto source determination – MRP reads source list where is_mrp_relevant true and priority lowest → creates PR with vendor – Workaround if missing: manual source in PR – T2 GOOD – NO DANGLING – source list fields used in MRP PR creation – procurement operational excellence – General ERP SAP ME01 alias – chain: source list → MRP → PR with vendor → PO → GR → IV</div>
       </div>
 

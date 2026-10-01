@@ -149,13 +149,13 @@ export default function Page(){
           <div>• Document Flow IV→Payment – FDFL VBFA – WORM-lite – predecessor/successor – quantity/value – ELIKZ – creates flow links via /api/document-flow POST – e.g., IV→Payment – document flow tree shows chain PR→PO→GR→IV→Payment – PR Purchase Requisition → PO 45xxx → GR 50xxx Material Doc → IV 51xxx → FI WE Dr Inventory BSX Cr GR/IR WRX → FI RE Dr GR/IR Cr Vendor → FI Payment Dr Payable Cr Bank</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">VENDOR * – PSUC XK01 – VEND-1000 – T0</div><input value={vendorNumber} onChange={e=>setVendorNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="VEND-1000" /></div>
-          <div><div className="text-[9px] text-zinc-500">AMOUNT * – 83500 – INR – FCYC</div><input value={amount} onChange={e=>setAmount(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="83500" /></div>
+          <div><div className="text-[9px] text-zinc-500">VENDOR * – PSUC XK01 – VEND-1000 – T0</div><input value={vendorNumber} onChange={e=>setVendorNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">AMOUNT * – 83500 – INR – FCYC</div><input value={amount} onChange={e=>setAmount(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">PAYMENT_METHOD – BANK/CASH/CHEQUE</div><select value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} className="w-full border-2 border-black px-1 py-1"><option value="BANK">BANK – Dr Vendor Cr Bank 8000000001</option><option value="CASH">CASH – Dr Vendor Cr Cash 8000000000</option><option value="CHEQUE">CHEQUE – Dr Vendor Cr Bank</option></select></div>
-          <div><div className="text-[9px] text-zinc-500">BANK_GL_ACCOUNT * – FGLC FS00 – 8000000001 Bank SBI</div><input value={bankGlAccount} onChange={e=>setBankGlAccount(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="8000000001" /></div>
+          <div><div className="text-[9px] text-zinc-500">BANK_GL_ACCOUNT * – FGLC FS00 – 8000000001 Bank SBI</div><input value={bankGlAccount} onChange={e=>setBankGlAccount(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">POSTING_DATE * – OB52 S+K</div><input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
-          <div><div className="text-[9px] text-zinc-500">REFERENCE – e.g., Payment for VEND-1000</div><input value={reference} onChange={e=>setReference(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder={`Payment for ${vendorNumber}`} /></div>
-          <div className="col-span-3"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT – KZ Payment Vendor Amount Method</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder={`KZ Payment ${vendorNumber} ${amount} ${paymentMethod} – F-53 – ${companyCode}`} /></div>
+          <div><div className="text-[9px] text-zinc-500">REFERENCE – e.g., Payment for VEND-1000</div><input value={reference} onChange={e=>setReference(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
+          <div className="col-span-3"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT – KZ Payment Vendor Amount Method</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
         </div>
         {apOpenItems.length>0 && (
           <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
@@ -215,7 +215,7 @@ export default function Page(){
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center">💸</div>
           <div>
@@ -232,19 +232,19 @@ export default function Page(){
             apiUrl="/api/business-partners?role=VENDOR"
             codeField="account_number"
             nameField="display_name"
-            placeholder="VEND-1000"
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/suppliers`}
             createCode="PSUC"
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">AMOUNT * – 83500 – INR – FCYC OY03</label>
-            <input value={amount} onChange={e=>setAmount(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="83500" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">AMOUNT * – 83500 – INR – FCYC OY03</label>
+            <input value={amount} onChange={e=>setAmount(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" placeholder="" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PAYMENT_METHOD – BANK/CASH/CHEQUE – Dr Vendor Cr Bank/Cash</label>
-            <select value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black">
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">PAYMENT_METHOD – BANK/CASH/CHEQUE – Dr Vendor Cr Bank/Cash</label>
+            <select value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black">
               <option value="BANK">BANK – Dr Vendor Recon 2000000000 Cr Bank 8000000001 SBI</option>
               <option value="CASH">CASH – Dr Vendor Recon 2000000000 Cr Cash 8000000000</option>
               <option value="CHEQUE">CHEQUE – Dr Vendor Recon Cr Bank – Cheque</option>
@@ -257,24 +257,24 @@ export default function Page(){
             apiUrl="/api/gl-accounts"
             codeField="account_number"
             nameField="name"
-            placeholder="8000000001"
+            placeholder=""
             required
             createUrl={`/${companyCode}/fico/gl-accounts`}
             createCode="FGLC"
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">POSTING_DATE * – OB52 S+K – F_BKPF_BUP</label>
-            <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">POSTING_DATE * – OB52 S+K – F_BKPF_BUP</label>
+            <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
             <p className="text-[10px] text-zinc-400 mt-1">S GL + K Vendors must be open – FPPE</p>
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">REFERENCE – e.g., Payment for VEND-1000 – INV-001</label>
-            <input value={reference} onChange={e=>setReference(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder={`Payment for ${vendorNumber} – F-53 KZ`} />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">REFERENCE – e.g., Payment for VEND-1000 – INV-001</label>
+            <input value={reference} onChange={e=>setReference(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" placeholder="" />
           </div>
           <div className="md:col-span-2">
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">HEADER_TEXT – BKTXT – KZ Payment Vendor Amount Method – {companyCode}</label>
-            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder={`KZ Payment ${vendorNumber} ${amount} ${paymentMethod} – F-53 – ${companyCode}`} />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">HEADER_TEXT – BKTXT – KZ Payment Vendor Amount Method – {companyCode}</label>
+            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" placeholder="" />
           </div>
         </div>
 
@@ -301,7 +301,7 @@ export default function Page(){
           </div>
         )}
 
-        <button onClick={create} disabled={!vendorNumber || !amount} className={`mt-6 w-full rounded-full px-5 py-3 text-sm font-medium transition-colors ${vendorNumber && amount ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
+        <button onClick={create} disabled={!vendorNumber || !amount} className={`mt-6 w-full rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors ${vendorNumber && amount ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
           {vendorNumber && amount ? `Create Payment KZ 53* for ${vendorNumber} – ${amount} INR – ${paymentMethod} – Bank ${bankGlAccount} – F-53 – Dr Vendor Recon Cr Bank – Tolerance OBA0/OBA4 – Open-Item Clearing – ${elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}` : 'Select Vendor + Amount first – F-53 KZ 53* requires vendor + amount – T0 – SAP standard vendor payment'}
         </button>
         <p className="text-[10px] text-zinc-400 mt-2 text-center">Payment requires companyCode ELEC + vendorId PSUC + amount + paymentMethod BANK/CASH/CHEQUE + bankGlAccount FGLC + reference + postingDate + apInvoiceIds – posting period S+K OB52 must be open – number range KZ 53* 5300000000-5399999999 via ent_number_range object_type FI_DOC_53 – tolerance OBA0/OBA4 VEND-01 T1 REQUIRED – AP open items fi_ap_invoice status OPEN – open-item clearing FB05 F-44 – vendor payment accounting KZ Dr Vendor Recon 2000000000 Cr Bank 8000000001 – document flow IV→Payment – universal ledger FULC KZ – T0 – NO DANGLING – org wired – company ELEC + vendor PSUC + GL FGLC + currency FCYC + tolerance OBA0/OBA4 + posting period FPPE + fiscal FFYC</p>

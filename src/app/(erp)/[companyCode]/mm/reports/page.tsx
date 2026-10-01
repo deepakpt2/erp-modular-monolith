@@ -77,9 +77,9 @@ export default function Page(){
         <div className="font-bold border-b-2 border-black pb-1 mb-2">ME80FN PURCHASING REPORTING – GENERAL ERP – {prs.length} PRs – {pos.length} POs – {grs.length} GRs – {ivs.length} IVs – {stocks.length} STOCK – SAP STANDARD REPORTING – ORG WIRED</div>
         <div className="text-[9px] text-zinc-500">ME80FN Purchasing Reporting – ME2N PO by Document Number – ME2M PO by Material – ME2L PO by Vendor – MB51 Material Document List – MB52 Warehouse Stock – T2 GOOD OPERATIONAL – aggregates via /api/pr /api/po /api/gr /api/iv /api/stock – org wired – facility EFCC vendor PSUC material EMTC procurement division EPDC buyer team EBTC – filters vendor material plant company status date ELIKZ total amount ordered/received/invoiced open qty</div>
         <div className="grid grid-cols-3 gap-2 mt-2">
-          <div><div className="text-[9px] text-zinc-500">FILTER VENDOR – PSUC</div><input value={filterVendor} onChange={e=>setFilterVendor(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="VEND-1000" /></div>
-          <div><div className="text-[9px] text-zinc-500">FILTER MATERIAL – EMTC</div><input value={filterMaterial} onChange={e=>setFilterMaterial(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="10000001" /></div>
-          <div><div className="text-[9px] text-zinc-500">FILTER FACILITY – EFCC</div><input value={filterFacility} onChange={e=>setFilterFacility(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="1000" /></div>
+          <div><div className="text-[9px] text-zinc-500">FILTER VENDOR – PSUC</div><input value={filterVendor} onChange={e=>setFilterVendor(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">FILTER MATERIAL – EMTC</div><input value={filterMaterial} onChange={e=>setFilterMaterial(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">FILTER FACILITY – EFCC</div><input value={filterFacility} onChange={e=>setFilterFacility(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
         </div>
         <button onClick={load} className="mt-2 bg-black text-white px-3 py-1 w-full">REFRESH REPORTING – ME80FN – AGGREGATE PR/PO/GR/IV/STOCK – ORG WIRED</button>
       </div>
@@ -118,7 +118,7 @@ export default function Page(){
 
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">📊</div>
           <div>
@@ -134,7 +134,7 @@ export default function Page(){
             apiUrl="/api/business-partners?role=VENDOR"
             codeField="account_number"
             nameField="display_name"
-            placeholder="VEND-1000"
+            placeholder=""
             createUrl={`/${companyCode}/foundation/suppliers`}
             createCode="PSUC"
             companyCode={companyCode}
@@ -146,7 +146,7 @@ export default function Page(){
             apiUrl="/api/materials"
             codeField="item_number"
             nameField="description"
-            placeholder="10000001"
+            placeholder=""
             createUrl={`/${companyCode}/foundation/materials`}
             createCode="EMTC"
             companyCode={companyCode}
@@ -158,13 +158,13 @@ export default function Page(){
             apiUrl="/api/facilities"
             codeField="code"
             nameField="name"
-            placeholder="1000"
+            placeholder=""
             createUrl={`/${companyCode}/foundation/facilities`}
             createCode="EFCC"
             companyCode={companyCode}
           />
         </div>
-        <button onClick={load} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Refresh Reporting – ME80FN – Aggregate PR/PO/GR/IV/Stock – Org Wired – Facility EFCC Vendor PSUC Material EMTC – T2</button>
+        <button onClick={load} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Refresh Reporting – ME80FN – Aggregate PR/PO/GR/IV/Stock – Org Wired – Facility EFCC Vendor PSUC Material EMTC – T2</button>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">

@@ -297,7 +297,7 @@ export default function NavigatorPage() {
               <p className="text-[11px] text-zinc-400 mt-1">Modern/Classic persisted via localStorage • Related links at bottom of each form • No sidebar – tree is navigation</p>
             </div>
             <div className="flex items-center gap-2">
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="" className={modern ? "border border-zinc-200 rounded-full px-4 py-2 text-sm w-[260px] focus:outline-none focus:ring-2 focus:ring-black/10" : "border px-3 py-1.5 text-sm w-[220px]"} />
+              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="" className={modern ? "border border-zinc-200 rounded-full px-4 py-2 text-sm w-[260px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black/10" : "border px-3 py-1.5 text-sm w-[220px]"} />
               <Link href="/" className={modern ? "px-4 py-2 rounded-full border text-xs hover:bg-zinc-50" : "border px-3 py-1 text-xs"}>🏠 Dashboard</Link>
             </div>
           </div>

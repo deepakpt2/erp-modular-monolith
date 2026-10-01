@@ -86,7 +86,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">💰</div>
           <div>
@@ -96,15 +96,15 @@ export default function Page(){
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <DbAutocomplete label="MATERIAL_CODE * – EMTC – FERT to cost – T1" value={form.material_code} onChange={v=>setForm({...form,material_code:v})} apiUrl="/api/materials" codeField="material_code" nameField="name" placeholder="" required createUrl={`/${companyCode}/foundation/materials`} createCode="EMTC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium">FACILITY_CODE – FAC-1000 – plant</label><input value={form.facility_code} onChange={e=>setForm({...form,facility_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">COSTING_VARIANT – PPC1</label><select value={form.costing_variant} onChange={e=>setForm({...form,costing_variant:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>PPC1</option><option>PPC2</option></select></div>
-          <div><label className="text-[11px] font-medium">ACTION – CK11N create estimate</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>CK11N</option></select></div>
+          <div><label className="text-[11px] font-medium">FACILITY_CODE – FAC-1000 – plant</label><input value={form.facility_code} onChange={e=>setForm({...form,facility_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">COSTING_VARIANT – PPC1</label><select value={form.costing_variant} onChange={e=>setForm({...form,costing_variant:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>PPC1</option><option>PPC2</option></select></div>
+          <div><label className="text-[11px] font-medium">ACTION – CK11N create estimate</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>CK11N</option></select></div>
         </div>
-        <button onClick={createEstimate} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create CK11N Cost Estimate – BOM Explosion + Cost Rollup – T1 REQUIRED – NO DANGLING</button>
+        <button onClick={createEstimate} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create CK11N Cost Estimate – BOM Explosion + Cost Rollup – T1 REQUIRED – NO DANGLING</button>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 border-t border-zinc-200 pt-6">
-          <div><label className="text-[11px] font-medium">ESTIMATE_NUMBER * – CE-xxx – for CK24 MARK/RELEASE</label><input value={markForm.estimate_number} onChange={e=>setMarkForm({...markForm,estimate_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">ACTION – MARK or RELEASE – CK24</label><select value={markForm.action} onChange={e=>setMarkForm({...markForm,action:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>MARK</option><option>RELEASE</option></select></div>
-          <div><button onClick={markRelease} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">CK24 Mark/Release – Update Std Price – T1</button></div>
+          <div><label className="text-[11px] font-medium">ESTIMATE_NUMBER * – CE-xxx – for CK24 MARK/RELEASE</label><input value={markForm.estimate_number} onChange={e=>setMarkForm({...markForm,estimate_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">ACTION – MARK or RELEASE – CK24</label><select value={markForm.action} onChange={e=>setMarkForm({...markForm,action:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>MARK</option><option>RELEASE</option></select></div>
+          <div><button onClick={markRelease} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">CK24 Mark/Release – Update Std Price – T1</button></div>
         </div>
         <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – CK11N: Create cost estimate for single material – BOM explosion + cost rollup – no update yet – CK24: Mark cost estimate + release – updates standard price in material plant – CK40N already exists – costing run for multiple materials – Tables: co_cost_estimate (CK11N) + co_costing_run (CK40N) – NO DANGLING – cost estimate fields used in CK24 price update + FI posting + material valuation – General ERP, SAP CK11N/CK24/CK40N alias – chain: BOM → cost rollup → estimate → marking → std price update → FI valuation</div>
       </div>

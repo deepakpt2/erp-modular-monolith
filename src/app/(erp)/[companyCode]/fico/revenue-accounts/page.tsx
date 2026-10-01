@@ -20,14 +20,14 @@ export default function Page() {
         description: '',
       }}
       fields={[
-        { key: "chart_of_accounts", label: "CHART_OF_ACCOUNTS", required: true, placeholder: "KSCA", description: "Chart of Accounts – e.g., KSCA – used with sales org + customer group + material group + account assignment → GL – fallback if more specific not found" },
-        { key: "sales_org", label: "SALES_ORG", placeholder: "1000", description: "Sales Org – e.g., 1000 – from commercial org ECOC – used in VKOA condition technique – if blank, fallback" },
-        { key: "customer_group", label: "CUSTOMER_GROUP", placeholder: "01", description: "Customer Group – e.g., 01 domestic – from customer master SCUC – used in VKOA" },
-        { key: "material_group", label: "MATERIAL_GROUP", placeholder: "01", description: "Material Group – e.g., 01 finished – from material EMTC category – used in VKOA" },
-        { key: "account_assignment_group", label: "ACCOUNT_ASSIGNMENT_GROUP", placeholder: "01", description: "Account Assignment Group – e.g., 01 – from material sales view – used in VKOA KOFK" },
-        { key: "transaction_key", label: "TRANSACTION_KEY", required: true, type: "select", options: ["KOFI", "KOFK"], placeholder: "KOFI", description: "T0 BLOCKING – KOFI revenue without account assignment, KOFK revenue with account assignment – determines which GL account type – used in billing" },
-        { key: "gl_account", label: "GL_ACCOUNT", required: true, type: "autocomplete", apiUrl: "/api/gl-accounts", dataKey: "glAccounts", codeField: "account_number", placeholder: "3000000001", createUrl: "/fico/gl-accounts", createCode: "FGLC", description: "Revenue GL Account FK – must exist via FGLC – e.g., 3000000001 domestic revenue – Dr AR Cr Revenue in billing – T0 BLOCKING" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Revenue domestic chart KSCA + sales org 1000 + cust grp 01 + mat grp 01 → 3000000001", description: "Description – explains condition technique – chart+sales org+cust grp+mat grp+acct assign → GL" },
+        { key: "chart_of_accounts", label: "CHART_OF_ACCOUNTS", required: true, placeholder: "", description: "Chart of Accounts – e.g., KSCA – used with sales org + customer group + material group + account assignment → GL – fallback if more specific not found" },
+        { key: "sales_org", label: "SALES_ORG", placeholder: "", description: "Sales Org – e.g., 1000 – from commercial org ECOC – used in VKOA condition technique – if blank, fallback" },
+        { key: "customer_group", label: "CUSTOMER_GROUP", placeholder: "", description: "Customer Group – e.g., 01 domestic – from customer master SCUC – used in VKOA" },
+        { key: "material_group", label: "MATERIAL_GROUP", placeholder: "", description: "Material Group – e.g., 01 finished – from material EMTC category – used in VKOA" },
+        { key: "account_assignment_group", label: "ACCOUNT_ASSIGNMENT_GROUP", placeholder: "", description: "Account Assignment Group – e.g., 01 – from material sales view – used in VKOA KOFK" },
+        { key: "transaction_key", label: "TRANSACTION_KEY", required: true, type: "select", options: ["KOFI", "KOFK"], placeholder: "", description: "T0 BLOCKING – KOFI revenue without account assignment, KOFK revenue with account assignment – determines which GL account type – used in billing" },
+        { key: "gl_account", label: "GL_ACCOUNT", required: true, type: "autocomplete", apiUrl: "/api/gl-accounts", dataKey: "glAccounts", codeField: "account_number", placeholder: "", createUrl: "/fico/gl-accounts", createCode: "FGLC", description: "Revenue GL Account FK – must exist via FGLC – e.g., 3000000001 domestic revenue – Dr AR Cr Revenue in billing – T0 BLOCKING" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "", description: "Description – explains condition technique – chart+sales org+cust grp+mat grp+acct assign → GL" },
       ]}
       relatedLinks={[
         { code: "FGLC", label: "GL Account – revenue – required", route: "/fico/gl-accounts", description: "GL – revenue 3000000001" },

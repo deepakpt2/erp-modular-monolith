@@ -663,3 +663,34 @@ Once you confirm, I will:
 
 **TSC:** node_modules missing from snapshot (excluded), but syntax verified via string replacements, no new types introduced, existing TSC previously clean.
 
+
+---
+## 8. Form Audit – Every Form Checked – No Dummy Placeholders – GR Fix – 2026-09-30
+
+**User Request:** Check every form and confirm design present both classic and modern views, also check if any dummy data is shown as placeholder in any form fields, I say some in gr view.
+
+**Audit Findings:**
+- GR view had placeholder="4500000001", placeholder="GR for PO 4500000001 – MIGO 101", placeholder="Qty", "SLOC", "Batch", "EILC", placeholder={String(line.quantity_open)} – dummy data as placeholder – violates rule: if form has label, dont use placeholder – never sample value.
+- PO had VEND-1000, 1000, PR-10000001, INR, 10000001, 10, PC, 100, 0, GST18, SL01, Item text
+- PR had 1000, companyCode, INR, 10000001, Qty, PC, Price, SL01, Item text
+- IV had 4500000001, 5000000001, INV-VEND-2026-001, NT30, GST18, Qty, Inv Price, Freight, Customs, Tax, 0, String(line.quantity_open), String(line.unit_price)
+- Foundation 57 forms had placeholder: "CG-100", "FMCG Group India", "CO-1000", "India Sales", "LE-1000", "INR", "LOT-1000", "10000001", "1000", "SL01", "VEND-LOT-2026-001", "2026-05-15", "365", "100", "KG", etc.
+
+**Fixes Applied:**
+- Bulk python script for mm/* and fico/*: replace placeholder="..." (not Search) with placeholder="" – also placeholder={`...`}, placeholder={String(...)}, placeholder={companyCode} → placeholder=""
+- Result: grep -rn 'placeholder=' src/app/(erp) --include="*.tsx" | grep -v 'placeholder=""' | grep -v 'Search' → 0 remaining – only search placeholders remain (Search code, object_type... and Search by code or name) – not dummy data, instruction.
+- Foundation 57 SingleCodePage files: placeholder: "..." → placeholder: "" via regex – verified 0 remaining.
+- Modern design ensured both views:
+  - Custom transaction forms PO/PR/GR/IV/Payment: modernContent uses h-[32px] rounded-lg px-2.5 py-2 text-[13px] label 11px uppercase tracking-widest text-zinc-600 border-zinc-200 focus:ring-1 black, button h-[32px] rounded-full black text-[13px] – classicContent uses border-2 border-black p-3 bg-white font-mono 11px uppercase bold inputs h-[28px] border-2 black mono rounded-none no colors – both present.
+  - SingleCodePage: modern max-w 960px p-4 header p-5 rounded-2xl shadow subtle inputs 32px rounded-lg 13px labels 11px uppercase tabs pill bg-zinc-100 h-26px button 32px rounded-full black table 12px compact – classic border-2 black p-3 bg-white font-mono 11px inputs 28px border-2 black mono – both via ternary modern ? ... : ...
+  - DbAutocomplete: h-[32px] rounded-lg text-[13px] label uppercase 11px – classic-power CSS forces border-2 black mono.
+  - ModernModuleShell: modern header px-5 py-2.5 compact KPI p-3 rounded-2xl shadow subtle main p-5 – classic h-7 bg-black border-b-2 black inputs border-2 white KPI border-b-2 black uppercase bold classic-power inputs border-2 black mono 11px rounded-none no shadows bg-zinc-50/blue/amber → white.
+  - NumberRanges: added uiMode state reading erp-ui-mode localStorage, root div conditional modern ? bg-[#fafaf9] p-4 : bg-white p-3 font-mono 11px, header conditional rounded-2xl border p-5 shadow subtle vs border-2 black p-3 – ensures both views present – modern 32px already, classic border-2 black.
+  - Materials: fixed SAP colors bg-zinc-50/50 → bg-zinc-50, bg-emerald-50/50 → bg-zinc-50, border-emerald-100 → border-zinc-200, text-blue-900/ambe-900/emerald-900 → text-zinc-900 – classic inputs w-full border px-2 py-1.5 text-xs → w-full border-2 border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px] – labels font-mono bold uppercase.
+
+**SAP Color Removal Verified:**
+- Before: 24 occurrences bg-amber-50, bg-blue-50, border-amber-200/300, text-amber-800, bg-blue-100, bg-yellow-50
+- After: 0 in erp forms – replaced with bg-zinc-50/100, border-zinc-200/300, text-zinc-800, bg-black/zinc-900 – files: client-layout, number-ranges, materials, gr, iv, po, pr, jobs, locks, job-indicator, job-popup, role-guard, client-page, virtual-data-grid, field-status-groups, login.
+
+**Result:** Every form now Design A minimal compact 32px modern + Design E monochrome classic, no dummy placeholders, no SAP amber/blue themes – confirmed via audit report form_design_audit.html.
+

@@ -97,7 +97,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center">🏭</div>
           <div>
@@ -108,11 +108,11 @@ export default function Page(){
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <DbAutocomplete label="PRODUCT_CODE * – General ERP Product – EMTC – FERT" value={form.product_code} onChange={v=>setForm({...form,product_code:v})} apiUrl="/api/materials" codeField="item_number" nameField="description" placeholder="" required createUrl={`/${companyCode}/foundation/materials`} createCode="EMTC" companyCode={companyCode} />
           <DbAutocomplete label="FACILITY_CODE * – General ERP Facility – EFCC – alias Plant" value={form.facility_code} onChange={v=>setForm({...form,facility_code:v})} apiUrl="/api/facilities" codeField="code" nameField="name" placeholder="" required createUrl={`/${companyCode}/foundation/facilities`} createCode="EFCC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">QUANTITY * – General ERP Planned Qty</label><input value={form.quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">QUANTITY * – General ERP Planned Qty</label><input value={form.quantity} onChange={e=>setForm({...form,quantity:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
           <DbAutocomplete label="BOM_CODE – MBMC alias CS01 – auto if blank" value={form.bom_code} onChange={v=>setForm({...form,bom_code:v})} apiUrl="/api/bom" codeField="bom_number" nameField="material_number" placeholder="" createUrl={`/${companyCode}/pp/bom`} createCode="MBMC" companyCode={companyCode} />
           <DbAutocomplete label="ROUTING_CODE – MRTC alias CA01 – auto if blank" value={form.routing_code} onChange={v=>setForm({...form,routing_code:v})} apiUrl="/api/routings" codeField="routing_number" nameField="material_number" placeholder="" createUrl={`/${companyCode}/pp/routings`} createCode="MRTC" companyCode={companyCode} />
         </div>
-        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Manufacturing Order MMOC – Alias CO01 – General ERP – T0 BLOCKING – BOM+Routing Copy</button>
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Manufacturing Order MMOC – Alias CO01 – General ERP – T0 BLOCKING – BOM+Routing Copy</button>
         <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – MMOC copies BOM MBMC components → mfg_production_order_component – used in GI 261 GBB/BSX – copies Routing MRTC operations → capacity + confirmation CO11N – GR 101 BSX finished receipt – OBYC BSX/GBB uses valuation_class EMTC-FULL – OMJJ 261/101 + MAP + universal ledger – NO DANGLING – General ERP, SAP CO01 alias</div>
       </div>
 

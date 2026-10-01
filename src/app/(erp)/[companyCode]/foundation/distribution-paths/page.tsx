@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/distribution-paths"
       initialForm={{ code: '', name: '', sales_channel_code: '', product_line_code: '', description: '' }}
       fields={[
-        { key: "code", label: "DISTRIBUTION_PATH_CODE", required: true, placeholder: "DP-100" },
-        { key: "name", label: "DISTRIBUTION_PATH_NAME", required: true, placeholder: "Wholesale Spices" },
-        { key: "sales_channel_code", label: "SALES_CHANNEL_CODE", required: true, type: "autocomplete", apiUrl: "/api/sales-channels", dataKey: "salesChannels", codeField: "code", placeholder: "SC-10", createUrl: "/foundation/sales-channels", createCode: "ESCC" },
-        { key: "product_line_code", label: "PRODUCT_LINE_CODE", required: true, type: "autocomplete", apiUrl: "/api/product-lines", dataKey: "productLines", codeField: "code", placeholder: "PL-100", createUrl: "/foundation/product-lines", createCode: "EPLC" },
+        { key: "code", label: "DISTRIBUTION_PATH_CODE", required: true, placeholder: "" },
+        { key: "name", label: "DISTRIBUTION_PATH_NAME", required: true, placeholder: "" },
+        { key: "sales_channel_code", label: "SALES_CHANNEL_CODE", required: true, type: "autocomplete", apiUrl: "/api/sales-channels", dataKey: "salesChannels", codeField: "code", placeholder: "", createUrl: "/foundation/sales-channels", createCode: "ESCC" },
+        { key: "product_line_code", label: "PRODUCT_LINE_CODE", required: true, type: "autocomplete", apiUrl: "/api/product-lines", dataKey: "productLines", codeField: "code", placeholder: "", createUrl: "/foundation/product-lines", createCode: "EPLC" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

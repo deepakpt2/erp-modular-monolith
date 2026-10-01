@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/chart-of-accounts"
       initialForm={{ code: '', name: '', description: '', language: 'EN' }}
       fields={[
-        { key: "code", label: "CHART_OF_ACCOUNTS_CODE", required: true, placeholder: "CA-IN-01", description: "Chart code – e.g., CA-IN-01 per guide – KSCA, INT" },
-        { key: "name", label: "CHART_OF_ACCOUNTS_NAME", required: true, placeholder: "India Chart of Accounts" },
-        { key: "language", label: "LANGUAGE", required: true, placeholder: "EN", description: "Language – EN per guide – OB13 dont have language EN to add – now added" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Chart for India – CA-IN-01" },
+        { key: "code", label: "CHART_OF_ACCOUNTS_CODE", required: true, placeholder: "", description: "Chart code – e.g., CA-IN-01 per guide – KSCA, INT" },
+        { key: "name", label: "CHART_OF_ACCOUNTS_NAME", required: true, placeholder: "" },
+        { key: "language", label: "LANGUAGE", required: true, placeholder: "", description: "Language – EN per guide – OB13 dont have language EN to add – now added" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
       ]}
       relatedLinks={[
         { code: "FGLC", label: "GL Account uses CoA", route: "/fico/gl-accounts", description: "GL Account requires Chart – create CA-IN-01 first" },

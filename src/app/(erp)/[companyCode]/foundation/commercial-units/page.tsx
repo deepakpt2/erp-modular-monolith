@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/profit-units"
       initialForm={{ code: '', name: '', legal_entity_code: '', control_area_code: '', description: '' }}
       fields={[
-        { key: "code", label: "PROFIT_UNIT_CODE", required: true, placeholder: "PU-1000", description: "Profit Unit code – General ERP Profit Unit, alias Profit Center KE51, Commercial Unit – e.g., PU-1000 – used in profit reporting – T0" },
-        { key: "name", label: "PROFIT_UNIT_NAME", required: true, placeholder: "Mumbai Profit Unit", description: "Profit Unit name – e.g., Mumbai, Production, Sales – used in reporting" },
-        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal Entity FK – General ERP Legal Entity, alias Company Code OX02" },
-        { key: "control_area_code", label: "CONTROL_AREA_CODE", placeholder: "CA-1000", description: "Management Control Area – General ERP Control Area, alias Controlling Area OX06" },
+        { key: "code", label: "PROFIT_UNIT_CODE", required: true, placeholder: "", description: "Profit Unit code – General ERP Profit Unit, alias Profit Center KE51, Commercial Unit – e.g., PU-1000 – used in profit reporting – T0" },
+        { key: "name", label: "PROFIT_UNIT_NAME", required: true, placeholder: "", description: "Profit Unit name – e.g., Mumbai, Production, Sales – used in reporting" },
+        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal Entity FK – General ERP Legal Entity, alias Company Code OX02" },
+        { key: "control_area_code", label: "CONTROL_AREA_CODE", placeholder: "", description: "Management Control Area – General ERP Control Area, alias Controlling Area OX06" },
         { key: "description", label: "DESCRIPTION", type: "textarea", description: "Description – profit unit purpose" },
       ]}
       relatedLinks={[

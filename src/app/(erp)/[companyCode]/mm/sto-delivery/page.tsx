@@ -11,9 +11,9 @@ export default function Page() {
       apiEndpoint="/api/sto-delivery"
       initialForm={{ sto_code: '', delivery_quantity: '', posting_date: '' }}
       fields={[
-        { key: "sto_code", label: "STO_CODE", required: true, type: "autocomplete", apiUrl: "/api/sto", dataKey: "sto", codeField: "code", placeholder: "STO-1000000001", createUrl: "/mm/sto", createCode: "PSTC", description: "STO to deliver" },
-        { key: "delivery_quantity", label: "DELIVERY_QUANTITY", required: true, placeholder: "100", description: "Quantity to deliver" },
-        { key: "posting_date", label: "POSTING_DATE", required: true, placeholder: "2026-05-15" },
+        { key: "sto_code", label: "STO_CODE", required: true, type: "autocomplete", apiUrl: "/api/sto", dataKey: "sto", codeField: "code", placeholder: "", createUrl: "/mm/sto", createCode: "PSTC", description: "STO to deliver" },
+        { key: "delivery_quantity", label: "DELIVERY_QUANTITY", required: true, placeholder: "", description: "Quantity to deliver" },
+        { key: "posting_date", label: "POSTING_DATE", required: true, placeholder: "" },
       ]}
       relatedLinks={[
         { code: "PSTC", label: "STO – required", route: "/mm/sto", description: "STO" },

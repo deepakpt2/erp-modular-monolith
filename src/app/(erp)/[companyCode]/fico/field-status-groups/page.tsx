@@ -128,13 +128,13 @@ export default function FieldStatusGroupsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <DbAutocomplete label="FIELD_STATUS_VARIANT_CODE * – FFSV own IP – must exist" value={variantCode} onChange={setVariantCode} apiUrl="/api/field-status-variants" dataKey="fieldStatusVariants" codeField="code" placeholder="" required createUrl={`/${companyCode}/fico/field-status-variants`} createCode="FFSV" companyCode={companyCode} />
             <div className="space-y-1">
-              <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>FIELD_STATUS_GROUP_CODE *</label>
-              <input value={groupCode} onChange={e=>setGroupCode(e.target.value.toUpperCase())} placeholder="" className={modern ? "w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" : "w-full border px-2 py-1.5 text-xs"} />
+              <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>FIELD_STATUS_GROUP_CODE *</label>
+              <input value={groupCode} onChange={e=>setGroupCode(e.target.value.toUpperCase())} placeholder="" className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" : "w-full border px-2 py-1.5 text-xs"} />
               <p className="text-[10px] text-zinc-400">Group code – e.g., G001 expense, G002 cash – same structure as SAP – one group multiple fields</p>
             </div>
             <div className="space-y-1">
-              <label className={modern ? "text-xs font-medium text-zinc-700" : "text-[11px] font-medium"}>GROUP_NAME</label>
-              <input value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="" className={modern ? "w-full border-2 border-zinc-200 rounded-xl px-3 py-2.5 text-sm" : "w-full border px-2 py-1.5 text-xs"} />
+              <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>GROUP_NAME</label>
+              <input value={groupName} onChange={e=>setGroupName(e.target.value)} placeholder="" className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" : "w-full border px-2 py-1.5 text-xs"} />
             </div>
           </div>
 

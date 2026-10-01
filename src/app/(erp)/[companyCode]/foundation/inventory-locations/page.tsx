@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/inventory-locations"
       initialForm={{ code: '', name: '', facility_code: '', location_type: 'PRIMARY', description: '' }}
       fields={[
-        { key: "code", label: "INVENTORY_LOCATION_CODE", required: true, placeholder: "IL-1000" },
-        { key: "name", label: "INVENTORY_LOCATION_NAME", required: true, placeholder: "Raw Material Store" },
-        { key: "facility_code", label: "FACILITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "FAC-1000", createUrl: "/foundation/facilities", createCode: "EFCC" },
-        { key: "location_type", label: "LOCATION_TYPE", type: "select", options: ['PRIMARY', 'SECONDARY', 'QUALITY', 'TRANSIT'], placeholder: "PRIMARY" },
+        { key: "code", label: "INVENTORY_LOCATION_CODE", required: true, placeholder: "" },
+        { key: "name", label: "INVENTORY_LOCATION_NAME", required: true, placeholder: "" },
+        { key: "facility_code", label: "FACILITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "", createUrl: "/foundation/facilities", createCode: "EFCC" },
+        { key: "location_type", label: "LOCATION_TYPE", type: "select", options: ['PRIMARY', 'SECONDARY', 'QUALITY', 'TRANSIT'], placeholder: "" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

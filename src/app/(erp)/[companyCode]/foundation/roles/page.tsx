@@ -13,9 +13,9 @@ export default function Page() {
         apiEndpoint="/api/roles"
         initialForm={{ code: '', name: '', description: '' }}
         fields={[
-          { key: "code", label: "ROLE_CODE", required: true, placeholder: "ADMIN", description: "Role code – e.g., ADMIN, USER, MANAGER, PURCHASER – S_USER_AGR" },
-          { key: "name", label: "ROLE_NAME", required: true, placeholder: "Administrator" },
-          { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Administrator role with full access" },
+          { key: "code", label: "ROLE_CODE", required: true, placeholder: "", description: "Role code – e.g., ADMIN, USER, MANAGER, PURCHASER – S_USER_AGR" },
+          { key: "name", label: "ROLE_NAME", required: true, placeholder: "" },
+          { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
         ]}
         relatedLinks={[
           { code: "FUSC", label: "User Maintenance uses Roles", route: "/foundation/users", description: "User requires role – SU01" },

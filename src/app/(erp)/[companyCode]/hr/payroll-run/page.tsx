@@ -13,9 +13,9 @@ export default function Page() {
         apiEndpoint="/api/payroll-run"
         initialForm={{ employee_code: '', payroll_period: '2026-05', description: '' }}
         fields={[
-          { key: "employee_code", label: "EMPLOYEE_CODE", type: "autocomplete", apiUrl: "/api/hr/employees", dataKey: "employees", codeField: "employee_number", placeholder: "EMP-1000", createUrl: "/hr/employees", createCode: "HHEC", description: "Employee code – if empty runs for all employees" },
-          { key: "payroll_period", label: "PAYROLL_PERIOD", required: true, placeholder: "2026-05", description: "Payroll period – YYYY-MM – e.g., 2026-05 for May 2026" },
-          { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Payroll run May 2026" },
+          { key: "employee_code", label: "EMPLOYEE_CODE", type: "autocomplete", apiUrl: "/api/hr/employees", dataKey: "employees", codeField: "employee_number", placeholder: "", createUrl: "/hr/employees", createCode: "HHEC", description: "Employee code – if empty runs for all employees" },
+          { key: "payroll_period", label: "PAYROLL_PERIOD", required: true, placeholder: "", description: "Payroll period – YYYY-MM – e.g., 2026-05 for May 2026" },
+          { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
         ]}
         relatedLinks={[
           { code: "HHEC", label: "Employee Master – required", route: "/hr/employees", description: "Employee Master" },

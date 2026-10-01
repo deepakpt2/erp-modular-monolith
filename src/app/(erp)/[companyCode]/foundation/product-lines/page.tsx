@@ -11,8 +11,8 @@ export default function Page() {
       apiEndpoint="/api/product-lines"
       initialForm={{ code: '', name: '', description: '' }}
       fields={[
-        { key: "code", label: "PRODUCT_LINE_CODE", required: true, placeholder: "PL-100" },
-        { key: "name", label: "PRODUCT_LINE_NAME", required: true, placeholder: "Spices" },
+        { key: "code", label: "PRODUCT_LINE_CODE", required: true, placeholder: "" },
+        { key: "name", label: "PRODUCT_LINE_NAME", required: true, placeholder: "" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

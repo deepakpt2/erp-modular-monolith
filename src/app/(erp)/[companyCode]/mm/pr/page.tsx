@@ -159,24 +159,24 @@ export default function Page(){
           <div>• Workflow auto-start ME54N – PR created → wf_instance PENDING_APPROVAL + wf_task PENDING for manager/owner → SBWP inbox → Approve → PR status APPROVED → can convert to PO PPOC ME21N</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">FACILITY * – EFCC OX10 – plant – 1000</div><input value={facilityCode} onChange={e=>setFacilityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="1000" /></div>
-          <div><div className="text-[9px] text-zinc-500">LEGAL_ENTITY * – ELEC OX02 – company code – {companyCode}</div><input value={legalEntityCode} onChange={e=>setLegalEntityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder={companyCode} /></div>
+          <div><div className="text-[9px] text-zinc-500">FACILITY * – EFCC OX10 – plant – 1000</div><input value={facilityCode} onChange={e=>setFacilityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">LEGAL_ENTITY * – ELEC OX02 – company code – {companyCode}</div><input value={legalEntityCode} onChange={e=>setLegalEntityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">REQUIRED_DATE * – OB52</div><input type="date" value={requiredDate} onChange={e=>setRequiredDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
-          <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC OY03 – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INR" /></div>
-          <div className="col-span-2"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder={`PR for ${facilityCode} – PPRC ME51N – ${companyCode}`} /></div>
+          <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC OY03 – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div className="col-span-2"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
         </div>
         <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
           <div className="font-bold">LINES – {lines.length} – Material + Qty + UoM + Price + SLOC + Delivery Date – EMTC + EUOC + EILC + FCOC + FTXC – ORG WIRED</div>
           {lines.map((line, idx)=>(
             <div key={idx} className="flex gap-1 items-center border bg-white p-1 mt-1">
               <span className="font-bold">{(idx+1)*10}</span>
-              <input value={line.item_number} onChange={e=>updateLine(idx,'item_number',e.target.value.toUpperCase())} className="w-[100px] border px-1 uppercase" placeholder="10000001" />
-              <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-[50px] border px-1" placeholder="Qty" />
-              <input value={line.uom_code} onChange={e=>updateLine(idx,'uom_code',e.target.value.toUpperCase())} className="w-[40px] border px-1 uppercase" placeholder="PC" />
-              <input value={line.estimated_price} onChange={e=>updateLine(idx,'estimated_price',e.target.value)} className="w-[60px] border px-1" placeholder="Price" />
-              <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[60px] border px-1 uppercase" placeholder="SL01" />
+              <input value={line.item_number} onChange={e=>updateLine(idx,'item_number',e.target.value.toUpperCase())} className="w-[100px] border px-1 uppercase" placeholder="" />
+              <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-[50px] border px-1" placeholder="" />
+              <input value={line.uom_code} onChange={e=>updateLine(idx,'uom_code',e.target.value.toUpperCase())} className="w-[40px] border px-1 uppercase" placeholder="" />
+              <input value={line.estimated_price} onChange={e=>updateLine(idx,'estimated_price',e.target.value)} className="w-[60px] border px-1" placeholder="" />
+              <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[60px] border px-1 uppercase" placeholder="" />
               <input type="date" value={line.delivery_date} onChange={e=>updateLine(idx,'delivery_date',e.target.value)} className="w-[110px] border px-1" />
-              <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border px-1" placeholder="Item text" />
+              <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border px-1" placeholder="" />
               <button onClick={()=>removeLine(idx)} className="border bg-red-50 px-1">X</button>
             </div>
           ))}
@@ -217,7 +217,7 @@ export default function Page(){
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📋</div>
           <div>
@@ -234,7 +234,7 @@ export default function Page(){
             apiUrl="/api/facilities"
             codeField="code"
             nameField="name"
-            placeholder="1000"
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/facilities`}
             createCode="EFCC"
@@ -247,15 +247,15 @@ export default function Page(){
             apiUrl="/api/legal-entities"
             codeField="code"
             nameField="name"
-            placeholder={companyCode}
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/legal-entities`}
             createCode="ELEC"
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">REQUIRED_DATE * – OB52 – F_BKPF_BUP</label>
-            <input type="date" value={requiredDate} onChange={e=>setRequiredDate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">REQUIRED_DATE * – OB52 – F_BKPF_BUP</label>
+            <input type="date" value={requiredDate} onChange={e=>setRequiredDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
             <p className="text-[10px] text-zinc-400 mt-1">Posting period must be open for account type M – else error – FPPE</p>
           </div>
           <DbAutocomplete
@@ -265,14 +265,14 @@ export default function Page(){
             apiUrl="/api/currencies"
             codeField="code"
             nameField="name"
-            placeholder="INR"
+            placeholder=""
             createUrl={`/${companyCode}/fico/currencies`}
             createCode="FCYC"
             companyCode={companyCode}
           />
           <div className="md:col-span-4">
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">HEADER_TEXT – BKTXT</label>
-            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder={`PR for ${facilityCode} – PPRC ME51N – ${companyCode}`} />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">HEADER_TEXT – BKTXT</label>
+            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" placeholder="" />
           </div>
         </div>
 
@@ -294,7 +294,7 @@ export default function Page(){
                       apiUrl="/api/materials"
                       codeField="item_number"
                       nameField="description"
-                      placeholder="10000001"
+                      placeholder=""
                       required
                       createUrl={`/${companyCode}/foundation/materials`}
                       createCode="EMTC"
@@ -302,7 +302,7 @@ export default function Page(){
                     />
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Qty *</label>
-                      <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="10" />
+                      <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                     </div>
                     <DbAutocomplete
                       label="UoM – EUOC"
@@ -311,14 +311,14 @@ export default function Page(){
                       apiUrl="/api/uom"
                       codeField="code"
                       nameField="name"
-                      placeholder="PC"
+                      placeholder=""
                       createUrl={`/${companyCode}/foundation/uom`}
                       createCode="EUOC"
                       companyCode={companyCode}
                     />
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Est Price</label>
-                      <input value={line.estimated_price} onChange={e=>updateLine(idx,'estimated_price',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="100" />
+                      <input value={line.estimated_price} onChange={e=>updateLine(idx,'estimated_price',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                     </div>
                     <DbAutocomplete
                       label="SLOC – EILC"
@@ -327,19 +327,19 @@ export default function Page(){
                       apiUrl="/api/inventory-locations"
                       codeField="code"
                       nameField="name"
-                      placeholder="SL01"
+                      placeholder=""
                       createUrl={`/${companyCode}/foundation/inventory-locations`}
                       createCode="EILC"
                       companyCode={companyCode}
                     />
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Delivery Date</label>
-                      <input type="date" value={line.delivery_date} onChange={e=>updateLine(idx,'delivery_date',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" />
+                      <input type="date" value={line.delivery_date} onChange={e=>updateLine(idx,'delivery_date',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" />
                     </div>
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Item Text</label>
                       <div className="flex gap-1">
-                        <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border rounded-lg px-2 py-1.5 text-sm" placeholder="Item text" />
+                        <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                         <button onClick={()=>removeLine(idx)} className="px-2 py-1 rounded-lg border bg-red-50 text-xs">X</button>
                       </div>
                     </div>
@@ -350,7 +350,7 @@ export default function Page(){
           </div>
         </div>
 
-        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">
           Create PR – ME51N – PPRC – T0 BLOCKING – Posting Period M OB52 – Number Range PR 1000000000 – Workflow ME54N SBWP – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}
         </button>
         <p className="text-[10px] text-zinc-400 mt-2 text-center">PR requires facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC – posting period M OB52 must be open – number range PR 1000000000 numeric only assignment per company error_and_extend – workflow auto-start ME54N SBWP – flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired</p>

@@ -83,7 +83,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center">💳</div>
           <div>
@@ -94,10 +94,10 @@ export default function Page(){
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <DbAutocomplete label="CUSTOMER_CODE * – SCUC – General ERP Customer – XD01 alias – must exist – FD32" value={form.customer_code} onChange={v=>setForm({...form,customer_code:v})} apiUrl="/api/business-partners?role=CUSTOMER" codeField="account_number" nameField="display_name" placeholder="" required createUrl={`/${companyCode}/foundation/customers`} createCode="SCUC" companyCode={companyCode} />
           <DbAutocomplete label="CREDIT_POLICY_AREA_CODE * – FCPC – OB45 alias – Credit Control Area – defines boundary" value={form.credit_policy_area_code} onChange={v=>setForm({...form,credit_policy_area_code:v})} apiUrl="/api/credit-policy-areas" codeField="code" nameField="name" placeholder="" required createUrl={`/${companyCode}/foundation/credit-policy-areas`} createCode="FCPC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">CREDIT_LIMIT * – FD32 – 1000000 – used in SO credit check exposure vs limit</label><input value={form.credit_limit} onChange={e=>setForm({...form,credit_limit:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">RISK_CATEGORY – LOW/MEDIUM/HIGH – OVA8 reaction</label><select value={form.risk_category} onChange={e=>setForm({...form,risk_category:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select></div>
+          <div><label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">CREDIT_LIMIT * – FD32 – 1000000 – used in SO credit check exposure vs limit</label><input value={form.credit_limit} onChange={e=>setForm({...form,credit_limit:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">RISK_CATEGORY – LOW/MEDIUM/HIGH – OVA8 reaction</label><select value={form.risk_category} onChange={e=>setForm({...form,risk_category:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select></div>
         </div>
-        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Credit Master FD32 – T1 REQUIRED – Credit Check OVA8 – NO DANGLING</button>
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Credit Master FD32 – T1 REQUIRED – Credit Check OVA8 – NO DANGLING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – FD32 Customer Credit Master: customer_code + credit_policy_area_code → credit_limit + risk_category + credit_exposure – OVA8 automatic credit check: static/dynamic, reaction A warning B error C block – SO creation checks exposure = open SO + open delivery + open billing + open AR (universal ledger) vs limit → block/warning – prevents selling to bankrupt customer – NO DANGLING – General ERP, SAP FD32/OB45/OVA8 alias – used in VA01-FULL pricing + credit check</div>
       </div>
 

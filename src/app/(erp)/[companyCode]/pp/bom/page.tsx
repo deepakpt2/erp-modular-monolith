@@ -101,7 +101,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center">📋</div>
           <div>
@@ -112,23 +112,23 @@ export default function Page(){
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete label="PRODUCT_CODE * – General ERP Product, alias Material" value={header.product_code} onChange={v=>setHeader({...header,product_code:v})} apiUrl="/api/materials" codeField="item_number" nameField="description" placeholder="" required createUrl={`/${companyCode}/foundation/materials`} createCode="EMTC" companyCode={companyCode} />
           <DbAutocomplete label="FACILITY_CODE * – General ERP Facility, alias Plant" value={header.facility_code} onChange={v=>setHeader({...header,facility_code:v})} apiUrl="/api/facilities" codeField="code" nameField="name" placeholder="" required createUrl={`/${companyCode}/foundation/facilities`} createCode="EFCC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">BASE_QUANTITY * – General ERP</label><input value={header.base_quantity} onChange={e=>setHeader({...header,base_quantity:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">BASE_QUANTITY * – General ERP</label><input value={header.base_quantity} onChange={e=>setHeader({...header,base_quantity:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black focus:border-black" placeholder="" /></div>
         </div>
-        <div className="mt-4"><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION – General ERP</label><input value={header.description} onChange={e=>setHeader({...header,description:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
+        <div className="mt-4"><label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DESCRIPTION – General ERP</label><input value={header.description} onChange={e=>setHeader({...header,description:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
 
         <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
           <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-3">Components – T0 BLOCKING – General ERP Product Components – Copied to Manufacturing Order MMOC – NO DANGLING – Used in MRP explosion + Costing CK40N</h4>
           {components.map((c,idx)=>(
             <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 bg-white rounded-xl border p-3">
               <DbAutocomplete label={`COMPONENT ${idx+1} * – Product`} value={c.component_code} onChange={v=>{const n=[...components]; n[idx].component_code=v; setComponents(n);}} apiUrl="/api/materials" codeField="item_number" nameField="description" placeholder="" required createUrl={`/${companyCode}/foundation/materials`} createCode="EMTC" companyCode={companyCode} />
-              <div><label className="text-[11px] font-medium">QUANTITY *</label><input value={c.quantity} onChange={e=>{const n=[...components]; n[idx].quantity=e.target.value; setComponents(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-              <div className="flex gap-2"><div className="flex-1"><label className="text-[11px] font-medium">UOM</label><input value={c.uom_code} onChange={e=>{const n=[...components]; n[idx].uom_code=e.target.value.toUpperCase(); setComponents(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div><button onClick={()=>setComponents(components.filter((_,i)=>i!==idx))} className="mt-6 h-10 px-3 rounded-xl border bg-red-50 text-xs">Remove</button></div>
+              <div><label className="text-[11px] font-medium">QUANTITY *</label><input value={c.quantity} onChange={e=>{const n=[...components]; n[idx].quantity=e.target.value; setComponents(n);}} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+              <div className="flex gap-2"><div className="flex-1"><label className="text-[11px] font-medium">UOM</label><input value={c.uom_code} onChange={e=>{const n=[...components]; n[idx].uom_code=e.target.value.toUpperCase(); setComponents(n);}} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div><button onClick={()=>setComponents(components.filter((_,i)=>i!==idx))} className="mt-6 h-10 px-3 rounded-xl border bg-red-50 text-xs">Remove</button></div>
             </div>
           ))}
           <button onClick={()=>setComponents([...components,{component_code: "", quantity: "1", uom_code: "PC"}])} className="mt-4 px-4 py-2 rounded-full border bg-white text-xs hover:bg-zinc-50">+ Add Component – General ERP</button>
         </div>
 
-        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Bill of Materials MBMC – Alias CS01 – General ERP – T0 BLOCKING</button>
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Bill of Materials MBMC – Alias CS01 – General ERP – T0 BLOCKING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – BOM components copied to Manufacturing Order MMOC (alias CO01) on creation – used in MRP MD01 explosion + costing CK40N – NO DANGLING – General ERP terminology, SAP CS01 kept as alias</div>
       </div>
 

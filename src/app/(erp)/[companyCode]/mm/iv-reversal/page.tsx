@@ -11,9 +11,9 @@ export default function Page() {
       apiEndpoint="/api/iv-reversal"
       initialForm={{ original_iv_code: '', reason: '', posting_date: '' }}
       fields={[
-        { key: "original_iv_code", label: "ORIGINAL_IV_CODE", required: true, placeholder: "IV-5000000001" },
-        { key: "reason", label: "REASON", required: true, placeholder: "Wrong amount" },
-        { key: "posting_date", label: "POSTING_DATE", required: true, placeholder: "2026-05-15" },
+        { key: "original_iv_code", label: "ORIGINAL_IV_CODE", required: true, placeholder: "" },
+        { key: "reason", label: "REASON", required: true, placeholder: "" },
+        { key: "posting_date", label: "POSTING_DATE", required: true, placeholder: "" },
       ]}
       relatedLinks={[
         { code: "PIVC", label: "Invoice Verification – original", route: "/mm/iv", description: "IV MIRO" },

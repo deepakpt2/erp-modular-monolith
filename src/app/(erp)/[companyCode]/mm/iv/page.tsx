@@ -268,15 +268,15 @@ export default function Page(){
           <div>• Document Flow PR→PO→GR→IV→Payment – FDFL VBFA – WORM-lite – predecessor/successor – quantity/value – ELIKZ – creates flow links via /api/document-flow POST</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">PO_NUMBER * – PIVC MIRO REQUIRES PO – PPOC – 4500000001 – T0</div><input value={poNumber} onChange={e=>setPoNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="4500000001" /></div>
-          <div><div className="text-[9px] text-zinc-500">GR_NUMBER – optional – GR 5000000001 – MIGO 101</div><input value={grNumber} onChange={e=>setGrNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="5000000001" /></div>
-          <div><div className="text-[9px] text-zinc-500">VENDOR_INVOICE_NUMBER * – INV-VEND-2026-001</div><input value={vendorInvoiceNumber} onChange={e=>setVendorInvoiceNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INV-VEND-2026-001" /></div>
+          <div><div className="text-[9px] text-zinc-500">PO_NUMBER * – PIVC MIRO REQUIRES PO – PPOC – 4500000001 – T0</div><input value={poNumber} onChange={e=>setPoNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">GR_NUMBER – optional – GR 5000000001 – MIGO 101</div><input value={grNumber} onChange={e=>setGrNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">VENDOR_INVOICE_NUMBER * – INV-VEND-2026-001</div><input value={vendorInvoiceNumber} onChange={e=>setVendorInvoiceNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">INVOICE_DATE *</div><input type="date" value={invoiceDate} onChange={e=>setInvoiceDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
           <div><div className="text-[9px] text-zinc-500">POSTING_DATE * – OB52 K</div><input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
           <div><div className="text-[9px] text-zinc-500">DOCUMENT_TYPE – RE/RE_CREDIT/RE_DEBIT – credit/debit memo</div><select value={documentType} onChange={e=>setDocumentType(e.target.value)} className="w-full border-2 border-black px-1 py-1"><option value="RE">RE – Invoice</option><option value="RE_CREDIT">RE_CREDIT – Credit Memo</option><option value="RE_DEBIT">RE_DEBIT – Debit Memo</option></select></div>
           <div><div className="text-[9px] text-zinc-500">IS_CREDIT_MEMO – checkbox – credit memo reduces liability</div><input type="checkbox" checked={isCreditMemo} onChange={e=>setIsCreditMemo(e.target.checked)} /> {isCreditMemo ? 'Credit Memo – Dr Vendor Recon FGLC Cr WRX' : 'Invoice – Dr WRX Cr Vendor'}</div>
-          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERM_CODE – FAPT – NT30 – due calc</div><input value={paymentTermCode} onChange={e=>setPaymentTermCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="NT30" /></div>
-          <div><div className="text-[9px] text-zinc-500">TAX_CODE – FTXC – GST18 – tax handling – rate lookup</div><input value={taxCode} onChange={e=>setTaxCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="GST18" /></div>
+          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERM_CODE – FAPT – NT30 – due calc</div><input value={paymentTermCode} onChange={e=>setPaymentTermCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">TAX_CODE – FTXC – GST18 – tax handling – rate lookup</div><input value={taxCode} onChange={e=>setTaxCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
         </div>
         {poDetails && (
           <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
@@ -288,12 +288,12 @@ export default function Page(){
                   <span className="font-bold">{line.line_number}</span>
                   <span>{line.item_number || line.item_id}</span>
                   <span>Ord {line.quantity} Rec {line.quantity_received} Inv {line.quantity_invoiced} Open {line.quantity_open}</span>
-                  <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-[50px] border px-1" placeholder="Qty" />
-                  <input value={selectedLines[line.id]?.priceInvoiced || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], priceInvoiced: e.target.value}}))} className="w-[60px] border px-1" placeholder="Inv Price" />
+                  <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-[50px] border px-1" placeholder="" />
+                  <input value={selectedLines[line.id]?.priceInvoiced || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], priceInvoiced: e.target.value}}))} className="w-[60px] border px-1" placeholder="" />
                   <span className="text-[9px]">PO {line.unit_price} → Inv {selectedLines[line.id]?.priceInvoiced} Var {Number(selectedLines[line.id]?.priceInvoiced||0) - Number(line.unit_price||0)}</span>
-                  <input value={selectedLines[line.id]?.freight || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], freight: e.target.value}}))} className="w-[40px] border px-1" placeholder="Freight" />
-                  <input value={selectedLines[line.id]?.customs || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], customs: e.target.value}}))} className="w-[40px] border px-1" placeholder="Customs" />
-                  <input value={selectedLines[line.id]?.tax || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], tax: e.target.value}}))} className="w-[40px] border px-1" placeholder="Tax" />
+                  <input value={selectedLines[line.id]?.freight || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], freight: e.target.value}}))} className="w-[40px] border px-1" placeholder="" />
+                  <input value={selectedLines[line.id]?.customs || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], customs: e.target.value}}))} className="w-[40px] border px-1" placeholder="" />
+                  <input value={selectedLines[line.id]?.tax || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], tax: e.target.value}}))} className="w-[40px] border px-1" placeholder="" />
                 </div>
               ))}
             </div>
@@ -338,7 +338,7 @@ export default function Page(){
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">🧾</div>
           <div>
@@ -355,7 +355,7 @@ export default function Page(){
             apiUrl="/api/po"
             codeField="po_number"
             nameField="vendor_name"
-            placeholder="4500000001"
+            placeholder=""
             required
             createUrl={`/${companyCode}/mm/po`}
             createCode="PPOC"
@@ -368,22 +368,22 @@ export default function Page(){
             apiUrl="/api/gr"
             codeField="gr_number"
             nameField="po_number"
-            placeholder="5000000001"
+            placeholder=""
             createUrl={`/${companyCode}/mm/gr`}
             createCode="IGRC"
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">VENDOR_INVOICE_NUMBER * – INV-VEND-2026-001 – T0</label>
-            <input value={vendorInvoiceNumber} onChange={e=>setVendorInvoiceNumber(e.target.value.toUpperCase())} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black uppercase" placeholder="INV-VEND-2026-001" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">VENDOR_INVOICE_NUMBER * – INV-VEND-2026-001 – T0</label>
+            <input value={vendorInvoiceNumber} onChange={e=>setVendorInvoiceNumber(e.target.value.toUpperCase())} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black uppercase" placeholder="" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">INVOICE_DATE *</label>
-            <input type="date" value={invoiceDate} onChange={e=>setInvoiceDate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">INVOICE_DATE *</label>
+            <input type="date" value={invoiceDate} onChange={e=>setInvoiceDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">POSTING_DATE * – OB52 K – F_BKPF_BUP</label>
-            <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">POSTING_DATE * – OB52 K – F_BKPF_BUP</label>
+            <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
             <p className="text-[10px] text-zinc-400 mt-1">K Vendors – must be open – FPPE</p>
           </div>
           <DbAutocomplete
@@ -393,7 +393,7 @@ export default function Page(){
             apiUrl="/api/payment-terms"
             codeField="code"
             nameField="name"
-            placeholder="NT30"
+            placeholder=""
             createUrl={`/${companyCode}/fico/payment-terms`}
             createCode="FAPT"
             companyCode={companyCode}
@@ -405,14 +405,14 @@ export default function Page(){
             apiUrl="/api/tax-codes"
             codeField="code"
             nameField="description"
-            placeholder="GST18"
+            placeholder=""
             createUrl={`/${companyCode}/fico/tax-codes`}
             createCode="FTXC"
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DOCUMENT_TYPE – RE/RE_CREDIT/RE_DEBIT – credit/debit memo – industry standard</label>
-            <select value={documentType} onChange={e=>setDocumentType(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black">
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DOCUMENT_TYPE – RE/RE_CREDIT/RE_DEBIT – credit/debit memo – industry standard</label>
+            <select value={documentType} onChange={e=>setDocumentType(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black">
               <option value="RE">RE – Invoice</option>
               <option value="RE_CREDIT">RE_CREDIT – Credit Memo – Dr Vendor Recon FGLC Cr WRX – reduces liability</option>
               <option value="RE_DEBIT">RE_DEBIT – Debit Memo – additional charges</option>
@@ -452,24 +452,24 @@ export default function Page(){
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">IV Qty *</div>
-                        <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder={String(line.quantity_open)} />
+                        <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">Inv Price * – PRD Var</div>
-                        <input value={selectedLines[line.id]?.priceInvoiced || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], priceInvoiced: e.target.value}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder={String(line.unit_price)} />
+                        <input value={selectedLines[line.id]?.priceInvoiced || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], priceInvoiced: e.target.value}}))} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                         <div className="text-[9px] text-amber-600">Var {Number(selectedLines[line.id]?.priceInvoiced||0) - Number(line.unit_price||0)} – PRD 4000000004</div>
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">Freight /unit</div>
-                        <input value={selectedLines[line.id]?.freight || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], freight: e.target.value}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="0" />
+                        <input value={selectedLines[line.id]?.freight || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], freight: e.target.value}}))} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">Customs /unit</div>
-                        <input value={selectedLines[line.id]?.customs || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], customs: e.target.value}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="0" />
+                        <input value={selectedLines[line.id]?.customs || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], customs: e.target.value}}))} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">Tax – FTXC</div>
-                        <input value={selectedLines[line.id]?.tax || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], tax: e.target.value}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="0" />
+                        <input value={selectedLines[line.id]?.tax || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], tax: e.target.value}}))} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                       </div>
                     </div>
                   </div>
@@ -479,7 +479,7 @@ export default function Page(){
           </div>
         )}
 
-        <button onClick={create} disabled={!poNumber || !vendorInvoiceNumber} className={`mt-6 w-full rounded-full px-5 py-3 text-sm font-medium transition-colors ${poNumber && vendorInvoiceNumber ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
+        <button onClick={create} disabled={!poNumber || !vendorInvoiceNumber} className={`mt-6 w-full rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors ${poNumber && vendorInvoiceNumber ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
           {poNumber && vendorInvoiceNumber ? `Create IV for PO ${poNumber} – MIRO 51 RE – Vendor Inv ${vendorInvoiceNumber} – T0 – WRX Clearing – PRD – Tax – RE – Tolerance OBA0/OBA4 – ${elapsed>0? elapsed+'s elapsed – after 10s auto background':''}` : 'Select PO + Vendor Invoice Number first – PIVC MIRO requires PO reference + vendor invoice – T0 – SAP standard MIRO 51 RE'}
         </button>
         <p className="text-[10px] text-zinc-400 mt-2 text-center">IV requires PO_NUMBER * + VENDOR_INVOICE_NUMBER * + INVOICE_DATE + POSTING_DATE – posting period K OB52 must be open – tolerance OBA0/OBA4 VEND-01 T1 REQUIRED – auto account OBYC WRX – price variance PRD 4000000004 – vendor invoice accounting RE Dr WRX Cr Vendor Recon – tax FTXC GST – number range IV 5100000001 – document flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired – facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + tax FTXC + movement type FMTM + auto account FAUC + number range FNRC + posting period FPPE + fiscal FFYC</p>

@@ -221,10 +221,10 @@ export default function Page(){
           <div>• Stock update – MMBE – MAP recalc – BSX inventory debit, WRX GR/IR credit – T0 BLOCKING – NO DANGLING</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">PO_NUMBER * – SAP STANDARD – MIGO REQUIRES PO – PPOC</div><input value={poNumber} onChange={e=>setPoNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="4500000001" /></div>
+          <div><div className="text-[9px] text-zinc-500">PO_NUMBER * – SAP STANDARD – MIGO REQUIRES PO – PPOC</div><input value={poNumber} onChange={e=>setPoNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">POSTING_DATE * – OB52</div><input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
           <div><div className="text-[9px] text-zinc-500">MOVEMENT_TYPE * – OMJJ – 101 GR PO</div><select value={movementType} onChange={e=>setMovementType(e.target.value)} className="w-full border-2 border-black px-1 py-1"><option value="101">101 – GR for PO – BSX/WRX</option><option value="102">102 – GR Reversal</option><option value="103">103 – GR for PO – GR blocked</option></select></div>
-          <div className="col-span-3"><div className="text-[9px] text-zinc-500">HEADER_TEXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="GR for PO 4500000001 – MIGO 101" /></div>
+          <div className="col-span-3"><div className="text-[9px] text-zinc-500">HEADER_TEXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
         </div>
         {poDetails && (
           <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
@@ -236,9 +236,9 @@ export default function Page(){
                   <span className="font-bold">{line.line_number}</span>
                   <span>{line.item_number || line.item_id}</span>
                   <span>Ord {line.quantity} Rec {line.quantity_received} Open {line.quantity_open}</span>
-                  <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-[60px] border px-1" placeholder="Qty" />
-                  <input value={selectedLines[line.id]?.sloc || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], sloc: e.target.value.toUpperCase()}}))} className="w-[80px] border px-1" placeholder="SLOC" />
-                  <input value={selectedLines[line.id]?.batch || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], batch: e.target.value}}))} className="w-[80px] border px-1" placeholder="Batch" />
+                  <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-[60px] border px-1" placeholder="" />
+                  <input value={selectedLines[line.id]?.sloc || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], sloc: e.target.value.toUpperCase()}}))} className="w-[80px] border px-1" placeholder="" />
+                  <input value={selectedLines[line.id]?.batch || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], batch: e.target.value}}))} className="w-[80px] border px-1" placeholder="" />
                   {line.delivery_completed && <span className="text-[9px] bg-green-100 border px-1">ELIKZ Completed</span>}
                 </div>
               ))}
@@ -279,7 +279,7 @@ export default function Page(){
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📦</div>
           <div>
@@ -290,7 +290,7 @@ export default function Page(){
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PO_NUMBER * – SAP STANDARD – MIGO REQUIRES PO – PPOC ME21N – T0 BLOCKING</label>
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">PO_NUMBER * – SAP STANDARD – MIGO REQUIRES PO – PPOC ME21N – T0 BLOCKING</label>
             <div className="mt-1.5 flex gap-2">
               <div className="flex-1">
                 <DbAutocomplete
@@ -300,7 +300,7 @@ export default function Page(){
                   apiUrl="/api/po"
                   codeField="po_number"
                   nameField="vendor_name"
-                  placeholder="4500000001"
+                  placeholder=""
                   required
                   createUrl={`/${companyCode}/mm/po`}
                   createCode="PPOC"
@@ -312,13 +312,13 @@ export default function Page(){
             <p className="text-[10px] text-zinc-400 mt-1">PO FK – proc_purchase_order – po_number 4500000001 – must exist – SAP standard MIGO reference – if not found, create via PPOC ME21N – flow PR→PO→GR→IV</p>
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">POSTING_DATE * – OB52 – F_BKPF_BUP</label>
-            <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">POSTING_DATE * – OB52 – F_BKPF_BUP</label>
+            <input type="date" value={postingDate} onChange={e=>setPostingDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
             <p className="text-[10px] text-zinc-400 mt-1">Posting period must be open for account type M – else error – FPPE</p>
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">MOVEMENT_TYPE * – OMJJ – FMTM</label>
-            <select value={movementType} onChange={e=>setMovementType(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black">
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">MOVEMENT_TYPE * – OMJJ – FMTM</label>
+            <select value={movementType} onChange={e=>setMovementType(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black">
               <option value="101">101 – GR for PO – BSX/WRX – T0 BLOCKING</option>
               <option value="102">102 – GR Reversal – for GRRE</option>
               <option value="103">103 – GR for PO – GR blocked stock</option>
@@ -327,8 +327,8 @@ export default function Page(){
             <p className="text-[10px] text-zinc-400 mt-1">Movement 101 requires OBYC BSX/WRX – FAUC – auto account – T0</p>
           </div>
           <div className="md:col-span-4">
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">HEADER_TEXT – BKTXT</label>
-            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder={`GR for PO ${poNumber} – MIGO 101 – IGRC – ${companyCode}`} />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">HEADER_TEXT – BKTXT</label>
+            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" placeholder="" />
           </div>
         </div>
 
@@ -365,16 +365,16 @@ export default function Page(){
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">GR Qty * – tolerance check – over {line.overdelivery_tolerance_percent || 10}%</div>
-                        <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder={String(line.quantity_open)} />
+                        <input value={selectedLines[line.id]?.qty || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], qty: e.target.value}}))} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                         <div className="text-[9px] text-amber-600">Max {(line.quantity * (1 + (line.overdelivery_tolerance_percent || 10)/100)).toFixed(2)} – tolerance OBA0/OBA4 VEND-01 – overdelivery</div>
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">SLOC – EILC</div>
-                        <input value={selectedLines[line.id]?.sloc || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], sloc: e.target.value.toUpperCase()}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm uppercase" placeholder="EILC" />
+                        <input value={selectedLines[line.id]?.sloc || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], sloc: e.target.value.toUpperCase()}}))} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px] uppercase" placeholder="" />
                       </div>
                       <div>
                         <div className="text-[10px] text-zinc-500 uppercase">Batch/Lot – ELTC</div>
-                        <input value={selectedLines[line.id]?.batch || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], batch: e.target.value}}))} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="Batch" />
+                        <input value={selectedLines[line.id]?.batch || ''} onChange={e=>setSelectedLines(prev=>({...prev, [line.id]: {...prev[line.id], batch: e.target.value}}))} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                       </div>
                     </div>
                   </div>
@@ -384,7 +384,7 @@ export default function Page(){
           </div>
         )}
 
-        <button onClick={create} disabled={!poNumber} className={`mt-6 w-full rounded-full px-5 py-3 text-sm font-medium transition-colors ${poNumber ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
+        <button onClick={create} disabled={!poNumber} className={`mt-6 w-full rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors ${poNumber ? 'bg-zinc-900 hover:bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>
           {poNumber ? `Create GR for PO ${poNumber} – MIGO 101 – Movement ${movementType} – T0 BLOCKING – BSX/WRX – ${elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}` : 'Select PO first – SAP standard requires PO reference – PPOC ME21N'}
         </button>
         <p className="text-[10px] text-zinc-400 mt-2 text-center">PO required – SAP standard MIGO – previously only asked PRODUCT, QUANTITY, FACILITY, STORAGE_LOCATION – no PO – now fixed per your report – T0 BLOCKING – NO DANGLING – OBYC BSX/WRX + OMJJ 101 + OB52 posting period</p>

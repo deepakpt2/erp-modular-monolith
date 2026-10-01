@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/kitting"
       initialForm={{ kit_material_code: '', component_material_code: '', quantity: '1', plant_code: '', description: '' }}
       fields={[
-        { key: "kit_material_code", label: "KIT_PRODUCT_CODE", required: true, type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "KIT-1000", createUrl: "/foundation/materials", createCode: "EMTC", description: "Kit material – finished kit" },
-        { key: "component_material_code", label: "COMPONENT_PRODUCT_CODE", required: true, type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "MAT-1000", createUrl: "/foundation/materials", createCode: "EMTC", description: "Component material – raw" },
-        { key: "quantity", label: "QUANTITY", required: true, placeholder: "1" },
-        { key: "plant_code", label: "PLANT_CODE", type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "FAC-1000", createUrl: "/foundation/facilities", createCode: "EFCC" },
+        { key: "kit_material_code", label: "KIT_PRODUCT_CODE", required: true, type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "", createUrl: "/foundation/materials", createCode: "EMTC", description: "Kit material – finished kit" },
+        { key: "component_material_code", label: "COMPONENT_PRODUCT_CODE", required: true, type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "", createUrl: "/foundation/materials", createCode: "EMTC", description: "Component material – raw" },
+        { key: "quantity", label: "QUANTITY", required: true, placeholder: "" },
+        { key: "plant_code", label: "PLANT_CODE", type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "", createUrl: "/foundation/facilities", createCode: "EFCC" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

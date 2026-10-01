@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/commercial-orgs"
       initialForm={{ code: '', name: '', legal_entity_code: '', currency_code: 'INR', description: '' }}
       fields={[
-        { key: "code", label: "COMMERCIAL_ORG_CODE", required: true, placeholder: "CO-1000" },
-        { key: "name", label: "COMMERCIAL_ORG_NAME", required: true, placeholder: "India Sales" },
-        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC" },
-        { key: "currency_code", label: "CURRENCY_CODE", type: "autocomplete", apiUrl: "/api/currencies", dataKey: "currencies", codeField: "code", placeholder: "INR", createUrl: "/fico/currencies", createCode: "FCYC" },
+        { key: "code", label: "COMMERCIAL_ORG_CODE", required: true, placeholder: "" },
+        { key: "name", label: "COMMERCIAL_ORG_NAME", required: true, placeholder: "" },
+        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "", createUrl: "/foundation/legal-entities", createCode: "ELEC" },
+        { key: "currency_code", label: "CURRENCY_CODE", type: "autocomplete", apiUrl: "/api/currencies", dataKey: "currencies", codeField: "code", placeholder: "", createUrl: "/fico/currencies", createCode: "FCYC" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

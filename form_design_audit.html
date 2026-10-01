@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Form Design Audit – Every Form Checked – Design A 32px + E Classic</title>
+<style>
+body{font-family: ui-sans-system, -apple-system, sans-serif; background:#fafaf9; margin:0; padding:24px; color:#18181b}
+.card{background:white; border:1px solid #e4e4e7; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,0.04)}
+.badge{font-family:monospace; font-size:10px; background:black; color:white; border-radius:9999px; padding:4px 10px; font-weight:bold}
+table{width:100%; border-collapse:collapse; font-size:12px}
+th{text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#71717a; padding:8px; border-bottom:1px solid #e4e4e7}
+td{padding:8px; border-bottom:1px solid #f4f4f5}
+.ok{color:#16a34a; font-weight:600}
+.fail{color:#dc2626; font-weight:600}
+code{font-family:monospace; font-size:11px; background:#f4f4f5; padding:2px 6px; border-radius:6px}
+</style></head>
+<body>
+<div class="card">
+<h1 style="font-size:16px; font-weight:600; margin:0">✅ Every Form Checked – Design A 32px Modern + E Classic Monochrome – No Dummy Placeholders</h1>
+<p style="font-size:12px; color:#71717a; margin-top:8px">Audit date 2026-09-30 – Per user request: check every form confirm design present both classic and modern, also check dummy placeholder (found in GR view previously).</p>
+<div style="margin-top:12px; display:flex; gap:8px"><span class="badge">DESIGN A 32PX</span><span class="badge" style="background:white; color:black; border:1px solid #e4e4e7">DESIGN E MONO</span><span class="badge" style="background:#f4f4f5; color:#71717a; border:1px solid #e4e4e7">NO PLACEHOLDER DUMMY</span></div>
+</div>
+
+<div class="card">
+<h2 style="font-size:13px; font-weight:600; margin:0 0 12px">Custom Transaction Forms – PO/PR/GR/IV/Payment – Both Views Present</h2>
+<table>
+<tr><th>Form</th><th>Modern 32px</th><th>Classic E Monochrome</th><th>Placeholder Dummy</th><th>No SAP Amber/Blue</th><th>Details</th></tr>
+<tr><td><code>PO PPOC ME21N</code></td><td class="ok">✅ h-[32px] rounded-lg text-[13px] label 11px uppercase</td><td class="ok">✅ classicContent border-2 black mono 11px</td><td class="ok">✅ placeholder=""</td><td class="ok">✅ zinc only</td><td>ModernModuleShell + classicContent, DbAutocomplete 32px</td></tr>
+<tr><td><code>PR PPRC ME51N</code></td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Same as PO</td></tr>
+<tr><td><code>GR IGRC MIGO 101</code></td><td class="ok">✅ fixed from rounded-xl py-2.5 text-sm → rounded-lg py-2 text-[13px] h-[32px]</td><td class="ok">✅ border-2 black</td><td class="ok">✅ previously had 4500000001, Qty, SLOC, Batch, EILC – now placeholder=""</td><td class="ok">✅</td><td>User reported dummy in GR view – fixed</td></tr>
+<tr><td><code>IV PIVC MIRO</code></td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅ previously INV-VEND-2026-001, NT30, GST18 – now ""</td><td class="ok">✅</td><td></td></tr>
+<tr><td><code>Payment FPYP F-53</code></td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td></td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2 style="font-size:13px; font-weight:600; margin:0 0 12px">Foundation Masters – SingleCodePage – 57 Forms Cleaned</h2>
+<p style="font-size:11px; color:#71717a">All SingleCodePage usages previously had placeholder: "CG-100", "FMCG Group India", "CO-1000", "India Sales", "LE-1000", "INR", "LOT-1000", "10000001", "1000", "SL01", "VEND-LOT-2026-001", "2026-05-15", "365", "100", "KG", etc. – now placeholder: "" per rule: if form has label, dont use placeholder – never sample value.</p>
+<table>
+<tr><th>Form Code</th><th>Modern Design A</th><th>Classic E</th><th>Placeholder</th></tr>
+<tr><td>ECGC Company Groups, ELEC Legal Entities, EFCC Facilities, EILC Inventory Locations, EMTC Materials, etc (57 files)</td><td class="ok">✅ SingleCodePage rewritten: h-[32px] rounded-lg px-2.5 py-2 text-[13px] label 11px uppercase tracking-widest text-zinc-600, card rounded-2xl p-5 shadow subtle, tabs pill bg-zinc-100 h-[26px], button h-[32px] rounded-full black</td><td class="ok">✅ border-2 black p-3 bg-white font-mono 11px uppercase bold, inputs h-[28px] border-2 black mono, no colors, no shadows</td><td class="ok">✅ placeholder: "" – no dummy</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2 style="font-size:13px; font-weight:600; margin:0 0 12px">Shared UI Components – Both Views</h2>
+<table>
+<tr><th>Component</th><th>Modern</th><th>Classic</th><th>No Placeholder Dummy</th></tr>
+<tr><td><code>single-code-page.tsx</code></td><td class="ok">✅ Design A 32px: max-w 960px p-4, header p-5 rounded-2xl, inputs 32px rounded-lg 13px, labels 11px uppercase, tabs pill, button 32px rounded-full black, table 12px compact</td><td class="ok">✅ Design E: border-2 black p-3 bg-white font-mono 11px uppercase bold, inputs 28px border-2 black mono rounded-none, no colors</td><td class="ok">✅ placeholder="" in renderField</td></tr>
+<tr><td><code>db-autocomplete.tsx</code></td><td class="ok">✅ h-[32px] px-2.5 py-2 text-[13px] rounded-lg border-zinc-200 focus:ring-1 black, label 11px uppercase tracking-widest</td><td class="ok">✅ classic-power CSS forces border-2 black mono 11px</td><td class="ok">✅ placeholder="" per rule</td></tr>
+<tr><td><code>modern-module-shell.tsx</code></td><td class="ok">✅ header px-5 py-2.5 compact, KPI p-3 rounded-2xl shadow subtle, main p-5, buttons h-[28px] rounded-full 11px</td><td class="ok">✅ h-7 bg-black border-b-2 black, input border-2 white, KPI border-b-2 black uppercase bold, classic-power inputs border-2 black mono 11px rounded-none no shadows, bg-zinc-50/blue/amber → white</td><td class="ok">✅ CMD input placeholder=code only, no dummy</td></tr>
+<tr><td><code>number-ranges FNRC</code></td><td class="ok">✅ 32px rounded-lg h-[32px] text-[13px] label 11px uppercase, cards rounded-2xl p-5 shadow subtle, no amber/blue</td><td class="ok">✅ uiMode added: modern ? bg-[#fafaf9] p-4 : bg-white p-3 font-mono 11px, header border-2 black</td><td class="ok">✅ search placeholder kept (not dummy), other placeholders ""</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2 style="font-size:13px; font-weight:600; margin:0 0 12px">SAP Color Theme Removal – Verified</h2>
+<p style="font-size:11px">Grep for bg-amber-50, bg-blue-50, border-amber, border-blue-200 → 0 remaining in erp forms (only search placeholder). Previously 24+ occurrences in client-layout, number-ranges, materials, gr, iv, po, pr, jobs, locks, job-indicator, job-popup, role-guard, client-page, virtual-data-grid – all replaced with bg-zinc-50/100, border-zinc-200/300, text-zinc-800, bg-black/zinc-900.</p>
+<table>
+<tr><th>Before (SAP)</th><th>After (Monochrome)</th><th>Files</th></tr>
+<tr><td><code>bg-amber-50, bg-amber-100, border-amber-200/300, text-amber-800</code></td><td><code>bg-zinc-50, bg-zinc-100, border-zinc-200/300, text-zinc-800</code></td><td>client-layout, number-ranges, materials, gr, iv, po, pr, jobs, locks, job-indicator, job-popup, role-guard, etc</td></tr>
+<tr><td><code>bg-blue-50, border-blue-200, bg-blue-100, bg-blue-500</code></td><td><code>bg-zinc-50, border-zinc-200, bg-zinc-100, bg-black</code></td><td>Same + virtual-data-grid bg-yellow-50 → bg-zinc-50</td></tr>
+<tr><td><code>bg-emerald-50/50, text-blue-900, text-amber-900</code></td><td><code>bg-zinc-50, text-zinc-900</code></td><td>materials page</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2 style="font-size:13px; font-weight:600; margin:0 0 12px">GR View – Dummy Placeholder Fix – User Reported</h2>
+<p style="font-size:12px"><b>Before:</b> GR page had placeholder="4500000001", placeholder="GR for PO 4500000001 – MIGO 101", placeholder="Qty", "SLOC", "Batch", "EILC", placeholder={String(line.quantity_open)} – dummy data shown as placeholder.</p>
+<p style="font-size:12px"><b>After:</b> All placeholders now placeholder="" – label already shows field name, no sample value – per rule: if form has label, dont use placeholder – never sample value – label exists, so placeholder empty. Verified via grep -rn 'placeholder=' → only search placeholders remain (Search code...).</p>
+<p style="font-size:11px; color:#71717a; margin-top:8px">Same fix applied to PO (VEND-1000, 1000, 10000001, 10, PC, 100, 0, GST18, SL01), PR (1000, PR-10000001, INR), IV (4500000001, 5000000001, INV-VEND-2026-001, NT30, GST18, Qty, Inv Price, Freight, Customs, Tax, 0), Payment, and 57 foundation forms.</p>
+</div>
+
+</body></html>

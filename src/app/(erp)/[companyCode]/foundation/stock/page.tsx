@@ -11,11 +11,11 @@ export default function Page() {
       apiEndpoint="/api/stock"
       initialForm={{ material_code: '', facility_code: '', location_code: '', lot_number: '', quantity: '' }}
       fields={[
-        { key: "material_code", label: "MATERIAL_CODE", type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "MAT-1000", createUrl: "/foundation/materials", createCode: "EMTC" },
-        { key: "facility_code", label: "FACILITY_CODE", type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "FAC-1000", createUrl: "/foundation/facilities", createCode: "EFCC" },
-        { key: "location_code", label: "INVENTORY_LOCATION_CODE", type: "autocomplete", apiUrl: "/api/inventory-locations", dataKey: "inventoryLocations", codeField: "code", placeholder: "IL-1000", createUrl: "/foundation/inventory-locations", createCode: "EILC" },
-        { key: "lot_number", label: "LOT_NUMBER", type: "autocomplete", apiUrl: "/api/lots", dataKey: "lots", codeField: "lot_number", placeholder: "LOT-1000", createUrl: "/foundation/lots", createCode: "ELTC" },
-        { key: "quantity", label: "QUANTITY", placeholder: "100" },
+        { key: "material_code", label: "MATERIAL_CODE", type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "", createUrl: "/foundation/materials", createCode: "EMTC" },
+        { key: "facility_code", label: "FACILITY_CODE", type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "", createUrl: "/foundation/facilities", createCode: "EFCC" },
+        { key: "location_code", label: "INVENTORY_LOCATION_CODE", type: "autocomplete", apiUrl: "/api/inventory-locations", dataKey: "inventoryLocations", codeField: "code", placeholder: "", createUrl: "/foundation/inventory-locations", createCode: "EILC" },
+        { key: "lot_number", label: "LOT_NUMBER", type: "autocomplete", apiUrl: "/api/lots", dataKey: "lots", codeField: "lot_number", placeholder: "", createUrl: "/foundation/lots", createCode: "ELTC" },
+        { key: "quantity", label: "QUANTITY", placeholder: "" },
       ]}
       relatedLinks={[
         { code: "EMTC", label: "Material – required", route: "/foundation/materials", description: "Material" },

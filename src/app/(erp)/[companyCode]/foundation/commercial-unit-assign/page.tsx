@@ -11,8 +11,8 @@ export default function Page() {
       apiEndpoint="/api/commercial-unit-assign"
       initialForm={{ commercial_unit_code: '', legal_entity_code: '', description: '' }}
       fields={[
-        { key: "commercial_unit_code", label: "COMMERCIAL_UNIT_CODE", required: true, type: "autocomplete", apiUrl: "/api/profit-units", dataKey: "profitUnits", codeField: "code", placeholder: "CU-1000", createUrl: "/foundation/commercial-units", createCode: "EPUC", description: "Commercial Unit FK" },
-        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC" },
+        { key: "commercial_unit_code", label: "COMMERCIAL_UNIT_CODE", required: true, type: "autocomplete", apiUrl: "/api/profit-units", dataKey: "profitUnits", codeField: "code", placeholder: "", createUrl: "/foundation/commercial-units", createCode: "EPUC", description: "Commercial Unit FK" },
+        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "", createUrl: "/foundation/legal-entities", createCode: "ELEC" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

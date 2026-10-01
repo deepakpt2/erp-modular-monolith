@@ -375,8 +375,8 @@ export default function MaterialMasterPage() {
     if (opts?.options) {
       return (
         <div key={key} className="space-y-1">
-          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-          <select value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} className={modern ? `w-full border-2 ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-2 focus:ring-black/10 bg-white` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`}>
+          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>{label}{opts?.required ? ' *' : ''}</label>
+          <select value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} className={modern ? `w-full border ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black/10 bg-white` : `w-full border border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px] ${opts?.required && isEmpty ? 'border-red-400' : ''}`}>
             <option value="">{selectPlaceholder}</option>
             {opts.options.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -387,16 +387,16 @@ export default function MaterialMasterPage() {
     if (opts?.type === 'textarea') {
       return (
         <div key={key} className="space-y-1">
-          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-          <textarea value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border-2 ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
+          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>{label}{opts?.required ? ' *' : ''}</label>
+          <textarea value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black/10` : `w-full border border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px] ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
           {opts?.desc && <p className="text-[10px] text-zinc-400">{opts.desc}</p>}
         </div>
       );
     }
     return (
       <div key={key} className="space-y-1">
-        <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>{label}{opts?.required ? ' *' : ''}</label>
-        <input value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" className={modern ? `w-full border-2 ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-2 focus:ring-black/10` : `w-full border px-2 py-1.5 text-xs ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
+        <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>{label}{opts?.required ? ' *' : ''}</label>
+        <input value={value} onChange={e => setForm({ ...form, [key]: e.target.value })} placeholder="" className={modern ? `w-full border ${borderColor} rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black/10` : `w-full border border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px] ${opts?.required && isEmpty ? 'border-red-400' : ''}`} />
         {opts?.desc && <p className="text-[10px] text-zinc-400">{opts.desc}</p>}
       </div>
     );
@@ -434,28 +434,28 @@ export default function MaterialMasterPage() {
                     </div>
                   {renderInput('description', 'PRODUCT_NAME / DESCRIPTION', { required: true, desc: 'Short description – single source – wired from foundation as in industry standard – MARA' })}
                   <div className="space-y-1">
-                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PRODUCT_TYPE * – Material Type – EMTP – RAW/FINISHED – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PRODUCT_TYPE * – Material Type – EMTP – RAW/FINISHED – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/material-types" dataKey="materialTypes" codeField="code" value={form.type} onChange={v => setForm({ ...form, type: v })} placeholder="" required createUrl="/foundation/material-types" createCode="EMTP" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">Product Type FK – EMTP own IP alias OMS2 – RAW=ROH, FINISHED=FERT, SEMI=HALB, SERVICE – single source – wired from foundation as in industry standard – MARA material type – determines number range assignment RAW→MAT-RAW-01 – industry standard</p>
                   </div>
                   <div className="space-y-1">
-                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>BASE_UNIT * – Base UoM – EUOC – KG/PC/BOX – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>BASE_UNIT * – Base UoM – EUOC – KG/PC/BOX – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/uom" dataKey="uom" codeField="code" value={form.base_unit} onChange={v => setForm({ ...form, base_unit: v })} placeholder="" required createUrl="/foundation/uom" createCode="EUOC" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">Base unit FK – EUOC own IP alias CUNI – KG/PC/BOX – core_unit_measure – single source – wired from foundation as in industry standard – MARA base UoM – used in GR, PGI, stock ledger quantity</p>
                   </div>
                   <div className="space-y-1">
-                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PRODUCT_CATEGORY – Category – EMGC – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PRODUCT_CATEGORY – Category – EMGC – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/material-categories" dataKey="materialCategories" codeField="code" value={form.category_code} onChange={v => setForm({ ...form, category_code: v })} placeholder="" createUrl="/foundation/material-categories" createCode="EMGC" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">Category FK – EMGC own IP alias OMSF – spices, oils, packs – prod_category – single source – wired from foundation as in industry standard – MARA material group – used in FRAD revenue account determination and pricing</p>
                   </div>
                   {renderInput('barcode', 'BARCODE / EAN', { desc: 'For POS, GR scanning – single source in Basic only – EAN/UPC – industry standard' })}
                   <div className="space-y-1">
-                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>HSN_CODE – HSN/SAC – Tax Classification – FTXC – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>HSN_CODE – HSN/SAC – Tax Classification – FTXC – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/hsn-codes" dataKey="hsnCodes" codeField="code" value={form.hsn_code} onChange={v => setForm({ ...form, hsn_code: v })} placeholder="" createUrl="/fico/hsn-codes" createCode="FTXC" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">HSN Code FK – FTXC own IP – India GST HSN – e.g., 09041110 pepper – single source in Basic only – wired from foundation as in industry standard – used in tax determination, billing, GR – tax classification</p>
                   </div>
                   <div className="space-y-1">
-                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>TAX_CLASSIFICATION – Tax Class – FTXC – wired from foundation</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>TAX_CLASSIFICATION – Tax Class – FTXC – wired from foundation</label>
                     <DbAutocomplete label="" apiUrl="/api/tax-codes" dataKey="taxCodes" codeField="code" value={form.tax_classification} onChange={v => setForm({ ...form, tax_classification: v })} placeholder="" createUrl="/fico/tax-codes" createCode="FTXC" companyCode={companyCode} />
                     <p className="text-[10px] text-zinc-400">Tax Classification FK – FTXC – e.g., GST 18%, GST 12% – wired from foundation – used in tax determination – industry standard</p>
                   </div>
@@ -469,22 +469,22 @@ export default function MaterialMasterPage() {
       case 'purchasing':
         return (
           <div className="space-y-6">
-            <div className={modern ? "bg-zinc-50/50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
-              <h3 className={modern ? "font-semibold text-sm text-blue-900" : "font-bold text-xs"}>Purchasing View – Plant Dependent – Single Source</h3>
+            <div className={modern ? "bg-zinc-50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
+              <h3 className={modern ? "font-semibold text-sm text-zinc-900" : "font-bold text-xs"}>Purchasing View – Plant Dependent – Single Source</h3>
               <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement moved to MRP tab only (SAP MRP2) to remove duplicate.</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                 <div className="space-y-1">
-                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PURCHASING_GROUP – Buyer Team – EBTC – wired from foundation</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PURCHASING_GROUP – Buyer Team – EBTC – wired from foundation</label>
                   <DbAutocomplete label="" apiUrl="/api/buyer-teams" dataKey="buyerTeams" codeField="code" value={form.purchasing_group} onChange={v => setForm({ ...form, purchasing_group: v, buyer_group: v })} placeholder="" createUrl="/foundation/buyer-teams" createCode="EBTC" companyCode={companyCode} />
                   <p className="text-[10px] text-zinc-400">Purchasing Group FK – EBTC own IP – K01/001 – buyer team – single source – wired from foundation as in industry standard – MARC purchasing group – used in PR/PO – buyer determination</p>
                 </div>
                 <div className="space-y-1">
-                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PROCUREMENT_DIVISION – Division – EDPC – wired from foundation</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PROCUREMENT_DIVISION – Division – EDPC – wired from foundation</label>
                   <DbAutocomplete label="" apiUrl="/api/commercial-orgs" dataKey="commercialOrgs" codeField="code" value={form.procurement_division} onChange={v => setForm({ ...form, procurement_division: v })} placeholder="" createUrl="/foundation/commercial-orgs" createCode="EDPC" companyCode={companyCode} />
                   <p className="text-[10px] text-zinc-400">Procurement Division FK – EDPC – PD-1000 / KPO1 – division – single source – wired from foundation – used in purchasing – industry standard</p>
                 </div>
                 <div className="space-y-1">
-                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PURCHASING_ORG – Purchasing Org – fin_purchasing_org – wired from foundation – FCRL</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PURCHASING_ORG – Purchasing Org – fin_purchasing_org – wired from foundation – FCRL</label>
                   <DbAutocomplete label="" apiUrl="/api/company-relationships?type=purchasing_org" dataKey="purchasing_orgs" codeField="code" value={form.purchasing_org_code} onChange={v => setForm({ ...form, purchasing_org_code: v })} placeholder="" createUrl="/foundation/enterprise-structure" createCode="FCRL" companyCode={companyCode} />
                   <p className="text-[10px] text-zinc-400">Purchasing Org FK – FCRL – PO01 Spices Purchasing – wired from foundation – company relationships – for large org multi-sector – plant assignment</p>
                 </div>
@@ -496,8 +496,8 @@ export default function MaterialMasterPage() {
       case 'mrp':
         return (
           <div className="space-y-6">
-            <div className={modern ? "bg-zinc-50/50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
-              <h3 className={modern ? "font-semibold text-sm text-amber-900" : "font-bold text-xs"}>MRP View – Single Source for procurement</h3>
+            <div className={modern ? "bg-zinc-50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
+              <h3 className={modern ? "font-semibold text-sm text-zinc-900" : "font-bold text-xs"}>MRP View – Single Source for procurement</h3>
               <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement now ONLY here (removed from Purchasing duplicate).</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" : "grid grid-cols-3 gap-2 mt-2"}>
                 {renderInput('planning_type', 'MRP_TYPE', { options: ['MRP','MANUAL_REORDER','NO_PLANNING','REORDER_POINT','FORECAST'], desc: 'Single source' })}
@@ -517,16 +517,16 @@ export default function MaterialMasterPage() {
       case 'storage':
         return (
           <div className="space-y-6">
-            <div className={modern ? "bg-emerald-50/50 rounded-xl p-4 border border-emerald-100" : "border p-3"}>
+            <div className={modern ? "bg-zinc-50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
               <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse('storage_plant')}>
-                <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Plant Extension – MMSC-like – Single Source</h3>
+                <h3 className={modern ? "font-semibold text-sm text-zinc-900" : "font-bold text-xs"}>Plant Extension – MMSC-like – Single Source</h3>
                 <span className="text-xs">{collapsed['storage_plant'] ? '▶' : '▼'}</span>
               </div>
               {!collapsed['storage_plant'] && (
                 <>
                   <p className="text-[11px] text-zinc-500 mt-1">Select facilities to extend material to. SAP: MM01 creates for one plant, MMSC extends.</p>
                   <div className="mt-4">
-                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>FACILITY_CODES / PLANT_CODES * (Multi-select) – Single Source</label>
+                    <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>FACILITY_CODES / PLANT_CODES * (Multi-select) – Single Source</label>
                     <div className={modern ? "mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-white rounded-xl border max-h-[200px] overflow-auto" : "mt-1 grid grid-cols-3 gap-1 border p-2 max-h-[150px] overflow-auto"}>
                       {facilities.length === 0 ? (
                         <span className="text-xs text-zinc-400">No facilities – create via EFCC – default FAC-1000 will be used</span>
@@ -543,9 +543,9 @@ export default function MaterialMasterPage() {
               )}
             </div>
 
-            <div className={modern ? "bg-emerald-50/50 rounded-xl p-4 border border-emerald-100" : "border p-3"}>
+            <div className={modern ? "bg-zinc-50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
               <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse('storage_kit_lot')}>
-                <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Storage Extension – Batch/Lot Capability where required – EMTC Storage View – Single Source</h3>
+                <h3 className={modern ? "font-semibold text-sm text-zinc-900" : "font-bold text-xs"}>Storage Extension – Batch/Lot Capability where required – EMTC Storage View – Single Source</h3>
                 <span className="text-xs">{collapsed['storage_kit_lot'] ? '▶' : '▼'}</span>
               </div>
               {!collapsed['storage_kit_lot'] && (
@@ -562,16 +562,16 @@ export default function MaterialMasterPage() {
                 </div>
               )}
             </div>
-            <div className={modern ? "bg-emerald-50/30 rounded-xl p-4 border border-emerald-100" : "border p-3"}>
-              <h3 className={modern ? "font-semibold text-sm text-emerald-900" : "font-bold text-xs"}>Storage/Facility Extension – Additional – Facility-specific storage data – MMSC-like – Single Source</h3>
+            <div className={modern ? "bg-emerald-50/30 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
+              <h3 className={modern ? "font-semibold text-sm text-zinc-900" : "font-bold text-xs"}>Storage/Facility Extension – Additional – Facility-specific storage data – MMSC-like – Single Source</h3>
               <p className="text-[11px] text-zinc-500 mt-1">Plant extension creates prod_facility_profile per facility – storage/facility extension includes MRP, purchasing, accounting, costing per plant – MMSC extend material to plant – storage view holds batch/lot/expiry/shelf_life/kit – industry standard – wired from foundation as in industry standard – T0 BLOCKING</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                 <div className="space-y-1">
-                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>FACILITY_CODES extended – prod_facility_profile per facility – MMSC-like</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>FACILITY_CODES extended – prod_facility_profile per facility – MMSC-like</label>
                   <p className="text-[10px] text-zinc-400">Selected facilities: {(form.facility_codes || []).join(', ') || 'None – default FAC-1000'} – Each facility gets own prod_facility_profile with MRP (safety_stock, reorder_point, planning_type MRP, lot_sizing LOT_FOR_LOT, procurement_method BUY), purchasing (buyer_group via EBTC, procurement_division via EDPC, purchasing_org via FCRL PO01), accounting (moving_avg_price, standard_price, valuation_class via FAUC BSX), costing (costing_lot_size, overhead_group, price_unit), quality (is_quality_active QM) – wired from foundation as in industry standard MARC plant extension – T0 BLOCKING</p>
                 </div>
                 <div className="space-y-1">
-                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>Batch/Lot Capability – where required – industry standard</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>Batch/Lot Capability – where required – industry standard</label>
                   <p className="text-[10px] text-zinc-400">If is_lot_managed=true, system creates inv_lot on GR (MIGO) with lot_number, manufacturing_date, expiry_date = manufacturing + shelf_life_days, supplier_lot_number, vendor_id – batch determination in sales/delivery – batch where-used list – expiry check BLOCKED/WARN/RESTRICTED – e.g., spice raw material with 365 days shelf life, batch managed, expiry control BLOCKED – packaging material not batch managed – batch/lot capability where required – wired from foundation – MCH1/MCHB batch stock – industry standard – single source – T0 BLOCKING</p>
                 </div>
               </div>
@@ -586,13 +586,13 @@ export default function MaterialMasterPage() {
               <p className="text-[11px] text-red-600/80 mt-1">price_unit now ONLY here (removed from Costing duplicate).</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                 <div className="space-y-1">
-                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>VALUATION_CLASS * – Valuation Class – FAUC – wired from foundation – BSX</label>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>VALUATION_CLASS * – Valuation Class – FAUC – wired from foundation – BSX</label>
                   <DbAutocomplete label="" apiUrl="/api/auto-account-determination" dataKey="autoAccounts" codeField="valuation_class" value={form.inventory_valuation_class} onChange={v => setForm({ ...form, inventory_valuation_class: v, valuation_class: v })} placeholder="" required createUrl="/fico/auto-account-determination" createCode="FAUC" companyCode={companyCode} />
                   <p className="text-[10px] text-zinc-400">Valuation Class FK – FAUC own IP alias OBYC – RAW/FINISHED/SEMI – valuation_class determines BSX GL via OBYC – e.g., RAW→1400000001 – single source – wired from foundation as in industry standard – MBEW – T0 BLOCKING</p>
                 </div>
                 <div className="space-y-1">
-                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-medium"}>PRICE_CONTROL * – S/V – Price Control – wired from foundation</label>
-                  <select value={form.pricing_method || form.price_control || ''} onChange={e => setForm({ ...form, pricing_method: e.target.value, price_control: e.target.value })} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] bg-white" : "w-full border px-2 py-1.5 text-xs"}>
+                  <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PRICE_CONTROL * – S/V – Price Control – wired from foundation</label>
+                  <select value={form.pricing_method || form.price_control || ''} onChange={e => setForm({ ...form, pricing_method: e.target.value, price_control: e.target.value })} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] bg-white" : "w-full border border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px]"}>
                     <option value="">Select PRICE_CONTROL</option>
                     <option value="STANDARD">S – Standard Price – with price diff PRD</option>
                     <option value="MOVING_AVG">V – Moving Average Price – MAP recalc</option>
@@ -689,7 +689,7 @@ export default function MaterialMasterPage() {
           <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 space-y-4" : "border p-4 space-y-3"}>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <input value={listSearch} onChange={e => { setListSearch(e.target.value); setShowListSuggestions(true); }} onFocus={() => setShowListSuggestions(true)} onBlur={() => setTimeout(() => setShowListSuggestions(false), 200)} placeholder="Search by code or name" className={modern ? "w-full border-2 border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10" : "w-full border px-2 py-1.5 text-xs"} />
+                <input value={listSearch} onChange={e => { setListSearch(e.target.value); setShowListSuggestions(true); }} onFocus={() => setShowListSuggestions(true)} onBlur={() => setTimeout(() => setShowListSuggestions(false), 200)} placeholder="Search by code or name" className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black/10" : "w-full border border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px]"} />
                 {showListSuggestions && listSuggestions.length > 0 && (
                   <div className={modern ? "absolute z-10 mt-1 w-full bg-white border rounded-xl shadow-lg max-h-[200px] overflow-auto" : "absolute z-10 mt-1 w-full bg-white border shadow max-h-[150px] overflow-auto"}>
                     {listSuggestions.map((it: any) => (
@@ -737,7 +737,7 @@ export default function MaterialMasterPage() {
         {mode === 'change' && (
           <div className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 space-y-4" : "border p-4 space-y-3"}>
             <div className="relative">
-              <input value={changeSearch} onChange={e => { setChangeSearch(e.target.value); setShowChangeSuggestions(true); }} onFocus={() => setShowChangeSuggestions(true)} onBlur={() => setTimeout(() => setShowChangeSuggestions(false), 200)} placeholder="Search material to change" className={modern ? "w-full border-2 border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/10" : "w-full border px-2 py-1.5 text-xs"} />
+              <input value={changeSearch} onChange={e => { setChangeSearch(e.target.value); setShowChangeSuggestions(true); }} onFocus={() => setShowChangeSuggestions(true)} onBlur={() => setTimeout(() => setShowChangeSuggestions(false), 200)} placeholder="Search material to change" className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black/10" : "w-full border border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none h-[28px]"} />
               {showChangeSuggestions && changeSuggestions.length > 0 && (
                 <div className={modern ? "absolute z-10 mt-1 w-full bg-white border rounded-xl shadow-lg max-h-[250px] overflow-auto" : "absolute z-10 mt-1 w-full bg-white border shadow max-h-[200px] overflow-auto"}>
                   {changeSuggestions.map((it: any) => (

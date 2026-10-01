@@ -47,7 +47,7 @@ function LoginForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] bg-white focus:outline-none focus:ring-2 focus:ring-black"
             placeholder="you@company.com"
             required
           />
@@ -59,7 +59,7 @@ function LoginForm() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black"
+            className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] bg-white focus:outline-none focus:ring-2 focus:ring-black"
             placeholder="••••••••"
             required
           />

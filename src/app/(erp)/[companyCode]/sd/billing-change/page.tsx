@@ -83,7 +83,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center">🧾</div>
           <div>
@@ -92,13 +92,13 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div><label className="text-[11px] font-medium">BILLING_NUMBER * – BL-xxx – for VF02/VF11/G2/L2/RE</label><input value={form.billing_number} onChange={e=>setForm({...form,billing_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">ACTION – VF02/VF11/G2/L2/RE/VF04</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>VF02</option><option>VF11</option><option>G2</option><option>L2</option><option>RE</option><option>VF04</option></select></div>
-          <div><label className="text-[11px] font-medium">PAYMENT_TERMS – NT30 – for VF02</label><input value={form.payment_terms} onChange={e=>setForm({...form,payment_terms:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">BILLING_DATE – 2026-09-30 – for VF02</label><input type="date" value={form.billing_date} onChange={e=>setForm({...form,billing_date:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" /></div>
-          <div><label className="text-[11px] font-medium">BILLING_TYPE – F2/G2/L2/RE</label><select value={form.billing_type} onChange={e=>setForm({...form,billing_type:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>F2</option><option>G2</option><option>L2</option><option>RE</option></select></div>
+          <div><label className="text-[11px] font-medium">BILLING_NUMBER * – BL-xxx – for VF02/VF11/G2/L2/RE</label><input value={form.billing_number} onChange={e=>setForm({...form,billing_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">ACTION – VF02/VF11/G2/L2/RE/VF04</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>VF02</option><option>VF11</option><option>G2</option><option>L2</option><option>RE</option><option>VF04</option></select></div>
+          <div><label className="text-[11px] font-medium">PAYMENT_TERMS – NT30 – for VF02</label><input value={form.payment_terms} onChange={e=>setForm({...form,payment_terms:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">BILLING_DATE – 2026-09-30 – for VF02</label><input type="date" value={form.billing_date} onChange={e=>setForm({...form,billing_date:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" /></div>
+          <div><label className="text-[11px] font-medium">BILLING_TYPE – F2/G2/L2/RE</label><select value={form.billing_type} onChange={e=>setForm({...form,billing_type:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>F2</option><option>G2</option><option>L2</option><option>RE</option></select></div>
         </div>
-        <button onClick={submit} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Submit VF02 Change / VF11 Cancel / G2 L2 RE Memo – T1 REQUIRED – Billing Change + Cancel + Memo – NO DANGLING</button>
+        <button onClick={submit} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Submit VF02 Change / VF11 Cancel / G2 L2 RE Memo – T1 REQUIRED – Billing Change + Cancel + Memo – NO DANGLING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – VF02: Change billing doc – update payment terms, billing date – VF03: Display – GET /api/billing – VF04: Billing Due List – deliveries with PGI but not yet billed – VF11: Cancel Billing – reverse billing doc + FI reversal + restore delivery billing status – G2: Credit Memo, L2: Debit Memo, RE: Invoice correction – billing types – NO DANGLING – billing fields used in AR + FI + delivery – General ERP, SAP VF02/VF03/VF04/VF11/G2/L2/RE alias – chain: delivery GOODS_ISSUED → billing due VF04 → billing create VF01 → change VF02 → cancel VF11 → credit memo G2 / debit memo L2 / correction RE</div>
       </div>
 

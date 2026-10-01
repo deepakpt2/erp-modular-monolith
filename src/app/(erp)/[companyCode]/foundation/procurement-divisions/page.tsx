@@ -17,11 +17,11 @@ export default function Page() {
         tenant_code: 'TEN-100' 
       }}
       fields={[
-        { key: "code", label: "PROCUREMENT_DIVISION_CODE", required: true, placeholder: "PO01", description: "Procurement division code – purchasing organisation – e.g., PO01 Spices Purchasing, PD-100 Direct Materials – industry standard – purchasing org – OX08 – EPDC – used in PR, PO – org assignment – company code to purchasing org, plant to purchasing org – e.g., 1000→PO01" },
-        { key: "name", label: "PROCUREMENT_DIVISION_NAME", required: true, placeholder: "Spices Purchasing", description: "Procurement division name – e.g., Spices Purchasing – descriptive" },
-        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "1000", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal entity – company code – e.g., 1000 – LE-1000 – company code to purchasing org assignment – 1000→PO01 – industry standard – FCRL" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Spices Purchasing – PO01 – purchasing organisation – procurement division – handles raw materials, spices, oils", description: "Description – procurement division purpose – e.g., Spices Purchasing handles raw materials" },
-        { key: "tenant_code", label: "TENANT_CODE", required: true, placeholder: "TEN-100", description: "Tenant code – default TEN-100 – tenant" },
+        { key: "code", label: "PROCUREMENT_DIVISION_CODE", required: true, placeholder: "", description: "Procurement division code – purchasing organisation – e.g., PO01 Spices Purchasing, PD-100 Direct Materials – industry standard – purchasing org – OX08 – EPDC – used in PR, PO – org assignment – company code to purchasing org, plant to purchasing org – e.g., 1000→PO01" },
+        { key: "name", label: "PROCUREMENT_DIVISION_NAME", required: true, placeholder: "", description: "Procurement division name – e.g., Spices Purchasing – descriptive" },
+        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal entity – company code – e.g., 1000 – LE-1000 – company code to purchasing org assignment – 1000→PO01 – industry standard – FCRL" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "", description: "Description – procurement division purpose – e.g., Spices Purchasing handles raw materials" },
+        { key: "tenant_code", label: "TENANT_CODE", required: true, placeholder: "", description: "Tenant code – default TEN-100 – tenant" },
       ]}
       relatedLinks={[
         { code: "ELEC", label: "Legal Entity – company code – 1000 – required – ELEC OX02 – company to purchasing org", route: "/foundation/legal-entities", description: "Legal Entity – 1000 – LE-1000 – company code – company to purchasing org assignment 1000→PO01" },

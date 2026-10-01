@@ -11,8 +11,8 @@ export default function Page() {
       apiEndpoint="/api/sales-channels"
       initialForm={{ code: '', name: '', description: '' }}
       fields={[
-        { key: "code", label: "SALES_CHANNEL_CODE", required: true, placeholder: "SC-10" },
-        { key: "name", label: "SALES_CHANNEL_NAME", required: true, placeholder: "Wholesale" },
+        { key: "code", label: "SALES_CHANNEL_CODE", required: true, placeholder: "" },
+        { key: "name", label: "SALES_CHANNEL_NAME", required: true, placeholder: "" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

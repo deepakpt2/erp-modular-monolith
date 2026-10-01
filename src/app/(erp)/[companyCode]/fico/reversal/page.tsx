@@ -78,7 +78,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">↩️</div>
           <div>
@@ -88,10 +88,10 @@ export default function Page(){
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete label="DOCUMENT_NUMBER * – FULC – FI doc to reverse – must exist – FB08" value={form.document_number} onChange={v=>setForm({...form,document_number:v})} apiUrl="/api/universal-ledger" codeField="document_number" nameField="text" placeholder="" required createUrl={`/${companyCode}/fico/universal-ledger`} createCode="FULC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium">REVERSAL_REASON – 01 current period, 02 closed period – OBA7</label><select value={form.reversal_reason} onChange={e=>setForm({...form,reversal_reason:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>01</option><option>02</option><option>03</option></select></div>
-          <div><label className="text-[11px] font-medium">ACTION – REVERSE FB08 or RESET FBRA</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>REVERSE</option><option>RESET</option></select></div>
+          <div><label className="text-[11px] font-medium">REVERSAL_REASON – 01 current period, 02 closed period – OBA7</label><select value={form.reversal_reason} onChange={e=>setForm({...form,reversal_reason:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>01</option><option>02</option><option>03</option></select></div>
+          <div><label className="text-[11px] font-medium">ACTION – REVERSE FB08 or RESET FBRA</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>REVERSE</option><option>RESET</option></select></div>
         </div>
-        <button onClick={reverse} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Reverse FB08 / Reset FBRA – T1 REQUIRED – Reversal + Clearing Reset – NO DANGLING</button>
+        <button onClick={reverse} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Reverse FB08 / Reset FBRA – T1 REQUIRED – Reversal + Clearing Reset – NO DANGLING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – FB08: Reverses FI doc – creates reversal document with opposite debit/credit, marks original as reversed, posts reversal to universal ledger – FBRA: Resets clearing – resets cleared status of AR/AP open items, creates reversal of clearing doc – Used in month-end close + audit – T1 REQUIRED – NO DANGLING – reversal fields used in audit trail + trial balance – General ERP, SAP FB08/FBRA alias – chain: original doc → reversal doc → audit trail</div>
       </div>
 

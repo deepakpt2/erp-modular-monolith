@@ -71,7 +71,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center">⚖️</div>
           <div>
@@ -81,13 +81,13 @@ export default function Page(){
         </div>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <DbAutocomplete label="MATERIAL_CODE * – EMTC – T2" value={form.material_code} onChange={v=>setForm({...form,material_code:v})} apiUrl="/api/materials" codeField="material_code" nameField="name" placeholder="" required createUrl={`/${companyCode}/foundation/materials`} createCode="EMTC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium">FACILITY_CODE * – FAC-1000</label><input value={form.facility_code} onChange={e=>setForm({...form,facility_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">FACILITY_CODE * – FAC-1000</label><input value={form.facility_code} onChange={e=>setForm({...form,facility_code:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
           <DbAutocomplete label="VENDOR_NUMBER * – PSUC – T2" value={form.vendor_number} onChange={v=>setForm({...form,vendor_number:v})} apiUrl="/api/business-partners" codeField="account_number" nameField="display_name" placeholder="" required createUrl={`/${companyCode}/foundation/suppliers`} createCode="PSUC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium">QUOTA_QUANTITY – e.g., 100</label><input value={form.quota_quantity} onChange={e=>setForm({...form,quota_quantity:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">QUOTA_PERCENTAGE * – 0-100 – total ≤100</label><input value={form.quota_percentage} onChange={e=>setForm({...form,quota_percentage:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">VALID_FROM – e.g., 2026-09-29</label><input type="date" value={form.valid_from} onChange={e=>setForm({...form,valid_from:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" /></div>
+          <div><label className="text-[11px] font-medium">QUOTA_QUANTITY – e.g., 100</label><input value={form.quota_quantity} onChange={e=>setForm({...form,quota_quantity:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">QUOTA_PERCENTAGE * – 0-100 – total ≤100</label><input value={form.quota_percentage} onChange={e=>setForm({...form,quota_percentage:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">VALID_FROM – e.g., 2026-09-29</label><input type="date" value={form.valid_from} onChange={e=>setForm({...form,valid_from:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" /></div>
         </div>
-        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create MEQ1 Quota Arrangement – % Split Between Vendors – MRP Source – T2 GOOD – NO DANGLING</button>
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create MEQ1 Quota Arrangement – % Split Between Vendors – MRP Source – T2 GOOD – NO DANGLING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T2 GOOD – Quota Arrangement MEQ1 – material/plant/vendor quota qty/% – MRP source determination splits PR quantity by quota % – e.g., material ITM-1001 plant FAC-1000 vendor SUP-1001 50% vendor SUP-1002 50% → MRP creates 2 PRs 50/50 – Workaround if missing: manual source in PR – T2 GOOD – NO DANGLING – quota % used in MRP PR creation split + PO source determination – procurement operational excellence – General ERP SAP MEQ1 alias – chain: quota → MRP → PR split by % → PO → GR → IV</div>
       </div>
 

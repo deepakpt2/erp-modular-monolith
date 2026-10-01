@@ -11,11 +11,11 @@ export default function Page() {
       apiEndpoint="/api/tolerance-groups"
       initialForm={{ code: '', name: '', type: 'VENDOR', lower_limit: '0', upper_limit: '100', description: '' }}
       fields={[
-        { key: "code", label: "TOLERANCE_GROUP_CODE", required: true, placeholder: "VEND-01" },
-        { key: "name", label: "TOLERANCE_GROUP_NAME", required: true, placeholder: "Vendor Tolerance 100" },
-        { key: "type", label: "TYPE", type: "select", options: ['CUSTOMER', 'VENDOR', 'AP', 'AR'], placeholder: "VENDOR", description: "CUSTOMER for AR, VENDOR for AP" },
-        { key: "lower_limit", label: "LOWER_LIMIT", placeholder: "0" },
-        { key: "upper_limit", label: "UPPER_LIMIT", placeholder: "100", description: "Allows payment differences up to 100" },
+        { key: "code", label: "TOLERANCE_GROUP_CODE", required: true, placeholder: "" },
+        { key: "name", label: "TOLERANCE_GROUP_NAME", required: true, placeholder: "" },
+        { key: "type", label: "TYPE", type: "select", options: ['CUSTOMER', 'VENDOR', 'AP', 'AR'], placeholder: "", description: "CUSTOMER for AR, VENDOR for AP" },
+        { key: "lower_limit", label: "LOWER_LIMIT", placeholder: "" },
+        { key: "upper_limit", label: "UPPER_LIMIT", placeholder: "", description: "Allows payment differences up to 100" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

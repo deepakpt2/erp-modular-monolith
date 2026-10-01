@@ -11,9 +11,9 @@ export default function Page() {
       apiEndpoint="/api/mrp"
       initialForm={{ material_code: '', plant_code: '', demand_quantity: '', description: '' }}
       fields={[
-        { key: "material_code", label: "PRODUCT_CODE", required: true, type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "MAT-1000", createUrl: "/foundation/materials", createCode: "EMTC", description: "Material to plan – net requirements" },
-        { key: "plant_code", label: "PLANT_CODE", required: true, type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "FAC-1000", createUrl: "/foundation/facilities", createCode: "EFCC" },
-        { key: "demand_quantity", label: "DEMAND_QUANTITY", placeholder: "100", description: "Demand quantity – e.g., from SO" },
+        { key: "material_code", label: "PRODUCT_CODE", required: true, type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "", createUrl: "/foundation/materials", createCode: "EMTC", description: "Material to plan – net requirements" },
+        { key: "plant_code", label: "PLANT_CODE", required: true, type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "", createUrl: "/foundation/facilities", createCode: "EFCC" },
+        { key: "demand_quantity", label: "DEMAND_QUANTITY", placeholder: "", description: "Demand quantity – e.g., from SO" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

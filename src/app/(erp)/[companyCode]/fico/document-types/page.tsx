@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/document-types"
       initialForm={{ code: '', name: '', description: '', number_range_code: '' }}
       fields={[
-        { key: "code", label: "DOCUMENT_TYPE_CODE", required: true, placeholder: "SA", description: "Doc type code – e.g., SA GL, KA vendor invoice, KG vendor credit, RV customer invoice, RE vendor invoice" },
-        { key: "name", label: "DOCUMENT_TYPE_NAME", required: true, placeholder: "GL Posting SA" },
-        { key: "number_range_code", label: "NUMBER_RANGE_CODE", type: "autocomplete", apiUrl: "/api/number-ranges", dataKey: "numberRanges", codeField: "code", placeholder: "SA-", createUrl: "/fico/number-ranges", createCode: "FNRC", description: "Number range FK – defines number range for this doc type – strict usage" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "GL posting document type" },
+        { key: "code", label: "DOCUMENT_TYPE_CODE", required: true, placeholder: "", description: "Doc type code – e.g., SA GL, KA vendor invoice, KG vendor credit, RV customer invoice, RE vendor invoice" },
+        { key: "name", label: "DOCUMENT_TYPE_NAME", required: true, placeholder: "" },
+        { key: "number_range_code", label: "NUMBER_RANGE_CODE", type: "autocomplete", apiUrl: "/api/number-ranges", dataKey: "numberRanges", codeField: "code", placeholder: "", createUrl: "/fico/number-ranges", createCode: "FNRC", description: "Number range FK – defines number range for this doc type – strict usage" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
       ]}
       relatedLinks={[
         { code: "FNRC", label: "Number Ranges – required", route: "/fico/number-ranges", description: "Number Range" },

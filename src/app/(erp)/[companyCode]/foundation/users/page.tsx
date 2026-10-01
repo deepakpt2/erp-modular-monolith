@@ -13,9 +13,9 @@ export default function Page() {
         apiEndpoint="/api/users"
         initialForm={{ email: '', name: '', role: 'USER', description: '' }}
         fields={[
-          { key: "email", label: "EMAIL", required: true, placeholder: "user@company.com", description: "User email – unique – login credential – SU01" },
-          { key: "name", label: "USER_NAME", required: true, placeholder: "John Doe" },
-          { key: "role", label: "ROLE_CODE", required: true, type: "autocomplete", apiUrl: "/api/roles", dataKey: "roles", codeField: "code", placeholder: "USER", createUrl: "/foundation/roles", createCode: "FROC", description: "Role FK – must exist via FROC – controls access – S_USER_AGR" },
+          { key: "email", label: "EMAIL", required: true, placeholder: "", description: "User email – unique – login credential – SU01" },
+          { key: "name", label: "USER_NAME", required: true, placeholder: "" },
+          { key: "role", label: "ROLE_CODE", required: true, type: "autocomplete", apiUrl: "/api/roles", dataKey: "roles", codeField: "code", placeholder: "", createUrl: "/foundation/roles", createCode: "FROC", description: "Role FK – must exist via FROC – controls access – S_USER_AGR" },
           { key: "description", label: "DESCRIPTION", type: "textarea" },
         ]}
         relatedLinks={[

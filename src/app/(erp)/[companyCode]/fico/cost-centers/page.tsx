@@ -11,11 +11,11 @@ export default function Page() {
       apiEndpoint="/api/cost-centers"
       initialForm={{ code: '', name: '', company_code: '', legal_entity_code: '', control_area_code: '', description: '' }}
       fields={[
-        { key: "code", label: "COST_UNIT_CODE", required: true, placeholder: "CU-1000", description: "Cost Unit code – General ERP Cost Unit, alias Cost Center KS01 – e.g., CU-1000, CC-1000 – used as FK in expense postings, production orders, payroll – T0 BLOCKING" },
-        { key: "name", label: "COST_UNIT_NAME", required: true, placeholder: "Production Cost Unit", description: "Cost Unit name – e.g., Production, Sales, Admin – used in CCA reporting" },
-        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal Entity FK – company code – General ERP Legal Entity, alias Company Code OX02" },
-        { key: "company_code", label: "COMPANY_CODE_LEGACY", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legacy alias for legal_entity_code" },
-        { key: "control_area_code", label: "CONTROL_AREA_CODE", placeholder: "CA-1000", description: "Management Control Area – General ERP Control Area, alias Controlling Area OX06 – groups cost units" },
+        { key: "code", label: "COST_UNIT_CODE", required: true, placeholder: "", description: "Cost Unit code – General ERP Cost Unit, alias Cost Center KS01 – e.g., CU-1000, CC-1000 – used as FK in expense postings, production orders, payroll – T0 BLOCKING" },
+        { key: "name", label: "COST_UNIT_NAME", required: true, placeholder: "", description: "Cost Unit name – e.g., Production, Sales, Admin – used in CCA reporting" },
+        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal Entity FK – company code – General ERP Legal Entity, alias Company Code OX02" },
+        { key: "company_code", label: "COMPANY_CODE_LEGACY", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legacy alias for legal_entity_code" },
+        { key: "control_area_code", label: "CONTROL_AREA_CODE", placeholder: "", description: "Management Control Area – General ERP Control Area, alias Controlling Area OX06 – groups cost units" },
         { key: "description", label: "DESCRIPTION", type: "textarea", description: "Description – used in reporting – cost unit purpose" },
       ]}
       relatedLinks={[

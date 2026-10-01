@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/material-categories"
       initialForm={{ code: '', name: '', parent_code: '', description: '' }}
       fields={[
-        { key: "code", label: "PRODUCT_CATEGORY_CODE", required: true, placeholder: "CAT-SPICE", description: "Product category code – e.g., CAT-SPICE Spices, CAT-OIL Oils, CAT-PACK Packaging, CAT-FG Finished Goods, CAT-RAW Raw – category – industry standard – own name – EMGC – groups products – used in reporting, pricing, account determination" },
-        { key: "name", label: "PRODUCT_CATEGORY_NAME", required: true, placeholder: "Spices", description: "Product category name – e.g., Spices – descriptive – used in material master" },
-        { key: "parent_code", label: "PARENT_CATEGORY_CODE", type: "autocomplete", apiUrl: "/api/material-categories", dataKey: "materialCategories", codeField: "code", placeholder: "CAT-FOOD", createUrl: "/foundation/material-categories", createCode: "EMGC", description: "Parent category code – e.g., CAT-FOOD Food – hierarchy – parent_id – e.g., CAT-SPICE child of CAT-FOOD – classification hierarchy – industry standard – prod_category.parent_id" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Spices – e.g., pepper, cardamom, cloves – category for raw materials – used in FRAD revenue account determination", description: "Description – category purpose – e.g., Spices for raw materials" },
+        { key: "code", label: "PRODUCT_CATEGORY_CODE", required: true, placeholder: "", description: "Product category code – e.g., CAT-SPICE Spices, CAT-OIL Oils, CAT-PACK Packaging, CAT-FG Finished Goods, CAT-RAW Raw – category – industry standard – own name – EMGC – groups products – used in reporting, pricing, account determination" },
+        { key: "name", label: "PRODUCT_CATEGORY_NAME", required: true, placeholder: "", description: "Product category name – e.g., Spices – descriptive – used in material master" },
+        { key: "parent_code", label: "PARENT_CATEGORY_CODE", type: "autocomplete", apiUrl: "/api/material-categories", dataKey: "materialCategories", codeField: "code", placeholder: "", createUrl: "/foundation/material-categories", createCode: "EMGC", description: "Parent category code – e.g., CAT-FOOD Food – hierarchy – parent_id – e.g., CAT-SPICE child of CAT-FOOD – classification hierarchy – industry standard – prod_category.parent_id" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "", description: "Description – category purpose – e.g., Spices for raw materials" },
       ]}
       relatedLinks={[
         { code: "EMTC", label: "Product Master – EMTC – uses Category – CAT-SPICE – T0", route: "/foundation/materials", description: "Product – EMTC – category_code CAT-SPICE – groups products – used in FRAD revenue account determination and pricing" },

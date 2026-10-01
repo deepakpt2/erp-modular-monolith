@@ -22,9 +22,9 @@ export default function Page() {
           apiEndpoint="/api/payroll-run"
           initialForm={{ employee_code: '', payroll_period: '2026-05', description: '' }}
           fields={[
-            { key: "employee_code", label: "EMPLOYEE_CODE", type: "autocomplete", apiUrl: "/api/hr/employees", dataKey: "employees", codeField: "employee_number", placeholder: "EMP-1000", createUrl: "/hr/employees", createCode: "HHEC", description: "Employee code – if empty runs for all employees" },
-            { key: "payroll_period", label: "PAYROLL_PERIOD", required: true, placeholder: "2026-05", description: "Payroll period – YYYY-MM – e.g., 2026-05 for May 2026" },
-            { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Payroll run May 2026" },
+            { key: "employee_code", label: "EMPLOYEE_CODE", type: "autocomplete", apiUrl: "/api/hr/employees", dataKey: "employees", codeField: "employee_number", placeholder: "", createUrl: "/hr/employees", createCode: "HHEC", description: "Employee code – if empty runs for all employees" },
+            { key: "payroll_period", label: "PAYROLL_PERIOD", required: true, placeholder: "", description: "Payroll period – YYYY-MM – e.g., 2026-05 for May 2026" },
+            { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
           ]}
           relatedLinks={[
             { code: "HHEC", label: "Employee Master – required", route: "/hr/employees", description: "Employee Master" },
@@ -46,13 +46,13 @@ export default function Page() {
         apiEndpoint="/api/hr/employees"
         initialForm={{ employee_number: '', first_name: '', last_name: '', position: '', company_code: '', cost_center_code: '', basic_salary: '3000', description: '' }}
         fields={[
-          { key: "employee_number", label: "EMPLOYEE_CODE", required: true, placeholder: "EMP-1000" },
-          { key: "first_name", label: "FIRST_NAME", required: true, placeholder: "John" },
-          { key: "last_name", label: "LAST_NAME", placeholder: "Doe" },
-          { key: "position", label: "POSITION", placeholder: "Production Supervisor" },
-          { key: "company_code", label: "LEGAL_ENTITY_CODE", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "LE-1000", createUrl: "/foundation/legal-entities", createCode: "ELEC" },
-          { key: "cost_center_code", label: "COST_CENTER_CODE", type: "autocomplete", apiUrl: "/api/cost-centers", dataKey: "costCenters", codeField: "code", placeholder: "CC-1000", createUrl: "/fico/cost-centers", createCode: "FCCA" },
-          { key: "basic_salary", label: "BASIC_SALARY", required: true, placeholder: "3000" },
+          { key: "employee_number", label: "EMPLOYEE_CODE", required: true, placeholder: "" },
+          { key: "first_name", label: "FIRST_NAME", required: true, placeholder: "" },
+          { key: "last_name", label: "LAST_NAME", placeholder: "" },
+          { key: "position", label: "POSITION", placeholder: "" },
+          { key: "company_code", label: "LEGAL_ENTITY_CODE", type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "", createUrl: "/foundation/legal-entities", createCode: "ELEC" },
+          { key: "cost_center_code", label: "COST_CENTER_CODE", type: "autocomplete", apiUrl: "/api/cost-centers", dataKey: "costCenters", codeField: "code", placeholder: "", createUrl: "/fico/cost-centers", createCode: "FCCA" },
+          { key: "basic_salary", label: "BASIC_SALARY", required: true, placeholder: "" },
           { key: "description", label: "DESCRIPTION", type: "textarea" },
         ]}
         relatedLinks={[

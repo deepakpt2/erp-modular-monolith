@@ -84,7 +84,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center">🚚</div>
           <div>
@@ -93,14 +93,14 @@ export default function Page(){
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div><label className="text-[11px] font-medium">DELIVERY_NUMBER * – DN-xxx</label><input value={form.delivery_number} onChange={e=>setForm({...form,delivery_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">ACTION – VL02N Change or VL09 Reverse GI</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>VL02N</option><option>VL09</option></select></div>
-          <div><label className="text-[11px] font-medium">PICKING_STATUS – PICKED</label><select value={form.picking_status} onChange={e=>setForm({...form,picking_status:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm"><option>PICKED</option><option>NOT_PICKED</option></select></div>
-          <div><label className="text-[11px] font-medium">SHIPPING_POINT – DP-1000</label><input value={form.shipping_point} onChange={e=>setForm({...form,shipping_point:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">ROUTE – ROUTE-01</label><input value={form.route} onChange={e=>setForm({...form,route:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm uppercase" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">QUANTITY_PICKED – e.g., 10</label><input value={form.quantity_picked} onChange={e=>setForm({...form,quantity_picked:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">DELIVERY_NUMBER * – DN-xxx</label><input value={form.delivery_number} onChange={e=>setForm({...form,delivery_number:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">ACTION – VL02N Change or VL09 Reverse GI</label><select value={form.action} onChange={e=>setForm({...form,action:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>VL02N</option><option>VL09</option></select></div>
+          <div><label className="text-[11px] font-medium">PICKING_STATUS – PICKED</label><select value={form.picking_status} onChange={e=>setForm({...form,picking_status:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]"><option>PICKED</option><option>NOT_PICKED</option></select></div>
+          <div><label className="text-[11px] font-medium">SHIPPING_POINT – DP-1000</label><input value={form.shipping_point} onChange={e=>setForm({...form,shipping_point:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">ROUTE – ROUTE-01</label><input value={form.route} onChange={e=>setForm({...form,route:e.target.value.toUpperCase()})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] uppercase" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">QUANTITY_PICKED – e.g., 10</label><input value={form.quantity_picked} onChange={e=>setForm({...form,quantity_picked:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
         </div>
-        <button onClick={submit} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Submit VL02N Change / VL09 Reverse GI – T1 REQUIRED – PICK-PACK + REVERSE – NO DANGLING</button>
+        <button onClick={submit} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Submit VL02N Change / VL09 Reverse GI – T1 REQUIRED – PICK-PACK + REVERSE – NO DANGLING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – VL02N: Change delivery – update picking qty, batch, shipping point, route – VL03N: Display – already GET /api/delivery – VL10C: Delivery Due List – sales orders due for delivery – SO with status OPEN/CONFIRMED, delivery not yet created – VL09: Reverse Goods Issue – cancel PGI – reverse inventory + COGS posting – NO DANGLING – delivery fields used in PGI + billing + stock – General ERP, SAP VL02N/VL03N/VL10C/VL09 alias – chain: SO → delivery due VL10C → delivery create VL01N → change VL02N → PICK/PACK → PGI VL02N → reverse GI VL09 → billing VF01</div>
       </div>
 

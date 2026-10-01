@@ -115,7 +115,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center">🚚</div>
           <div>
@@ -128,7 +128,7 @@ export default function Page(){
           <DbAutocomplete label="FACILITY_CODE – EFCC – General ERP Facility – alias Plant – auto from SO if blank" value={form.facility_code} onChange={v=>setForm({...form,facility_code:v})} apiUrl="/api/facilities" codeField="code" nameField="name" placeholder="" createUrl={`/${companyCode}/foundation/facilities`} createCode="EFCC" companyCode={companyCode} />
           <DbAutocomplete label="SHIPPING_POINT – EDPC – General ERP Dispatch Point – KP01 alias – DP-1000" value={form.shipping_point} onChange={v=>setForm({...form,shipping_point:v})} apiUrl="/api/dispatch-points" codeField="code" nameField="name" placeholder="" createUrl={`/${companyCode}/foundation/dispatch-points`} createCode="EDPC" companyCode={companyCode} />
         </div>
-        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Delivery SDLC – Alias VL01N – From Sales Order – VTFL Copy Control – T0 BLOCKING</button>
+        <button onClick={create} className="mt-5 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Delivery SDLC – Alias VL01N – From Sales Order – VTFL Copy Control – T0 BLOCKING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – Delivery created from Sales Order via copy control VTFL: SO lines → DL lines – shipping point DP-1000 – next: PGI 601 posts GI 601 stock - qty - value - MAP used – GBB COGS Dr + BSX inventory Cr via OBYC valuation_class FINISHED → GBB/BSX GL – universal ledger – OMJJ 601 validated – STOCK-LEDGER updated – NO DANGLING – General ERP, SAP VL01N/VL02N alias – chain SO→DL→PGI→BL→AR→GL</div>
       </div>
 

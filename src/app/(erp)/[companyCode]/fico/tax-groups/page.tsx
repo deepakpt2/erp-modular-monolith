@@ -11,9 +11,9 @@ export default function Page() {
       apiEndpoint="/api/tax-groups"
       initialForm={{ code: '', name: '', rate: '18', description: '' }}
       fields={[
-        { key: "code", label: "TAX_GROUP_CODE", required: true, placeholder: "GST-18" },
-        { key: "name", label: "TAX_GROUP_NAME", required: true, placeholder: "GST 18%" },
-        { key: "rate", label: "TAX_RATE", required: true, placeholder: "18", description: "Tax rate percent" },
+        { key: "code", label: "TAX_GROUP_CODE", required: true, placeholder: "" },
+        { key: "name", label: "TAX_GROUP_NAME", required: true, placeholder: "" },
+        { key: "rate", label: "TAX_RATE", required: true, placeholder: "", description: "Tax rate percent" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

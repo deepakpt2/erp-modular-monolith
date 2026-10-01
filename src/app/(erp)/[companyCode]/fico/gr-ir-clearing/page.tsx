@@ -71,7 +71,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">🧹</div>
           <div>
@@ -80,7 +80,7 @@ export default function Page(){
           </div>
         </div>
         <div className="text-[11px] text-zinc-500 mb-4">F.13 – Automatic Clearing of GR/IR account – where GR qty = IV qty, clears WRX account – Without clearing, GR/IR balance never zero – audit fail – month-end requires clearing – T1 REQUIRED – NO DANGLING – GR/IR balance zero after clearing – General ERP, SAP F.13/MR11 alias</div>
-        <button onClick={clearAll} className="w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Run F.13 Auto Clearing – Clear All Candidates Where GR Qty = IV Qty – T1 REQUIRED – NO DANGLING</button>
+        <button onClick={clearAll} className="w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Run F.13 Auto Clearing – Clear All Candidates Where GR Qty = IV Qty – T1 REQUIRED – NO DANGLING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – Reads proc_goods_receipt + proc_invoice_verification where quantityReceived == quantityInvoiced and GR/IR not yet cleared – Posts clearing document: Dr WRX / Cr WRX clearing – creates clearing doc – Updates GR and IV status to CLEARED, creates universal ledger clearing entries – Used in month-end close – T1 REQUIRED – NO DANGLING – GR/IR balance zero after clearing</div>
       </div>
 

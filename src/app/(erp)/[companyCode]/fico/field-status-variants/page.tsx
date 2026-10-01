@@ -11,9 +11,9 @@ export default function Page() {
       apiEndpoint="/api/field-status-variants"
       initialForm={{ code: '', name: '', description: '' }}
       fields={[
-        { key: "code", label: "FIELD_STATUS_VARIANT_CODE", required: true, placeholder: "FFSV-1000", description: "Variant code – e.g., FFSV-1000 per guide – 1000 Standard – searchable via FSSV or OBC4" },
-        { key: "name", label: "FIELD_STATUS_VARIANT_NAME", required: true, placeholder: "Field Status Variant 1000 – India" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Field Status Variant for India – controls field status groups G001 etc – required before ELEC" },
+        { key: "code", label: "FIELD_STATUS_VARIANT_CODE", required: true, placeholder: "", description: "Variant code – e.g., FFSV-1000 per guide – 1000 Standard – searchable via FSSV or OBC4" },
+        { key: "name", label: "FIELD_STATUS_VARIANT_NAME", required: true, placeholder: "" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
       ]}
       relatedLinks={[
         { code: "FFSG", label: "Field Status Groups uses FSSV", route: "/fico/field-status-groups", description: "Field Status Groups requires Variant FFSV-1000 – OBC5" },

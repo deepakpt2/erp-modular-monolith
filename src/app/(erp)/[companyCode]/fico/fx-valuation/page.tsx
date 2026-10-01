@@ -79,7 +79,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm whitespace-pre-wrap ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center">💱</div>
           <div>
@@ -89,10 +89,10 @@ export default function Page(){
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete label="CURRENCY_CODE * – FCYC – foreign USD/EUR – to be revalued – T1" value={form.currency_code} onChange={v=>setForm({...form,currency_code:v})} apiUrl="/api/currencies" codeField="code" nameField="name" placeholder="" required createUrl={`/${companyCode}/fico/currencies`} createCode="FCYC" companyCode={companyCode} />
-          <div><label className="text-[11px] font-medium">EXCHANGE_RATE – USD→INR – e.g., 83.5 – from exchange rates</label><input value={form.exchange_rate} onChange={e=>setForm({...form,exchange_rate:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-          <div><label className="text-[11px] font-medium">VALUATION_DATE – month-end – e.g., 2026-09-30</label><input type="date" value={form.valuation_date} onChange={e=>setForm({...form,valuation_date:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" /></div>
+          <div><label className="text-[11px] font-medium">EXCHANGE_RATE – USD→INR – e.g., 83.5 – from exchange rates</label><input value={form.exchange_rate} onChange={e=>setForm({...form,exchange_rate:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+          <div><label className="text-[11px] font-medium">VALUATION_DATE – month-end – e.g., 2026-09-30</label><input type="date" value={form.valuation_date} onChange={e=>setForm({...form,valuation_date:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" /></div>
         </div>
-        <button onClick={runValuation} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Run F.05 FX Valuation – Revalue Foreign Currency Open Items – KDM via OBYC – T1 REQUIRED</button>
+        <button onClick={runValuation} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Run F.05 FX Valuation – Revalue Foreign Currency Open Items – KDM via OBYC – T1 REQUIRED</button>
         <div className="text-[10px] text-zinc-400 mt-2">T1 REQUIRED – F.05: Foreign Currency Valuation Run – At month-end, revalues foreign currency open items using exchange rates, posts variance to KDM account – Reads fin_universal_ledger where currency_code = foreign and is_reversed false – calculates totalForeign, totalLocalOld, totalLocalNew = totalForeign * exchangeRate, variance = new - old – gets KDM account via OBYC auto account lookup KDM + chart + valuation_class – posts variance to universal ledger KDM exchange diff – T1 REQUIRED – NO DANGLING – KDM fields used in FI posting – month-end close – General ERP, SAP F.05/FAGL_FC_VAL/KDM alias – chain: open items foreign → exchange rate → variance → KDM → universal ledger</div>
       </div>
 

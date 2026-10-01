@@ -61,6 +61,8 @@ const DEFAULTS: Record<string, { from: number, to: number }> = {
 export default function NumberRangesPage() {
   const params = useParams();
   const companyCode = params.companyCode as string;
+  const [uiMode, setUiMode] = React.useState<'modern' | 'classic'>('modern');
+  React.useEffect(()=>{ try{ const s=localStorage.getItem('erp-ui-mode'); if(s) setUiMode(s as any); const h=(e:any)=>setUiMode(e.detail); window.addEventListener('erp-ui-mode-change', h as any); return ()=>window.removeEventListener('erp-ui-mode-change', h as any);}catch{}},[]);
   const [ranges, setRanges] = useState<NumberRange[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -243,10 +245,10 @@ export default function NumberRangesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] p-6">
-      <div className="max-w-[1300px] mx-auto space-y-6">
+    <div className={uiMode==='modern' ? "min-h-screen bg-[#fafaf9] p-4" : "min-h-screen bg-white p-3 font-mono text-[11px]"}>
+      <div className={uiMode==='modern' ? "max-w-[1300px] mx-auto space-y-4" : "max-w-[1200px] mx-auto space-y-3"}>
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6">
+        <div className={uiMode==='modern' ? "bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "bg-white border-2 border-black p-3"}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white">FNRC</span>
@@ -301,7 +303,7 @@ export default function NumberRangesPage() {
         {/* Search */}
         <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-4 flex flex-wrap gap-3 justify-between items-center">
           <div className="flex items-center gap-2">
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search code, object_type, fiscal_year..." className="w-[320px] border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-2 focus:ring-black/10" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search code, object_type, fiscal_year..." className="w-[320px] border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black/10" />
             <span className="text-[11px] text-zinc-500">{activeTab==='ranges' ? `${filtered.length} of ${ranges.length}` : `${assignments.length} assignments`}</span>
           </div>
           <div className="flex items-center gap-2 text-[11px]">
@@ -325,7 +327,7 @@ export default function NumberRangesPage() {
                 <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">CODE * {editing?.is_locked && <span className="text-amber-600">– locked</span>}</label>
-                    <input value={form.code || ''} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} disabled={!!editing} placeholder="e.g., MAT-RAW-01, PO-01, ITEM-5DIGIT" className={`w-full border-2 rounded-lg px-2.5 py-2 text-[13px] h-[32px] ${editing ? 'bg-zinc-100 border-zinc-200' : 'border-zinc-200'}`} required={!editing} />
+                    <input value={form.code || ''} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} disabled={!!editing} placeholder="" className={`w-full border-2 rounded-lg px-2.5 py-2 text-[13px] h-[32px] ${editing ? 'bg-zinc-100 border-zinc-200' : 'border-zinc-200'}`} required={!editing} />
                     <p className="text-[10px] text-zinc-400">Unique code – e.g., MAT-RAW-01 for RAW 10000-19999, PO-01 for PO 4500000000-4599999999 – 5 to 12 digit via FROM/TO</p>
                   </div>
                   <div className="space-y-1">
@@ -338,28 +340,28 @@ export default function NumberRangesPage() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">FROM_NUMBER * {editing?.is_locked && <span className="text-amber-600">– locked</span>}</label>
-                    <input type="number" value={form.from_number || ''} onChange={e => setForm({ ...form, from_number: Number(e.target.value) })} disabled={!!editing?.is_locked} placeholder="e.g., 10000 for 5-digit, 100000000000 for 12-digit" className={`w-full border-2 rounded-lg px-2.5 py-2 text-[13px] h-[32px] ${editing?.is_locked ? 'bg-zinc-100' : 'border-zinc-200'}`} required />
+                    <input type="number" value={form.from_number || ''} onChange={e => setForm({ ...form, from_number: Number(e.target.value) })} disabled={!!editing?.is_locked} placeholder="" className={`w-full border-2 rounded-lg px-2.5 py-2 text-[13px] h-[32px] ${editing?.is_locked ? 'bg-zinc-100' : 'border-zinc-200'}`} required />
                     <p className="text-[10px] text-zinc-400">Start – numeric – 5-digit: 10000, 12-digit: 100000000000 – you set</p>
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">TO_NUMBER * – {editing?.is_locked ? 'only increase allowed' : 'end'}</label>
-                    <input type="number" value={form.to_number || ''} onChange={e => setForm({ ...form, to_number: Number(e.target.value) })} placeholder="e.g., 99999 for 5-digit, 999999999999 for 12-digit" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" required />
+                    <input type="number" value={form.to_number || ''} onChange={e => setForm({ ...form, to_number: Number(e.target.value) })} placeholder="" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" required />
                     <p className="text-[10px] text-zinc-400">End – must be ≥ current – only increase if locked – 5-digit: 99999, 12-digit: 999999999999 – next {editing ? editing.next_number : (form.current_number || 0)+1}</p>
                   </div>
                   {!editing && (
                     <div className="space-y-1">
                       <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">CURRENT_NUMBER – starts at FROM</label>
-                      <input type="number" value={form.current_number || ''} onChange={e => setForm({ ...form, current_number: Number(e.target.value) })} placeholder="e.g., 10000" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
+                      <input type="number" value={form.current_number || ''} onChange={e => setForm({ ...form, current_number: Number(e.target.value) })} placeholder="" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                       <p className="text-[10px] text-zinc-400">Current = from initially – next = current+1</p>
                     </div>
                   )}
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">FISCAL_YEAR – optional – per code+year locking</label>
-                    <input type="number" value={form.fiscal_year || ''} onChange={e => setForm({ ...form, fiscal_year: e.target.value ? Number(e.target.value) : undefined })} placeholder="e.g., 2026 – blank for year-independent" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
+                    <input type="number" value={form.fiscal_year || ''} onChange={e => setForm({ ...form, fiscal_year: e.target.value ? Number(e.target.value) : undefined })} placeholder="" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="space-y-1 md:col-span-2">
                     <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DESCRIPTION</label>
-                    <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="e.g., RAW materials 5-digit 10000-19999" rows={2} className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
+                    <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="" rows={2} className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="md:col-span-2 flex items-center gap-3">
                     <button type="submit" className="px-6 py-2.5 rounded-full bg-black text-white text-sm">{editing ? (editing.is_locked ? 'Save – only to_number increase 🔒' : 'Save') : 'Create Range – 5 to 12 digit configurable'}</button>
@@ -472,7 +474,7 @@ export default function NumberRangesPage() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">ASSIGNMENT_KEY * – e.g., RAW, FINISHED, 1000, NB</label>
-                    <input value={assignForm.assignment_key || ''} onChange={e => setAssignForm({ ...assignForm, assignment_key: e.target.value.toUpperCase() })} placeholder="e.g., RAW for material type, 1000 for company, NB for doc type" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" required list="assign-keys" />
+                    <input value={assignForm.assignment_key || ''} onChange={e => setAssignForm({ ...assignForm, assignment_key: e.target.value.toUpperCase() })} placeholder="" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" required list="assign-keys" />
                     <datalist id="assign-keys">
                       {MATERIAL_TYPES.map(m => <option key={m} value={m} />)}
                       <option value="1000" />
@@ -489,11 +491,11 @@ export default function NumberRangesPage() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">FISCAL_YEAR – optional</label>
-                    <input type="number" value={assignForm.fiscal_year || ''} onChange={e => setAssignForm({ ...assignForm, fiscal_year: e.target.value ? Number(e.target.value) : undefined })} placeholder="e.g., 2026 – blank for all years" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
+                    <input type="number" value={assignForm.fiscal_year || ''} onChange={e => setAssignForm({ ...assignForm, fiscal_year: e.target.value ? Number(e.target.value) : undefined })} placeholder="" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DESCRIPTION</label>
-                    <input value={assignForm.description || ''} onChange={e => setAssignForm({ ...assignForm, description: e.target.value })} placeholder="e.g., RAW materials use 10000-19999" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
+                    <input value={assignForm.description || ''} onChange={e => setAssignForm({ ...assignForm, description: e.target.value })} placeholder="" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="md:col-span-2 flex gap-2">
                     <button type="submit" className="px-6 py-2.5 rounded-full bg-black text-white text-sm">Create Assignment – XYZ→Material</button>

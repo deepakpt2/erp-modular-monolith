@@ -11,9 +11,9 @@ export default function Page() {
       apiEndpoint="/api/cca-report"
       initialForm={{ cost_center_code: '', from_date: '', to_date: '', description: '' }}
       fields={[
-        { key: "cost_center_code", label: "COST_CENTER_CODE", type: "autocomplete", apiUrl: "/api/cost-centers", dataKey: "costCenters", codeField: "code", placeholder: "CC-1000", createUrl: "/fico/cost-centers", createCode: "FCCA", description: "Cost center to report – if empty all cost centers" },
-        { key: "from_date", label: "FROM_DATE", placeholder: "2026-04-01", description: "From date – e.g., start of fiscal year" },
-        { key: "to_date", label: "TO_DATE", placeholder: "2026-05-31", description: "To date" },
+        { key: "cost_center_code", label: "COST_CENTER_CODE", type: "autocomplete", apiUrl: "/api/cost-centers", dataKey: "costCenters", codeField: "code", placeholder: "", createUrl: "/fico/cost-centers", createCode: "FCCA", description: "Cost center to report – if empty all cost centers" },
+        { key: "from_date", label: "FROM_DATE", placeholder: "", description: "From date – e.g., start of fiscal year" },
+        { key: "to_date", label: "TO_DATE", placeholder: "", description: "To date" },
         { key: "description", label: "DESCRIPTION", type: "textarea" },
       ]}
       relatedLinks={[

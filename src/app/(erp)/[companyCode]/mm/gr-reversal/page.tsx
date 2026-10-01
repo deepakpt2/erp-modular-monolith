@@ -11,9 +11,9 @@ export default function Page() {
       apiEndpoint="/api/gr-reversal"
       initialForm={{ original_gr_code: '', reason: '', posting_date: '' }}
       fields={[
-        { key: "original_gr_code", label: "ORIGINAL_GR_CODE", required: true, placeholder: "GR-5000000001", description: "Original GR to reverse" },
-        { key: "reason", label: "REASON", required: true, placeholder: "Wrong quantity" },
-        { key: "posting_date", label: "POSTING_DATE", required: true, placeholder: "2026-05-15", description: "Posting date – must be in open period" },
+        { key: "original_gr_code", label: "ORIGINAL_GR_CODE", required: true, placeholder: "", description: "Original GR to reverse" },
+        { key: "reason", label: "REASON", required: true, placeholder: "" },
+        { key: "posting_date", label: "POSTING_DATE", required: true, placeholder: "", description: "Posting date – must be in open period" },
       ]}
       relatedLinks={[
         { code: "IGRC", label: "Inventory Receipt – original", route: "/mm/gr", description: "GR 101" },

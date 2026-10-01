@@ -210,34 +210,34 @@ export default function Page(){
           <div>• ELIKZ – delivery_completed flag – PO line delivery_completed true when fully received – BOOL_AND delivery_completed – all_elikz – T0 – controls PO closure</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div><div className="text-[9px] text-zinc-500">FACILITY * – EFCC OX10 – plant – 1000</div><input value={facilityCode} onChange={e=>setFacilityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="1000" /></div>
-          <div><div className="text-[9px] text-zinc-500">VENDOR * – PSUC XK01 – VEND-1000 – T0</div><input value={partnerNumber} onChange={e=>setPartnerNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="VEND-1000" /></div>
-          <div><div className="text-[9px] text-zinc-500">LEGAL_ENTITY * – ELEC OX02 – {companyCode}</div><input value={legalEntityCode} onChange={e=>setLegalEntityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder={companyCode} /></div>
-          <div><div className="text-[9px] text-zinc-500">PR_NUMBER – PPRC – optional – PR-10000001</div><input value={prNumber} onChange={e=>setPrNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="PR-10000001" /></div>
+          <div><div className="text-[9px] text-zinc-500">FACILITY * – EFCC OX10 – plant – 1000</div><input value={facilityCode} onChange={e=>setFacilityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">VENDOR * – PSUC XK01 – VEND-1000 – T0</div><input value={partnerNumber} onChange={e=>setPartnerNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">LEGAL_ENTITY * – ELEC OX02 – {companyCode}</div><input value={legalEntityCode} onChange={e=>setLegalEntityCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">PR_NUMBER – PPRC – optional – PR-10000001</div><input value={prNumber} onChange={e=>setPrNumber(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
           <div><div className="text-[9px] text-zinc-500">DELIVERY_DATE * – OB52</div><input type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)} className="w-full border-2 border-black px-1 py-1" /></div>
-          <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="INR" /></div>
-          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERM_CODE – FAPT – NT30 – due calc – wiring</div><input value={paymentTermCode} onChange={e=>setPaymentTermCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="NT30" /></div>
-          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERMS_DAYS – FAPT – 30 – derived from code NT30</div><input value={paymentTermsDays} onChange={e=>setPaymentTermsDays(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="30" /></div>
-          <div><div className="text-[9px] text-zinc-500">INCOTERMS – EXW/FOB/CIF</div><input value={incoterms} onChange={e=>setIncoterms(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="EXW" /></div>
-          <div className="col-span-1"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder={`PO for ${partnerNumber} – ME21N – ${companyCode}`} /></div>
+          <div><div className="text-[9px] text-zinc-500">CURRENCY – FCYC – INR</div><input value={currencyCode} onChange={e=>setCurrencyCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERM_CODE – FAPT – NT30 – due calc – wiring</div><input value={paymentTermCode} onChange={e=>setPaymentTermCode(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">PAYMENT_TERMS_DAYS – FAPT – 30 – derived from code NT30</div><input value={paymentTermsDays} onChange={e=>setPaymentTermsDays(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
+          <div><div className="text-[9px] text-zinc-500">INCOTERMS – EXW/FOB/CIF</div><input value={incoterms} onChange={e=>setIncoterms(e.target.value.toUpperCase())} className="w-full border-2 border-black px-1 py-1 uppercase" placeholder="" /></div>
+          <div className="col-span-1"><div className="text-[9px] text-zinc-500">HEADER_TEXT – BKTXT</div><input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="w-full border-2 border-black px-1 py-1" placeholder="" /></div>
         </div>
         <div className="mt-3 border-2 border-black p-2 bg-zinc-50">
           <div className="font-bold">LINES – {lines.length} – Material + Qty + UoM + Price + Freight + Customs + Tax + TaxCode + OverTol + UnderTol + SLOC + Item Text – EMTC + EUOC + EILC + FCOC + FTXC – INFO RECORD ME11 – ORG WIRED – VERSION HISTORY</div>
           {lines.map((line, idx)=>(
             <div key={idx} className="flex gap-1 items-center border bg-white p-1 mt-1">
               <span className="font-bold">{(idx+1)*10}</span>
-              <input value={line.item_number} onChange={e=>updateLine(idx,'item_number',e.target.value.toUpperCase())} className="w-[80px] border px-1 uppercase" placeholder="10000001" />
-              <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-[40px] border px-1" placeholder="Qty" />
-              <input value={line.uom_code} onChange={e=>updateLine(idx,'uom_code',e.target.value.toUpperCase())} className="w-[30px] border px-1 uppercase" placeholder="PC" />
-              <input value={line.unit_price} onChange={e=>updateLine(idx,'unit_price',e.target.value)} className="w-[50px] border px-1" placeholder="Price" />
-              <input value={line.freight_per_unit} onChange={e=>updateLine(idx,'freight_per_unit',e.target.value)} className="w-[40px] border px-1" placeholder="Freight" />
-              <input value={line.customs_per_unit} onChange={e=>updateLine(idx,'customs_per_unit',e.target.value)} className="w-[40px] border px-1" placeholder="Customs" />
-              <input value={line.tax_per_unit} onChange={e=>updateLine(idx,'tax_per_unit',e.target.value)} className="w-[30px] border px-1" placeholder="Tax" />
-              <input value={line.tax_code} onChange={e=>updateLine(idx,'tax_code',e.target.value.toUpperCase())} className="w-[50px] border px-1 uppercase" placeholder="GST18" />
-              <input value={line.overdelivery_tolerance_percent} onChange={e=>updateLine(idx,'overdelivery_tolerance_percent',e.target.value)} className="w-[35px] border px-1" placeholder="Over10%" />
-              <input value={line.underdelivery_tolerance_percent} onChange={e=>updateLine(idx,'underdelivery_tolerance_percent',e.target.value)} className="w-[35px] border px-1" placeholder="Under10%" />
-              <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[40px] border px-1 uppercase" placeholder="SL01" />
-              <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border px-1" placeholder="Item text" />
+              <input value={line.item_number} onChange={e=>updateLine(idx,'item_number',e.target.value.toUpperCase())} className="w-[80px] border px-1 uppercase" placeholder="" />
+              <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-[40px] border px-1" placeholder="" />
+              <input value={line.uom_code} onChange={e=>updateLine(idx,'uom_code',e.target.value.toUpperCase())} className="w-[30px] border px-1 uppercase" placeholder="" />
+              <input value={line.unit_price} onChange={e=>updateLine(idx,'unit_price',e.target.value)} className="w-[50px] border px-1" placeholder="" />
+              <input value={line.freight_per_unit} onChange={e=>updateLine(idx,'freight_per_unit',e.target.value)} className="w-[40px] border px-1" placeholder="" />
+              <input value={line.customs_per_unit} onChange={e=>updateLine(idx,'customs_per_unit',e.target.value)} className="w-[40px] border px-1" placeholder="" />
+              <input value={line.tax_per_unit} onChange={e=>updateLine(idx,'tax_per_unit',e.target.value)} className="w-[30px] border px-1" placeholder="" />
+              <input value={line.tax_code} onChange={e=>updateLine(idx,'tax_code',e.target.value.toUpperCase())} className="w-[50px] border px-1 uppercase" placeholder="" />
+              <input value={line.overdelivery_tolerance_percent} onChange={e=>updateLine(idx,'overdelivery_tolerance_percent',e.target.value)} className="w-[35px] border px-1" placeholder="" />
+              <input value={line.underdelivery_tolerance_percent} onChange={e=>updateLine(idx,'underdelivery_tolerance_percent',e.target.value)} className="w-[35px] border px-1" placeholder="" />
+              <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[40px] border px-1 uppercase" placeholder="" />
+              <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border px-1" placeholder="" />
               <button onClick={()=>removeLine(idx)} className="border bg-red-50 px-1">X</button>
             </div>
           ))}
@@ -282,7 +282,7 @@ export default function Page(){
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">🛒</div>
           <div>
@@ -299,7 +299,7 @@ export default function Page(){
             apiUrl="/api/facilities"
             codeField="code"
             nameField="name"
-            placeholder="1000"
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/facilities`}
             createCode="EFCC"
@@ -312,7 +312,7 @@ export default function Page(){
             apiUrl="/api/business-partners?role=VENDOR"
             codeField="account_number"
             nameField="display_name"
-            placeholder="VEND-1000"
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/suppliers`}
             createCode="PSUC"
@@ -325,7 +325,7 @@ export default function Page(){
             apiUrl="/api/legal-entities"
             codeField="code"
             nameField="name"
-            placeholder={companyCode}
+            placeholder=""
             required
             createUrl={`/${companyCode}/foundation/legal-entities`}
             createCode="ELEC"
@@ -338,14 +338,14 @@ export default function Page(){
             apiUrl="/api/pr"
             codeField="pr_number"
             nameField="pr_number"
-            placeholder="PR-10000001"
+            placeholder=""
             createUrl={`/${companyCode}/mm/pr`}
             createCode="PPRC"
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DELIVERY_DATE * – OB52 – F_BKPF_BUP</label>
-            <input type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DELIVERY_DATE * – OB52 – F_BKPF_BUP</label>
+            <input type="date" value={deliveryDate} onChange={e=>setDeliveryDate(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" />
           </div>
           <DbAutocomplete
             label="CURRENCY – FCYC OY03 – INR"
@@ -354,7 +354,7 @@ export default function Page(){
             apiUrl="/api/currencies"
             codeField="code"
             nameField="name"
-            placeholder="INR"
+            placeholder=""
             createUrl={`/${companyCode}/fico/currencies`}
             createCode="FCYC"
             companyCode={companyCode}
@@ -366,27 +366,27 @@ export default function Page(){
             apiUrl="/api/payment-terms"
             codeField="code"
             nameField="name"
-            placeholder="NT30"
+            placeholder=""
             createUrl={`/${companyCode}/fico/payment-terms`}
             createCode="FAPT"
             companyCode={companyCode}
           />
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">PAYMENT_TERMS_DAYS – FAPT – 30 – derived from code NT30 – due calc</label>
-            <input value={paymentTermsDays} onChange={e=>setPaymentTermsDays(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="30" />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">PAYMENT_TERMS_DAYS – FAPT – 30 – derived from code NT30 – due calc</label>
+            <input value={paymentTermsDays} onChange={e=>setPaymentTermsDays(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" placeholder="" />
             <p className="text-[10px] text-zinc-400 mt-1">FAPT – days derived from payment_term_code NT30 – due = posting + days – e.g., NT30 30 days due = posting +30 – discount if 2-10-N30 – wiring to fin_payment_term</p>
           </div>
           <div>
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">INCOTERMS – EXW/FOB/CIF – delivery terms – incoterms</label>
-            <select value={incoterms} onChange={e=>setIncoterms(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black">
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">INCOTERMS – EXW/FOB/CIF – delivery terms – incoterms</label>
+            <select value={incoterms} onChange={e=>setIncoterms(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black">
               <option value="EXW">EXW – Ex Works</option>
               <option value="FOB">FOB – Free On Board</option>
               <option value="CIF">CIF – Cost Insurance Freight</option>
             </select>
           </div>
           <div className="md:col-span-4">
-            <label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">HEADER_TEXT – BKTXT</label>
-            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder={`PO for ${partnerNumber} – PPOC ME21N – ${companyCode} – facility ${facilityCode}`} />
+            <label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">HEADER_TEXT – BKTXT</label>
+            <input value={headerText} onChange={e=>setHeaderText(e.target.value)} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black" placeholder="" />
           </div>
         </div>
 
@@ -408,7 +408,7 @@ export default function Page(){
                       apiUrl="/api/materials"
                       codeField="item_number"
                       nameField="description"
-                      placeholder="10000001"
+                      placeholder=""
                       required
                       createUrl={`/${companyCode}/foundation/materials`}
                       createCode="EMTC"
@@ -416,7 +416,7 @@ export default function Page(){
                     />
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Qty *</label>
-                      <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="10" />
+                      <input value={line.quantity} onChange={e=>updateLine(idx,'quantity',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                     </div>
                     <DbAutocomplete
                       label="UoM – EUOC"
@@ -425,23 +425,23 @@ export default function Page(){
                       apiUrl="/api/uom"
                       codeField="code"
                       nameField="name"
-                      placeholder="PC"
+                      placeholder=""
                       createUrl={`/${companyCode}/foundation/uom`}
                       createCode="EUOC"
                       companyCode={companyCode}
                     />
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Unit Price – ME11 auto if 0</label>
-                      <input value={line.unit_price} onChange={e=>updateLine(idx,'unit_price',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="100" />
+                      <input value={line.unit_price} onChange={e=>updateLine(idx,'unit_price',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                       <p className="text-[9px] text-zinc-400">ME11 – if 0 auto lookup info record</p>
                     </div>
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Freight /unit</label>
-                      <input value={line.freight_per_unit} onChange={e=>updateLine(idx,'freight_per_unit',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="0" />
+                      <input value={line.freight_per_unit} onChange={e=>updateLine(idx,'freight_per_unit',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                     </div>
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Customs /unit</label>
-                      <input value={line.customs_per_unit} onChange={e=>updateLine(idx,'customs_per_unit',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="0" />
+                      <input value={line.customs_per_unit} onChange={e=>updateLine(idx,'customs_per_unit',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                     </div>
                     <DbAutocomplete
                       label="Tax Code – FTXC – GST18"
@@ -450,24 +450,24 @@ export default function Page(){
                       apiUrl="/api/tax-codes"
                       codeField="code"
                       nameField="description"
-                      placeholder="GST18"
+                      placeholder=""
                       createUrl={`/${companyCode}/fico/tax-codes`}
                       createCode="FTXC"
                       companyCode={companyCode}
                     />
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Over Tol % – overdelivery</label>
-                      <input value={line.overdelivery_tolerance_percent} onChange={e=>updateLine(idx,'overdelivery_tolerance_percent',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="10" />
+                      <input value={line.overdelivery_tolerance_percent} onChange={e=>updateLine(idx,'overdelivery_tolerance_percent',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                     </div>
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Under Tol % – underdelivery</label>
-                      <input value={line.underdelivery_tolerance_percent} onChange={e=>updateLine(idx,'underdelivery_tolerance_percent',e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" placeholder="10" />
+                      <input value={line.underdelivery_tolerance_percent} onChange={e=>updateLine(idx,'underdelivery_tolerance_percent',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                     </div>
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">SLOC + Texts + Version History</label>
                       <div className="flex gap-1">
-                        <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[60px] border rounded-lg px-2 py-1.5 text-sm uppercase" placeholder="SL01" />
-                        <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border rounded-lg px-2 py-1.5 text-sm" placeholder="Item text" />
+                        <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[60px] border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px] uppercase" placeholder="" />
+                        <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                         <button onClick={()=>removeLine(idx)} className="px-2 py-1 rounded-lg border bg-red-50 text-xs">X</button>
                       </div>
                     </div>
@@ -479,7 +479,7 @@ export default function Page(){
           <p className="text-[10px] text-zinc-400 mt-2">Info Record ME11 – if unit_price 0, auto lookup proc_info_record vendor-material valid_from valid_to → price – T2 – e.g., VEND-1000 + 10000001 → 100 – used in PO – landed cost relevant – total_per_unit = unit_price + freight + customs + tax – total_amount sum qty*unit_price – total_landed_cost sum qty*total_per_unit – ELIKZ delivery_completed – BOOL_AND – all_elikz</p>
         </div>
 
-        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">
           Create PO – ME21N – PPOC – T0 BLOCKING – Posting Period K OB52 – Number Range PO 4500000000 – Info Record ME11 – Payment Terms FAPT – Workflow ME28 – ELIKZ – {elapsed>0?`${elapsed}s elapsed – after 10s auto background`:''}
         </button>
         <p className="text-[10px] text-zinc-400 mt-2 text-center">PO requires facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + payment terms FAPT + info record ME11 + procurement division EPDC + buyer team EBTC – posting period K OB52 must be open – number range PO 4500000000 numeric only assignment per company error_and_extend – info record auto price if 0 – payment terms due calc – workflow auto-start ME28 SBWP – ELIKZ delivery_completed – flow PR→PO→GR→IV→Payment – T0 BLOCKING – NO DANGLING – org wired</p>

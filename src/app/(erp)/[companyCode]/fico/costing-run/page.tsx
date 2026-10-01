@@ -11,9 +11,9 @@ export default function Page() {
       apiEndpoint="/api/costing-run"
       initialForm={{ plant_code: '', material_code: '', description: '' }}
       fields={[
-        { key: "plant_code", label: "PLANT_CODE", required: true, type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "FAC-1000", createUrl: "/foundation/facilities", createCode: "EFCC", description: "Plant code – facility where BOM is defined" },
-        { key: "material_code", label: "MATERIAL_CODE", type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "MAT-1000", createUrl: "/foundation/materials", createCode: "EMTC", description: "Material to cost – finished product – if empty costs all materials in plant" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "Costing run for April 2026" },
+        { key: "plant_code", label: "PLANT_CODE", required: true, type: "autocomplete", apiUrl: "/api/facilities", dataKey: "facilities", codeField: "code", placeholder: "", createUrl: "/foundation/facilities", createCode: "EFCC", description: "Plant code – facility where BOM is defined" },
+        { key: "material_code", label: "MATERIAL_CODE", type: "autocomplete", apiUrl: "/api/materials", dataKey: "materials", codeField: "item_number", placeholder: "", createUrl: "/foundation/materials", createCode: "EMTC", description: "Material to cost – finished product – if empty costs all materials in plant" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
       ]}
       relatedLinks={[
         { code: "MBMC", label: "BOM – required", route: "/pp/bom", description: "BOM with components" },

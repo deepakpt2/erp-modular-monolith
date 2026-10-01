@@ -106,7 +106,7 @@ export default function Page(){
   const modernContent = (
     <div className="max-w-[1600px] mx-auto space-y-6">
       {msg && <div className={`rounded-2xl p-4 text-sm ${msg.startsWith('✅') ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>{msg}</div>}
-      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center">🔄</div>
           <div>
@@ -119,24 +119,24 @@ export default function Page(){
           <DbAutocomplete label="FACILITY_CODE * – General ERP Facility" value={header.facility_code} onChange={v=>setHeader({...header,facility_code:v})} apiUrl="/api/facilities" codeField="code" nameField="name" placeholder="" required createUrl={`/${companyCode}/foundation/facilities`} createCode="EFCC" companyCode={companyCode} />
           <DbAutocomplete label="BOM_CODE – Links BOM+Routing – General ERP" value={header.bom_code} onChange={v=>setHeader({...header,bom_code:v})} apiUrl="/api/bom" codeField="bom_number" nameField="material_number" placeholder="" createUrl={`/${companyCode}/pp/bom`} createCode="MBMC" companyCode={companyCode} />
         </div>
-        <div className="mt-4"><label className="text-[11px] font-medium text-zinc-700 uppercase tracking-widest">DESCRIPTION – General ERP</label><input value={header.description} onChange={e=>setHeader({...header,description:e.target.value})} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
+        <div className="mt-4"><label className="text-[11px] font-medium uppercase tracking-widest text-zinc-600">DESCRIPTION – General ERP</label><input value={header.description} onChange={e=>setHeader({...header,description:e.target.value})} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
 
         <div className="mt-6 bg-zinc-50 rounded-2xl border border-zinc-200 p-4">
           <h4 className="text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-3">Operations – T0 BLOCKING – General ERP Manufacturing Steps – Copied to Manufacturing Order – NO DANGLING – Used in Capacity + Costing + Confirmation CO11N</h4>
           {operations.map((op,idx)=>(
             <div key={idx} className="grid grid-cols-1 md:grid-cols-6 gap-3 mt-3 bg-white rounded-xl border p-3">
-              <div><label className="text-[11px] font-medium">OP No *</label><input value={op.operation_number} onChange={e=>{const n=[...operations]; n[idx].operation_number=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
+              <div><label className="text-[11px] font-medium">OP No *</label><input value={op.operation_number} onChange={e=>{const n=[...operations]; n[idx].operation_number=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
               <DbAutocomplete label={`Work Center * – MWCC`} value={op.work_center_code} onChange={v=>{const n=[...operations]; n[idx].work_center_code=v; setOperations(n);}} apiUrl="/api/work-centers" codeField="code" nameField="name" placeholder="" required createUrl={`/${companyCode}/pp/work-centers`} createCode="MWCC" companyCode={companyCode} />
-              <div><label className="text-[11px] font-medium">Description</label><input value={op.description} onChange={e=>{const n=[...operations]; n[idx].description=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-              <div><label className="text-[11px] font-medium">Setup min</label><input value={op.setup_time} onChange={e=>{const n=[...operations]; n[idx].setup_time=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-              <div><label className="text-[11px] font-medium">Machine min</label><input value={op.machine_time} onChange={e=>{const n=[...operations]; n[idx].machine_time=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div>
-              <div className="flex gap-2"><div className="flex-1"><label className="text-[11px] font-medium">Labor min</label><input value={op.labor_time} onChange={e=>{const n=[...operations]; n[idx].labor_time=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-xl border border-zinc-200 px-3 py-2.5 text-sm" placeholder="" /></div><button onClick={()=>setOperations(operations.filter((_,i)=>i!==idx))} className="mt-6 h-10 px-3 rounded-xl border bg-red-50 text-xs">Remove</button></div>
+              <div><label className="text-[11px] font-medium">Description</label><input value={op.description} onChange={e=>{const n=[...operations]; n[idx].description=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+              <div><label className="text-[11px] font-medium">Setup min</label><input value={op.setup_time} onChange={e=>{const n=[...operations]; n[idx].setup_time=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+              <div><label className="text-[11px] font-medium">Machine min</label><input value={op.machine_time} onChange={e=>{const n=[...operations]; n[idx].machine_time=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div>
+              <div className="flex gap-2"><div className="flex-1"><label className="text-[11px] font-medium">Labor min</label><input value={op.labor_time} onChange={e=>{const n=[...operations]; n[idx].labor_time=e.target.value; setOperations(n);}} className="mt-1.5 w-full rounded-lg border border-zinc-200 px-2.5 py-2 text-[13px] h-[32px]" placeholder="" /></div><button onClick={()=>setOperations(operations.filter((_,i)=>i!==idx))} className="mt-6 h-10 px-3 rounded-xl border bg-red-50 text-xs">Remove</button></div>
             </div>
           ))}
           <button onClick={()=>setOperations([...operations,{operation_number: String((operations.length+1)*10).padStart(4,'0'), work_center_code: "", description: "", setup_time: "10", machine_time: "30", labor_time: "30"}])} className="mt-4 px-4 py-2 rounded-full border bg-white text-xs hover:bg-zinc-50">+ Add Operation – General ERP – alias CA02 operation</button>
         </div>
 
-        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 py-3 text-sm font-medium transition-colors">Create Manufacturing Routing MRTC – Alias CA01 – General ERP – T0 BLOCKING</button>
+        <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Manufacturing Routing MRTC – Alias CA01 – General ERP – T0 BLOCKING</button>
         <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – Routing operations copied to Manufacturing Order MMOC (alias CO01) on creation – used in capacity CM01 + costing CK40N + confirmation CO11N – NO DANGLING – General ERP terminology, SAP CA01 kept as alias</div>
       </div>
 
