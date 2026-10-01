@@ -199,6 +199,12 @@ export default function NavigatorPage() {
       icon: '🛡️',
       module: 'FICO',
       children: [
+        { label: 'Assign Company Code to Chart of Accounts (OB62)', code: 'FLC2', route: `/fico/assignments/chart-of-accounts` },
+        { label: 'Assign Company Code to Fiscal Year Variant (OB37)', code: 'FLFA', route: `/fico/assignments/fiscal-year-variant` },
+        { label: 'Assign Company Code to Credit Control Area (OB38)', code: 'FLCA', route: `/fico/assignments/credit-control-area` },
+        { label: 'Assign Company Code to Posting Period Variant (OBBP)', code: 'FLPA', route: `/fico/assignments/posting-period-variant` },
+        { label: 'Assign Company Code to Field Status Variant (OBC5)', code: 'FFSA', route: `/fico/assignments/field-status-variant` },
+        { label: 'Assign Company Code to Controlling Area (OX19)', code: 'FCCA_ASSIGN', route: `/fico/assignments/controlling-area` },
         { label: 'Field Status Variant', code: 'FFSV', route: `/fico/field-status-variants` },
         { label: 'Field Status Groups', code: 'FFSG', route: `/fico/field-status-groups` },
         { label: 'Tolerance Groups – General Ledger', code: 'OBA0', route: `/fico/tolerance-groups-gl` },
@@ -216,6 +222,9 @@ export default function NavigatorPage() {
       icon: '📥',
       module: 'MM',
       children: [
+        { label: 'Assign Plant to Company Code (OX18)', code: 'EFLA', route: `/mm/assignments/plant-company-code` },
+        { label: 'Assign Purchasing Org to Company Code (OX01)', code: 'EPCA', route: `/mm/assignments/purchasing-org-company-code` },
+        { label: 'Assign Purchasing Org to Plant (OX17)', code: 'EPPA', route: `/mm/assignments/purchasing-org-plant` },
         { label: 'Purchase Requisition', code: 'PPRC', route: `/mm/pr` },
         { label: 'Purchase Order', code: 'PPOC', route: `/mm/po` },
         { label: 'Goods Receipt', code: 'IGRC', route: `/mm/gr` },
@@ -238,6 +247,9 @@ export default function NavigatorPage() {
       icon: '🛒',
       module: 'SD',
       children: [
+        { label: 'Assign Sales Org to Company Code (OVX3)', code: 'ESCA', route: `/sd/assignments/sales-org-company-code` },
+        { label: 'Assign Division to Sales Org (OVX6)', code: 'EDSA', route: `/sd/assignments/division-sales` },
+        { label: 'Assign Distribution Channel to Sales Org (OVX8)', code: 'ECSA_ASSIGN', route: `/sd/assignments/channel-sales` },
         { label: 'Sales Order', code: 'SSOC', route: `/sales` },
         { label: 'Outbound Delivery', code: 'SDLC', route: `/sd/delivery` },
         { label: 'Outbound Delivery Change', code: 'SDLE', route: `/sd/delivery-change` },

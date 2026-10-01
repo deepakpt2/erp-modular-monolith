@@ -28,9 +28,21 @@ export interface PagePermission {
 }
 
 export const PAGE_PERMISSIONS: PagePermission[] = [
-  // ========== ENTERPRISE STRUCTURE – IMG config – SPRO – OX02/OX10 etc – ADMIN only per SAP standard ==========
-  { code: 'ECGC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Company Group – OX02 – ECGC – ENTERPRISE_CONFIG – SAP standard IMG – ADMIN only – enterprise structure' },
-  { code: 'ECGA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Assign Company Group to Legal Entity – OX16 – ECGA – ENTERPRISE_CONFIG' },
+  // ========== ENTERPRISE STRUCTURE – IMG config – SPRO – Custom Code primary, SAP T-code alias ==========
+  { code: 'ECGC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Define Company Group – ECGC (legacy OX15/OX02) – ENTERPRISE_CONFIG' },
+  { code: 'ECGA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Assign Company Group to Legal Entity – ECGA (legacy OX16) – ENTERPRISE_CONFIG' },
+  { code: 'FLC2', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FICO', description: 'Assign Company Code to Chart of Accounts – FLC2 (legacy OB62)' },
+  { code: 'FLFA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FICO', description: 'Assign Fiscal Year Variant to Company Code – FLFA (legacy OB37)' },
+  { code: 'FLCA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FICO', description: 'Assign Company Code to Credit Control Area – FLCA (legacy OB38)' },
+  { code: 'FLPA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FICO', description: 'Assign Posting Period Variant to Company Code – FLPA (legacy OBBP)' },
+  { code: 'FFSA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FICO', description: 'Assign Field Status Variant to Company Code – FFSA (legacy OBC5)' },
+  { code: 'FCCA_ASSIGN', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FICO', description: 'Assign Company Code to Controlling Area – FCCA_ASSIGN (legacy OX19)' },
+  { code: 'EFLA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'PURCHASER'], module: 'MM', description: 'Assign Plant to Company Code – EFLA (legacy OX18)' },
+  { code: 'EPCA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'PURCHASER'], module: 'MM', description: 'Assign Purchasing Org to Company Code – EPCA (legacy OX01)' },
+  { code: 'EPPA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'PURCHASER'], module: 'MM', description: 'Assign Purchasing Org to Plant – EPPA (legacy OX17)' },
+  { code: 'ESCA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'SALES'], module: 'SD', description: 'Assign Sales Org to Company Code – ESCA (legacy OVX3)' },
+  { code: 'EDSA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'SALES'], module: 'SD', description: 'Assign Division to Sales Org – EDSA (legacy OVX6)' },
+  { code: 'ECSA_ASSIGN', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'SALES'], module: 'SD', description: 'Assign Distribution Channel to Sales Org – ECSA_ASSIGN (legacy OVX8)' },
   { code: 'ELEC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Legal Entity – OX02 – ELEC – ENTERPRISE_CONFIG – SAP standard IMG – ADMIN only' },
   { code: 'EFCC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Facility – OX02 – EFCC – ENTERPRISE_CONFIG – SAP standard IMG – ADMIN only – plant' },
   { code: 'EILC', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'WAREHOUSE', 'MATERIAL_MANAGER'], module: 'FOUNDATION', description: 'Inventory Location – OX09 – EILC – ENTERPRISE_CONFIG – SAP standard – ADMIN/WAREHOUSE – storage location' },

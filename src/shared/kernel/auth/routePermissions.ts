@@ -104,6 +104,7 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
 
   { pattern: /^\/api\/company-groups/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], description: 'Company Groups – OX02 – ECGC – ENTERPRISE_CONFIG – ADMIN only – enterprise structure – MDM NOT allowed' },
   { pattern: /^\/api\/company-group-assignment/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], description: 'Company Group Assignment – OX16 – ECGA – ENTERPRISE_CONFIG' },
+  { pattern: /^\/api\/assignments\//, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'PURCHASER', 'SALES'], description: 'Enterprise Customizing Assignments' },
   { pattern: /^\/api\/legal-entities/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], description: 'Legal Entities – OX02 – ELEC – ENTERPRISE_CONFIG – ADMIN only – MDM NOT allowed' },
   { pattern: /^\/api\/facilities/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], description: 'Facilities – OX02 – EFCC – ENTERPRISE_CONFIG – ADMIN only – plant – MDM NOT allowed' },
   { pattern: /^\/api\/company-codes/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], description: 'Company Codes – OX02 – MATERIAL_CREATE – ADMIN only – MDM NOT allowed' },

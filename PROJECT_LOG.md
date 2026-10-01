@@ -812,7 +812,30 @@ Once you confirm, I will:
   - Added dedicated UI pages for transaction `ECGA` (SAP alias `OX16`):
     - `/{companyCode}/foundation/company-group-assignment`
     - Dedicated subroutes `/change`, `/list`, and `/display`.
-  - Registered `ECGA` / `OX16` in `functions.ts`, Navigator tree, and permission configs (`pagePermissions.ts`, `frontendPermissions.ts`, `routePermissions.ts`).
+**SAP SPRO Enterprise Structure Assignment Architecture (2026-10-01):**
+- Standardized all Enterprise Structure organizational units to pure definition and migrated all cross-unit links to dedicated SAP SPRO assignment transactions:
+  1. **FI / CO Assignment Transactions:**
+     - `OB62` (`/fico/assignments/chart-of-accounts`): Assign Company Code to Chart of Accounts (`org_company_code_coa`).
+     - `OB37` (`/fico/assignments/fiscal-year-variant`): Assign Company Code to Fiscal Year Variant (`org_company_code_fyv`).
+     - `OB38` (`/fico/assignments/credit-control-area`): Assign Company Code to Credit Control Area (`org_company_code_cca`).
+     - `OBBP` (`/fico/assignments/posting-period-variant`): Assign Company Code to Posting Period Variant (`org_company_code_posting_period`).
+     - `OBC5` (`/fico/assignments/field-status-variant`): Assign Company Code to Field Status Variant (`org_company_code_field_status`).
+     - `OX19` (`/fico/assignments/controlling-area`): Assign Company Code to Controlling Area (`org_company_code_controlling_area`).
+  2. **Logistics MM / SD Assignment Transactions:**
+     - `OX18` (`/mm/assignments/plant-company-code`): Assign Plant to Company Code (`org_plant_company_code`).
+     - `OX01` (`/mm/assignments/purchasing-org-company-code`): Assign Purchasing Organization to Company Code (`org_purchasing_org_company_code`).
+     - `OX17` (`/mm/assignments/purchasing-org-plant`): Assign Purchasing Organization to Plant (`org_purchasing_org_plant`).
+     - `OVX3` (`/sd/assignments/sales-org-company-code`): Assign Sales Organization to Company Code (`org_sales_org_company_code`).
+     - `OVX6` (`/sd/assignments/division-sales`): Assign Division to Sales Organization (`org_division_sales_org`).
+     - `OVX8` (`/sd/assignments/channel-sales`): Assign Distribution Channel to Sales Organization (`org_channel_sales_org`).
+  3. **Interactive Table System (`src/shared/ui/sap-assignment-table.tsx`):**
+     - Single unified interactive maintenance table without awkward separate `/change`, `/list`, `/display` subroutes.
+     - Supports inline row editing, in-table "New Entries / Add Assignment" button at the bottom, and row deletions with search autocompletes.
+  4. **Downstream Diagnostic Pre-checks (`assignmentResolver.ts`):**
+     - Central resolution and diagnostic helper validating configuration assignments in operational workflows (ME21N / MIGO / MIRO / Billing) with human-actionable error messages detailing missing assignments and exact transaction codes (e.g. `OB62`, `OB37`, `OX18`, `OX01`, `OVX3`).
+  5. **Permissions & Navigation:**
+     - Registered all assignment routes in `src/shared/lib/functions.ts`, Navigator tree (`/navigator`), `pagePermissions.ts`, `frontendPermissions.ts`, and `routePermissions.ts`.
+
 
 
 

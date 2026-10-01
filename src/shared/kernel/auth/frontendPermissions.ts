@@ -22,9 +22,12 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
   { pattern: /\/hr\/employees/, permission: 'EMPLOYEE_VIEW', roles: ['HR', 'HR_MANAGER', 'ADMIN', 'OWNER', 'MANAGER'], code: 'HHEC', description: 'Employee Master – PA30 – EMPLOYEE_VIEW – HR only' },
   { pattern: /\/hr\//, permission: 'EMPLOYEE_VIEW', roles: ['HR', 'HR_MANAGER', 'ADMIN', 'OWNER', 'MANAGER'], code: 'HHEC', description: 'HR module – PA30 – EMPLOYEE_VIEW – HR only' },
 
-  // ========== ENTERPRISE STRUCTURE – IMG – OX02 – ADMIN only ==========
-  { pattern: /\/foundation\/company-groups/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'ECGC', description: 'Company Group – OX02 – ECGC – ENTERPRISE_CONFIG – ADMIN only – enterprise structure' },
-  { pattern: /\/foundation\/company-group-assignment/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'ECGA', description: 'Assign Company Group to Legal Entity – OX16 – ECGA – ENTERPRISE_CONFIG' },
+  // ========== ENTERPRISE STRUCTURE – Custom Code primary, SAP TCode alias ==========
+  { pattern: /\/foundation\/company-groups/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'ECGC', description: 'Company Group – ECGC (legacy OX02/OX15)' },
+  { pattern: /\/foundation\/company-group-assignment/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'ECGA', description: 'Assign Company Group to Legal Entity – ECGA (legacy OX16)' },
+  { pattern: /\/fico\/assignments\//, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'FLC2', description: 'FICO Customizing Assignments – FLC2/FLFA/FLCA/FLPA/FFSA/FCCA_ASSIGN' },
+  { pattern: /\/mm\/assignments\//, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'PURCHASER'], code: 'EFLA', description: 'MM Customizing Assignments – EFLA/EPCA/EPPA' },
+  { pattern: /\/sd\/assignments\//, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'SALES'], code: 'ESCA', description: 'SD Customizing Assignments – ESCA/EDSA/ECSA_ASSIGN' },
   { pattern: /\/foundation\/legal-entities/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'ELEC', description: 'Legal Entity – OX02 – ELEC – ENTERPRISE_CONFIG – ADMIN only' },
   { pattern: /\/foundation\/facilities/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], code: 'EFCC', description: 'Facility – OX02 – EFCC – ENTERPRISE_CONFIG – ADMIN only – plant' },
   { pattern: /\/foundation\/inventory-locations/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'WAREHOUSE', 'MATERIAL_MANAGER'], code: 'EILC', description: 'Inventory Location – OX09 – EILC – ENTERPRISE_CONFIG – ADMIN/WAREHOUSE' },
