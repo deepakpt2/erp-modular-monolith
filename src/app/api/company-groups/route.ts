@@ -74,7 +74,6 @@ if (!code || !name) return NextResponse.json({ error: 'code and name required' }
         await db.execute(sql`ALTER TABLE org_company_group ADD COLUMN IF NOT EXISTS country VARCHAR(2) DEFAULT 'IN'`);
         await db.execute(sql`ALTER TABLE org_company_group ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'EN'`);
       } catch {}
-      const finalCurrency = (currency_code || 'INR').toUpperCase();
       const finalCountry = (country_code || country || 'IN').toUpperCase();
       const finalLang = (language || 'EN').toUpperCase();
       const res = await db.execute(sql`INSERT INTO org_company_group (tenant_id, code, name, description, currency_code, country_code, country, language) VALUES (${tenantId}, ${code}, ${name}, ${description || null}, ${finalCurrency}, ${finalCountry}, ${finalCountry}, ${finalLang}) ON CONFLICT DO NOTHING RETURNING id, code, name`);

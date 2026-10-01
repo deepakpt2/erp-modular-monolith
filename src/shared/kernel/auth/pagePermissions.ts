@@ -134,34 +134,6 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { code: 'FBJM', permission: 'ADMIN_ALL', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'FOUNDATION', description: 'Background Jobs – SM37 – FBJM – ADMIN_ALL – ADMIN/MANAGER – jobs indicator' },
   { code: 'FELM', permission: 'ADMIN_ALL', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'FOUNDATION', description: 'Locks – SM12 – FELM – ADMIN_ALL – ADMIN/MANAGER' },
   { code: 'FAUD', permission: 'AUDIT_VIEW', roles: ['ADMIN', 'OWNER', 'AUDITOR', 'MANAGER'], module: 'AUDIT', description: 'Audit Trail – SM20 – FAUD – AUDIT_VIEW – ADMIN/AUDITOR' },
-];
-
-export function getPagePermission(code: string): PagePermission | null {
-  return PAGE_PERMISSIONS.find(p => p.code === code) || null;
-}
-
-export function canUserAccessPage(me: any, code: string): { allowed: boolean; reason?: string; requiredPermission?: string; requiredRoles?: string[] } {
-  const perm = getPagePermission(code);
-  if (!perm) {
-    // No specific mapping – allow all authenticated per MVP fallback – but log
-    return { allowed: true };
-  }
-
-  const isAdmin = me?.isAdmin || me?.roles?.includes('ADMIN') || me?.roles?.includes('OWNER') || me?.simpleRole === 'ADMIN' || me?.simpleRole === 'OWNER';
-  if (isAdmin) return { allowed: true };
-
-  const userRoles: string[] = me?.roles || [];
-  const simpleRole = me?.simpleRole || '';
-
-  // Check if user has required role
-  const hasRole = perm.roles.some(r => userRoles.includes(r) || simpleRole === r);
-
-  // Check permission
-  const hasPerm = me?.permissions?.includes(perm.permission) || me?.permissions?.includes('ADMIN_ALL');
-
-  // Special handling for MASTER_DATA_MANAGER trying to access Inventory (ISTV) – requires MATERIAL_MANAGER, not just MASTER_DATA_MANAGER – per user error
-  if (code === 'ISTV') {
-    const allowedForISTV = ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER'
 
   // ========== NEW CODES MAPPING – AUDITED 100% COVERAGE ==========
   { code: 'FAGE', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Account Group Change – OBD4 – FAGE' },
@@ -218,9 +190,34 @@ export function canUserAccessPage(me: any, code: string): { allowed: boolean; re
   { code: 'FCHB', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'ACCOUNTANT'], module: 'FICO', description: 'Financial Hub – FCHB' },
   { code: 'ECHB', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'FOUNDATION', description: 'Enterprise Hub – ECHB' },
   { code: 'NAVI', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER', 'PURCHASER', 'SALES', 'WAREHOUSE', 'ACCOUNTANT', 'PRODUCTION', 'HR'], module: 'FOUNDATION', description: 'Navigator – NAVI' },
-
 ];
 
+export function getPagePermission(code: string): PagePermission | null {
+  return PAGE_PERMISSIONS.find(p => p.code === code) || null;
+}
+
+export function canUserAccessPage(me: any, code: string): { allowed: boolean; reason?: string; requiredPermission?: string; requiredRoles?: string[] } {
+  const perm = getPagePermission(code);
+  if (!perm) {
+    // No specific mapping – allow all authenticated per MVP fallback – but log
+    return { allowed: true };
+  }
+
+  const isAdmin = me?.isAdmin || me?.roles?.includes('ADMIN') || me?.roles?.includes('OWNER') || me?.simpleRole === 'ADMIN' || me?.simpleRole === 'OWNER';
+  if (isAdmin) return { allowed: true };
+
+  const userRoles: string[] = me?.roles || [];
+  const simpleRole = me?.simpleRole || '';
+
+  // Check if user has required role
+  const hasRole = perm.roles.some(r => userRoles.includes(r) || simpleRole === r);
+
+  // Check permission
+  const hasPerm = me?.permissions?.includes(perm.permission) || me?.permissions?.includes('ADMIN_ALL');
+
+  // Special handling for MASTER_DATA_MANAGER trying to access Inventory (ISTV) – requires MATERIAL_MANAGER, not just MASTER_DATA_MANAGER – per user error
+  if (code === 'ISTV') {
+    const allowedForISTV = ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER'];
     const hasISTVRole = allowedForISTV.some(r => userRoles.includes(r) || simpleRole === r);
     if (!hasISTVRole && !hasPerm) {
       return {
