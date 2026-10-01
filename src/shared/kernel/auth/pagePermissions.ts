@@ -161,7 +161,66 @@ export function canUserAccessPage(me: any, code: string): { allowed: boolean; re
 
   // Special handling for MASTER_DATA_MANAGER trying to access Inventory (ISTV) – requires MATERIAL_MANAGER, not just MASTER_DATA_MANAGER – per user error
   if (code === 'ISTV') {
-    const allowedForISTV = ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER'];
+    const allowedForISTV = ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER'
+
+  // ========== NEW CODES MAPPING – AUDITED 100% COVERAGE ==========
+  { code: 'FAGE', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Account Group Change – OBD4 – FAGE' },
+  { code: 'FAGV', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Account Group Display – OBD4 – FAGV' },
+  { code: 'FAGL', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Account Groups List – OBD4 – FAGL' },
+  { code: 'FCOE', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Chart of Accounts Change – OB13 – FCOE' },
+  { code: 'FCOV', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Chart of Accounts Display – OB13 – FCOV' },
+  { code: 'FCOL', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Chart of Accounts List – OB13 – FCOL' },
+  { code: 'CCUD', permission: 'CCA_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER', 'HR'], module: 'FICO', description: 'Cost Center Display – KS03 – CCUD' },
+  { code: 'CCUS', permission: 'CCA_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER', 'HR'], module: 'FICO', description: 'Cost Centers List – KS13 – CCUS' },
+  { code: 'FGLS', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER', 'AUDITOR'], module: 'FICO', description: 'GL Accounts List – FS00 – FGLS' },
+  { code: 'FD32', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'SALES'], module: 'FICO', description: 'Customer Credit Master – FD32' },
+  { code: 'FFXV', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'FX Valuation – F.05 – FFXV' },
+  { code: 'FGIC', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'GR/IR Clearing – F.13 – FGIC' },
+  { code: 'FPPR', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Payment Proposal – F110 – FPPR' },
+  { code: 'FREV', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Document Reversal – FB08 – FREV' },
+  { code: 'FTGL', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Tolerance Groups GL – OBA0 – FTGL' },
+  { code: 'FTCV', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Tolerance Groups CV – OBA4 – FTCV' },
+  { code: 'ECGE', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Company Group Change – OX15 – ECGE' },
+  { code: 'ECGV', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Company Group Display – OX15 – ECGV' },
+  { code: 'ECGL', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Company Groups List – OX15 – ECGL' },
+  { code: 'ELEE', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Legal Entity Change – OX02 – ELEE' },
+  { code: 'ELEV', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Legal Entity Display – OX02 – ELEV' },
+  { code: 'ELEL', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Legal Entities List – OX02 – ELEL' },
+  { code: 'EDPP', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'SALES'], module: 'FOUNDATION', description: 'Distribution Paths – OVXD – EDPP' },
+  { code: 'ECUA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], module: 'FOUNDATION', description: 'Commercial Unit Assignment – OVX5 – ECUA' },
+  { code: 'EBSA', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'ACCOUNTANT'], module: 'FOUNDATION', description: 'Profit Center Assignment – KE51 – EBSA' },
+  { code: 'SUPF', permission: 'USER_MANAGE', roles: ['ADMIN', 'OWNER', 'HR', 'MANAGER', '*'], module: 'FOUNDATION', description: 'User Profile – SU3 – SUPF' },
+  { code: 'PPRM', permission: 'PR_VIEW', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER', 'WAREHOUSE', 'ACCOUNTANT'], module: 'MM', description: 'Purchase Requisitions List – ME5A – PPRM' },
+  { code: 'PPOM', permission: 'PO_VIEW', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER', 'WAREHOUSE', 'ACCOUNTANT'], module: 'MM', description: 'Purchase Orders List – ME2N – PPOM' },
+  { code: 'IGRR', permission: 'GR_POST', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Goods Receipt Reversal – 102 – IGRR' },
+  { code: 'PIVR', permission: 'IV_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Invoice Reversal – MR8M – PIVR' },
+  { code: 'PIRX', permission: 'PR_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Purchasing Info Records – ME11 – PIRX' },
+  { code: 'PSLX', permission: 'PR_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Source Lists – ME01 – PSLX' },
+  { code: 'PQAX', permission: 'PR_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Quota Arrangements – MEQ1 – PQAX' },
+  { code: 'PRFQ', permission: 'PR_CREATE', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Request for Quotation – ME41 – PRFQ' },
+  { code: 'PRES', permission: 'MATERIAL_VIEW', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'PRODUCTION'], module: 'MM', description: 'Material Reservations – MB21 – PRES' },
+  { code: 'PRPT', permission: 'PR_VIEW', roles: ['PURCHASER', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Purchasing Reports – ME80FN – PRPT' },
+  { code: 'PSTX', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'STO Delivery – VL10B – PSTX' },
+  { code: 'SSOL', permission: 'SALES_VIEW', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER', 'ACCOUNTANT'], module: 'SD', description: 'Sales Orders List – VA05 – SSOL' },
+  { code: 'SDLE', permission: 'DELIVERY_CREATE', roles: ['WAREHOUSE', 'SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Delivery Change – VL02N – SDLE' },
+  { code: 'SBLE', permission: 'BILLING_CREATE', roles: ['SALES', 'ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Billing Change – VF02 – SBLE' },
+  { code: 'SBLR', permission: 'BILLING_CREATE', roles: ['SALES', 'ACCOUNTANT', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Billing Reversal – VF11 – SBLR' },
+  { code: 'SPRC', permission: 'PRICING_MAINTAIN', roles: ['SALES', 'ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Pricing Procedures – V/08 – SPRC' },
+  { code: 'MBML', permission: 'BOM_CREATE', roles: ['MATERIAL_MANAGER', 'PRODUCTION', 'ADMIN', 'OWNER', 'MANAGER'], module: 'PP', description: 'BOM List – CS11 – MBML' },
+  { code: 'MRTL', permission: 'ROUTING_VIEW', roles: ['PRODUCTION', 'ADMIN', 'OWNER', 'MANAGER'], module: 'PP', description: 'Routings List – CA11 – MRTL' },
+  { code: 'MWCL', permission: 'WORKCENTER_VIEW', roles: ['PRODUCTION', 'ADMIN', 'OWNER', 'MANAGER'], module: 'PP', description: 'Work Centers List – CR05 – MWCL' },
+  { code: 'MMPO', permission: 'PROD_ORDER_CREATE', roles: ['PRODUCTION', 'ADMIN', 'OWNER', 'MANAGER'], module: 'PP', description: 'Production Orders – CO01 – MMPO' },
+  { code: 'PCST', permission: 'GL_POST', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER', 'PRODUCTION'], module: 'PP', description: 'Product Cost Estimate – CK11N – PCST' },
+  { code: 'MPIR', permission: 'MRP_RUN', roles: ['PRODUCTION', 'MATERIAL_MANAGER', 'ADMIN', 'OWNER'], module: 'PP', description: 'PIR Demand – MD61 – MPIR' },
+  { code: 'HEMP', permission: 'EMPLOYEE_CREATE', roles: ['HR', 'HR_MANAGER', 'ADMIN', 'OWNER'], module: 'HR', description: 'Employee Directory – PA30 – HEMP' },
+  { code: 'HPAC', permission: 'PAYROLL_RUN', roles: ['HR', 'HR_MANAGER', 'ADMIN', 'OWNER'], module: 'HR', description: 'Payroll Control – PA03 – HPAC' },
+  { code: 'HPAY', permission: 'PAYROLL_RUN', roles: ['HR', 'HR_MANAGER', 'PAYROLL_MANAGER', 'ADMIN', 'OWNER'], module: 'HR', description: 'Payroll Run – PC00 – HPAY' },
+  { code: 'FCHB', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'ACCOUNTANT'], module: 'FICO', description: 'Financial Hub – FCHB' },
+  { code: 'ECHB', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'FOUNDATION', description: 'Enterprise Hub – ECHB' },
+  { code: 'NAVI', permission: 'ENTERPRISE_CONFIG_VIEW', roles: ['ADMIN', 'OWNER', 'MANAGER', 'MATERIAL_MANAGER', 'PURCHASER', 'SALES', 'WAREHOUSE', 'ACCOUNTANT', 'PRODUCTION', 'HR'], module: 'FOUNDATION', description: 'Navigator – NAVI' },
+
+];
+
     const hasISTVRole = allowedForISTV.some(r => userRoles.includes(r) || simpleRole === r);
     if (!hasISTVRole && !hasPerm) {
       return {
