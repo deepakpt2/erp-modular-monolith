@@ -807,12 +807,13 @@ Once you confirm, I will:
     - `ACCOUNT_GROUP_CODE` is elevated as the leading configuration field after `CHART_OF_ACCOUNTS_CODE`.
     - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**SAP Parity: Dedicated OX16 Company Code to Company Assignment (2026-10-01):**
 - Decoupled Company Code creation from Company Group assignment matching SAP IMG standard (`OX02` vs. `OX16`):
-  - In `ELEC` (`OX02` / `src/app/(erp)/[companyCode]/foundation/legal-entities/page.tsx`), made `COMPANY_GROUP_CODE` optional, allowing independent legal entity creation without pre-existing holding companies.
+  - In `ELEC` (`OX02` / `src/app/(erp)/[companyCode]/foundation/legal-entities/page.tsx`), completely removed `COMPANY_GROUP_CODE` from the creation form, matching SAP `OX02` which defines purely statutory company code attributes.
   - Created dedicated assignment API `/api/company-group-assignment` to query and assign Legal Entities (`org_legal_entity`) to Company Groups (`org_company_group`).
   - Added dedicated UI pages for transaction `ECGA` (SAP alias `OX16`):
     - `/{companyCode}/foundation/company-group-assignment`
     - Dedicated subroutes `/change`, `/list`, and `/display`.
   - Registered `ECGA` / `OX16` in `functions.ts`, Navigator tree, and permission configs (`pagePermissions.ts`, `frontendPermissions.ts`, `routePermissions.ts`).
+
 
 
 

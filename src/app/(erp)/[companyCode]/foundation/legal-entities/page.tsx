@@ -10,7 +10,7 @@ export default function LegalEntitiesPage({ defaultMode, codeOverride, titleOver
       description="Define Legal Entity – statutory company code – needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FFSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000 – per real guide – posting period variant controls FPPE (legacy OB52) open/close, fiscal calendar calculates FY/Period"
       apiEndpoint="/api/legal-entities"
       initialForm={{
-        code: '', name: '', company_group_code: '', currency_code: 'INR', country_code: 'IN', country: 'IN', city: '',
+        code: '', name: '', currency_code: 'INR', country_code: 'IN', country: 'IN', city: '',
         address: '', street: '', postal_code: '', region: '', tax_id: '', gst_number: '', pan: '', cin: '',
         phone: '', email: '', website: '', legal_form: '', registration_number: '', description: '',
         tenant_code: 'TEN-100', fiscal_calendar_code: 'K4', fiscal_year_variant: 'K4', chart_of_accounts_code: 'CA-IN-01', field_status_variant: 'FFSV-1000', posting_period_variant: 'PPV-1000', posting_period_variant_code: 'PPV-1000', credit_control_area: 'CRED-1000', language: 'EN'
@@ -18,7 +18,6 @@ export default function LegalEntitiesPage({ defaultMode, codeOverride, titleOver
       fields={[
         { key: 'code', label: 'LEGAL_ENTITY_CODE', required: true, placeholder: '', description: 'Unique legal entity code – e.g., 1000 per guide – company code in ERP – used by Facility, Cost Center' },
         { key: 'name', label: 'LEGAL_ENTITY_NAME', required: true, placeholder: '', description: 'Legal name – e.g., FMCG India Pvt Ltd' },
-        { key: 'company_group_code', label: 'COMPANY_GROUP_CODE', required: false, type: 'autocomplete', apiUrl: '/api/company-groups', dataKey: 'companyGroups', codeField: 'code', placeholder: '', createUrl: '/foundation/company-groups', createCode: 'ECGC', description: 'Company Group (optional – assignable via OX16 / ECGA)' },
         { key: 'currency_code', label: 'CURRENCY_CODE', required: true, type: 'autocomplete', apiUrl: '/api/currencies', dataKey: 'currencies', codeField: 'code', placeholder: '', createUrl: '/fico/currencies', createCode: 'FCYC', description: 'Currency FK – INR' },
         { key: 'country_code', label: 'COUNTRY_CODE', required: true, placeholder: '', description: 'Country – IN per guide' },
         { key: 'chart_of_accounts_code', label: 'CHART_OF_ACCOUNTS_CODE', required: true, type: 'autocomplete', apiUrl: '/api/chart-of-accounts', dataKey: 'chartOfAccounts', codeField: 'code', placeholder: '', createUrl: '/fico/chart-of-accounts', createCode: 'FCOA', description: 'Chart of Accounts – CA-IN-01 per guide – must exist before ELEC – OB13' },
@@ -34,7 +33,7 @@ export default function LegalEntitiesPage({ defaultMode, codeOverride, titleOver
         { key: 'description', label: 'DESCRIPTION', type: 'textarea', placeholder: '' },
       ]}
       relatedLinks={[
-        { code: 'ECGC', label: 'Company Group – required', route: '/foundation/company-groups', description: 'Create ECGC-FMCG-01 first – needs currency_code INR, country_code IN, language EN' },
+        { code: 'OX16', label: 'Assign to Company Group (ECGA)', route: '/foundation/company-group-assignment', description: 'Assign Company Code to Company Group – OX16' },
         { code: 'FCOA', label: 'Chart of Accounts CA-IN-01 – must exist before ELEC', route: '/fico/chart-of-accounts', description: 'Create CA-IN-01 with language EN before ELEC – OB13' },
         { code: 'FFYC', label: 'Fiscal Year Variant K4', route: '/fico/fiscal-calendars', description: 'Create K4 before ELEC – fiscal_year_variant' },
         { code: 'FFSV', label: 'Field Status Variant FFSV-1000', route: '/fico/field-status-variants', description: 'Create FFSV-1000 before ELEC' },
