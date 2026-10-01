@@ -705,20 +705,43 @@ async function setupFictionalCompany() {
       try { await db.execute(sql`INSERT INTO prod_item_type (tenant_id, code, name, valuation_class, number_range_code) VALUES (${tenantId}, 'RAW', 'Raw Material', 'RAW', 'MAT-01') ON CONFLICT DO NOTHING`); } catch {}
     });
 
-    await db.execute(sql`CREATE TABLE IF NOT EXISTS prod_item (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, item_number varchar(20) NOT NULL, description varchar(500) NOT NULL, item_type_code varchar(20) DEFAULT 'RAW', category_code varchar(20) DEFAULT 'CAT-SPICE', base_uom_code varchar(20) DEFAULT 'KG', valuation_class varchar(20) DEFAULT 'RAW', price_control varchar(1) DEFAULT 'S', standard_price numeric DEFAULT 0, moving_avg_price numeric DEFAULT 0, tax_classification varchar(20) DEFAULT 'GST18', hsn_code varchar(20) DEFAULT '09041110', is_active boolean DEFAULT true, created_at timestamp DEFAULT NOW(), UNIQUE(tenant_id, item_number))`);
-    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS valuation_class VARCHAR(20) DEFAULT 'RAW'`);
-    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS price_control VARCHAR(1) DEFAULT 'S'`);
-    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS standard_price NUMERIC DEFAULT 0`);
-    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS moving_avg_price NUMERIC DEFAULT 0`);
-    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS tax_classification VARCHAR(20) DEFAULT 'GST18'`);
-    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS hsn_code VARCHAR(20) DEFAULT '09041110'`);
-    await db.execute(sql`INSERT INTO prod_item (tenant_id, item_number, description, item_type_code, category_code, base_uom_code, valuation_class, price_control, standard_price, moving_avg_price, tax_classification, hsn_code) VALUES ('Black Pepper – Raw Spice – 100 KG', 'RAW', (SELECT id FROM prod_category WHERE code='CAT-SPICE' LIMIT 1), 'KG', 'RAW', true) ON CONFLICT DO NOTHING`);
-    await db.execute(sql`INSERT INTO prod_item (tenant_id, item_number, description, item_type_code, category_code, base_uom_code, valuation_class, price_control, standard_price, moving_avg_price, tax_classification, hsn_code) VALUES ('Turmeric – Raw Spice – 200 KG', 'RAW', (SELECT id FROM prod_category WHERE code='CAT-SPICE' LIMIT 1), 'KG', 'RAW', true) ON CONFLICT DO NOTHING`);
-    let m1Res = await db.execute(sql`SELECT id FROM prod_item WHERE tenant_id=${tenantId} AND item_number='10000001' LIMIT 1`);
-    if (m1Res.rows.length === 0) m1Res = await db.execute(sql`SELECT id FROM prod_item WHERE item_number='10000001' LIMIT 1`);
+    // Fixed to own-IP schema: prod_item (item_number, description, type, category_id, base_unit, inventory_valuation_class, is_active, hsn_code) – no tenant_id/item_type_code/category_code/base_uom_code
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS prod_item (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), item_number varchar(30) NOT NULL UNIQUE, description varchar(200) NOT NULL, type varchar(20) NOT NULL DEFAULT 'RAW', category_id uuid, base_unit varchar(20) DEFAULT 'KG', inventory_valuation_class varchar(20) DEFAULT 'RAW', is_active boolean DEFAULT true, hsn_code varchar(20), created_at timestamp DEFAULT NOW(), updated_at timestamp DEFAULT NOW())`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS type VARCHAR(20) DEFAULT 'RAW'`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS category_id UUID`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS base_unit VARCHAR(20) DEFAULT 'KG'`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS inventory_valuation_class VARCHAR(20) DEFAULT 'RAW'`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS hsn_code VARCHAR(20)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE prod_item ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`).catch(()=>{});
+    // Ensure category exists and get id
+    let catId: any = null;
+    try {
+      const catRes = await db.execute(sql`SELECT id FROM prod_category WHERE code='CAT-SPICE' LIMIT 1`);
+      catId = (catRes.rows[0] as any)?.id;
+    } catch {}
+    // Insert with new schema first
+    try {
+      await db.execute(sql`INSERT INTO prod_item (item_number, description, type, category_id, base_unit, inventory_valuation_class, is_active, hsn_code) VALUES ('10000001', 'Black Pepper – Raw Spice – 100 KG', 'RAW', ${catId}, 'KG', 'RAW', true, '09041110') ON CONFLICT (item_number) DO UPDATE SET description='Black Pepper – Raw Spice – 100 KG', type='RAW', category_id=${catId}, base_unit='KG', inventory_valuation_class='RAW', hsn_code='09041110'`);
+    } catch (e:any) {
+      // Fallback old schema
+      try { await db.execute(sql`INSERT INTO prod_item (item_number, description, type, category_id, base_unit, inventory_valuation_class, is_active, hsn_code) VALUES ('10000001', 'Black Pepper – Raw Spice – 100 KG', 'RAW', ${catId}, 'KG', 'RAW', true, '09041110') ON CONFLICT (item_number) DO NOTHING`); } catch {}
+      try { await db.execute(sql`INSERT INTO prod_item (tenant_id, item_number, description, item_type_code, category_code, base_uom_code, valuation_class, price_control, standard_price, moving_avg_price, tax_classification, hsn_code) VALUES (${tenantId}, '10000001', 'Black Pepper – Raw Spice – 100 KG', 'RAW', 'CAT-SPICE', 'KG', 'RAW', 'S', 100, 100, 'GST18', '09041110') ON CONFLICT DO NOTHING`); } catch {}
+    }
+    try {
+      await db.execute(sql`INSERT INTO prod_item (item_number, description, type, category_id, base_unit, inventory_valuation_class, is_active, hsn_code) VALUES ('10000002', 'Turmeric – Raw Spice – 200 KG', 'RAW', ${catId}, 'KG', 'RAW', true, '09103020') ON CONFLICT (item_number) DO UPDATE SET description='Turmeric – Raw Spice – 200 KG', type='RAW', category_id=${catId}, base_unit='KG', inventory_valuation_class='RAW', hsn_code='09103020'`);
+    } catch (e:any) {
+      try { await db.execute(sql`INSERT INTO prod_item (item_number, description, type, category_id, base_unit, inventory_valuation_class, is_active, hsn_code) VALUES ('10000002', 'Turmeric – Raw Spice – 200 KG', 'RAW', ${catId}, 'KG', 'RAW', true, '09103020') ON CONFLICT (item_number) DO NOTHING`); } catch {}
+      try { await db.execute(sql`INSERT INTO prod_item (tenant_id, item_number, description, item_type_code, category_code, base_uom_code, valuation_class, price_control, standard_price, moving_avg_price, tax_classification, hsn_code) VALUES (${tenantId}, '10000002', 'Turmeric – Raw Spice – 200 KG', 'RAW', 'CAT-SPICE', 'KG', 'RAW', 'S', 80, 80, 'GST12', '09103020') ON CONFLICT DO NOTHING`); } catch {}
+    }
+    let m1Res = await db.execute(sql`SELECT id FROM prod_item WHERE item_number='10000001' LIMIT 1`).catch(()=>({rows:[]})) as any;
+    if (m1Res.rows.length === 0) {
+      try { m1Res = await db.execute(sql`SELECT id FROM prod_item WHERE tenant_id=${tenantId} AND item_number='10000001' LIMIT 1`); } catch {}
+    }
     materialId1 = (m1Res.rows[0] as any)?.id;
-    let m2Res = await db.execute(sql`SELECT id FROM prod_item WHERE tenant_id=${tenantId} AND item_number='10000002' LIMIT 1`);
-    if (m2Res.rows.length === 0) m2Res = await db.execute(sql`SELECT id FROM prod_item WHERE item_number='10000002' LIMIT 1`);
+    let m2Res = await db.execute(sql`SELECT id FROM prod_item WHERE item_number='10000002' LIMIT 1`).catch(()=>({rows:[]})) as any;
+    if (m2Res.rows.length === 0) {
+      try { m2Res = await db.execute(sql`SELECT id FROM prod_item WHERE tenant_id=${tenantId} AND item_number='10000002' LIMIT 1`); } catch {}
+    }
     materialId2 = (m2Res.rows[0] as any)?.id;
     // Facility profile for stock
     await db.execute(sql`CREATE TABLE IF NOT EXISTS prod_facility_profile (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid, item_id uuid, product_id uuid, facility_id uuid, total_stock_qty numeric DEFAULT 0, total_stock_value numeric DEFAULT 0, moving_avg_price numeric DEFAULT 0, last_receipt_price numeric DEFAULT 0, created_at timestamp DEFAULT NOW(), UNIQUE(item_id, facility_id))`);
@@ -892,13 +915,35 @@ async function setupFictionalCompany() {
     if (prId1 && poId1) {
       await db.execute(sql`UPDATE proc_pr_line SET is_converted=true, po_id=${poId1} WHERE pr_id=${prId1} AND line_number=10`).catch(()=>{});
     }
-    // PO line
+    // PO line – fixed to handle null materialId and taxRuleId – own-IP
     let taxRuleIdGST18: any = null;
     try {
       const tr = await db.execute(sql`SELECT id FROM fin_tax_rule WHERE code='GST18' LIMIT 1`);
       taxRuleIdGST18 = (tr.rows[0] as any)?.id;
+      if (!taxRuleIdGST18) {
+        const tr2 = await db.execute(sql`SELECT id FROM fin_tax_rule WHERE code='GST18' OR code='A18' OR code='GST_18' LIMIT 1`);
+        taxRuleIdGST18 = (tr2.rows[0] as any)?.id;
+      }
     } catch {}
-    await db.execute(sql`INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, quantity_received, quantity_invoiced, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rule_id, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history, delivery_completed, is_closed) VALUES (${poId1}, 10, ${materialId1}, ${materialId1}, 100, 100, 100, 'KG', 'KG', 100, 5, 2, 18, ${taxRuleIdGST18}, 18, 125, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, 'Black pepper 100 KG – PO line 10 – Purchase 1 – GST18 – over/under 10%', 'Delivery to FAC-1000 SL01', true, 10, 10, 1, '[{"version":1,"action":"CREATE","timestamp":"2026-09-30T00:00:00Z","user":"system","changes":{"quantity":100,"unit_price":100,"over_tolerance":10,"under_tolerance":10,"tax_rate":18}}]'::jsonb, true, true) ON CONFLICT DO NOTHING`);
+    // Ensure materialId1 exists – if still null, try fetch again
+    if (!materialId1) {
+      try {
+        const m1 = await db.execute(sql`SELECT id FROM prod_item WHERE item_number='10000001' LIMIT 1`);
+        materialId1 = (m1.rows[0] as any)?.id;
+      } catch {}
+    }
+    try {
+      if (taxRuleIdGST18) {
+        await db.execute(sql`INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, quantity_received, quantity_invoiced, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rule_id, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history, delivery_completed, is_closed) VALUES (${poId1}, 10, ${materialId1}, ${materialId1}, 100, 100, 100, 'KG', 'KG', 100, 5, 2, 18, ${taxRuleIdGST18}, 18, 125, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, 'Black pepper 100 KG – PO line 10 – Purchase 1 – GST18 – over/under 10%', 'Delivery to FAC-1000 SL01', true, 10, 10, 1, '[{"version":1,"action":"CREATE","timestamp":"2026-09-30T00:00:00Z","user":"system","changes":{"quantity":100,"unit_price":100,"over_tolerance":10,"under_tolerance":10,"tax_rate":18}}]'::jsonb, true, true) ON CONFLICT DO NOTHING`);
+      } else {
+        await db.execute(sql`INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, quantity_received, quantity_invoiced, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history, delivery_completed, is_closed) VALUES (${poId1}, 10, ${materialId1}, ${materialId1}, 100, 100, 100, 'KG', 'KG', 100, 5, 2, 18, 18, 125, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, 'Black pepper 100 KG – PO line 10 – Purchase 1 – GST18 – over/under 10%', 'Delivery to FAC-1000 SL01', true, 10, 10, 1, '[{"version":1,"action":"CREATE","timestamp":"2026-09-30T00:00:00Z","user":"system","changes":{"quantity":100,"unit_price":100,"over_tolerance":10,"under_tolerance":10,"tax_rate":18}}]'::jsonb, true, true) ON CONFLICT DO NOTHING`);
+      }
+    } catch (e:any) {
+      console.warn('PO line 4500000000 insert failed, trying fallback without tax_rule_id:', e.message);
+      try {
+        await db.execute(sql`INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, quantity_received, quantity_invoiced, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history, delivery_completed, is_closed) VALUES (${poId1}, 10, ${materialId1}, ${materialId1}, 100, 100, 100, 'KG', 'KG', 100, 5, 2, 18, 18, 125, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, 'Black pepper 100 KG – PO line 10 – Purchase 1 – GST18 – over/under 10%', 'Delivery to FAC-1000 SL01', true, 10, 10, 1, '[{"version":1,"action":"CREATE","timestamp":"2026-09-30T00:00:00Z","user":"system","changes":{"quantity":100,"unit_price":100}}]'::jsonb, true, true) ON CONFLICT DO NOTHING`);
+      } catch {}
+    }
     const poLine1Res = await db.execute(sql`SELECT id FROM proc_po_line WHERE po_id=${poId1} AND line_number=10 LIMIT 1`);
     poLineId1 = (poLine1Res.rows[0] as any)?.id;
     // Conditions
@@ -1100,8 +1145,29 @@ async function setupFictionalCompany() {
     try {
       const tr = await db.execute(sql`SELECT id FROM fin_tax_rule WHERE code='GST12' LIMIT 1`);
       taxRuleIdGST12 = (tr.rows[0] as any)?.id;
+      if (!taxRuleIdGST12) {
+        const tr2 = await db.execute(sql`SELECT id FROM fin_tax_rule WHERE code='GST12' OR code='A12' LIMIT 1`);
+        taxRuleIdGST12 = (tr2.rows[0] as any)?.id;
+      }
     } catch {}
-    await db.execute(sql`INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, quantity_received, quantity_invoiced, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rule_id, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history, delivery_completed, is_closed) VALUES (${poId2}, 10, ${materialId2}, ${materialId2}, 200, 200, 200, 'KG', 'KG', 80, 3, 1, 9.6, ${taxRuleIdGST12}, 12, 93.6, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, 'Turmeric 200 KG – PO line 10 – Purchase 2 – GST12', 'Delivery to FAC-1000 SL01', true, 10, 10, 1, '[{"version":1,"action":"CREATE","timestamp":"2026-09-30T00:00:00Z","user":"system","changes":{"quantity":200,"unit_price":80}}]'::jsonb, true, true) ON CONFLICT DO NOTHING`);
+    if (!materialId2) {
+      try {
+        const m2 = await db.execute(sql`SELECT id FROM prod_item WHERE item_number='10000002' LIMIT 1`);
+        materialId2 = (m2.rows[0] as any)?.id;
+      } catch {}
+    }
+    try {
+      if (taxRuleIdGST12) {
+        await db.execute(sql`INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, quantity_received, quantity_invoiced, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rule_id, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history, delivery_completed, is_closed) VALUES (${poId2}, 10, ${materialId2}, ${materialId2}, 200, 200, 200, 'KG', 'KG', 80, 3, 1, 9.6, ${taxRuleIdGST12}, 12, 93.6, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, 'Turmeric 200 KG – PO line 10 – Purchase 2 – GST12', 'Delivery to FAC-1000 SL01', true, 10, 10, 1, '[{"version":1,"action":"CREATE","timestamp":"2026-09-30T00:00:00Z","user":"system","changes":{"quantity":200,"unit_price":80}}]'::jsonb, true, true) ON CONFLICT DO NOTHING`);
+      } else {
+        await db.execute(sql`INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, quantity_received, quantity_invoiced, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history, delivery_completed, is_closed) VALUES (${poId2}, 10, ${materialId2}, ${materialId2}, 200, 200, 200, 'KG', 'KG', 80, 3, 1, 9.6, 12, 93.6, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, 'Turmeric 200 KG – PO line 10 – Purchase 2 – GST12', 'Delivery to FAC-1000 SL01', true, 10, 10, 1, '[{"version":1,"action":"CREATE","timestamp":"2026-09-30T00:00:00Z","user":"system","changes":{"quantity":200,"unit_price":80}}]'::jsonb, true, true) ON CONFLICT DO NOTHING`);
+      }
+    } catch (e:any) {
+      console.warn('PO line 4500000001 insert failed, fallback:', e.message);
+      try {
+        await db.execute(sql`INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, quantity_received, quantity_invoiced, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history, delivery_completed, is_closed) VALUES (${poId2}, 10, ${materialId2}, ${materialId2}, 200, 200, 200, 'KG', 'KG', 80, 3, 1, 9.6, 12, 93.6, ${facilityId}, ${facilityId}, ${invLocId}, ${invLocId}, 'Turmeric 200 KG – PO line 10 – Purchase 2 – GST12', 'Delivery to FAC-1000 SL01', true, 10, 10, 1, '[{"version":1,"action":"CREATE"}]'::jsonb, true, true) ON CONFLICT DO NOTHING`);
+      } catch {}
+    }
     const poLine2Res = await db.execute(sql`SELECT id FROM proc_po_line WHERE po_id=${poId2} AND line_number=10 LIMIT 1`);
     poLineId2 = (poLine2Res.rows[0] as any)?.id;
     if (poLineId2) {
