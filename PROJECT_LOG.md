@@ -787,3 +787,9 @@ Once you confirm, I will:
   - Registered all previously uncataloged operational and financial routes (`FREV` for FB08 Document Reversal, `FGIC` for F.13 GR/IR Clearing, `FTGL` for OBA0 GL Tolerances, `FTCV` for OBA4 BP Tolerances, `FD32` for Customer Credit, `FFXV` for F.05 FX Valuation, `FAPT` for OBB8 Payment Terms, `PIRX` for ME11 Info Records, `PSLX` for ME01 Source Lists, `PQAX` for MEQ1 Quota Arrangements, `PRFQ` for ME41 RFQ, `PRES` for MB21 Reservations, `PRPT` for ME80FN Reporting, `PSTX` for VL10B STO Deliveries, `IGRR` for MIGO-102 Reversal, `PIVR` for MR8M Reversal, `MMPO` for CO01 Production Orders, `PCST` for CK11N Cost Estimate, `MPIR` for MD61 PIR, `HEMP` for PA30 Employee Directory, `HPAC` for PA03 Payroll Control, `HPAY` for PC00 Payroll Run).
   - Registered all dedicated `/change`, `/display`, and `/list` subroutes across Foundation, FICO, MM, PP, and SD (`FAGE`, `FAGV`, `FAGL`, `FCOE`, `FCOV`, `FCOL`, `CCUD`, `CCUS`, `FGLS`, `ECGE`, `ECGV`, `ECGL`, `ELEE`, `ELEV`, `ELEL`, `PPRM`, `PPOM`, `SSOL`, `SDLE`, `SBLE`, `SBLR`, `SPRC`, `MBML`, `MRTL`, `MWCL`).
   - Updated `src/shared/lib/functions.ts` (catalog & fast command search), `src/app/(erp)/[companyCode]/navigator/page.tsx` (Tree Navigator), and `src/shared/kernel/auth/pagePermissions.ts` (RBAC access controls).
+
+**Docker Build Fixes (2026-10-01):**
+- Resolved Turbopack build failure in production image compile (`docker compose build --no-cache`):
+  1. `src/shared/kernel/auth/pagePermissions.ts`: Fixed array closure syntax error where new code permission definitions were accidentally nested within the `canUserAccessPage` function instead of `PAGE_PERMISSIONS`.
+  2. `src/app/api/company-groups/route.ts`: Fixed duplicate declaration error for `finalCurrency` in `POST` handler.
+
