@@ -62,10 +62,9 @@ services:
     networks:
       - internal
 
-  # Auto Migrate - runs automatically on docker compose up, reads .env for preferences
-  # No manual steps needed: does db:push + init-prod + optional FMCG seed based on env
-  # FIX: docker compose up --build should NOT delete entries on each build – only critical DB errors should trigger migration that deletes – per user report
-  # Previously ran `npx drizzle-kit push --force || true` on every up --build – could cause data loss if schema drift – now only runs auto-migrate which checks tables exist and skips push if exists, and initProduction uses ON CONFLICT DO NOTHING – preserves data
+  # Auto Migrate - runs automatically on docker compose up
+  # Handles schema sync + initial root admin user creation only
+  # Does NOT auto-seed companies, master data, or mock business records
   auto-migrate:
     build:
       context: .
@@ -81,7 +80,6 @@ services:
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
       DOMAIN: ${DOMAIN:-er.deepakpt.com}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
-      FMCG_SAMPLE_DATA_ENABLED: ${FMCG_SAMPLE_DATA_ENABLED:-false}
       MVP_NO_AUTH: ${MVP_NO_AUTH:-false}
       POS_WEBHOOK_API_KEY: ${POS_WEBHOOK_API_KEY:-enterprise-pos-key-kspl-2024}
     depends_on:
@@ -119,7 +117,6 @@ services:
       ADMIN_NAME: ${ADMIN_NAME:-System Admin}
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
       DOMAIN: ${DOMAIN:-er.deepakpt.com}
-      FMCG_SAMPLE_DATA_ENABLED: ${FMCG_SAMPLE_DATA_ENABLED:-false}
     volumes:
       - dms_data:/data/dms
     labels:
@@ -132,12 +129,10 @@ services:
       - internal
       - proxy
 
-  # Migrator - manual tool, for debugging
+  # Migrator - for manual CLI tasks and manual test migrations
   # Use: docker compose run --rm migrator npm run db:push
   #      docker compose run --rm migrator npm run db:create-admin
-  #      docker compose run --rm migrator npm run db:init-prod
-  #      docker compose run --rm migrator npm run db:seed
-  #      docker compose run --rm migrator npm run db:seed:fmcg
+  #      docker compose run --rm migrator npm run db:seed:fictional:test
   migrator:
     build:
       context: .
@@ -153,7 +148,6 @@ services:
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
       DOMAIN: ${DOMAIN:-er.deepakpt.com}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
-      FMCG_SAMPLE_DATA_ENABLED: ${FMCG_SAMPLE_DATA_ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy

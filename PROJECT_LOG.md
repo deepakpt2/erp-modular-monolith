@@ -805,9 +805,11 @@ Once you confirm, I will:
   - Updated `FAGC` page form (`src/app/(erp)/[companyCode]/fico/account-groups/page.tsx`) to configure both Account Type and GL Category when defining an Account Group.
   - Updated `FGLC` GL Account Master creation page and `/api/gl-accounts`:
     - `ACCOUNT_GROUP_CODE` is elevated as the leading configuration field after `CHART_OF_ACCOUNTS_CODE`.
-    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**Responsive Form Input Sizing & Anti-Clipping (2026-10-01):**
-- Converted all rigid `px` styling across forms (`single-code-page.tsx` and `db-autocomplete.tsx`) to standard relative units (`rem` / Tailwind scales):
-  - Form inputs, selects, autocompletes, and search fields now use `min-h-[2.5rem] px-3 py-2 text-sm` with relative scaling.
-  - Text sizes use standard responsive scales (`text-xs`, `text-sm`, `text-base`), properly honoring user root font preferences and preventing clipping.
-  - Badges, modals, and tables converted to relative rem padding and proportional heights (`h-7`, `h-9`, `min-h-[5rem]`, `max-h-48`).
+    - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**Clean Schema Auto-Migration & Manual-Only Master Data Seeding (2026-10-01):**
+- Decoupled database migration from sample/demo data seeding to guarantee truly clean deployments on `docker compose up -d`:
+  - Updated `src/shared/kernel/db/autoMigrate.ts`: now exclusively handles schema synchronization and root `admin` user initialization; no demo companies, materials, or fake vendors are auto-injected.
+  - Removed deprecated legacy seeders: `seedKS01.ts`, `seedFmcg.ts`, `seed.ts`, `initProduction.ts`, and `/api/seed/fmcg`.
+  - Cleaned `docker-compose.yml` and `.env.example`: removed all obsolete `KSPL_ENABLED` and `FMCG_SAMPLE_DATA_ENABLED` references.
+  - Kept isolated manual testing migration in `manual-migrations/001_fictional_company_1000_fmcg_test_only.ts` (runnable only explicitly via `npm run db:seed:fictional:test`).
+
 

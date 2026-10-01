@@ -96,7 +96,6 @@ async function createAdmin() {
   console.log(`   3. docker compose exec app npm run db:create-admin  (creates first admin, NO demo data)`);
   console.log(`   4. Login at https://er.deepakpt.com/login`);
   console.log(`   OR for full foundation without demo materials:`);
-  console.log(`   3b. docker compose exec app npx tsx src/shared/kernel/db/initProduction.ts`);
 
   process.exit(0);
 }
