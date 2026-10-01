@@ -24,19 +24,19 @@ export interface DeletionDiagnostic {
   };
 }
 
-interface SapDeletionGuardModalProps {
+interface IndustryDeletionGuardModalProps {
   isOpen: boolean;
   onClose: () => void;
   diagnostic: DeletionDiagnostic | null;
   onDeactivateSuccess?: () => void;
 }
 
-export function SapDeletionGuardModal({
+export function IndustryDeletionGuardModal({
   isOpen,
   onClose,
   diagnostic,
   onDeactivateSuccess,
-}: SapDeletionGuardModalProps) {
+}: IndustryDeletionGuardModalProps) {
   const [isApplyingBlock, setIsApplyingBlock] = useState(false);
   const [blockSuccessMessage, setBlockSuccessMessage] = useState<string | null>(null);
   const [blockErrorMessage, setBlockErrorMessage] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export function SapDeletionGuardModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl border border-zinc-300 shadow-2xl max-w-2xl w-full overflow-hidden text-zinc-900 animate-in fade-in zoom-in-95 duration-150">
-        {/* Header - SAP System Message Style */}
+        {/* Header - Enterprise System Message Style */}
         <div className="bg-red-50 border-b border-red-200 px-6 py-4 flex items-start gap-3">
           <div className="w-9 h-9 rounded-full bg-red-100 border border-red-300 flex items-center justify-center shrink-0 text-red-600 font-bold text-lg">
             ✕
@@ -84,7 +84,7 @@ export function SapDeletionGuardModal({
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded">
-                SAP Integrity Violation
+                Integrity Constraint
               </span>
               <span className="text-xs font-mono text-red-700">
                 {diagnostic.entityType}
@@ -119,7 +119,7 @@ export function SapDeletionGuardModal({
                     </span>
                   </div>
                   <span className="font-mono text-[11px] bg-zinc-200 text-zinc-800 px-2 py-0.5 rounded font-semibold">
-                    TCode: {reason.tcode}
+                    Code: {reason.tcode}
                   </span>
                 </div>
 
@@ -151,7 +151,7 @@ export function SapDeletionGuardModal({
         {/* Action Footer */}
         <div className="bg-zinc-100 border-t border-zinc-200 px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
           <div className="text-[11px] text-zinc-500 font-mono">
-            SAP Standard: OBR2 / FS00 / OX02
+            Industry Standard Lifecycle Protection
           </div>
           <div className="flex items-center gap-2">
             {diagnostic.deactivationAction && !blockSuccessMessage && (

@@ -9,7 +9,7 @@ export interface DeletionReason {
   count?: number;
 }
 
-export interface DeletionPrecheckResult {
+export interface DeletionDiagnostic {
   canDelete: boolean;
   entityType: string;
   entityIdentifier: string;
@@ -25,21 +25,20 @@ export interface DeletionPrecheckResult {
 
 /**
  * 1. Validate G/L Account Deletion (FGLC / FS00)
- * SAP Standard Check:
+ * Industry Standard Check:
  * - fin_universal_ledger_line: postings exist -> BLOCK
- * - fin_auto_posting_rule / fin_auto_account_det: account assigned in OBYC -> BLOCK
- * - fin_retained_earnings: account assigned in OB53 -> BLOCK
+ * - fin_auto_posting_rule / fin_auto_account_det: account assigned in auto-determination -> BLOCK
+ * - fin_retained_earnings: account assigned in Retained Earnings -> BLOCK
  */
 export async function validateGLAccountDeletion(params: {
   id?: string | null;
   accountNumber?: string | null;
   coaCode?: string | null;
-}): Promise<DeletionPrecheckResult> {
+}): Promise<DeletionDiagnostic> {
   const { id, accountNumber, coaCode } = params;
   const reasons: DeletionReason[] = [];
   const identifier = accountNumber || id || 'UNKNOWN';
 
-  // Find the exact account record if id or account_number given
   let glRecord: any = null;
   try {
     if (id) {
@@ -80,8 +79,8 @@ export async function validateGLAccountDeletion(params: {
       reasons.push({
         code: 'TRANSACTION_DATA_EXISTS',
         message: `Universal Ledger transaction records exist (${txCount} journal entry lines found).`,
-        resolution: 'Accounts with posted transaction data cannot be physically deleted per statutory SAP audit standards. Set Posting Block (SPERR) or Deletion Flag (XLOEV) instead.',
-        tcode: 'FS00',
+        resolution: 'Accounts with posted transaction data cannot be physically deleted per statutory audit standards. Set Posting Block (SPERR) or Deletion Flag (XLOEV) instead.',
+        tcode: 'FGLC',
         count: txCount,
       });
     }
@@ -89,7 +88,7 @@ export async function validateGLAccountDeletion(params: {
     console.warn('Check fin_universal_ledger_line:', err.message);
   }
 
-  // 2. Check Automatic Account Determination (OBYC / FAUC)
+  // 2. Check Automatic Account Determination
   try {
     let autoDetCount = 0;
     if (effectiveId) {
@@ -112,9 +111,9 @@ export async function validateGLAccountDeletion(params: {
     if (autoDetCount > 0) {
       reasons.push({
         code: 'AUTO_ACCOUNT_DETERMINATION_IN_USE',
-        message: `Account is assigned in Automatic Account Determination (OBYC) for material/settlement postings (${autoDetCount} rules found).`,
-        resolution: 'Remove or reassign account mappings in Automatic Account Determination (FAUC / OBYC) before deleting.',
-        tcode: 'OBYC',
+        message: `Account is assigned in Automatic Account Determination for material/settlement postings (${autoDetCount} rules found).`,
+        resolution: 'Remove or reassign account mappings in Automatic Account Determination (FAUC) before deleting.',
+        tcode: 'FAUC',
         count: autoDetCount,
       });
     }
@@ -122,7 +121,7 @@ export async function validateGLAccountDeletion(params: {
     console.warn('Check auto account determination:', err.message);
   }
 
-  // 3. Check Retained Earnings Account (OB53 / FREC)
+  // 3. Check Retained Earnings Account
   try {
     if (effectiveAcc) {
       const reRes = await db.execute(sql`
@@ -135,8 +134,8 @@ export async function validateGLAccountDeletion(params: {
         reasons.push({
           code: 'RETAINED_EARNINGS_ACCOUNT',
           message: 'Account is configured as the master Retained Earnings account.',
-          resolution: 'Reconfigure the Retained Earnings account in OB53 / FREC before attempting deletion.',
-          tcode: 'OB53',
+          resolution: 'Reconfigure the Retained Earnings account in FREC before attempting deletion.',
+          tcode: 'FREC',
           count: reCount,
         });
       }
@@ -166,15 +165,11 @@ export async function validateGLAccountDeletion(params: {
 
 /**
  * 2. Validate Chart of Accounts Deletion (FCOA / OB13)
- * SAP Standard Check:
- * - org_company_code_coa / org_legal_entity: assigned to any Company Code -> BLOCK
- * - fin_ledger_account: G/L accounts created under CoA -> BLOCK
- * - fin_account_group: Account groups defined under CoA -> BLOCK
  */
 export async function validateChartOfAccountsDeletion(params: {
   id?: string | null;
   code?: string | null;
-}): Promise<DeletionPrecheckResult> {
+}): Promise<DeletionDiagnostic> {
   const { id, code } = params;
   const reasons: DeletionReason[] = [];
   const identifier = code || id || 'UNKNOWN';
@@ -193,7 +188,7 @@ export async function validateChartOfAccountsDeletion(params: {
   const effectiveId = coaRecord?.id || id;
   const effectiveCode = coaRecord?.code || code;
 
-  // 1. Check Company Code Assignments (OB62 / FLC2)
+  // 1. Check Company Code Assignments
   try {
     let assignCount = 0;
     if (effectiveCode) {
@@ -217,8 +212,8 @@ export async function validateChartOfAccountsDeletion(params: {
       reasons.push({
         code: 'ASSIGNED_TO_COMPANY_CODE',
         message: `Chart of Accounts is assigned to ${assignCount} Company Code(s).`,
-        resolution: 'Remove Company Code assignments in transaction FLC2 (legacy OB62) before deleting.',
-        tcode: 'OB62',
+        resolution: 'Remove Company Code assignments in transaction FLC2 before deleting.',
+        tcode: 'FLC2',
         count: assignCount,
       });
     }
@@ -226,7 +221,7 @@ export async function validateChartOfAccountsDeletion(params: {
     console.warn('Check CoA company code assignment:', err.message);
   }
 
-  // 2. Check G/L Accounts Created (FS00 / FGLC)
+  // 2. Check G/L Accounts Created
   try {
     let glCount = 0;
     if (effectiveId) {
@@ -250,8 +245,8 @@ export async function validateChartOfAccountsDeletion(params: {
       reasons.push({
         code: 'GL_ACCOUNTS_EXIST',
         message: `${glCount} G/L Account(s) exist within this Chart of Accounts.`,
-        resolution: 'All G/L accounts under this Chart of Accounts must be deleted or archived first in transaction FGLC (legacy FS00).',
-        tcode: 'FS00',
+        resolution: 'All G/L accounts under this Chart of Accounts must be deleted or archived first in transaction FGLC.',
+        tcode: 'FGLC',
         count: glCount,
       });
     }
@@ -259,7 +254,7 @@ export async function validateChartOfAccountsDeletion(params: {
     console.warn('Check CoA gl accounts:', err.message);
   }
 
-  // 3. Check Account Groups (OBD4 / FAGC)
+  // 3. Check Account Groups
   try {
     let agCount = 0;
     if (effectiveId) {
@@ -283,8 +278,8 @@ export async function validateChartOfAccountsDeletion(params: {
       reasons.push({
         code: 'ACCOUNT_GROUPS_EXIST',
         message: `${agCount} Account Group(s) are defined under this Chart of Accounts.`,
-        resolution: 'Delete or reassign Account Groups in transaction FAGC (legacy OBD4) before deleting the Chart of Accounts.',
-        tcode: 'OBD4',
+        resolution: 'Delete or reassign Account Groups in transaction FAGC before deleting the Chart of Accounts.',
+        tcode: 'FAGC',
         count: agCount,
       });
     }
@@ -304,17 +299,11 @@ export async function validateChartOfAccountsDeletion(params: {
 
 /**
  * 3. Validate Company Code / Legal Entity Deletion (ELEC / OX02)
- * SAP Standard Check:
- * - fin_universal_ledger: transaction journal entries posted -> BLOCK
- * - Operational documents: Purchase Orders (proc_po), Goods Receipts (proc_gr), Invoices (proc_iv) -> BLOCK
- * - org_plant_company_code / org_facility: assigned Plants -> BLOCK
- * - org_purchasing_org_company_code: assigned Purchasing Orgs -> BLOCK
- * - org_sales_org_company_code: assigned Sales Orgs -> BLOCK
  */
 export async function validateCompanyCodeDeletion(params: {
   id?: string | null;
   code?: string | null;
-}): Promise<DeletionPrecheckResult> {
+}): Promise<DeletionDiagnostic> {
   const { id, code } = params;
   const reasons: DeletionReason[] = [];
   const identifier = code || id || 'UNKNOWN';
@@ -358,7 +347,7 @@ export async function validateCompanyCodeDeletion(params: {
         code: 'FINANCIAL_POSTINGS_EXIST',
         message: `Financial documents exist (${ledgerCount} Universal Ledger records found).`,
         resolution: 'Company Codes with financial postings cannot be deleted per statutory accounting principles. Deactivate company code or archive financial data.',
-        tcode: 'FB03',
+        tcode: 'FLCS',
         count: ledgerCount,
       });
     }
@@ -397,13 +386,13 @@ export async function validateCompanyCodeDeletion(params: {
         code: 'LOGISTICS_DOCUMENTS_EXIST',
         message: `Logistics operational documents exist (${docCount} PO, GR, or IV documents found).`,
         resolution: 'Company Code has active procurement and material documents. Cannot delete without archiving logistics history.',
-        tcode: 'ME23N',
+        tcode: 'PPOV',
         count: docCount,
       });
     }
   } catch {}
 
-  // 3. Check Plant Assignments (OX18 / EFLA)
+  // 3. Check Plant Assignments
   try {
     let plantAssignCount = 0;
     if (effectiveCode) {
@@ -427,14 +416,14 @@ export async function validateCompanyCodeDeletion(params: {
       reasons.push({
         code: 'PLANTS_ASSIGNED',
         message: `${plantAssignCount} Plant(s) are assigned to this Company Code.`,
-        resolution: 'Unassign plants in transaction EFLA (legacy OX18) before deleting the Company Code.',
-        tcode: 'OX18',
+        resolution: 'Unassign plants in transaction EFLA before deleting the Company Code.',
+        tcode: 'EFLA',
         count: plantAssignCount,
       });
     }
   } catch {}
 
-  // 4. Check Purchasing & Sales Org Assignments (OX01, OVX3)
+  // 4. Check Purchasing & Sales Org Assignments
   try {
     let orgAssignCount = 0;
     if (effectiveCode) {
@@ -457,8 +446,8 @@ export async function validateCompanyCodeDeletion(params: {
       reasons.push({
         code: 'COMMERCIAL_ORGS_ASSIGNED',
         message: `${orgAssignCount} Purchasing or Sales Organization(s) are assigned to this Company Code.`,
-        resolution: 'Remove Purchasing Org (EPCA / OX01) and Sales Org (ESCA / OVX3) assignments first.',
-        tcode: 'OX01',
+        resolution: 'Remove Purchasing Org (EPCA) and Sales Org (ESCA) assignments first.',
+        tcode: 'EPCA',
         count: orgAssignCount,
       });
     }
@@ -487,15 +476,11 @@ export async function validateCompanyCodeDeletion(params: {
 
 /**
  * 4. Validate Plant / Facility Deletion (EFCC / OX10)
- * SAP Standard Check:
- * - inv_stock_balance: current stock on hand > 0 -> BLOCK
- * - proc_po_line: open PO lines referencing plant -> BLOCK
- * - org_plant_company_code: assigned to Company Code -> BLOCK
  */
 export async function validatePlantDeletion(params: {
   id?: string | null;
   code?: string | null;
-}): Promise<DeletionPrecheckResult> {
+}): Promise<DeletionDiagnostic> {
   const { id, code } = params;
   const reasons: DeletionReason[] = [];
   const identifier = code || id || 'UNKNOWN';
@@ -514,7 +499,7 @@ export async function validatePlantDeletion(params: {
   const effectiveId = facRecord?.id || id;
   const effectiveCode = facRecord?.code || code;
 
-  // 1. Check Physical Stock Balances (MMBE / ISTV)
+  // 1. Check Physical Stock Balances
   try {
     let stockCount = 0;
     if (effectiveId) {
@@ -538,14 +523,14 @@ export async function validatePlantDeletion(params: {
       reasons.push({
         code: 'PHYSICAL_STOCK_EXISTS',
         message: `Physical inventory stock is currently held at this plant (${stockCount} positive stock balance records).`,
-        resolution: 'Transfer or write off all inventory balances to zero in transaction MIGO / IGRC before deleting.',
-        tcode: 'MMBE',
+        resolution: 'Transfer or write off all inventory balances to zero in transaction IGRC before deleting.',
+        tcode: 'ISTV',
         count: stockCount,
       });
     }
   } catch {}
 
-  // 2. Check Open Purchase Order Lines (ME23N / PPOC)
+  // 2. Check Open Purchase Order Lines
   try {
     let poLineCount = 0;
     if (effectiveId) {
@@ -570,13 +555,13 @@ export async function validatePlantDeletion(params: {
         code: 'OPEN_PURCHASE_DOCUMENTS_EXIST',
         message: `Purchase orders reference this plant (${poLineCount} PO lines found).`,
         resolution: 'Complete or cancel open Purchase Orders referencing this plant before attempting deletion.',
-        tcode: 'ME22N',
+        tcode: 'PPOE',
         count: poLineCount,
       });
     }
   } catch {}
 
-  // 3. Check Company Code Assignment (OX18 / EFLA)
+  // 3. Check Company Code Assignment
   try {
     let assignCount = 0;
     if (effectiveCode) {
@@ -592,8 +577,8 @@ export async function validatePlantDeletion(params: {
       reasons.push({
         code: 'ASSIGNED_TO_COMPANY_CODE',
         message: `Plant is assigned to Company Code in Enterprise Structure.`,
-        resolution: 'Remove assignment in transaction EFLA (legacy OX18) first.',
-        tcode: 'OX18',
+        resolution: 'Remove assignment in transaction EFLA first.',
+        tcode: 'EFLA',
         count: assignCount,
       });
     }
@@ -611,6 +596,365 @@ export async function validatePlantDeletion(params: {
       type: 'DELETION_FLAG',
       label: 'Set Inactive / Deactivation Flag',
       endpoint: '/api/facilities',
+      payload: {
+        id: effectiveId,
+        code: effectiveCode,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * =========================================================================
+ * PHASE 2: Logistics & Commercial Master Data Safeguards
+ * =========================================================================
+ */
+
+/**
+ * 5. Validate Material / Product Master Deletion (EMTC / MM01)
+ * Industry Standard Check:
+ * - Current stock on hand > 0 in inv_stock_balance or inv_stock -> BLOCK
+ * - Open Purchase Order lines (proc_po_line / mm_po_line) -> BLOCK
+ * - Open Purchase Requisition lines (proc_pr_line / mm_pr_line) -> BLOCK
+ * - BOM component usage (mfg_bom_line) -> BLOCK
+ * Alternative: Flag for Deletion (XLOEV) / is_active = false
+ */
+export async function validateMaterialDeletion(params: {
+  id?: string | null;
+  itemNumber?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, itemNumber } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = itemNumber || id || 'UNKNOWN';
+
+  let itemRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM prod_item WHERE id = ${id} LIMIT 1`);
+      itemRecord = res.rows[0];
+    } else if (itemNumber) {
+      const res = await db.execute(sql`SELECT * FROM prod_item WHERE item_number = ${itemNumber} LIMIT 1`);
+      itemRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = itemRecord?.id || id;
+  const effectiveNum = itemRecord?.item_number || itemNumber;
+
+  // 1. Check On-Hand Stock Balances
+  try {
+    let stockQty = 0;
+    if (effectiveId) {
+      const sRes = await db.execute(sql`
+        SELECT COALESCE(SUM(quantity), 0)::numeric as total 
+        FROM inv_stock_balance 
+        WHERE item_id = ${effectiveId}
+      `);
+      stockQty += Number(sRes.rows[0]?.total || 0);
+
+      const sRes2 = await db.execute(sql`
+        SELECT COALESCE(SUM(quantity), 0)::numeric as total 
+        FROM inv_stock 
+        WHERE item_id = ${effectiveId}
+      `);
+      stockQty += Number(sRes2.rows[0]?.total || 0);
+    }
+    if (stockQty === 0 && effectiveNum) {
+      const sRes3 = await db.execute(sql`
+        SELECT COALESCE(SUM(quantity), 0)::numeric as total 
+        FROM inv_stock_balance 
+        WHERE item_number = ${effectiveNum}
+      `);
+      stockQty += Number(sRes3.rows[0]?.total || 0);
+    }
+
+    if (stockQty > 0) {
+      reasons.push({
+        code: 'PHYSICAL_STOCK_EXISTS',
+        message: `Physical stock balance exists for this material (Current on-hand quantity: ${stockQty}).`,
+        resolution: 'Zero out physical inventory balance via Goods Movement before attempting deletion.',
+        tcode: 'ISTV',
+        count: Math.round(stockQty),
+      });
+    }
+  } catch {}
+
+  // 2. Check Purchase Orders
+  try {
+    let poLines = 0;
+    if (effectiveId) {
+      const pRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM proc_po_line 
+        WHERE item_id = ${effectiveId}
+      `);
+      poLines += Number(pRes.rows[0]?.cnt || 0);
+    }
+    if (poLines === 0 && effectiveNum) {
+      const pRes2 = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM proc_po_line 
+        WHERE item_number = ${effectiveNum}
+      `);
+      poLines += Number(pRes2.rows[0]?.cnt || 0);
+    }
+
+    if (poLines > 0) {
+      reasons.push({
+        code: 'PURCHASE_ORDERS_EXIST',
+        message: `Material is referenced in ${poLines} Purchase Order line(s).`,
+        resolution: 'Close or cancel open Purchase Order lines in transaction PPOE before deleting.',
+        tcode: 'PPOE',
+        count: poLines,
+      });
+    }
+  } catch {}
+
+  // 3. Check BOM Components
+  try {
+    let bomLines = 0;
+    if (effectiveId) {
+      const bRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM mfg_bom_line 
+        WHERE component_item_id = ${effectiveId} OR component_material_id = ${effectiveId}
+      `);
+      bomLines += Number(bRes.rows[0]?.cnt || 0);
+    }
+
+    if (bomLines > 0) {
+      reasons.push({
+        code: 'BOM_USAGE_EXISTS',
+        message: `Material is utilized as a component in ${bomLines} Bill of Materials (BOM).`,
+        resolution: 'Remove component from manufacturing BOMs in transaction PBMC before deleting.',
+        tcode: 'PBMC',
+        count: bomLines,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Product / Material Master',
+    entityIdentifier: String(identifier),
+    errorTitle: `Material ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'DELETION_FLAG',
+      label: 'Flag for Deletion (XLOEV)',
+      endpoint: '/api/materials',
+      payload: {
+        id: effectiveId,
+        item_number: effectiveNum,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * 6. Validate Business Partner (Supplier / Customer) Deletion (PSUC / SCUC)
+ * Industry Standard Check:
+ * - Supplier with PO/GR/IV documents -> BLOCK
+ * - Customer with Sales Orders / Deliveries / Billing documents -> BLOCK
+ * - Open Financial subledger line items -> BLOCK
+ * Alternative: Set Deletion Flag / Inactive Flag (is_active = false)
+ */
+export async function validateBusinessPartnerDeletion(params: {
+  id?: string | null;
+  accountNumber?: string | null;
+  partnerRole?: 'SUPPLIER' | 'CUSTOMER' | 'ALL';
+}): Promise<DeletionDiagnostic> {
+  const { id, accountNumber, partnerRole = 'ALL' } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = accountNumber || id || 'UNKNOWN';
+
+  let partnerRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM partner_account WHERE id = ${id} LIMIT 1`);
+      partnerRecord = res.rows[0];
+    } else if (accountNumber) {
+      const res = await db.execute(sql`SELECT * FROM partner_account WHERE account_number = ${accountNumber} OR bp_number = ${accountNumber} LIMIT 1`);
+      partnerRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = partnerRecord?.id || id;
+  const effectiveAcc = partnerRecord?.account_number || partnerRecord?.bp_number || accountNumber;
+
+  // 1. Check Procurement Documents (PO / GR / IV)
+  try {
+    let procCount = 0;
+    if (effectiveId) {
+      const poRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM proc_po 
+        WHERE partner_id = ${effectiveId} OR vendor_id = ${effectiveId}
+      `);
+      procCount += Number(poRes.rows[0]?.cnt || 0);
+
+      const ivRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM proc_iv 
+        WHERE partner_id = ${effectiveId} OR vendor_id = ${effectiveId}
+      `);
+      procCount += Number(ivRes.rows[0]?.cnt || 0);
+    }
+    if (procCount === 0 && effectiveAcc) {
+      const poRes2 = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM proc_po 
+        WHERE vendor_code = ${effectiveAcc} OR supplier_code = ${effectiveAcc}
+      `);
+      procCount += Number(poRes2.rows[0]?.cnt || 0);
+    }
+
+    if (procCount > 0) {
+      reasons.push({
+        code: 'PURCHASE_HISTORY_EXISTS',
+        message: `Business Partner has active procurement records (${procCount} Purchase Orders / Invoices).`,
+        resolution: 'Partners with procurement documents cannot be deleted to preserve commercial audit history. Apply Posting Block or Deactivation Flag instead.',
+        tcode: 'PPOV',
+        count: procCount,
+      });
+    }
+  } catch {}
+
+  // 2. Check Sales Documents (Sales Orders / Billing)
+  try {
+    let salesCount = 0;
+    if (effectiveId) {
+      const soRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM sales_order 
+        WHERE customer_id = ${effectiveId}
+      `);
+      salesCount += Number(soRes.rows[0]?.cnt || 0);
+
+      const bilRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM sales_billing_doc 
+        WHERE customer_id = ${effectiveId}
+      `);
+      salesCount += Number(bilRes.rows[0]?.cnt || 0);
+    }
+    if (salesCount === 0 && effectiveAcc) {
+      const soRes2 = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM sales_order 
+        WHERE customer_code = ${effectiveAcc}
+      `);
+      salesCount += Number(soRes2.rows[0]?.cnt || 0);
+    }
+
+    if (salesCount > 0) {
+      reasons.push({
+        code: 'SALES_HISTORY_EXISTS',
+        message: `Business Partner has active sales history (${salesCount} Sales Orders / Invoices).`,
+        resolution: 'Customer account with historical sales records must be preserved for tax compliance. Set Deactivation Flag instead.',
+        tcode: 'SSOV',
+        count: salesCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: partnerRole === 'SUPPLIER' ? 'Supplier Master' : partnerRole === 'CUSTOMER' ? 'Customer Master' : 'Business Partner',
+    entityIdentifier: String(identifier),
+    errorTitle: `Partner ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'POSTING_BLOCK',
+      label: 'Set Posting Block & Inactive Flag',
+      endpoint: '/api/business-partners',
+      payload: {
+        id: effectiveId,
+        account_number: effectiveAcc,
+        is_active: false,
+      },
+    } : undefined,
+  };
+}
+
+/**
+ * 7. Validate Storage Location / Inventory Location Deletion (EILC / OX09)
+ * Industry Standard Check:
+ * - Stock balances exist at storage location -> BLOCK
+ * - Open material movements -> BLOCK
+ */
+export async function validateStorageLocationDeletion(params: {
+  id?: string | null;
+  code?: string | null;
+  facilityCode?: string | null;
+}): Promise<DeletionDiagnostic> {
+  const { id, code, facilityCode } = params;
+  const reasons: DeletionReason[] = [];
+  const identifier = code || id || 'UNKNOWN';
+
+  let locRecord: any = null;
+  try {
+    if (id) {
+      const res = await db.execute(sql`SELECT * FROM org_inventory_location WHERE id = ${id} LIMIT 1`);
+      locRecord = res.rows[0];
+    } else if (code) {
+      const res = await db.execute(sql`SELECT * FROM org_inventory_location WHERE code = ${code} LIMIT 1`);
+      locRecord = res.rows[0];
+    }
+  } catch {}
+
+  const effectiveId = locRecord?.id || id;
+  const effectiveCode = locRecord?.code || code;
+
+  // 1. Check Stock Balances at this Location
+  try {
+    let stockCount = 0;
+    if (effectiveId) {
+      const sRes = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM inv_stock_balance 
+        WHERE location_id = ${effectiveId} AND quantity > 0
+      `);
+      stockCount += Number(sRes.rows[0]?.cnt || 0);
+    }
+    if (stockCount === 0 && effectiveCode) {
+      const sRes2 = await db.execute(sql`
+        SELECT COUNT(*)::int as cnt 
+        FROM inv_stock_balance 
+        WHERE location_code = ${effectiveCode} AND quantity > 0
+      `);
+      stockCount += Number(sRes2.rows[0]?.cnt || 0);
+    }
+
+    if (stockCount > 0) {
+      reasons.push({
+        code: 'LOCATION_STOCK_EXISTS',
+        message: `Storage location contains positive material stock (${stockCount} inventory balances).`,
+        resolution: 'Transfer all stock to another storage location in transaction IGRC before deleting.',
+        tcode: 'ISTV',
+        count: stockCount,
+      });
+    }
+  } catch {}
+
+  const canDelete = reasons.length === 0;
+
+  return {
+    canDelete,
+    entityType: 'Storage Location',
+    entityIdentifier: String(identifier),
+    errorTitle: `Storage Location ${identifier} cannot be deleted`,
+    reasons,
+    deactivationAction: !canDelete ? {
+      type: 'DELETION_FLAG',
+      label: 'Set Inactive / Deactivation Flag',
+      endpoint: '/api/inventory-locations',
       payload: {
         id: effectiveId,
         code: effectiveCode,

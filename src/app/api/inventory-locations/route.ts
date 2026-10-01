@@ -108,6 +108,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateStorageLocationDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -115,7 +117,20 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
     const id = searchParams.get('id');
+    const facility_code = searchParams.get('facility_code');
     if (!code && !id) return NextResponse.json({ error: 'code or id required' }, { status: 400 });
+
+    // Industry Standard Pre-check
+    const precheck = await validateStorageLocationDeletion({ id, code, facilityCode: facility_code });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'MSG_SLOC_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
+    }
+
     let res;
     if (id) {
       res = await db.execute(sql`DELETE FROM org_inventory_location WHERE id = ${id} RETURNING code`);

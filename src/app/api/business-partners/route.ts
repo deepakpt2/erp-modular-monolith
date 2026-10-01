@@ -403,6 +403,8 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+import { validateBusinessPartnerDeletion } from '@/shared/kernel/safety/deletionPrecheck';
+
 export async function DELETE(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
@@ -411,7 +413,19 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const bp_number = searchParams.get('bp_number') || searchParams.get('account_number');
     const id = searchParams.get('id');
+    const role = (searchParams.get('role') || 'ALL') as any;
     if (!bp_number && !id) return NextResponse.json({ error: 'bp_number or account_number or id required' }, { status: 400 });
+
+    // Industry Standard Pre-check
+    const precheck = await validateBusinessPartnerDeletion({ id, accountNumber: bp_number, partnerRole: role });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'MSG_BP_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
+    }
 
     // Try new table
     try {
@@ -423,19 +437,6 @@ export async function DELETE(req: NextRequest) {
       }
 
       if (partnerId) {
-        let prCount = 0, poCount = 0, grCount = 0, soCount = 0;
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_pr_line WHERE partner_id = ${partnerId}`); prCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_purchase_order WHERE vendor_id = ${partnerId}`); poCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_goods_receipt WHERE vendor_id = ${partnerId}`); grCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM sd_sales_order WHERE customer_id = ${partnerId}`); soCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        // Legacy checks too
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM partner_account WHERE id = ${partnerId}`); } catch {}
-
-        if (prCount > 0 || poCount > 0 || grCount > 0 || soCount > 0) {
-          await db.execute(sql`UPDATE partner_account SET is_active = false, updated_at = NOW() WHERE id = ${partnerId}`);
-          return NextResponse.json({ success: true, softDeleted: true, code: 'EPAE', message: `Partner ${accNum} has transactions PR:${prCount} PO:${poCount} GR:${grCount} SO:${soCount} – hard delete BLOCKED for audit trail – soft deleted (is_active=false)`, security: 'Partner with transactions cannot be hard deleted' });
-        }
-
         await db.execute(sql`DELETE FROM partner_contact WHERE partner_id = ${partnerId}`).catch(()=>{});
         await db.execute(sql`DELETE FROM partner_vendor_profile WHERE partner_id = ${partnerId}`).catch(()=>{});
         await db.execute(sql`DELETE FROM partner_customer_profile WHERE partner_id = ${partnerId}`).catch(()=>{});

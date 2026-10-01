@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 import { canUserAccessPage, getPagePermission } from '@/shared/kernel/auth/pagePermissions';
-import { SapDeletionGuardModal, DeletionDiagnostic } from '@/shared/ui/sap-deletion-guard-modal';
+import { IndustryDeletionGuardModal as SapDeletionGuardModal, DeletionDiagnostic } from '@/shared/ui/sap-deletion-guard-modal';
 
 export interface FieldDef {
   key: string;

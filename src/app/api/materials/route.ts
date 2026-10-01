@@ -762,6 +762,17 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!material_number && !id) return NextResponse.json({ error: 'material_number or item_number or id required' }, { status: 400 });
 
+    // Industry Standard Pre-check
+    const precheck = await validateMaterialDeletion({ id, itemNumber: material_number });
+    if (!precheck.canDelete) {
+      return NextResponse.json({
+        success: false,
+        errorCode: 'MSG_MAT_001',
+        error: precheck.errorTitle,
+        diagnostic: precheck,
+      }, { status: 409 });
+    }
+
     // Try new table first
     try {
       let itemId = id;
@@ -772,26 +783,6 @@ export async function DELETE(req: NextRequest) {
       }
 
       if (itemId) {
-        let stockCount = 0, prCount = 0, poCount = 0, grCount = 0, bomCount = 0;
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_stock WHERE material_id = ${itemId}`); stockCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_pr_line WHERE material_id = ${itemId}`); prCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_po_line WHERE material_id = ${itemId}`); poCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_gr_line WHERE material_id = ${itemId}`); grCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mfg_bom_line WHERE component_material_id = ${itemId}`); bomCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        // Also check new tables
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM inv_stock WHERE item_id = ${itemId}`); stockCount += parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-        try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM inv_lot WHERE item_id = ${itemId}`); stockCount += parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-
-        if (stockCount > 0 || prCount > 0 || poCount > 0 || grCount > 0 || bomCount > 0) {
-          await db.execute(sql`UPDATE prod_item SET is_active = false WHERE id = ${itemId}`);
-          return NextResponse.json({
-            success: true,
-            softDeleted: true,
-            code: 'EMTE',
-            message: `Product ${itemNum} has transactions and cannot be deleted to maintain audit trail – Stock:${stockCount} PR:${prCount} PO:${poCount} GR:${grCount} BOM:${bomCount} – hard delete BLOCKED for security/audit. Soft deleted (is_active=false) instead.`,
-          });
-        }
-
         await db.execute(sql`DELETE FROM prod_facility_profile WHERE item_id = ${itemId}`).catch(()=>{});
         await db.execute(sql`DELETE FROM prod_commercial_profile WHERE item_id = ${itemId}`).catch(()=>{});
         await db.execute(sql`DELETE FROM prod_item_classification WHERE item_id = ${itemId}`).catch(()=>{});
@@ -814,22 +805,6 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (!matId) return NextResponse.json({ error: 'Material not found' }, { status: 404 });
-
-    let stockCount = 0, prCount = 0, poCount = 0, grCount = 0, bomCount = 0;
-    try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_stock WHERE material_id = ${matId}`); stockCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-    try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_pr_line WHERE material_id = ${matId}`); prCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-    try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_po_line WHERE material_id = ${matId}`); poCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-    try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mm_gr_line WHERE material_id = ${matId}`); grCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-    try { const r = await db.execute(sql`SELECT COUNT(*) as cnt FROM mfg_bom_line WHERE component_material_id = ${matId}`); bomCount = parseInt((r.rows[0] as any).cnt || '0'); } catch {}
-
-    if (stockCount > 0 || prCount > 0 || poCount > 0 || grCount > 0 || bomCount > 0) {
-      await db.execute(sql`UPDATE prod_item SET is_active = false WHERE id = ${matId}`);
-      return NextResponse.json({
-        success: true,
-        softDeleted: true,
-        message: `Material ${matNum} has transactions and cannot be deleted to maintain audit trail – Stock:${stockCount} PR:${prCount} PO:${poCount} GR:${grCount} BOM:${bomCount} – hard delete BLOCKED for security/audit. Soft deleted (is_active=false) instead.`,
-      });
-    }
 
     await db.execute(sql`DELETE FROM prod_item_plant WHERE material_id = ${matId}`).catch(()=>{});
     await db.execute(sql`DELETE FROM prod_item WHERE id = ${matId}`);
