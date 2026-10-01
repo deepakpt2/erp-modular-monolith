@@ -168,6 +168,82 @@ export const FUNCTIONS: FunctionCode[] = [
   { code: 'FEXC', aliases: ['OB08', 'FIN-EXC-CR', 'EXC'], description: 'Define Exchange Rates – FEXC own IP (alias OB08) – from_currency to_currency rate from_date to_date – industry standard – converts foreign currency transactions – e.g., INR to USD – used in GR/IR, billing, payment', route: '/1000/fico/exchange-rates', module: 'FICO', subModule: 'FI-CUR', type: 'CREATE', classicName: 'Exchange Rates FEXC', keywords: 'exchange rates fexc ob08 from_currency to_currency rate from_date to_date currency conversion foreign currency INR USD EUR' },
   { code: 'FCCA', aliases: ['FCCA'], description: 'Define FCCA – auto-generated', route: '/1000/fico/cost-centers', module: 'FOUNDATION', subModule: 'ENT', type: 'CREATE', classicName: 'FCCA', keywords: 'fcca' },
 
+  // --- FICO Master & Operations Dedicated Subroutes ---
+  { code: 'FAGE', aliases: ['OBD4-CH', 'FIN-AG-CH'], description: 'Change Account Group', route: '/1000/fico/account-groups/change', module: 'FICO', subModule: 'FI-COA', type: 'CHANGE', classicName: 'Account Group Change', keywords: 'change gl account groups number ranges obd4 fage' },
+  { code: 'FAGV', aliases: ['OBD4-DP', 'FIN-AG-DP'], description: 'Display Account Group', route: '/1000/fico/account-groups/display', module: 'FICO', subModule: 'FI-COA', type: 'DISPLAY', classicName: 'Account Group Display', keywords: 'display gl account groups number ranges obd4 fagv' },
+  { code: 'FAGL', aliases: ['OBD4-LS', 'FIN-AG-LS'], description: 'Account Groups List', route: '/1000/fico/account-groups/list', module: 'FICO', subModule: 'FI-COA', type: 'REPORT', classicName: 'Account Groups List', keywords: 'list gl account groups overview obd4 fagl' },
+
+  { code: 'FCOE', aliases: ['OB13-CH', 'FIN-COA-CH'], description: 'Change Chart of Accounts', route: '/1000/fico/chart-of-accounts/change', module: 'FICO', subModule: 'FI-COA', type: 'CHANGE', classicName: 'Chart of Accounts Change', keywords: 'change chart of accounts ob13 fcoe' },
+  { code: 'FCOV', aliases: ['OB13-DP', 'FIN-COA-DP'], description: 'Display Chart of Accounts', route: '/1000/fico/chart-of-accounts/display', module: 'FICO', subModule: 'FI-COA', type: 'DISPLAY', classicName: 'Chart of Accounts Display', keywords: 'display chart of accounts ob13 fcov' },
+  { code: 'FCOL', aliases: ['OB13-LS', 'FIN-COA-LS'], description: 'Chart of Accounts List', route: '/1000/fico/chart-of-accounts/list', module: 'FICO', subModule: 'FI-COA', type: 'REPORT', classicName: 'Chart of Accounts List', keywords: 'list chart of accounts overview ob13 fcol' },
+
+  { code: 'CCUD', aliases: ['KS03', 'CST-CU-DP'], description: 'Display Cost Center', route: '/1000/fico/cost-centers/display', module: 'FICO', subModule: 'CO-CCA', type: 'DISPLAY', classicName: 'Cost Center Display KS03', keywords: 'display department cost center ownership information boundaries ccud' },
+  { code: 'CCUS', aliases: ['KS13', 'CST-CU-LS'], description: 'Cost Centers Directory List', route: '/1000/fico/cost-centers/list', module: 'FICO', subModule: 'CO-CCA', type: 'REPORT', classicName: 'Cost Centers List KS13', keywords: 'list cost centers overview directory ccus ks13' },
+
+  { code: 'FGLS', aliases: ['FS00-LS', 'FIN-GL-LS'], description: 'GL Accounts Directory List', route: '/1000/fico/gl-accounts/list', module: 'FICO', subModule: 'FI-GL', type: 'REPORT', classicName: 'GL Accounts List', keywords: 'list gl accounts master directory overview fgls' },
+
+  { code: 'FD32', aliases: ['FD32', 'FIN-CR-MGT'], description: 'Customer Credit Master', route: '/1000/fico/customer-credit', module: 'FICO', subModule: 'FI-AR', type: 'CHANGE', classicName: 'Customer Credit Master FD32', keywords: 'customer credit limit exposure fd32' },
+  { code: 'FFXV', aliases: ['F.05', 'FAGL_FC_VAL', 'FIN-FX-VAL'], description: 'Foreign Exchange Valuation', route: '/1000/fico/fx-valuation', module: 'FICO', subModule: 'FI-GL', type: 'POSTING', classicName: 'FX Valuation F.05', keywords: 'foreign currency revaluation fx valuation f.05 fagl_fc_val' },
+  { code: 'FGIC', aliases: ['F.13', 'MR11', 'FIN-GRIR-CLR'], description: 'Automated GR/IR Clearing', route: '/1000/fico/gr-ir-clearing', module: 'FICO', subModule: 'FI-GL', type: 'POSTING', classicName: 'GR/IR Clearing F.13', keywords: 'gr ir clearing automatic account maintenance f.13 mr11' },
+  { code: 'FPPR', aliases: ['F110-PR', 'FIN-PAY-PROP'], description: 'Payment Proposal & Execution', route: '/1000/fico/payment-proposal', module: 'FICO', subModule: 'FI-AP', type: 'POSTING', classicName: 'Payment Proposal F110', keywords: 'automatic payment run proposal f110 payment execution' },
+  { code: 'FAPT', aliases: ['OBB8', 'FIN-PAY-TRM'], description: 'Payment Terms Definition', route: '/1000/fico/payment-terms', module: 'FICO', subModule: 'FI-AP', type: 'CREATE', classicName: 'Payment Terms OBB8', keywords: 'define payment terms cash discount obb8 fait' },
+  { code: 'FREV', aliases: ['FB08', 'FBRA', 'FIN-DOC-REV'], description: 'Document Reversal & Reset Clearing', route: '/1000/fico/reversal', module: 'FICO', subModule: 'FI-GL', type: 'POSTING', classicName: 'Document Reversal FB08', keywords: 'financial document reversal reset clearing fbra fb08 frev' },
+  { code: 'FTGL', aliases: ['OBA0', 'FIN-TOL-GL'], description: 'Tolerance Groups – General Ledger', route: '/1000/fico/tolerance-groups-gl', module: 'FICO', subModule: 'FI-GL', type: 'CREATE', classicName: 'GL Tolerance Groups OBA0', keywords: 'define tolerance groups general ledger accounts oba0 ftgl' },
+  { code: 'FTCV', aliases: ['OBA4', 'FIN-TOL-CV'], description: 'Tolerance Groups – Customers/Vendors', route: '/1000/fico/tolerance-groups-cv', module: 'FICO', subModule: 'FI-AR', type: 'CREATE', classicName: 'BP Tolerance Groups OBA4', keywords: 'define tolerance groups business partners customers vendors oba4 ftcv' },
+
+  // --- Foundation Subroutes & Operations ---
+  { code: 'ECGE', aliases: ['OX15-CH', 'FND-CG-CH'], description: 'Change Company Group', route: '/1000/foundation/company-groups/change', module: 'FOUNDATION', subModule: 'ENT-CG', type: 'CHANGE', classicName: 'Company Group Change', keywords: 'change company group enterprise ox15 ecge' },
+  { code: 'ECGV', aliases: ['OX15-DP', 'FND-CG-DP'], description: 'Display Company Group', route: '/1000/foundation/company-groups/display', module: 'FOUNDATION', subModule: 'ENT-CG', type: 'DISPLAY', classicName: 'Company Group Display', keywords: 'display company group enterprise ox15 ecgv' },
+  { code: 'ECGL', aliases: ['OX15-LS', 'FND-CG-LS'], description: 'Company Groups List', route: '/1000/foundation/company-groups/list', module: 'FOUNDATION', subModule: 'ENT-CG', type: 'REPORT', classicName: 'Company Groups List', keywords: 'list company groups enterprise ox15 ecgl' },
+
+  { code: 'ELEE', aliases: ['OX02-CH', 'FND-LE-CH'], description: 'Change Legal Entity', route: '/1000/foundation/legal-entities/change', module: 'FOUNDATION', subModule: 'ENT-LE', type: 'CHANGE', classicName: 'Legal Entity Change', keywords: 'change legal entity statutory company code ox02 elee' },
+  { code: 'ELEV', aliases: ['OX02-DP', 'FND-LE-DP'], description: 'Display Legal Entity', route: '/1000/foundation/legal-entities/display', module: 'FOUNDATION', subModule: 'ENT-LE', type: 'DISPLAY', classicName: 'Legal Entity Display', keywords: 'display legal entity statutory company code ox02 elev' },
+  { code: 'ELEL', aliases: ['OX02-LS', 'FND-LE-LS'], description: 'Legal Entities List', route: '/1000/foundation/legal-entities/list', module: 'FOUNDATION', subModule: 'ENT-LE', type: 'REPORT', classicName: 'Legal Entities List', keywords: 'list legal entities company codes ox02 elel' },
+
+  { code: 'EDPP', aliases: ['OVXD', 'FND-DP-PATH'], description: 'Distribution Paths', route: '/1000/foundation/distribution-paths', module: 'FOUNDATION', subModule: 'SD-CFG', type: 'CREATE', classicName: 'Distribution Paths OVXD', keywords: 'distribution paths channels logistics sales routes ovxd edpp' },
+  { code: 'ECUA', aliases: ['OVX5-AS', 'FND-CU-AS'], description: 'Commercial Unit Assignment', route: '/1000/foundation/commercial-unit-assign', module: 'FOUNDATION', subModule: 'ENT-CU', type: 'CHANGE', classicName: 'Commercial Unit Assignment', keywords: 'commercial unit assignment profit center enterprise ovx5 ecua' },
+  { code: 'EBSA', aliases: ['KE51-AS', 'FND-PC-AS'], description: 'Profit Center Assignment', route: '/1000/foundation/profit-center-assign', module: 'FOUNDATION', subModule: 'ENT-PC', type: 'CHANGE', classicName: 'Profit Center Assignment', keywords: 'profit center assignment plant legal entity ke51 ebsa' },
+  { code: 'SUPF', aliases: ['SU3', 'FND-USR-PRF'], description: 'User Profile & Defaults', route: '/1000/foundation/user-profile', module: 'FOUNDATION', subModule: 'ADMIN', type: 'CHANGE', classicName: 'User Profile SU3', keywords: 'user profile defaults parameters personal settings su3 su01 supf' },
+
+  // --- MM Purchasing & Inventory Subroutes ---
+  { code: 'PPRM', aliases: ['ME5A', 'PUR-PR-LS'], description: 'Purchase Requisitions List', route: '/1000/mm/pr/list', module: 'MM', subModule: 'MM-PUR', type: 'REPORT', classicName: 'PR List ME5A', keywords: 'list purchase requisitions overview me5a pprm' },
+  { code: 'PPOM', aliases: ['ME2N', 'PUR-PO-LS'], description: 'Purchase Orders List', route: '/1000/mm/po/list', module: 'MM', subModule: 'MM-PUR', type: 'REPORT', classicName: 'PO List ME2N', keywords: 'list purchase orders overview me2n ppom' },
+
+  { code: 'IGRR', aliases: ['MIGO-102', 'PUR-GR-REV'], description: 'Goods Receipt Reversal (102)', route: '/1000/mm/gr-reversal', module: 'MM', subModule: 'MM-IM', type: 'POSTING', classicName: 'GR Reversal 102', keywords: 'goods receipt reversal 102 movement cancellation migo igrr' },
+  { code: 'PIVR', aliases: ['MR8M', 'PUR-IV-REV'], description: 'Invoice Verification Reversal', route: '/1000/mm/iv-reversal', module: 'MM', subModule: 'MM-LIV', type: 'POSTING', classicName: 'Invoice Reversal MR8M', keywords: 'invoice verification reversal cancellation mr8m pivr' },
+  { code: 'PIRX', aliases: ['ME11', 'ME12', 'PUR-INF-CR'], description: 'Purchasing Info Records', route: '/1000/mm/info-records', module: 'MM', subModule: 'MM-PUR', type: 'CREATE', classicName: 'Info Records ME11', keywords: 'purchasing info records vendor material prices conditions me11 me12 me13 pirx' },
+  { code: 'PSLX', aliases: ['ME01', 'ME03', 'PUR-SRC-CR'], description: 'Purchasing Source Lists', route: '/1000/mm/source-lists', module: 'MM', subModule: 'MM-PUR', type: 'CREATE', classicName: 'Source Lists ME01', keywords: 'source lists approved vendors determination me01 me03 pslx' },
+  { code: 'PQAX', aliases: ['MEQ1', 'MEQ3', 'PUR-QTA-CR'], description: 'Quota Arrangements', route: '/1000/mm/quota-arrangements', module: 'MM', subModule: 'MM-PUR', type: 'CREATE', classicName: 'Quota Arrangements MEQ1', keywords: 'quota arrangements supplier split allocations meq1 meq3 pqax' },
+  { code: 'PRFQ', aliases: ['ME41', 'ME42', 'PUR-RFQ-CR'], description: 'Request for Quotation (RFQ)', route: '/1000/mm/rfq', module: 'MM', subModule: 'MM-PUR', type: 'CREATE', classicName: 'RFQ Create ME41', keywords: 'request for quotation rfq vendor quotation me41 me42 prfq' },
+  { code: 'PRES', aliases: ['MB21', 'MB22', 'INV-RES-CR'], description: 'Material Stock Reservations', route: '/1000/mm/reservations', module: 'MM', subModule: 'MM-IM', type: 'CREATE', classicName: 'Stock Reservations MB21', keywords: 'stock reservations material reservation mb21 mb22 mb23 pres' },
+  { code: 'PRPT', aliases: ['ME80FN', 'PUR-RPT-LS'], description: 'Purchasing Spend & Line Reporting', route: '/1000/mm/reports', module: 'MM', subModule: 'MM-PUR', type: 'REPORT', classicName: 'Purchasing Reports ME80FN', keywords: 'purchasing reporting spend analysis line items me80fn prpt' },
+  { code: 'PSTX', aliases: ['VL10B', 'PUR-STO-DL'], description: 'Stock Transport Shipments', route: '/1000/mm/sto-delivery', module: 'MM', subModule: 'MM-STO', type: 'POSTING', classicName: 'STO Delivery VL10B', keywords: 'sto delivery stock transport outbound delivery shipments vl10b pstx' },
+
+  // --- Sales Subroutes & Pages ---
+  { code: 'SSOL', aliases: ['VA05', 'SAL-SO-LS'], description: 'Sales Orders List', route: '/1000/sales/list', module: 'SD', subModule: 'SD-SLS', type: 'REPORT', classicName: 'Sales Orders List VA05', keywords: 'list sales orders overview va05 ssol' },
+  { code: 'SDLE', aliases: ['VL02N', 'SAL-DL-CH'], description: 'Outbound Delivery Change & PGI', route: '/1000/sd/delivery-change', module: 'SD', subModule: 'SD-SHP', type: 'CHANGE', classicName: 'Delivery Change VL02N', keywords: 'change delivery post goods issue pgi vl02n sdle' },
+  { code: 'SBLE', aliases: ['VF02', 'SAL-BL-CH'], description: 'Billing Document Change', route: '/1000/sd/billing-change', module: 'SD', subModule: 'SD-BIL', type: 'CHANGE', classicName: 'Billing Change VF02', keywords: 'change billing document invoice vf02 sble' },
+  { code: 'SBLR', aliases: ['VF11', 'SAL-BL-REV'], description: 'Billing Document Reversal', route: '/1000/sd/billing-reversal', module: 'SD', subModule: 'SD-BIL', type: 'POSTING', classicName: 'Billing Reversal VF11', keywords: 'cancel billing document reversal invoice credit vf11 sblr' },
+  { code: 'SPRC', aliases: ['V/08', 'SAL-PRC-PRC'], description: 'Pricing Condition Procedures', route: '/1000/sd/pricing-procedure', module: 'SD', subModule: 'SD-PRC', type: 'CREATE', classicName: 'Pricing Procedures V/08', keywords: 'pricing procedure conditions calculation schema v08 sprc' },
+
+  // --- PP Subroutes & Pages ---
+  { code: 'MBML', aliases: ['CS11', 'MFG-BOM-LS'], description: 'BOM Multi-Level Explosion List', route: '/1000/pp/bom/list', module: 'PP', subModule: 'PP-BOM', type: 'REPORT', classicName: 'BOM Explosion CS11', keywords: 'bill of materials list explosion cs11 cs12 mbml' },
+  { code: 'MRTL', aliases: ['CA11', 'MFG-RTG-LS'], description: 'Routings Directory List', route: '/1000/pp/routings/list', module: 'PP', subModule: 'PP-RTG', type: 'REPORT', classicName: 'Routings List CA11', keywords: 'routings list manufacturing operations ca11 ca12 mrtl' },
+  { code: 'MWCL', aliases: ['CR05', 'MFG-WC-LS'], description: 'Work Centers Directory List', route: '/1000/pp/work-centers/list', module: 'PP', subModule: 'PP-WC', type: 'REPORT', classicName: 'Work Centers List CR05', keywords: 'work centers list plant capacity resources cr05 mwcl' },
+  { code: 'MMPO', aliases: ['CO01', 'CO02', 'MFG-ORD-MGT'], description: 'Manufacturing & Production Orders', route: '/1000/pp/production-orders', module: 'PP', subModule: 'PP-SFC', type: 'CREATE', classicName: 'Production Orders CO01', keywords: 'production orders shop floor control release confirm co01 co02 co03 mmpo' },
+  { code: 'PCST', aliases: ['CK11N', 'CK24', 'MFG-CST-EST'], description: 'Product Standard Cost Estimate', route: '/1000/pp/cost-estimate', module: 'PP', subModule: 'PP-PC', type: 'CREATE', classicName: 'Cost Estimate CK11N', keywords: 'product cost estimate standard cost valuation bom routing ck11n ck24 pcst' },
+  { code: 'MPIR', aliases: ['MD61', 'MD62', 'MFG-DEM-PIR'], description: 'Planned Independent Requirements (PIR)', route: '/1000/pp/pir', module: 'PP', subModule: 'PP-MRP', type: 'CREATE', classicName: 'PIR Demand MD61', keywords: 'planned independent requirements demand management forecast md61 md62 mpir' },
+
+  // --- HR Pages ---
+  { code: 'HEMP', aliases: ['PA30', 'HRM-EMP-DIR'], description: 'Employee Master Directory', route: '/1000/hr/employees', module: 'HR', subModule: 'HR-PA', type: 'CREATE', classicName: 'Employee Directory PA30', keywords: 'employee master directory personnel administration pa30 pa20 hemp' },
+  { code: 'HPAC', aliases: ['PA03', 'HRM-PAY-CTL'], description: 'Payroll Control Record', route: '/1000/hr/payroll-control', module: 'HR', subModule: 'HR-PY', type: 'CHANGE', classicName: 'Payroll Control PA03', keywords: 'payroll control record release exit check pa03 hpac' },
+  { code: 'HPAY', aliases: ['PC00', 'HRM-PAY-RUN'], description: 'Payroll Calculation Run', route: '/1000/hr/payroll-run', module: 'HR', subModule: 'HR-PY', type: 'POSTING', classicName: 'Payroll Run PC00', keywords: 'execute payroll calculation salary disbursements pc00 hpay' },
+
+  // --- Hub & Overview Direct Navigators ---
+  { code: 'FCHB', aliases: ['FIN-HUB', 'FICO-HUB'], description: 'Financial Configuration Hub', route: '/1000/fico/posting-period', module: 'FICO', subModule: 'FI-CFG', type: 'REPORT', classicName: 'Financial Hub', keywords: 'financial configuration hub overview posting period fiscal tax general ledger fchb' },
+  { code: 'ECHB', aliases: ['ENT-HUB', 'FND-HUB'], description: 'Enterprise Configuration Hub', route: '/1000/foundation/enterprise-config', module: 'FOUNDATION', subModule: 'ENT-CFG', type: 'REPORT', classicName: 'Enterprise Hub', keywords: 'enterprise structure configuration hub overview company plant org echb' },
+  { code: 'NAVI', aliases: ['TREE', 'ERP-TREE', 'NAV'], description: 'Enterprise Function Tree Navigator', route: '/1000/navigator', module: 'FOUNDATION', subModule: 'ADMIN', type: 'REPORT', classicName: 'ERP Navigator', keywords: 'tree structure navigator all transaction codes directory erp navi' },
+
 ];
 
 export const MODULE_CLASSIFICATION = {
@@ -402,87 +478,7 @@ export function searchFunctions(query: string): FunctionCode[] {
     .map(item => item.tc)
     .slice(0, 12 - exactMatches.length);
 
-  const combined = [...exactMatches, ...scored
-
-  // --- FICO Master & Operations Dedicated Subroutes ---
-  { code: 'FAGE', aliases: ['OBD4-CH', 'FIN-AG-CH'], description: 'Change Account Group', route: '/1000/fico/account-groups/change', module: 'FICO', subModule: 'FI-COA', type: 'CHANGE', classicName: 'Account Group Change', keywords: 'change gl account groups number ranges obd4 fage' },
-  { code: 'FAGV', aliases: ['OBD4-DP', 'FIN-AG-DP'], description: 'Display Account Group', route: '/1000/fico/account-groups/display', module: 'FICO', subModule: 'FI-COA', type: 'DISPLAY', classicName: 'Account Group Display', keywords: 'display gl account groups number ranges obd4 fagv' },
-  { code: 'FAGL', aliases: ['OBD4-LS', 'FIN-AG-LS'], description: 'Account Groups List', route: '/1000/fico/account-groups/list', module: 'FICO', subModule: 'FI-COA', type: 'REPORT', classicName: 'Account Groups List', keywords: 'list gl account groups overview obd4 fagl' },
-
-  { code: 'FCOE', aliases: ['OB13-CH', 'FIN-COA-CH'], description: 'Change Chart of Accounts', route: '/1000/fico/chart-of-accounts/change', module: 'FICO', subModule: 'FI-COA', type: 'CHANGE', classicName: 'Chart of Accounts Change', keywords: 'change chart of accounts ob13 fcoe' },
-  { code: 'FCOV', aliases: ['OB13-DP', 'FIN-COA-DP'], description: 'Display Chart of Accounts', route: '/1000/fico/chart-of-accounts/display', module: 'FICO', subModule: 'FI-COA', type: 'DISPLAY', classicName: 'Chart of Accounts Display', keywords: 'display chart of accounts ob13 fcov' },
-  { code: 'FCOL', aliases: ['OB13-LS', 'FIN-COA-LS'], description: 'Chart of Accounts List', route: '/1000/fico/chart-of-accounts/list', module: 'FICO', subModule: 'FI-COA', type: 'REPORT', classicName: 'Chart of Accounts List', keywords: 'list chart of accounts overview ob13 fcol' },
-
-  { code: 'CCUD', aliases: ['KS03', 'CST-CU-DP'], description: 'Display Cost Center', route: '/1000/fico/cost-centers/display', module: 'FICO', subModule: 'CO-CCA', type: 'DISPLAY', classicName: 'Cost Center Display KS03', keywords: 'display department cost center ownership information boundaries ccud' },
-  { code: 'CCUS', aliases: ['KS13', 'CST-CU-LS'], description: 'Cost Centers Directory List', route: '/1000/fico/cost-centers/list', module: 'FICO', subModule: 'CO-CCA', type: 'REPORT', classicName: 'Cost Centers List KS13', keywords: 'list cost centers overview directory ccus ks13' },
-
-  { code: 'FGLS', aliases: ['FS00-LS', 'FIN-GL-LS'], description: 'GL Accounts Directory List', route: '/1000/fico/gl-accounts/list', module: 'FICO', subModule: 'FI-GL', type: 'REPORT', classicName: 'GL Accounts List', keywords: 'list gl accounts master directory overview fgls' },
-
-  { code: 'FD32', aliases: ['FD32', 'FIN-CR-MGT'], description: 'Customer Credit Master', route: '/1000/fico/customer-credit', module: 'FICO', subModule: 'FI-AR', type: 'CHANGE', classicName: 'Customer Credit Master FD32', keywords: 'customer credit limit exposure fd32' },
-  { code: 'FFXV', aliases: ['F.05', 'FAGL_FC_VAL', 'FIN-FX-VAL'], description: 'Foreign Exchange Valuation', route: '/1000/fico/fx-valuation', module: 'FICO', subModule: 'FI-GL', type: 'POSTING', classicName: 'FX Valuation F.05', keywords: 'foreign currency revaluation fx valuation f.05 fagl_fc_val' },
-  { code: 'FGIC', aliases: ['F.13', 'MR11', 'FIN-GRIR-CLR'], description: 'Automated GR/IR Clearing', route: '/1000/fico/gr-ir-clearing', module: 'FICO', subModule: 'FI-GL', type: 'POSTING', classicName: 'GR/IR Clearing F.13', keywords: 'gr ir clearing automatic account maintenance f.13 mr11' },
-  { code: 'FPPR', aliases: ['F110-PR', 'FIN-PAY-PROP'], description: 'Payment Proposal & Execution', route: '/1000/fico/payment-proposal', module: 'FICO', subModule: 'FI-AP', type: 'POSTING', classicName: 'Payment Proposal F110', keywords: 'automatic payment run proposal f110 payment execution' },
-  { code: 'FAPT', aliases: ['OBB8', 'FIN-PAY-TRM'], description: 'Payment Terms Definition', route: '/1000/fico/payment-terms', module: 'FICO', subModule: 'FI-AP', type: 'CREATE', classicName: 'Payment Terms OBB8', keywords: 'define payment terms cash discount obb8 fait' },
-  { code: 'FREV', aliases: ['FB08', 'FBRA', 'FIN-DOC-REV'], description: 'Document Reversal & Reset Clearing', route: '/1000/fico/reversal', module: 'FICO', subModule: 'FI-GL', type: 'POSTING', classicName: 'Document Reversal FB08', keywords: 'financial document reversal reset clearing fbra fb08 frev' },
-  { code: 'FTGL', aliases: ['OBA0', 'FIN-TOL-GL'], description: 'Tolerance Groups – General Ledger', route: '/1000/fico/tolerance-groups-gl', module: 'FICO', subModule: 'FI-GL', type: 'CREATE', classicName: 'GL Tolerance Groups OBA0', keywords: 'define tolerance groups general ledger accounts oba0 ftgl' },
-  { code: 'FTCV', aliases: ['OBA4', 'FIN-TOL-CV'], description: 'Tolerance Groups – Customers/Vendors', route: '/1000/fico/tolerance-groups-cv', module: 'FICO', subModule: 'FI-AR', type: 'CREATE', classicName: 'BP Tolerance Groups OBA4', keywords: 'define tolerance groups business partners customers vendors oba4 ftcv' },
-
-  // --- Foundation Subroutes & Operations ---
-  { code: 'ECGE', aliases: ['OX15-CH', 'FND-CG-CH'], description: 'Change Company Group', route: '/1000/foundation/company-groups/change', module: 'FOUNDATION', subModule: 'ENT-CG', type: 'CHANGE', classicName: 'Company Group Change', keywords: 'change company group enterprise ox15 ecge' },
-  { code: 'ECGV', aliases: ['OX15-DP', 'FND-CG-DP'], description: 'Display Company Group', route: '/1000/foundation/company-groups/display', module: 'FOUNDATION', subModule: 'ENT-CG', type: 'DISPLAY', classicName: 'Company Group Display', keywords: 'display company group enterprise ox15 ecgv' },
-  { code: 'ECGL', aliases: ['OX15-LS', 'FND-CG-LS'], description: 'Company Groups List', route: '/1000/foundation/company-groups/list', module: 'FOUNDATION', subModule: 'ENT-CG', type: 'REPORT', classicName: 'Company Groups List', keywords: 'list company groups enterprise ox15 ecgl' },
-
-  { code: 'ELEE', aliases: ['OX02-CH', 'FND-LE-CH'], description: 'Change Legal Entity', route: '/1000/foundation/legal-entities/change', module: 'FOUNDATION', subModule: 'ENT-LE', type: 'CHANGE', classicName: 'Legal Entity Change', keywords: 'change legal entity statutory company code ox02 elee' },
-  { code: 'ELEV', aliases: ['OX02-DP', 'FND-LE-DP'], description: 'Display Legal Entity', route: '/1000/foundation/legal-entities/display', module: 'FOUNDATION', subModule: 'ENT-LE', type: 'DISPLAY', classicName: 'Legal Entity Display', keywords: 'display legal entity statutory company code ox02 elev' },
-  { code: 'ELEL', aliases: ['OX02-LS', 'FND-LE-LS'], description: 'Legal Entities List', route: '/1000/foundation/legal-entities/list', module: 'FOUNDATION', subModule: 'ENT-LE', type: 'REPORT', classicName: 'Legal Entities List', keywords: 'list legal entities company codes ox02 elel' },
-
-  { code: 'EDPP', aliases: ['OVXD', 'FND-DP-PATH'], description: 'Distribution Paths', route: '/1000/foundation/distribution-paths', module: 'FOUNDATION', subModule: 'SD-CFG', type: 'CREATE', classicName: 'Distribution Paths OVXD', keywords: 'distribution paths channels logistics sales routes ovxd edpp' },
-  { code: 'ECUA', aliases: ['OVX5-AS', 'FND-CU-AS'], description: 'Commercial Unit Assignment', route: '/1000/foundation/commercial-unit-assign', module: 'FOUNDATION', subModule: 'ENT-CU', type: 'CHANGE', classicName: 'Commercial Unit Assignment', keywords: 'commercial unit assignment profit center enterprise ovx5 ecua' },
-  { code: 'EBSA', aliases: ['KE51-AS', 'FND-PC-AS'], description: 'Profit Center Assignment', route: '/1000/foundation/profit-center-assign', module: 'FOUNDATION', subModule: 'ENT-PC', type: 'CHANGE', classicName: 'Profit Center Assignment', keywords: 'profit center assignment plant legal entity ke51 ebsa' },
-  { code: 'SUPF', aliases: ['SU3', 'FND-USR-PRF'], description: 'User Profile & Defaults', route: '/1000/foundation/user-profile', module: 'FOUNDATION', subModule: 'ADMIN', type: 'CHANGE', classicName: 'User Profile SU3', keywords: 'user profile defaults parameters personal settings su3 su01 supf' },
-
-  // --- MM Purchasing & Inventory Subroutes ---
-  { code: 'PPRM', aliases: ['ME5A', 'PUR-PR-LS'], description: 'Purchase Requisitions List', route: '/1000/mm/pr/list', module: 'MM', subModule: 'MM-PUR', type: 'REPORT', classicName: 'PR List ME5A', keywords: 'list purchase requisitions overview me5a pprm' },
-  { code: 'PPOM', aliases: ['ME2N', 'PUR-PO-LS'], description: 'Purchase Orders List', route: '/1000/mm/po/list', module: 'MM', subModule: 'MM-PUR', type: 'REPORT', classicName: 'PO List ME2N', keywords: 'list purchase orders overview me2n ppom' },
-
-  { code: 'IGRR', aliases: ['MIGO-102', 'PUR-GR-REV'], description: 'Goods Receipt Reversal (102)', route: '/1000/mm/gr-reversal', module: 'MM', subModule: 'MM-IM', type: 'POSTING', classicName: 'GR Reversal 102', keywords: 'goods receipt reversal 102 movement cancellation migo igrr' },
-  { code: 'PIVR', aliases: ['MR8M', 'PUR-IV-REV'], description: 'Invoice Verification Reversal', route: '/1000/mm/iv-reversal', module: 'MM', subModule: 'MM-LIV', type: 'POSTING', classicName: 'Invoice Reversal MR8M', keywords: 'invoice verification reversal cancellation mr8m pivr' },
-  { code: 'PIRX', aliases: ['ME11', 'ME12', 'PUR-INF-CR'], description: 'Purchasing Info Records', route: '/1000/mm/info-records', module: 'MM', subModule: 'MM-PUR', type: 'CREATE', classicName: 'Info Records ME11', keywords: 'purchasing info records vendor material prices conditions me11 me12 me13 pirx' },
-  { code: 'PSLX', aliases: ['ME01', 'ME03', 'PUR-SRC-CR'], description: 'Purchasing Source Lists', route: '/1000/mm/source-lists', module: 'MM', subModule: 'MM-PUR', type: 'CREATE', classicName: 'Source Lists ME01', keywords: 'source lists approved vendors determination me01 me03 pslx' },
-  { code: 'PQAX', aliases: ['MEQ1', 'MEQ3', 'PUR-QTA-CR'], description: 'Quota Arrangements', route: '/1000/mm/quota-arrangements', module: 'MM', subModule: 'MM-PUR', type: 'CREATE', classicName: 'Quota Arrangements MEQ1', keywords: 'quota arrangements supplier split allocations meq1 meq3 pqax' },
-  { code: 'PRFQ', aliases: ['ME41', 'ME42', 'PUR-RFQ-CR'], description: 'Request for Quotation (RFQ)', route: '/1000/mm/rfq', module: 'MM', subModule: 'MM-PUR', type: 'CREATE', classicName: 'RFQ Create ME41', keywords: 'request for quotation rfq vendor quotation me41 me42 prfq' },
-  { code: 'PRES', aliases: ['MB21', 'MB22', 'INV-RES-CR'], description: 'Material Stock Reservations', route: '/1000/mm/reservations', module: 'MM', subModule: 'MM-IM', type: 'CREATE', classicName: 'Stock Reservations MB21', keywords: 'stock reservations material reservation mb21 mb22 mb23 pres' },
-  { code: 'PRPT', aliases: ['ME80FN', 'PUR-RPT-LS'], description: 'Purchasing Spend & Line Reporting', route: '/1000/mm/reports', module: 'MM', subModule: 'MM-PUR', type: 'REPORT', classicName: 'Purchasing Reports ME80FN', keywords: 'purchasing reporting spend analysis line items me80fn prpt' },
-  { code: 'PSTX', aliases: ['VL10B', 'PUR-STO-DL'], description: 'Stock Transport Shipments', route: '/1000/mm/sto-delivery', module: 'MM', subModule: 'MM-STO', type: 'POSTING', classicName: 'STO Delivery VL10B', keywords: 'sto delivery stock transport outbound delivery shipments vl10b pstx' },
-
-  // --- Sales Subroutes & Pages ---
-  { code: 'SSOL', aliases: ['VA05', 'SAL-SO-LS'], description: 'Sales Orders List', route: '/1000/sales/list', module: 'SD', subModule: 'SD-SLS', type: 'REPORT', classicName: 'Sales Orders List VA05', keywords: 'list sales orders overview va05 ssol' },
-  { code: 'SDLE', aliases: ['VL02N', 'SAL-DL-CH'], description: 'Outbound Delivery Change & PGI', route: '/1000/sd/delivery-change', module: 'SD', subModule: 'SD-SHP', type: 'CHANGE', classicName: 'Delivery Change VL02N', keywords: 'change delivery post goods issue pgi vl02n sdle' },
-  { code: 'SBLE', aliases: ['VF02', 'SAL-BL-CH'], description: 'Billing Document Change', route: '/1000/sd/billing-change', module: 'SD', subModule: 'SD-BIL', type: 'CHANGE', classicName: 'Billing Change VF02', keywords: 'change billing document invoice vf02 sble' },
-  { code: 'SBLR', aliases: ['VF11', 'SAL-BL-REV'], description: 'Billing Document Reversal', route: '/1000/sd/billing-reversal', module: 'SD', subModule: 'SD-BIL', type: 'POSTING', classicName: 'Billing Reversal VF11', keywords: 'cancel billing document reversal invoice credit vf11 sblr' },
-  { code: 'SPRC', aliases: ['V/08', 'SAL-PRC-PRC'], description: 'Pricing Condition Procedures', route: '/1000/sd/pricing-procedure', module: 'SD', subModule: 'SD-PRC', type: 'CREATE', classicName: 'Pricing Procedures V/08', keywords: 'pricing procedure conditions calculation schema v08 sprc' },
-
-  // --- PP Subroutes & Pages ---
-  { code: 'MBML', aliases: ['CS11', 'MFG-BOM-LS'], description: 'BOM Multi-Level Explosion List', route: '/1000/pp/bom/list', module: 'PP', subModule: 'PP-BOM', type: 'REPORT', classicName: 'BOM Explosion CS11', keywords: 'bill of materials list explosion cs11 cs12 mbml' },
-  { code: 'MRTL', aliases: ['CA11', 'MFG-RTG-LS'], description: 'Routings Directory List', route: '/1000/pp/routings/list', module: 'PP', subModule: 'PP-RTG', type: 'REPORT', classicName: 'Routings List CA11', keywords: 'routings list manufacturing operations ca11 ca12 mrtl' },
-  { code: 'MWCL', aliases: ['CR05', 'MFG-WC-LS'], description: 'Work Centers Directory List', route: '/1000/pp/work-centers/list', module: 'PP', subModule: 'PP-WC', type: 'REPORT', classicName: 'Work Centers List CR05', keywords: 'work centers list plant capacity resources cr05 mwcl' },
-  { code: 'MMPO', aliases: ['CO01', 'CO02', 'MFG-ORD-MGT'], description: 'Manufacturing & Production Orders', route: '/1000/pp/production-orders', module: 'PP', subModule: 'PP-SFC', type: 'CREATE', classicName: 'Production Orders CO01', keywords: 'production orders shop floor control release confirm co01 co02 co03 mmpo' },
-  { code: 'PCST', aliases: ['CK11N', 'CK24', 'MFG-CST-EST'], description: 'Product Standard Cost Estimate', route: '/1000/pp/cost-estimate', module: 'PP', subModule: 'PP-PC', type: 'CREATE', classicName: 'Cost Estimate CK11N', keywords: 'product cost estimate standard cost valuation bom routing ck11n ck24 pcst' },
-  { code: 'MPIR', aliases: ['MD61', 'MD62', 'MFG-DEM-PIR'], description: 'Planned Independent Requirements (PIR)', route: '/1000/pp/pir', module: 'PP', subModule: 'PP-MRP', type: 'CREATE', classicName: 'PIR Demand MD61', keywords: 'planned independent requirements demand management forecast md61 md62 mpir' },
-
-  // --- HR Pages ---
-  { code: 'HEMP', aliases: ['PA30', 'HRM-EMP-DIR'], description: 'Employee Master Directory', route: '/1000/hr/employees', module: 'HR', subModule: 'HR-PA', type: 'CREATE', classicName: 'Employee Directory PA30', keywords: 'employee master directory personnel administration pa30 pa20 hemp' },
-  { code: 'HPAC', aliases: ['PA03', 'HRM-PAY-CTL'], description: 'Payroll Control Record', route: '/1000/hr/payroll-control', module: 'HR', subModule: 'HR-PY', type: 'CHANGE', classicName: 'Payroll Control PA03', keywords: 'payroll control record release exit check pa03 hpac' },
-  { code: 'HPAY', aliases: ['PC00', 'HRM-PAY-RUN'], description: 'Payroll Calculation Run', route: '/1000/hr/payroll-run', module: 'HR', subModule: 'HR-PY', type: 'POSTING', classicName: 'Payroll Run PC00', keywords: 'execute payroll calculation salary disbursements pc00 hpay' },
-
-  // --- Hub & Overview Direct Navigators ---
-  { code: 'FCHB', aliases: ['FIN-HUB', 'FICO-HUB'], description: 'Financial Configuration Hub', route: '/1000/fico/posting-period', module: 'FICO', subModule: 'FI-CFG', type: 'REPORT', classicName: 'Financial Hub', keywords: 'financial configuration hub overview posting period fiscal tax general ledger fchb' },
-  { code: 'ECHB', aliases: ['ENT-HUB', 'FND-HUB'], description: 'Enterprise Configuration Hub', route: '/1000/foundation/enterprise-config', module: 'FOUNDATION', subModule: 'ENT-CFG', type: 'REPORT', classicName: 'Enterprise Hub', keywords: 'enterprise structure configuration hub overview company plant org echb' },
-  { code: 'NAVI', aliases: ['TREE', 'ERP-TREE', 'NAV'], description: 'Enterprise Function Tree Navigator', route: '/1000/navigator', module: 'FOUNDATION', subModule: 'ADMIN', type: 'REPORT', classicName: 'ERP Navigator', keywords: 'tree structure navigator all transaction codes directory erp navi' },
-
-];
-
-
+  const combined = [...exactMatches, ...scored];
   if (combined.length === 0) {
     // Fallback simple includes for longer queries – partial also allowed
     const fallback = FUNCTIONS.filter(t => {
