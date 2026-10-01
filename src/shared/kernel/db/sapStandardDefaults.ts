@@ -5,16 +5,18 @@
  * at the system level and do NOT belong to any specific company code. 
  * They are universal reference masters required for standard system operation:
  * 
- * 1. Currencies (TCURC / OY03) - ISO Currencies
- * 2. Units of Measure (T006 / CUNI) - ISO Units of Measurement
- * 3. Fiscal Year Variants (T009 / OB29) - Standard Calendar & Non-calendar Variants
- * 4. Document Types (T010O / OBA7) - Standard Financial & Material Document Types
- * 5. Movement Types (T156 / OMJJ) - Standard Inventory Movement Types
- * 6. Standard Tax Rules / Types (FTXP) - Base Tax Codes
- * 7. Standard Document Number Ranges & Object Types (SNRO / FBN1)
- * 8. Field Status Variants & Groups (OBC4) - Standard FSSV-1000 / G001 / G002
+ * 1. Currencies (TCURC / OY03 / FCYC) - ISO Currencies
+ * 2. Units of Measure (T006 / CUNI / EUOC) - ISO Units of Measurement
+ * 3. Fiscal Year Variants (T009 / OB29 / FFYC) - Standard Calendar & Non-calendar Variants
+ * 4. Document Types (T010O / OBA7 / FDTC) - Standard Financial & Material Document Types
+ * 5. Movement Types (T156 / OMJJ / FMTM) - Standard Inventory Movement Types
+ * 6. Standard Tax Rules / Types (FTXP / FTXC) - Base Tax Codes
+ * 7. Field Status Variants (OBC4 / FFSV) - Standard Variants 0001, 1000, FFSV-1000
+ * 8. Material Types (OMS2 / EMTC) - Standard Material Types
  * 
- * Idempotent: Every query uses ON CONFLICT DO NOTHING so no data is ever overwritten.
+ * Consistent Naming Convention:
+ * - Uses exact codes referenced across application forms (e.g. K4, V3, FFSV-1000, 1000, 0001)
+ * - Idempotent: Every query uses ON CONFLICT DO NOTHING so no user-modified data is ever overwritten.
  */
 
 import { db } from './client';
@@ -23,7 +25,7 @@ import { sql } from 'drizzle-orm';
 export async function seedSapStandardBaseline(): Promise<void> {
   console.log('🏛️  Applying Standard Baseline Configuration (SAP Client 000 baseline)...');
 
-  // 1. Currencies (TCURC / ISO 4217)
+  // 1. Currencies (TCURC / ISO 4217 / FCYC)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS core_currency (
@@ -51,12 +53,12 @@ export async function seedSapStandardBaseline(): Promise<void> {
         ('CHF', 'Swiss Franc', 'CHF', 2, true)
       ON CONFLICT (code) DO NOTHING
     `);
-    console.log('  ✅ Standard Currencies ensured (TCURC: INR, USD, EUR, GBP, KWD, AED, SAR, JPY, SGD, CHF)');
+    console.log('  ✅ Standard Currencies ensured (FCYC / TCURC: INR, USD, EUR, GBP, KWD, AED, SAR, JPY, SGD, CHF)');
   } catch (e: any) {
     console.warn('  ⚠️ Currency baseline note:', e.message);
   }
 
-  // 2. Units of Measure (T006 / ISO Units)
+  // 2. Units of Measure (T006 / ISO Units / EUOC)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS core_unit_measure (
@@ -93,12 +95,12 @@ export async function seedSapStandardBaseline(): Promise<void> {
         ('DAY', 'Day', 'TIME', 'HR', true)
       ON CONFLICT (code) DO NOTHING
     `);
-    console.log('  ✅ Standard Units of Measure ensured (T006: PC, EA, KG, L, M, BOX, BAG, etc.)');
+    console.log('  ✅ Standard Units of Measure ensured (EUOC / T006: PC, EA, KG, L, M, BOX, BAG, etc.)');
   } catch (e: any) {
     console.warn('  ⚠️ Units of measure baseline note:', e.message);
   }
 
-  // 3. Fiscal Year Variants (T009 / OB29)
+  // 3. Fiscal Year Variants (T009 / OB29 / FFYC)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fin_fiscal_calendar (
@@ -115,7 +117,6 @@ export async function seedSapStandardBaseline(): Promise<void> {
         UNIQUE(code)
       )
     `).catch(async () => {
-      // In case table already has unique on (tenant_id, code)
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS fin_fiscal_calendar (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -151,12 +152,12 @@ export async function seedSapStandardBaseline(): Promise<void> {
         WHERE NOT EXISTS (SELECT 1 FROM fin_fiscal_calendar WHERE code = 'V3')
       `);
     });
-    console.log('  ✅ Standard Fiscal Year Variants ensured (T009: K4 Jan-Dec, V3 Apr-Mar, V6 Jul-Jun, V9 Oct-Sep)');
+    console.log('  ✅ Standard Fiscal Year Variants ensured (FFYC / T009: K4 Jan-Dec, V3 Apr-Mar, V6 Jul-Jun, V9 Oct-Sep)');
   } catch (e: any) {
     console.warn('  ⚠️ Fiscal variant baseline note:', e.message);
   }
 
-  // 4. Standard Document Types (T010O / OBA7)
+  // 4. Standard Document Types (T010O / OBA7 / FDTC)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fin_document_type (
@@ -187,19 +188,19 @@ export async function seedSapStandardBaseline(): Promise<void> {
         ('PR', 'Payroll Document', 'HR Gross and net payroll posting run', true)
       ON CONFLICT (code) DO NOTHING
     `);
-    console.log('  ✅ Standard Document Types ensured (OBA7: SA, KR, KG, KZ, DR, DG, DZ, RE, WE, WA, RV, AB, PR)');
+    console.log('  ✅ Standard Document Types ensured (FDTC / OBA7: SA, KR, KG, KZ, DR, DG, DZ, RE, WE, WA, RV, AB, PR)');
   } catch (e: any) {
     console.warn('  ⚠️ Document types baseline note:', e.message);
   }
 
-  // 5. Standard Inventory Movement Types (T156 / OMJJ)
+  // 5. Standard Inventory Movement Types (T156 / OMJJ / FMTM)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS inv_movement_type (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         code varchar(10) NOT NULL UNIQUE,
         name varchar(150) NOT NULL,
-        direction varchar(10) NOT NULL, -- IN, OUT, TRANSFER
+        direction varchar(10) NOT NULL,
         description text,
         is_active boolean DEFAULT true,
         created_at timestamp DEFAULT NOW()
@@ -225,12 +226,12 @@ export async function seedSapStandardBaseline(): Promise<void> {
         ('702', 'Physical Inventory Difference - Negative', 'OUT', 'Stock count loss post physical inventory', true)
       ON CONFLICT (code) DO NOTHING
     `);
-    console.log('  ✅ Standard Inventory Movement Types ensured (OMJJ: 101, 102, 122, 201, 261, 311, 501, 561, 601, 701, 702)');
+    console.log('  ✅ Standard Inventory Movement Types ensured (FMTM / OMJJ: 101, 102, 122, 201, 261, 311, 501, 561, 601, 701, 702)');
   } catch (e: any) {
     console.warn('  ⚠️ Movement types baseline note:', e.message);
   }
 
-  // 6. Standard Tax Rules / Types (FTXP)
+  // 6. Standard Tax Rules / Types (FTXP / FTXC)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fin_tax_rule (
@@ -238,7 +239,7 @@ export async function seedSapStandardBaseline(): Promise<void> {
         code varchar(20) NOT NULL UNIQUE,
         description varchar(150) NOT NULL,
         rate numeric NOT NULL DEFAULT 0,
-        type varchar(20) NOT NULL, -- INPUT, OUTPUT
+        type varchar(20) NOT NULL,
         is_active boolean DEFAULT true,
         created_at timestamp DEFAULT NOW()
       )
@@ -256,12 +257,12 @@ export async function seedSapStandardBaseline(): Promise<void> {
         ('A18', 'Output Tax Standard 18%', 18, 'OUTPUT', true)
       ON CONFLICT (code) DO NOTHING
     `);
-    console.log('  ✅ Standard Tax Rules ensured (FTXP: V0, V5, V12, V18, A0, A5, A12, A18)');
+    console.log('  ✅ Standard Tax Rules ensured (FTXC / FTXP: V0, V5, V12, V18, A0, A5, A12, A18)');
   } catch (e: any) {
     console.warn('  ⚠️ Tax rules baseline note:', e.message);
   }
 
-  // 7. Field Status Variants & Groups (OBC4)
+  // 7. Field Status Variants & Groups (OBC4 / FFSV / FFSG)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fin_field_status_variant (
@@ -275,15 +276,46 @@ export async function seedSapStandardBaseline(): Promise<void> {
       INSERT INTO fin_field_status_variant (code, name)
       VALUES
         ('0001', 'Standard Field Status Variant (System 000)'),
-        ('1000', 'Standard Country Field Status Variant')
+        ('1000', 'Standard Country Field Status Variant'),
+        ('FFSV-1000', 'Field Status Variant 1000 Standard')
       ON CONFLICT (code) DO NOTHING
     `);
-    console.log('  ✅ Standard Field Status Variants ensured (OBC4: 0001, 1000)');
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS fin_field_status_group (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        variant_code VARCHAR(20) NOT NULL,
+        group_code VARCHAR(20) NOT NULL,
+        field_name VARCHAR(50) NOT NULL,
+        status VARCHAR(1) NOT NULL CHECK (status IN ('R','S','O','D')),
+        description TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(variant_code, group_code, field_name)
+      )
+    `);
+    await db.execute(sql`
+      INSERT INTO fin_field_status_group (variant_code, group_code, field_name, status, description) VALUES
+        ('FFSV-1000', 'G001', 'cost_center', 'R', 'Cost center required for expense accounts'),
+        ('FFSV-1000', 'G001', 'profit_center', 'O', 'Profit center optional for expense'),
+        ('FFSV-1000', 'G001', 'tax_code', 'O', 'Tax code optional'),
+        ('FFSV-1000', 'G002', 'cost_center', 'S', 'Cost center suppressed for cash accounts'),
+        ('FFSV-1000', 'G002', 'profit_center', 'S', 'Profit center suppressed for cash'),
+        ('FFSV-1000', 'G002', 'tax_code', 'S', 'Tax suppressed for cash'),
+        ('1000', 'G001', 'cost_center', 'R', 'Cost center required for expense accounts'),
+        ('1000', 'G001', 'profit_center', 'O', 'Profit center optional for expense'),
+        ('1000', 'G001', 'tax_code', 'O', 'Tax code optional'),
+        ('1000', 'G002', 'cost_center', 'S', 'Cost center suppressed for cash accounts'),
+        ('1000', 'G002', 'profit_center', 'S', 'Profit center suppressed for cash'),
+        ('1000', 'G002', 'tax_code', 'S', 'Tax suppressed for cash')
+      ON CONFLICT (variant_code, group_code, field_name) DO NOTHING
+    `);
+    console.log('  ✅ Standard Field Status Variants & Groups ensured (FFSV/FFSG: FFSV-1000, 1000, 0001 / G001, G002)');
   } catch (e: any) {
     console.warn('  ⚠️ Field status variant baseline note:', e.message);
   }
 
-  // 8. Standard Material Types (OMS2)
+  // 8. Standard Material Types (OMS2 / EMTC)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS prod_item_type (
@@ -307,7 +339,7 @@ export async function seedSapStandardBaseline(): Promise<void> {
         ('HIBE', 'Operating Supplies', 'Consumable production supplies and spare parts', true)
       ON CONFLICT (code) DO NOTHING
     `);
-    console.log('  ✅ Standard Material Types ensured (OMS2: ROH, FERT, HALB, HAWA, VERP, DIEN, NLAG, HIBE)');
+    console.log('  ✅ Standard Material Types ensured (EMTC / OMS2: ROH, FERT, HALB, HAWA, VERP, DIEN, NLAG, HIBE)');
   } catch (e: any) {
     console.warn('  ⚠️ Material types baseline note:', e.message);
   }
