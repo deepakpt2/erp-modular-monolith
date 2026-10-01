@@ -362,10 +362,10 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
 
   if (meLoading) {
     return (
-      <div className={modern ? "min-h-screen bg-[#fafaf9] p-4 flex items-center justify-center" : "min-h-screen bg-white p-3 flex items-center justify-center font-mono text-[11px]"}>
-        <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-4 bg-white text-center"}>
-          <div className={modern ? "text-[13px] font-medium" : "font-bold uppercase"}>Checking permissions – {code} – {title}</div>
-          <div className={modern ? "text-[11px] text-zinc-500 mt-1" : "text-[10px] mt-1"}>Verifying access {code}</div>
+      <div className={modern ? "min-h-screen bg-[#fafaf9] p-4 flex items-center justify-center" : "min-h-screen bg-white p-3 flex items-center justify-center font-mono text-xs"}>
+        <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-6 text-center shadow-sm" : "border-2 border-black p-4 bg-white text-center"}>
+          <div className={modern ? "text-sm font-medium" : "font-bold uppercase text-xs"}>Checking permissions – {code} – {title}</div>
+          <div className={modern ? "text-xs text-zinc-500 mt-1" : "text-[0.65rem] mt-1"}>Verifying access {code}</div>
         </div>
       </div>
     );
@@ -373,26 +373,26 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
 
   if (rbacDenied?.denied) {
     return (
-      <div className={modern ? "min-h-screen bg-[#fafaf9] p-4" : "min-h-screen bg-white p-3 font-mono text-[11px]"}>
-        <div className={modern ? "max-w-[700px] mx-auto space-y-4" : "max-w-[600px] mx-auto space-y-3"}>
-          <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-4 bg-white"}>
+      <div className={modern ? "min-h-screen bg-[#fafaf9] p-4" : "min-h-screen bg-white p-3 font-mono text-xs"}>
+        <div className={modern ? "max-w-2xl mx-auto space-y-4" : "max-w-xl mx-auto space-y-3"}>
+          <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm" : "border-2 border-black p-4 bg-white"}>
             <div className="flex items-center gap-3 mb-4">
               <span className="text-2xl">🔒</span>
               <div>
-                <h2 className={modern ? "text-[15px] font-semibold tracking-tight" : "text-[13px] font-bold uppercase"}>Unauthorised – Contact Administrator</h2>
-                <p className={modern ? "text-[11px] text-zinc-500 mt-0.5" : "text-[10px] mt-0.5"}>{code} – {title} – {sapAlias || ''}</p>
+                <h2 className={modern ? "text-base font-semibold tracking-tight" : "text-sm font-bold uppercase"}>Unauthorised – Contact Administrator</h2>
+                <p className={modern ? "text-xs text-zinc-500 mt-0.5" : "text-[0.65rem] mt-0.5"}>{code} – {title} – {sapAlias || ''}</p>
               </div>
             </div>
             <div className={modern ? "bg-zinc-50 border border-zinc-200 rounded-xl p-3" : "border-2 border-black p-2 bg-white"}>
-              <div className={modern ? "text-[13px] font-mono font-bold" : "font-bold uppercase"}>{rbacDenied.reason}</div>
-              <div className={modern ? "text-[11px] text-zinc-600 mt-2 space-y-1" : "text-[10px] mt-2 space-y-1"}>
+              <div className={modern ? "text-sm font-mono font-bold" : "font-bold uppercase text-xs"}>{rbacDenied.reason}</div>
+              <div className={modern ? "text-xs text-zinc-600 mt-2 space-y-1" : "text-[0.65rem] mt-2 space-y-1"}>
                 <div>User: <b>{me?.email}</b> – <b>{me?.simpleRole}</b></div>
                 <div>Required: <b>{rbacDenied.requiredPermission}</b> – [{rbacDenied.requiredRoles?.join(', ')}]</div>
               </div>
             </div>
             <div className="mt-4 flex gap-2">
-              <Link href={`/${companyCode}/navigator`} className={modern ? "h-[32px] px-4 rounded-full bg-black text-white text-[13px] font-medium inline-flex items-center hover:bg-zinc-800" : "border-2 border-black px-3 py-1 text-[11px] bg-black text-white uppercase font-bold"}>Navigator</Link>
-              <Link href="/login" className={modern ? "h-[32px] px-4 rounded-full border border-zinc-200 text-[13px] bg-white hover:bg-zinc-50 inline-flex items-center" : "border-2 border-black px-3 py-1 text-[11px] bg-white uppercase"}>Switch User</Link>
+              <Link href={`/${companyCode}/navigator`} className={modern ? "h-9 px-4 rounded-full bg-black text-white text-sm font-medium inline-flex items-center hover:bg-zinc-800" : "border-2 border-black px-3 py-1 text-xs bg-black text-white uppercase font-bold"}>Navigator</Link>
+              <Link href="/login" className={modern ? "h-9 px-4 rounded-full border border-zinc-200 text-sm bg-white hover:bg-zinc-50 inline-flex items-center" : "border-2 border-black px-3 py-1 text-xs bg-white uppercase"}>Switch User</Link>
             </div>
           </div>
         </div>
@@ -403,8 +403,6 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   const renderField = (field: FieldDef) => {
     const value = form[field.key] || '';
     const isEmpty = !value;
-    // Modern Design A – 32px, 11px uppercase labels, light zinc borders, focus black
-    // Classic E – monochrome black border-2, font-mono 11px, no colors
     const modernBorder = field.required && isEmpty ? 'border-zinc-300 bg-zinc-50' : value ? 'border-zinc-900 bg-white' : 'border-zinc-200 bg-white';
     const classicBorder = field.required && isEmpty ? 'border-black bg-zinc-50' : 'border-black bg-white';
 
@@ -428,62 +426,60 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     }
     if (field.type === 'select' && field.options) {
       return (
-        <div key={field.key} className="space-y-1">
-          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600 block" : "text-[11px] font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
-          <select value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} className={modern ? `w-full border ${modernBorder} rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all` : `w-full border-2 ${classicBorder} px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none min-h-[30px]`}>
+        <div key={field.key} className="space-y-1.5">
+          <label className={modern ? "text-xs font-medium uppercase tracking-wider text-zinc-600 block" : "text-xs font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
+          <select value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} className={modern ? `w-full border ${modernBorder} rounded-lg px-3 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all` : `w-full border-2 ${classicBorder} px-2 py-1.5 text-xs font-mono bg-white text-black rounded-none focus:outline-none min-h-[2.25rem]`}>
             <option value="">{`Select ${field.label}`}</option>
             {field.options.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-normal" : "text-[10px] font-mono text-black leading-normal"}>{field.description}</p>}
+          {field.description && <p className={modern ? "text-xs text-zinc-400 leading-normal" : "text-[0.65rem] font-mono text-black leading-normal"}>{field.description}</p>}
         </div>
       );
     }
     if (field.type === 'textarea') {
       return (
-        <div key={field.key} className="space-y-1 md:col-span-2">
-          <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600 block" : "text-[11px] font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
-          <textarea value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border ${modernBorder} rounded-lg p-2.5 text-xs sm:text-[13px] min-h-[72px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all placeholder:text-zinc-400 resize-y` : `w-full border-2 ${classicBorder} p-1.5 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none resize-y min-h-[64px]`} />
-          {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-normal" : "text-[10px] font-mono text-black leading-normal"}>{field.description}</p>}
+        <div key={field.key} className="space-y-1.5 md:col-span-2">
+          <label className={modern ? "text-xs font-medium uppercase tracking-wider text-zinc-600 block" : "text-xs font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
+          <textarea value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} placeholder="" rows={3} className={modern ? `w-full border ${modernBorder} rounded-lg p-3 text-sm leading-relaxed min-h-[5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all placeholder:text-zinc-400 resize-y` : `w-full border-2 ${classicBorder} p-2 text-xs font-mono bg-white text-black rounded-none focus:outline-none resize-y min-h-[4.5rem]`}/>
+          {field.description && <p className={modern ? "text-xs text-zinc-400 leading-normal" : "text-[0.65rem] font-mono text-black leading-normal"}>{field.description}</p>}
         </div>
       );
     }
     return (
-      <div key={field.key} className="space-y-1">
-        <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600 block" : "text-[11px] font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
-        <input value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} placeholder="" className={modern ? `w-full border ${modernBorder} rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all placeholder:text-zinc-400` : `w-full border-2 ${classicBorder} px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none focus:outline-none min-h-[30px]`} />
-        {field.description && <p className={modern ? "text-[10px] text-zinc-400 leading-normal" : "text-[10px] font-mono text-black leading-normal"}>{field.description}</p>}
+      <div key={field.key} className="space-y-1.5">
+        <label className={modern ? "text-xs font-medium uppercase tracking-wider text-zinc-600 block" : "text-xs font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
+        <input value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} placeholder="" className={modern ? `w-full border ${modernBorder} rounded-lg px-3 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all placeholder:text-zinc-400` : `w-full border-2 ${classicBorder} px-2 py-1.5 text-xs font-mono bg-white text-black rounded-none focus:outline-none min-h-[2.25rem]`} />
+        {field.description && <p className={modern ? "text-xs text-zinc-400 leading-normal" : "text-[0.65rem] font-mono text-black leading-normal"}>{field.description}</p>}
       </div>
     );
   };
 
-  // MODERN DESIGN A – Minimal Compact 32px – Linear/Notion
-  // CLASSIC DESIGN E – Monochrome black/white only, dense, monospace, no SAP colors
   return (
-    <div className={modern ? "min-h-screen bg-[#fafaf9] p-4" : "min-h-screen bg-white p-3 font-mono text-[11px]"}>
-      <div className={modern ? "max-w-[960px] mx-auto space-y-4" : "max-w-[900px] mx-auto space-y-3"}>
-        {/* Header – Design A: rounded-2xl, border zinc-200, shadow subtle, p-5, small */}
-        <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-3 bg-white"}>
+    <div className={modern ? "min-h-screen bg-[#fafaf9] p-4 sm:p-6" : "min-h-screen bg-white p-3 font-mono text-xs"}>
+      <div className={modern ? "max-w-5xl mx-auto space-y-5" : "max-w-4xl mx-auto space-y-4"}>
+        {/* Header */}
+        <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm" : "border-2 border-black p-3 bg-white"}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className={modern ? "text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white tracking-widest" : "text-[10px] font-mono border-2 border-black px-2 py-0.5 bg-black text-white font-bold uppercase"}>{code}</span>
-              {sapAlias && <span className={modern ? "text-[10px] font-mono px-2 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500" : "text-[9px] font-mono border-2 border-black px-1 bg-white text-black uppercase"}>{sapAlias}</span>}
-              <span className={modern ? "text-[10px] bg-zinc-100 border border-zinc-200 rounded-full px-2.5 py-1 text-zinc-600 font-mono" : "text-[10px] border-2 border-black px-2 py-0.5 bg-white text-black"}>{items.length} records</span>
+              <span className={modern ? "text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-black text-white tracking-widest" : "text-xs font-mono border-2 border-black px-2 py-0.5 bg-black text-white font-bold uppercase"}>{code}</span>
+              {sapAlias && <span className={modern ? "text-xs font-mono px-2 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-500" : "text-xs font-mono border-2 border-black px-1 bg-white text-black uppercase"}>{sapAlias}</span>}
+              <span className={modern ? "text-xs bg-zinc-100 border border-zinc-200 rounded-full px-2.5 py-1 text-zinc-600 font-mono" : "text-xs border-2 border-black px-2 py-0.5 bg-white text-black"}>{items.length} records</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Link href={`/${companyCode}/navigator`} className={modern ? "h-[28px] px-3 rounded-full border border-zinc-200 text-[11px] bg-white hover:bg-zinc-50 inline-flex items-center font-medium" : "border-2 border-black px-2 py-1 text-[10px] bg-white uppercase font-bold"}>Navigator</Link>
-              <Link href={`/${companyCode}/foundation/enterprise-structure`} className={modern ? "h-[28px] px-3 rounded-full border border-zinc-200 text-[11px] bg-white hover:bg-zinc-50 inline-flex items-center" : "border-2 border-black px-2 py-1 text-[10px] bg-white uppercase"}>Hub</Link>
+              <Link href={`/${companyCode}/navigator`} className={modern ? "h-7 px-3 rounded-full border border-zinc-200 text-xs bg-white hover:bg-zinc-50 inline-flex items-center font-medium" : "border-2 border-black px-2 py-1 text-xs bg-white uppercase font-bold"}>Navigator</Link>
+              <Link href={`/${companyCode}/foundation/enterprise-structure`} className={modern ? "h-7 px-3 rounded-full border border-zinc-200 text-xs bg-white hover:bg-zinc-50 inline-flex items-center" : "border-2 border-black px-2 py-1 text-xs bg-white uppercase"}>Hub</Link>
             </div>
           </div>
-          <h1 className={modern ? "text-[15px] font-semibold mt-3 tracking-tight leading-tight" : "text-[13px] font-bold mt-2 uppercase leading-tight"}>{title}</h1>
-          <p className={modern ? "text-[12px] text-zinc-500 mt-1 leading-snug" : "text-[11px] text-black mt-1 leading-tight"}>{description} – <b>{companyCode}</b></p>
-          {/* Mode switch – small pill tabs */}
+          <h1 className={modern ? "text-lg font-semibold mt-3 tracking-tight leading-snug" : "text-sm font-bold mt-2 uppercase leading-snug"}>{title}</h1>
+          <p className={modern ? "text-xs text-zinc-500 mt-1 leading-relaxed" : "text-xs text-black mt-1 leading-relaxed"}>{description} – <b>{companyCode}</b></p>
+          {/* Mode switch */}
           <div className={modern ? "flex items-center gap-1 mt-3 bg-zinc-100 rounded-full p-1 w-fit" : "flex items-center gap-0 mt-3 border-2 border-black w-fit"}>
             {['create', 'list', 'change'].map(m => {
               const isActive = mode === m;
               const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
               const finalHref = `${currentPath}?mode=${m}`;
               return (
-                <Link key={m} href={finalHref} className={modern ? `px-3 py-1 rounded-full text-[11px] font-medium transition-colors h-[24px] inline-flex items-center ${isActive ? 'bg-black text-white' : 'text-zinc-600 hover:bg-white'}` : `px-3 py-1 text-[11px] font-bold uppercase border-r-2 border-black last:border-r-0 ${isActive ? 'bg-black text-white' : 'bg-white text-black hover:bg-zinc-100'}`}>
+                <Link key={m} href={finalHref} className={modern ? `px-3 py-1 rounded-full text-xs font-medium transition-colors h-6 inline-flex items-center ${isActive ? 'bg-black text-white' : 'text-zinc-600 hover:bg-white'}` : `px-3 py-1 text-xs font-bold uppercase border-r-2 border-black last:border-r-0 ${isActive ? 'bg-black text-white' : 'bg-white text-black hover:bg-zinc-100'}`}>
                   {m.charAt(0).toUpperCase() + m.slice(1)} {m === 'list' ? `(${items.length})` : ''}
                 </Link>
               );
@@ -492,15 +488,15 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
         </div>
 
         {mode === 'list' ? (
-          <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 space-y-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-3 space-y-3 bg-white"}>
+          <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 space-y-3 shadow-sm" : "border-2 border-black p-3 space-y-3 bg-white"}>
             <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center">
-              <h3 className={modern ? "font-semibold text-[13px]" : "font-bold text-[11px] uppercase"}>List – {filteredListItems.length} of {items.length}</h3>
-              <div className="relative w-full sm:w-[280px]">
-                <input value={listSearch} onChange={e => { setListSearch(e.target.value); setShowListSuggestions(true); }} onFocus={() => setShowListSuggestions(true)} onBlur={() => setTimeout(() => setShowListSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none min-h-[30px] focus:outline-none"} />
+              <h3 className={modern ? "font-semibold text-sm" : "font-bold text-xs uppercase"}>List – {filteredListItems.length} of {items.length}</h3>
+              <div className="relative w-full sm:w-72">
+                <input value={listSearch} onChange={e => { setListSearch(e.target.value); setShowListSuggestions(true); }} onFocus={() => setShowListSuggestions(true)} onBlur={() => setTimeout(() => setShowListSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-2 py-1 text-xs font-mono bg-white text-black rounded-none min-h-[2.25rem] focus:outline-none"} />
                 {showListSuggestions && listSuggestions.length > 0 && (
-                  <div className={modern ? "absolute top-full mt-1 w-full bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-zinc-200 z-10 max-h-[180px] overflow-auto" : "absolute top-full mt-1 w-full bg-white border-2 border-black z-10 max-h-[180px] overflow-auto"}>
+                  <div className={modern ? "absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-zinc-200 z-10 max-h-48 overflow-auto" : "absolute top-full mt-1 w-full bg-white border-2 border-black z-10 max-h-48 overflow-auto"}>
                     {listSuggestions.map((it: any, i: number) => (
-                      <button key={i} onMouseDown={() => { setListSearch(it.code || it.item_number || ''); setShowListSuggestions(false); setExpandedItem(it); }} className={modern ? "w-full text-left px-2.5 py-1.5 text-[12px] hover:bg-zinc-900 hover:text-white flex items-center gap-2" : "w-full text-left px-1.5 py-1 text-[11px] font-mono hover:bg-black hover:text-white flex items-center gap-2 border-b border-black last:border-0"}>
+                      <button key={i} onMouseDown={() => { setListSearch(it.code || it.item_number || ''); setShowListSuggestions(false); setExpandedItem(it); }} className={modern ? "w-full text-left px-3 py-2 text-xs hover:bg-zinc-900 hover:text-white flex items-center gap-2" : "w-full text-left px-2 py-1 text-xs font-mono hover:bg-black hover:text-white flex items-center gap-2 border-b border-black last:border-0"}>
                         <span className="font-mono font-bold">{it.code || it.item_number}</span>
                         <span className="truncate">{it.name || it.description || ''}</span>
                       </button>
@@ -509,11 +505,11 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                 )}
               </div>
             </div>
-            {loading ? <p className={modern ? "text-[13px] text-zinc-500" : "text-[11px]"}>Loading…</p> : (
+            {loading ? <p className={modern ? "text-sm text-zinc-500" : "text-xs"}>Loading…</p> : (
               <>
                 <div className="overflow-auto">
-                  <table className={modern ? "w-full text-[12px]" : "w-full text-[11px] font-mono border-2 border-black"}>
-                    <thead className={modern ? "text-[11px] uppercase tracking-widest text-zinc-500 border-b border-zinc-100" : "text-[10px] uppercase font-bold border-b-2 border-black bg-white"}>
+                  <table className={modern ? "w-full text-xs" : "w-full text-xs font-mono border-2 border-black"}>
+                    <thead className={modern ? "text-xs uppercase tracking-wider text-zinc-500 border-b border-zinc-100" : "text-xs uppercase font-bold border-b-2 border-black bg-white"}>
                       <tr><th className="text-left py-2 font-medium">Code</th><th className="text-left py-2 font-medium">Name</th><th className="text-left py-2 font-medium">Details</th><th className="text-left py-2 font-medium">Action</th></tr>
                     </thead>
                     <tbody>
@@ -525,39 +521,39 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                               className={modern ? `border-b border-zinc-100 hover:bg-zinc-50 cursor-pointer ${isExpanded ? 'bg-zinc-50' : ''}` : `border-b border-black hover:bg-zinc-50 cursor-pointer ${isExpanded ? 'bg-zinc-100' : ''}`}
                               onClick={() => setExpandedItem(isExpanded ? null : it)}
                             >
-                              <td className="py-2 font-mono text-[11px] font-semibold">{it.code || it.account_number || it.item_number}</td>
-                              <td className="py-2 text-[12px]">{it.name || it.description || it.legal_name || ''}</td>
-                              <td className="py-2 text-[11px] text-zinc-500 truncate max-w-[180px]">{Object.keys(it).slice(0, 3).map(k => `${k}:${String(it[k]).slice(0, 15)}`).join(' ')}</td>
-                              <td className="py-2"><span className={modern ? "text-[11px] text-zinc-900 font-medium hover:underline" : "text-[10px] font-bold underline uppercase"}>{isExpanded ? 'Hide' : 'View'}</span></td>
+                              <td className="py-2.5 font-mono text-xs font-semibold">{it.code || it.account_number || it.item_number}</td>
+                              <td className="py-2.5 text-xs font-medium text-zinc-800">{it.name || it.description || it.legal_name || ''}</td>
+                              <td className="py-2.5 text-xs text-zinc-500 truncate max-w-xs">{Object.keys(it).slice(0, 3).map(k => `${k}:${String(it[k]).slice(0, 15)}`).join(' ')}</td>
+                              <td className="py-2.5"><span className={modern ? "text-xs text-zinc-900 font-medium hover:underline" : "text-xs font-bold underline uppercase"}>{isExpanded ? 'Hide' : 'View'}</span></td>
                             </tr>
                             {isExpanded && (
                               <tr className={modern ? "bg-zinc-50 border-b border-zinc-200" : "bg-zinc-50 border-b-2 border-black"}>
                                 <td colSpan={4} className="p-3">
-                                  <div className={modern ? "p-3 bg-white rounded-xl border border-zinc-200 shadow-sm" : "p-2 bg-white border border-black"}>
+                                  <div className={modern ? "p-4 bg-white rounded-xl border border-zinc-200 shadow-sm" : "p-2 bg-white border border-black"}>
                                     <div className="flex justify-between items-start mb-2">
-                                      <h4 className={modern ? "font-semibold text-[13px]" : "font-bold text-[11px] uppercase"}>View Details – {it.code || it.account_number || it.item_number}</h4>
+                                      <h4 className={modern ? "font-semibold text-sm" : "font-bold text-xs uppercase"}>View Details – {it.code || it.account_number || it.item_number}</h4>
                                       <div className="flex gap-1.5">
                                         <Link
                                           href={`${typeof window !== 'undefined' ? (window.location.pathname.replace(/\/(list|change|display)$/, '') + '/change') : ''}?selected=${encodeURIComponent(it.code || it.account_number || it.item_number || '')}`}
                                           onClick={() => setSelectedCode(it.code || it.account_number || it.item_number)}
-                                          className={modern ? "h-[26px] px-3 rounded-full bg-black text-white text-[11px] inline-flex items-center font-medium hover:bg-zinc-800" : "border-2 border-black px-2 py-0.5 text-[10px] bg-black text-white uppercase font-bold"}
+                                          className={modern ? "h-7 px-3 rounded-full bg-black text-white text-xs inline-flex items-center font-medium hover:bg-zinc-800" : "border-2 border-black px-2 py-0.5 text-xs bg-black text-white uppercase font-bold"}
                                         >
                                           Edit
                                         </Link>
                                         <button
                                           type="button"
                                           onClick={(e) => { e.stopPropagation(); setExpandedItem(null); }}
-                                          className={modern ? "h-[26px] px-3 rounded-full border border-zinc-200 text-[11px] bg-white inline-flex items-center hover:bg-zinc-50" : "border-2 border-black px-2 py-0.5 text-[10px] bg-white uppercase font-bold"}
+                                          className={modern ? "h-7 px-3 rounded-full border border-zinc-200 text-xs bg-white inline-flex items-center hover:bg-zinc-50" : "border-2 border-black px-2 py-0.5 text-xs bg-white uppercase font-bold"}
                                         >
                                           Close
                                         </button>
                                       </div>
                                     </div>
-                                    <div className={modern ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-[12px]" : "grid grid-cols-1 md:grid-cols-2 gap-1 text-[11px] font-mono"}>
+                                    <div className={modern ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs" : "grid grid-cols-1 md:grid-cols-2 gap-1 text-xs font-mono"}>
                                       {Object.entries(it).map(([k, v]) => (
-                                        <div key={k} className={modern ? "flex gap-2 border-b border-zinc-100 py-1" : "flex gap-2 border-b border-black py-1"}>
-                                          <span className={modern ? "font-medium text-zinc-500 min-w-[90px] text-[10px] uppercase tracking-wider" : "font-bold min-w-[80px] uppercase"}>{k}:</span>
-                                          <span className="truncate text-[11px] font-mono">{String(v ?? '').slice(0, 80)}</span>
+                                        <div key={k} className={modern ? "flex gap-2 border-b border-zinc-100 py-1.5" : "flex gap-2 border-b border-black py-1"}>
+                                          <span className={modern ? "font-medium text-zinc-500 min-w-24 text-[0.7rem] uppercase tracking-wider" : "font-bold min-w-20 uppercase"}>{k}:</span>
+                                          <span className="truncate text-xs font-mono">{String(v ?? '').slice(0, 80)}</span>
                                         </div>
                                       ))}
                                     </div>
@@ -575,110 +571,110 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
             )}
           </div>
         ) : mode === 'change' ? (
-          <div className="space-y-3">
-            <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-4 space-y-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-3 space-y-2 bg-white"}>
-              <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600 block" : "text-[11px] font-bold uppercase block"}>Search {title} to Change</label>
+          <div className="space-y-4">
+            <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-4 space-y-2 shadow-sm" : "border-2 border-black p-3 space-y-2 bg-white"}>
+              <label className={modern ? "text-xs font-medium uppercase tracking-wider text-zinc-600 block" : "text-xs font-bold uppercase block"}>Search {title} to Change</label>
               <div className="relative">
-                <input value={changeSearch} onChange={e => { setChangeSearch(e.target.value); setShowChangeSuggestions(true); }} onFocus={() => setShowChangeSuggestions(true)} onBlur={() => setTimeout(() => setShowChangeSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs sm:text-[13px] min-h-[34px] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-1.5 py-1 text-[11px] font-mono bg-white text-black rounded-none min-h-[30px]"} />
+                <input value={changeSearch} onChange={e => { setChangeSearch(e.target.value); setShowChangeSuggestions(true); }} onFocus={() => setShowChangeSuggestions(true)} onBlur={() => setTimeout(() => setShowChangeSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-2 py-1.5 text-xs font-mono bg-white text-black rounded-none min-h-[2.25rem]"} />
                 {showChangeSuggestions && filteredChangeItems.length > 0 && (
-                  <div className={modern ? "absolute top-full mt-1 w-full bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-zinc-200 z-10 max-h-[260px] overflow-auto" : "absolute top-full mt-1 w-full bg-white border-2 border-black z-10 max-h-[260px] overflow-auto"}>
+                  <div className={modern ? "absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-zinc-200 z-10 max-h-60 overflow-auto" : "absolute top-full mt-1 w-full bg-white border-2 border-black z-10 max-h-60 overflow-auto"}>
                     {filteredChangeItems.map((it: any, i: number) => (
-                      <button key={i} onMouseDown={() => { setSelectedCode(it.code || it.account_number || it.item_number || ''); setChangeSearch(it.code || it.item_number || ''); setShowChangeSuggestions(false); }} className={modern ? "w-full text-left px-2.5 py-1.5 text-[12px] hover:bg-zinc-900 hover:text-white flex items-center gap-2" : "w-full text-left px-1.5 py-1 text-[11px] font-mono hover:bg-black hover:text-white flex items-center gap-2 border-b border-black"}>
-                        <span className={modern ? "font-mono font-bold text-[11px] bg-black text-white rounded px-1" : "font-bold border border-black px-1 bg-black text-white"}>{it.code || it.item_number}</span>
+                      <button key={i} onMouseDown={() => { setSelectedCode(it.code || it.account_number || it.item_number || ''); setChangeSearch(it.code || it.item_number || ''); setShowChangeSuggestions(false); }} className={modern ? "w-full text-left px-3 py-2 text-xs hover:bg-zinc-900 hover:text-white flex items-center gap-2" : "w-full text-left px-2 py-1 text-xs font-mono hover:bg-black hover:text-white flex items-center gap-2 border-b border-black"}>
+                        <span className={modern ? "font-mono font-bold text-xs bg-black text-white rounded px-1.5 py-0.5" : "font-bold border border-black px-1 bg-black text-white"}>{it.code || it.item_number}</span>
                         <span className="truncate flex-1">{it.name || it.description || ''}</span>
-                        <span className="text-[10px] opacity-60">{it.type || it.account_type || ''}</span>
+                        <span className="text-xs opacity-60">{it.type || it.account_type || ''}</span>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              {selectedCode && <div className={modern ? "text-[11px] text-zinc-500" : "text-[10px]"}>Selected: <b>{selectedCode}</b> – <button onClick={() => setSelectedCode('')} className={modern ? "text-zinc-900 underline" : "underline font-bold"}>Clear</button></div>}
+              {selectedCode && <div className={modern ? "text-xs text-zinc-500" : "text-xs"}>Selected: <b>{selectedCode}</b> – <button onClick={() => setSelectedCode('')} className={modern ? "text-zinc-900 underline" : "underline font-bold"}>Clear</button></div>}
             </div>
             {selectedCode && (
-              <form onSubmit={handleSubmit} className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 space-y-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-3 space-y-3 bg-white"}>
-                <h3 className={modern ? "font-semibold text-[13px]" : "font-bold text-[11px] uppercase"}>Change {title} – {selectedCode}</h3>
+              <form onSubmit={handleSubmit} className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 space-y-4 shadow-sm" : "border-2 border-black p-3 space-y-3 bg-white"}>
+                <h3 className={modern ? "font-semibold text-sm" : "font-bold text-xs uppercase"}>Change {title} – {selectedCode}</h3>
                 {showTabs ? (
                   <>
-                    <div className={modern ? "flex gap-1 bg-zinc-100 rounded-full p-1 w-fit overflow-x-auto" : "flex gap-0 border-2 border-black w-fit overflow-x-auto"}>
+                    <div className={modern ? "flex gap-1.5 bg-zinc-100 rounded-full p-1 w-fit overflow-x-auto" : "flex gap-0 border-2 border-black w-fit overflow-x-auto"}>
                       {tabs.map(t => {
                         const missing = missingPerTab[t.key]?.length || 0;
                         return (
-                          <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[26px] inline-flex items-center gap-1 transition-colors ${activeTab === t.key ? 'bg-black text-white' : 'text-zinc-600 hover:bg-white'}` : `relative px-3 py-1 text-[11px] font-bold uppercase whitespace-nowrap border-r-2 border-black last:border-r-0 ${activeTab === t.key ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                          <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-3.5 py-1 rounded-full text-xs font-medium whitespace-nowrap h-7 inline-flex items-center gap-1.5 transition-colors ${activeTab === t.key ? 'bg-black text-white' : 'text-zinc-600 hover:bg-white'}` : `relative px-3 py-1 text-xs font-bold uppercase whitespace-nowrap border-r-2 border-black last:border-r-0 ${activeTab === t.key ? 'bg-black text-white' : 'bg-white text-black'}`}>
                             {t.label}
-                            {missing > 0 && <span className={modern ? "ml-1 inline-flex items-center justify-center min-w-[16px] h-[16px] text-[9px] bg-red-500 text-white rounded-full px-1" : "ml-1 inline-flex min-w-[14px] h-[14px] text-[8px] bg-black text-white px-1 border border-white"} title={`${missing} missing`}>{missing}</span>}
+                            {missing > 0 && <span className={modern ? "ml-1 inline-flex items-center justify-center min-w-4 h-4 text-[0.65rem] bg-red-500 text-white rounded-full px-1" : "ml-1 inline-flex min-w-3.5 h-3.5 text-[0.65rem] bg-black text-white px-1 border border-white"} title={`${missing} missing`}>{missing}</span>}
                           </button>
                         );
                       })}
                     </div>
-                    <p className={modern ? "text-[11px] text-zinc-400" : "text-[10px] text-black"}>{tabs.find(t => t.key === activeTab)?.desc} {missingPerTab[activeTab]?.length > 0 && <span className="text-red-500">• Missing: {missingPerTab[activeTab].join(', ')}</span>}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <p className={modern ? "text-xs text-zinc-400" : "text-xs text-black"}>{tabs.find(t => t.key === activeTab)?.desc} {missingPerTab[activeTab]?.length > 0 && <span className="text-red-500">• Missing: {missingPerTab[activeTab].join(', ')}</span>}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {tabs.find(t => t.key === activeTab)?.fields.map(renderField)}
                     </div>
                   </>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {fields.map(renderField)}
                   </div>
                 )}
-                <div className="flex items-center gap-2">
-                  <button type="submit" disabled={!isFormValid} className={modern ? `h-[32px] px-4 rounded-full text-[13px] font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-3 py-1 text-[11px] font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Save</button>
-                  {!isFormValid && <span className={modern ? "text-[11px] text-zinc-500" : "text-[10px] text-black"}>Fill required – red dots show tabs needing attention</span>}
+                <div className="flex items-center gap-3 pt-2">
+                  <button type="submit" disabled={!isFormValid} className={modern ? `h-9 px-5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-3 py-1 text-xs font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Save</button>
+                  {!isFormValid && <span className={modern ? "text-xs text-zinc-500" : "text-xs text-black"}>Fill required – red dots show tabs needing attention</span>}
                 </div>
-                {message && <div className={modern ? "text-[12px] p-2.5 rounded-lg border border-zinc-200 bg-zinc-50" : "text-[11px] border-2 border-black p-2 bg-white"}>{message}</div>}
+                {message && <div className={modern ? "text-xs p-3 rounded-lg border border-zinc-200 bg-zinc-50" : "text-xs border-2 border-black p-2 bg-white"}>{message}</div>}
               </form>
             )}
             {!selectedCode && (
-              <div className={modern ? "bg-zinc-50 rounded-2xl border border-zinc-200 p-5 text-center" : "border-2 border-black p-3 text-center bg-white"}>
-                <p className={modern ? "text-[12px] text-zinc-500" : "text-[11px]"}>Type in search above to find {code} – max 50 suggestions</p>
+              <div className={modern ? "bg-zinc-50 rounded-2xl border border-zinc-200 p-6 text-center" : "border-2 border-black p-4 text-center bg-white"}>
+                <p className={modern ? "text-xs text-zinc-500" : "text-xs"}>Type in search above to find {code} – max 50 suggestions</p>
               </div>
             )}
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 space-y-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-3 space-y-3 bg-white"}>
+          <form onSubmit={handleSubmit} className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 space-y-4 shadow-sm" : "border-2 border-black p-3 space-y-3 bg-white"}>
             <div className="flex items-center justify-between">
-              <h3 className={modern ? "font-semibold text-[13px]" : "font-bold text-[11px] uppercase"}>Create {title} – {code}</h3>
+              <h3 className={modern ? "font-semibold text-sm" : "font-bold text-xs uppercase"}>Create {title} – {code}</h3>
               <div className="flex items-center gap-2">
-                <span className={modern ? "text-[11px] text-zinc-400 hidden sm:inline" : "text-[10px] hidden sm:inline"}>* required – submit disabled until valid</span>
-                {(code === 'EMTC' || apiEndpoint.includes('materials')) && <span className={modern ? "text-[10px] bg-zinc-100 border border-zinc-200 rounded-full px-2 py-0.5 font-mono" : "text-[9px] border-2 border-black px-1 bg-white uppercase"}>Auto MAT-01 if blank</span>}
+                <span className={modern ? "text-xs text-zinc-400 hidden sm:inline" : "text-xs hidden sm:inline"}>* required – submit disabled until valid</span>
+                {(code === 'EMTC' || apiEndpoint.includes('materials')) && <span className={modern ? "text-xs bg-zinc-100 border border-zinc-200 rounded-full px-2.5 py-0.5 font-mono" : "text-xs border-2 border-black px-1 bg-white uppercase"}>Auto MAT-01 if blank</span>}
               </div>
             </div>
             {showTabs ? (
               <>
-                <div className={modern ? "flex gap-1 bg-zinc-100 rounded-full p-1 w-fit overflow-x-auto" : "flex gap-0 border-2 border-black w-fit overflow-x-auto"}>
+                <div className={modern ? "flex gap-1.5 bg-zinc-100 rounded-full p-1 w-fit overflow-x-auto" : "flex gap-0 border-2 border-black w-fit overflow-x-auto"}>
                   {tabs.map(t => {
                     const missing = missingPerTab[t.key]?.length || 0;
                     return (
-                      <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[26px] inline-flex items-center gap-1 transition-colors ${activeTab === t.key ? 'bg-black text-white' : 'text-zinc-600 hover:bg-white'}` : `relative px-3 py-1 text-[11px] font-bold uppercase whitespace-nowrap border-r-2 border-black last:border-r-0 ${activeTab === t.key ? 'bg-black text-white' : 'bg-white text-black'}`}>
+                      <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={modern ? `relative px-3.5 py-1 rounded-full text-xs font-medium whitespace-nowrap h-7 inline-flex items-center gap-1.5 transition-colors ${activeTab === t.key ? 'bg-black text-white' : 'text-zinc-600 hover:bg-white'}` : `relative px-3 py-1 text-xs font-bold uppercase whitespace-nowrap border-r-2 border-black last:border-r-0 ${activeTab === t.key ? 'bg-black text-white' : 'bg-white text-black'}`}>
                         {t.label}
-                        {missing > 0 && <span className={modern ? "ml-1 inline-flex items-center justify-center min-w-[16px] h-[16px] text-[9px] bg-red-500 text-white rounded-full px-1" : "ml-1 inline-flex min-w-[14px] h-[14px] text-[8px] bg-black text-white px-1 border border-white"} title={`${missing} missing`}>{missing}</span>}
+                        {missing > 0 && <span className={modern ? "ml-1 inline-flex items-center justify-center min-w-4 h-4 text-[0.65rem] bg-red-500 text-white rounded-full px-1" : "ml-1 inline-flex min-w-3.5 h-3.5 text-[0.65rem] bg-black text-white px-1 border border-white"} title={`${missing} missing`}>{missing}</span>}
                       </button>
                     );
                   })}
                 </div>
-                <p className={modern ? "text-[11px] text-zinc-400" : "text-[10px] text-black"}>{tabs.find(t => t.key === activeTab)?.desc} {missingPerTab[activeTab]?.length > 0 && <span className="text-red-500">• Missing: {missingPerTab[activeTab].join(', ')}</span>}</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <p className={modern ? "text-xs text-zinc-400" : "text-xs text-black"}>{tabs.find(t => t.key === activeTab)?.desc} {missingPerTab[activeTab]?.length > 0 && <span className="text-red-500">• Missing: {missingPerTab[activeTab].join(', ')}</span>}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {tabs.find(t => t.key === activeTab)?.fields.map(renderField)}
                 </div>
               </>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {fields.map(renderField)}
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <button type="submit" disabled={!isFormValid} className={modern ? `h-[32px] px-5 rounded-full text-[13px] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-4 py-1 text-[11px] font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Create {title.split(' ')[0]}</button>
-              {!isFormValid && <span className={modern ? "text-[11px] text-zinc-500" : "text-[10px] text-black"}>Red dots show tabs needing attention</span>}
+            <div className="flex items-center gap-3 pt-2">
+              <button type="submit" disabled={!isFormValid} className={modern ? `h-9 px-5 rounded-full text-sm font-medium shadow-sm transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-4 py-1.5 text-xs font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Create {title.split(' ')[0]}</button>
+              {!isFormValid && <span className={modern ? "text-xs text-zinc-500" : "text-xs text-black"}>Red dots show tabs needing attention</span>}
             </div>
-            {message && <div className={modern ? "text-[12px] p-2.5 rounded-lg border border-zinc-200 bg-zinc-50 mt-2" : "text-[11px] border-2 border-black p-2 bg-white"}>{message}</div>}
+            {message && <div className={modern ? "text-xs p-3 rounded-lg border border-zinc-200 bg-zinc-50 mt-2" : "text-xs border-2 border-black p-2 bg-white"}>{message}</div>}
           </form>
         )}
 
-        <div className={modern ? "bg-zinc-50 rounded-2xl border border-zinc-200 p-3" : "border-2 border-black p-2 bg-white"}>
-          <h4 className={modern ? "text-[11px] uppercase tracking-widest text-zinc-500 font-medium mb-2" : "text-[10px] uppercase font-bold mb-1"}>Related Masters</h4>
-          <div className="flex flex-wrap gap-1.5">
+        <div className={modern ? "bg-zinc-50 rounded-2xl border border-zinc-200 p-4" : "border-2 border-black p-2.5 bg-white"}>
+          <h4 className={modern ? "text-xs uppercase tracking-wider text-zinc-500 font-medium mb-2.5" : "text-xs uppercase font-bold mb-1"}>Related Masters</h4>
+          <div className="flex flex-wrap gap-2">
             {relatedLinks.map((link, i) => (
-              <Link key={i} href={`/${companyCode}${link.route}`} className={modern ? "inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300 h-[26px]" : "inline-flex items-center gap-1 border-2 border-black px-2 py-1 text-[10px] bg-white uppercase font-bold"}>
-                <span className={modern ? "font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white" : "font-bold text-[9px] px-1 bg-black text-white"}>{link.code}</span>
+              <Link key={i} href={`/${companyCode}${link.route}`} className={modern ? "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-zinc-200 text-xs hover:border-zinc-300 h-7" : "inline-flex items-center gap-1 border-2 border-black px-2 py-1 text-xs bg-white uppercase font-bold"}>
+                <span className={modern ? "font-mono font-bold text-[0.65rem] px-1.5 py-0.5 rounded bg-black text-white" : "font-bold text-[0.65rem] px-1 bg-black text-white"}>{link.code}</span>
                 <span>{link.label}</span>
                 <span className={modern ? "text-zinc-400" : "text-black"}>→</span>
               </Link>
@@ -686,14 +682,14 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
           </div>
         </div>
 
-        <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]" : "border-2 border-black p-2 bg-white"}>
-          <h4 className={modern ? "font-medium text-[12px] mb-2" : "font-bold text-[11px] uppercase mb-1"}>Existing – {items.length}</h4>
-          {loading ? <p className={modern ? "text-[12px] text-zinc-500" : "text-[11px]"}>Loading…</p> : (
-            <div className="overflow-auto max-h-[160px]">
-              <table className={modern ? "w-full text-[12px]" : "w-full text-[11px] font-mono border-2 border-black"}>
-                <thead className={modern ? "text-[10px] uppercase tracking-widest text-zinc-500 border-b border-zinc-100" : "text-[10px] uppercase font-bold border-b-2 border-black"}><tr><th className="text-left py-1 font-medium">Code</th><th className="text-left py-1 font-medium">Name</th></tr></thead>
+        <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm" : "border-2 border-black p-2.5 bg-white"}>
+          <h4 className={modern ? "font-medium text-xs mb-2.5 uppercase tracking-wider text-zinc-600" : "font-bold text-xs uppercase mb-1"}>Existing – {items.length}</h4>
+          {loading ? <p className={modern ? "text-xs text-zinc-500" : "text-xs"}>Loading…</p> : (
+            <div className="overflow-auto max-h-44">
+              <table className={modern ? "w-full text-xs" : "w-full text-xs font-mono border-2 border-black"}>
+                <thead className={modern ? "text-xs uppercase tracking-wider text-zinc-500 border-b border-zinc-100" : "text-xs uppercase font-bold border-b-2 border-black"}><tr><th className="text-left py-1.5 font-medium">Code</th><th className="text-left py-1.5 font-medium">Name</th></tr></thead>
                 <tbody>
-                  {items.slice(0, 10).map((it: any, i: number) => <tr key={i} className={modern ? "border-b border-zinc-50" : "border-b border-black"}><td className="py-1 font-mono text-[11px]">{it.code || it.account_number || it.item_number}</td><td className="py-1 text-[11px]">{it.name || it.description || ''}</td></tr>)}
+                  {items.slice(0, 10).map((it: any, i: number) => <tr key={i} className={modern ? "border-b border-zinc-50" : "border-b border-black"}><td className="py-2 font-mono text-xs">{it.code || it.account_number || it.item_number}</td><td className="py-2 text-xs">{it.name || it.description || ''}</td></tr>)}
                 </tbody>
               </table>
             </div>
@@ -703,3 +699,4 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     </div>
   );
 }
+

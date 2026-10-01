@@ -806,7 +806,8 @@ Once you confirm, I will:
   - Updated `FGLC` GL Account Master creation page and `/api/gl-accounts`:
     - `ACCOUNT_GROUP_CODE` is elevated as the leading configuration field after `CHART_OF_ACCOUNTS_CODE`.
     - GL account creation automatically inherits the corresponding Account Type and Category from the selected Account Group, exactly matching SAP `FS00` behavior.**Responsive Form Input Sizing & Anti-Clipping (2026-10-01):**
-- Replaced rigid fixed height `h-[32px]` on form inputs, selects, autocompletes, and search bars with responsive `min-h-[34px] px-2.5 py-1.5 text-xs sm:text-[13px]`:
-  - Prevents text clipping and field truncation on mobile/laptop screens and high DPI displays.
-  - Allowed textareas to span 2 columns with dynamic vertical resizing (`resize-y min-h-[72px]`).
-  - Adjusted label spacing and helper text line heights for clean vertical balance.
+- Converted all rigid `px` styling across forms (`single-code-page.tsx` and `db-autocomplete.tsx`) to standard relative units (`rem` / Tailwind scales):
+  - Form inputs, selects, autocompletes, and search fields now use `min-h-[2.5rem] px-3 py-2 text-sm` with relative scaling.
+  - Text sizes use standard responsive scales (`text-xs`, `text-sm`, `text-base`), properly honoring user root font preferences and preventing clipping.
+  - Badges, modals, and tables converted to relative rem padding and proportional heights (`h-7`, `h-9`, `min-h-[5rem]`, `max-h-48`).
+
