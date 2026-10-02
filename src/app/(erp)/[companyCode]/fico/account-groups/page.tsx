@@ -1,4 +1,5 @@
 "use client";
+
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
 export default function AccountGroupsPage({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
@@ -6,65 +7,78 @@ export default function AccountGroupsPage({ defaultMode, codeOverride, titleOver
     <SingleCodePage
       code={codeOverride || "FAGC"}
       sapAlias="OBD4"
-      title={titleOverride || "Account Groups – GL Account Categories"}
-      description="Define Account Groups – classify GL accounts by category, specify number ranges (from_account to to_account), and assign field status controls. Groups include Balance Sheet, Non-operating P&L, Operating P&L, Primary & Secondary Cost Elements, Retained Earnings, Reconciliation, GR/IR, and Bank Clearing."
+      title={titleOverride || "Account Groups – G/L Account Number Ranges"}
+      description="Industry Standard Configuration: Defines Account Groups within a Chart of Accounts. Groups classify G/L accounts, control the account number interval (From Account to To Account), and determine field status rules when creating G/L master accounts."
       apiEndpoint="/api/account-groups"
       referenceConfig={{
         keyField: "code",
         displayField: "name",
-        label: "Create with Reference – Copy Account Group (OBD4)",
+        label: "Create with Reference – Copy Account Group",
         excludedFields: ["code", "id", "created_at", "updated_at"]
       }}
       defaultMode={defaultMode || "create"}
       initialForm={{
+        chart_code: 'CA-IN-01',
         code: '',
         name: '',
-        chart_code: 'CA-IN-01',
-        coa_code: 'CA-IN-01',
         from_account: '',
         to_account: '',
-        account_type: 'ASSET',
-        account_category: 'BALANCE_SHEET',
         description: '',
       }}
       fields={[
-        { key: 'code', label: 'ACCOUNT_GROUP_CODE', required: true, placeholder: '', description: 'Unique account group code – e.g., G001, BS, RECON, GRIR, CASH' },
-        { key: 'name', label: 'ACCOUNT_GROUP_NAME', required: true, placeholder: '', description: 'Descriptive name – e.g., Balance Sheet Accounts, Vendor Reconciliation, GR/IR Clearing' },
-        { key: 'chart_code', label: 'CHART_OF_ACCOUNTS_CODE', required: true, type: 'autocomplete', apiUrl: '/api/chart-of-accounts', dataKey: 'chartOfAccounts', codeField: 'code', placeholder: '', createUrl: '/fico/chart-of-accounts', createCode: 'FCOA', description: 'Chart of Accounts – e.g., CA-IN-01' },
         {
-          key: 'account_type',
-          label: 'ACCOUNT_TYPE',
+          key: 'chart_code',
+          label: 'CHART_OF_ACCOUNTS',
           required: true,
-          type: 'select',
-          options: ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'],
-          description: 'Financial statement classification – ASSET / LIABILITY / EQUITY / REVENUE / EXPENSE'
+          type: 'autocomplete',
+          apiUrl: '/api/chart-of-accounts',
+          dataKey: 'chartOfAccounts',
+          codeField: 'code',
+          placeholder: 'e.g. CA-IN-01, 1000',
+          createUrl: '/fico/chart-of-accounts',
+          createCode: 'FCOA',
+          description: 'Chart of Accounts key to which this account group belongs'
         },
         {
-          key: 'account_category',
-          label: 'GL_ACCOUNT_CATEGORY',
+          key: 'code',
+          label: 'ACCOUNT_GROUP',
           required: true,
-          type: 'select',
-          options: [
-            'BALANCE_SHEET',
-            'NON_OPERATING_EXP_INC',
-            'OPERATING_EXP_INC',
-            'PRIMARY_COST_ELEMENT',
-            'SECONDARY_COST_ELEMENT',
-            'RETAINED_EARNINGS',
-            'RECONCILIATION',
-            'GR_IR_CLEARING',
-            'BANK_CLEARING'
-          ],
-          description: 'SAP-standard GL category: Balance Sheet (X), Non-operating P&L (N), Primary Costs (P), Secondary Costs (S), Cash / Bank (C), etc. Fixed to this account group.'
+          placeholder: 'e.g. BS, CASH, MATL, REVN, EXPN',
+          description: '4-character Account Group key'
         },
-        { key: 'from_account', label: 'FROM_ACCOUNT', required: true, placeholder: '', description: 'Starting GL account number in this range – e.g., 1000000000' },
-        { key: 'to_account', label: 'TO_ACCOUNT', required: true, placeholder: '', description: 'Ending GL account number in this range – e.g., 1999999999' },
-        { key: 'description', label: 'DESCRIPTION', type: 'textarea', placeholder: '', description: 'Details about accounts classified in this group' },
+        {
+          key: 'name',
+          label: 'ACCOUNT_GROUP_NAME',
+          required: true,
+          placeholder: 'e.g. Balance Sheet Accounts',
+          description: 'Name or description of the account group'
+        },
+        {
+          key: 'from_account',
+          label: 'FROM_ACCOUNT',
+          required: true,
+          placeholder: 'e.g. 100000',
+          description: 'Lower limit of the G/L account number interval'
+        },
+        {
+          key: 'to_account',
+          label: 'TO_ACCOUNT',
+          required: true,
+          placeholder: 'e.g. 199999',
+          description: 'Upper limit of the G/L account number interval'
+        },
+        {
+          key: 'description',
+          label: 'DESCRIPTION',
+          type: 'textarea',
+          placeholder: 'Optional accounting details or notes about accounts in this group',
+          description: 'Detailed description for accounting administration'
+        },
       ]}
       relatedLinks={[
-        { code: 'FGLC', label: 'GL Master Accounts', route: '/fico/gl-accounts', description: 'Create and view GL accounts using these account groups' },
-        { code: 'FCOA', label: 'Chart of Accounts', route: '/fico/chart-of-accounts', description: 'Define Chart of Accounts' },
-        { code: 'FFSG', label: 'Field Status Groups', route: '/fico/field-status-groups', description: 'Assign field status rules' },
+        { code: 'FS00', label: 'G/L Master Accounts (FGLC)', route: '/fico/gl-accounts', description: 'Create and view G/L accounts using these account groups' },
+        { code: 'OB13', label: 'Chart of Accounts (FCOA)', route: '/fico/chart-of-accounts', description: 'Define Chart of Accounts' },
+        { code: 'OB62', label: 'Assign CoA to Company Code', route: '/fico/assignments/chart-of-accounts', description: 'Assign CoA' },
       ]}
     />
   );

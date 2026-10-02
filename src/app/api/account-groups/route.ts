@@ -97,8 +97,8 @@ export async function POST(req: NextRequest) {
       await db.execute(sql`ALTER TABLE fin_account_group ADD COLUMN IF NOT EXISTS account_category VARCHAR(50) DEFAULT 'BALANCE_SHEET'`);
     } catch {}
 
-    const finalAccountType = account_type || 'ASSET';
-    const finalAccountCategory = account_category || 'BALANCE_SHEET';
+    const finalAccountType = account_type || null;
+    const finalAccountCategory = account_category || null;
 
     try {
       const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
 
       const res = await db.execute(sql`
         INSERT INTO fin_account_group (chart_id, coa_id, code, name, from_account, to_account, account_type, account_category, description)
-        VALUES (${chartId}, ${chartId}, ${code.toUpperCase()}, ${name}, ${from_account}, ${to_account}, ${finalAccountType}, ${finalAccountCategory}, ${description || null})
+        VALUES (${chartId}, ${chartId}, ${code.toUpperCase().trim()}, ${name}, ${from_account.trim()}, ${to_account.trim()}, ${finalAccountType}, ${finalAccountCategory}, ${description || null})
         ON CONFLICT (chart_id, code) DO UPDATE SET name = ${name}, from_account = ${from_account}, to_account = ${to_account}, account_type = ${finalAccountType}, account_category = ${finalAccountCategory}, description = ${description || null}, updated_at = NOW()
         RETURNING id, code, name, account_type, account_category
       `);

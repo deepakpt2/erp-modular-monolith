@@ -1283,3 +1283,20 @@ Once you confirm, I will:
   - Zero vendor keywords in source tree (`grep -i "+.*sap"` returned 0 matches).
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Architectural Standard Parity Directive: 100% Industry Standard Data Compatibility
+- **Implementation Guideline & Golden Rule:**
+  - All form fields, configuration screens, master data definitions, and database persistence layers must strictly adhere to the standard enterprise ERP functional specification (e.g., industry standard enterprise ERP configuration blueprint / SPRO customizing & master data structures).
+  - An enterprise consultant with an industry standard implementation plan / configuration workbook must be able to execute every step in this application without translation friction, missing fields, or ad-hoc custom fields.
+  - **Naming & Schema Rule:**
+    - Custom code is always the main functional identifier (e.g., `FAGC`, `FCOA`, `FPPE`, `ELEC`, `EFCC`, `FS00`, `ME21N`).
+    - Standard transaction codes (e.g., `OBD4`, `OB13`, `OB52`, `OX02`, `OX18`) serve as universal search aliases.
+    - Database table and column names must remain industry-standard domain terms (`fin_account_group`, `fin_chart`, `fin_posting_calendar_period`, `org_legal_entity`), NEVER using proprietary vendor table acronyms directly as user-facing labels or schemas.
+- **Account Groups (`OBD4` / `FAGC`) Parity Realignment:**
+  - Standardizing `OBD4` to intrinsic attributes:
+    1. `CHART_OF_ACCOUNTS` (Chart key)
+    2. `ACCOUNT_GROUP` (4-character group key)
+    3. `ACCOUNT_GROUP_NAME` (Description)
+    4. `FROM_ACCOUNT` (Start of interval)
+    5. `TO_ACCOUNT` (End of interval)
+  - Removed artificial `GL_ACCOUNT_CATEGORY` and `ACCOUNT_TYPE` mandatory constraints from `OBD4`; these attributes natively belong to the G/L Account Master (`FS00` / Table `SKA1`).
