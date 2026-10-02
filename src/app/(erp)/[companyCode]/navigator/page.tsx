@@ -175,7 +175,7 @@ export default function NavigatorPage() {
         { label: 'Chart of Accounts – Display', code: 'FCOV', route: `/fico/chart-of-accounts/display` },
         { label: 'Chart of Accounts – List', code: 'FCOL', route: `/fico/chart-of-accounts/list` },
         { label: 'Account Groups – Create', code: 'FAGC', route: `/fico/account-groups` },
-        { label: 'Account Groups – Change', code: 'FAGE', route: `/fico/account-groups/change` },
+        { label: 'Create/Change Account Group', code: 'FAGE', route: `/fico/account-groups/change` },
         { label: 'Account Groups – Display', code: 'FAGV', route: `/fico/account-groups/display` },
         { label: 'Account Groups – List', code: 'FAGL', route: `/fico/account-groups/list` },
         { label: 'General Ledger Accounts – Create', code: 'FGLC', route: `/fico/gl-accounts` },

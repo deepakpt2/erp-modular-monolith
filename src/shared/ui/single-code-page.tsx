@@ -821,7 +821,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                   </div>
                 )}
                 <div className="flex items-center gap-3 pt-2">
-                  <button type="submit" disabled={!isFormValid} className={modern ? `h-9 px-5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-3 py-1 text-xs font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Save</button>
+                  <button type="submit" disabled={!isFormValid} className={modern ? `h-9 px-5 rounded-full text-sm font-medium transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-3 py-1 text-xs font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Submit</button>
                   <button
                     type="button"
                     disabled={isDeleting}
@@ -984,7 +984,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
               </div>
             )}
             <div className="flex items-center gap-3 pt-2">
-              <button type="submit" disabled={!isFormValid} className={modern ? `h-9 px-5 rounded-full text-sm font-medium shadow-sm transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-4 py-1.5 text-xs font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Create {title.split(' ')[0]}</button>
+              <button type="submit" disabled={!isFormValid} className={modern ? `h-9 px-5 rounded-full text-sm font-medium shadow-sm transition ${isFormValid ? 'bg-black text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed border border-zinc-200'}` : `border-2 border-black px-4 py-1.5 text-xs font-bold uppercase ${isFormValid ? 'bg-black text-white' : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'}`}>Submit</button>
               {!isFormValid && <span className={modern ? "text-xs text-zinc-500" : "text-xs text-black"}>Red dots show tabs needing attention</span>}
             </div>
             {message && <div className={modern ? "text-xs p-3 rounded-lg border border-zinc-200 bg-zinc-50 mt-2" : "text-xs border-2 border-black p-2 bg-white"}>{message}</div>}

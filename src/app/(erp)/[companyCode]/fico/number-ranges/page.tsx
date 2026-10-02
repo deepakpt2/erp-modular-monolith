@@ -364,7 +364,7 @@ export default function NumberRangesPage() {
                     <textarea value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="" rows={2} className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="md:col-span-2 flex items-center gap-3">
-                    <button type="submit" className="px-6 py-2.5 rounded-full bg-black text-white text-sm">{editing ? (editing.is_locked ? 'Save – only to_number increase 🔒' : 'Save') : 'Create Range – 5 to 12 digit configurable'}</button>
+                    <button type="submit" className="px-6 py-2.5 rounded-full bg-black text-white text-sm">Submit</button>
                     <button type="button" onClick={() => { setShowForm(false); setEditing(null); }} className="px-4 py-2 rounded-full border text-xs">Cancel</button>
                   </div>
                 </form>
@@ -498,7 +498,7 @@ export default function NumberRangesPage() {
                     <input value={assignForm.description || ''} onChange={e => setAssignForm({ ...assignForm, description: e.target.value })} placeholder="" className="w-full border border-zinc-200 rounded-lg px-2.5 py-2 text-[13px] h-[32px]" />
                   </div>
                   <div className="md:col-span-2 flex gap-2">
-                    <button type="submit" className="px-6 py-2.5 rounded-full bg-black text-white text-sm">Create Assignment – XYZ→Material</button>
+                    <button type="submit" className="px-6 py-2.5 rounded-full bg-black text-white text-sm">Submit</button>
                     <button type="button" onClick={() => setShowAssignForm(false)} className="px-4 py-2 rounded-full border text-xs">Cancel</button>
                   </div>
                 </form>

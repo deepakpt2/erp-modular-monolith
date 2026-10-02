@@ -949,7 +949,7 @@ export default function MaterialMasterPage({ defaultMode, codeOverride, titleOve
                 </div>
                 {renderTabContent()}
                 <div className="flex gap-2 pt-4 border-t items-center">
-                  <button type="submit" disabled={!isFormValid} className={modern ? `h-[32px] px-5 rounded-full text-[13px] transition ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Update Product</button>
+                  <button type="submit" disabled={!isFormValid} className={modern ? `h-[32px] px-5 rounded-full text-[13px] transition ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}` : `px-4 py-1.5 text-xs ${isFormValid ? 'bg-black text-white' : 'bg-zinc-200 text-zinc-400 cursor-not-allowed'}`}>Submit</button>
                   {!isFormValid && <span className="text-[11px] text-red-500">Red dots show tabs with missing – fill to activate</span>}
                 </div>
               </form>

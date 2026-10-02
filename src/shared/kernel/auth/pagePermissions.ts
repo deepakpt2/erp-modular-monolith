@@ -150,7 +150,7 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { code: 'FAUD', permission: 'AUDIT_VIEW', roles: ['ADMIN', 'OWNER', 'AUDITOR', 'MANAGER'], module: 'AUDIT', description: 'Audit Trail – SM20 – FAUD – AUDIT_VIEW – ADMIN/AUDITOR' },
 
   // ========== NEW CODES MAPPING – AUDITED 100% COVERAGE ==========
-  { code: 'FAGE', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Account Group Change – OBD4 – FAGE' },
+  { code: 'FAGE', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Create/Change Account Group – OBD4 – FAGE' },
   { code: 'FAGV', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Account Group Display – OBD4 – FAGV' },
   { code: 'FAGL', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Account Groups List – OBD4 – FAGL' },
   { code: 'FCOE', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Chart of Accounts Change – OB13 – FCOE' },

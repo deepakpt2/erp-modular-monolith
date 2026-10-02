@@ -179,7 +179,7 @@ export const FUNCTIONS: FunctionCode[] = [
   { code: 'FCCA', aliases: ['FCCA'], description: 'Define FCCA – auto-generated', route: '/1000/fico/cost-centers', module: 'FOUNDATION', subModule: 'ENT', type: 'CREATE', classicName: 'FCCA', keywords: 'fcca' },
 
   // --- FICO Master & Operations Dedicated Subroutes ---
-  { code: 'FAGE', aliases: ['OBD4-CH', 'FIN-AG-CH'], description: 'Change Account Group', route: '/1000/fico/account-groups/change', module: 'FICO', subModule: 'FI-COA', type: 'CHANGE', classicName: 'Account Group Change', keywords: 'change gl account groups number ranges obd4 fage' },
+  { code: 'FAGE', aliases: ['OBD4-CH', 'FIN-AG-CH'], description: 'Create/Change Account Group', route: '/1000/fico/account-groups/change', module: 'FICO', subModule: 'FI-COA', type: 'CHANGE', classicName: 'Create/Change Account Group', keywords: 'change gl account groups number ranges obd4 fage' },
   { code: 'FAGV', aliases: ['OBD4-DP', 'FIN-AG-DP'], description: 'Display Account Group', route: '/1000/fico/account-groups/display', module: 'FICO', subModule: 'FI-COA', type: 'DISPLAY', classicName: 'Account Group Display', keywords: 'display gl account groups number ranges obd4 fagv' },
   { code: 'FAGL', aliases: ['OBD4-LS', 'FIN-AG-LS'], description: 'Account Groups List', route: '/1000/fico/account-groups/list', module: 'FICO', subModule: 'FI-COA', type: 'REPORT', classicName: 'Account Groups List', keywords: 'list gl account groups overview obd4 fagl' },
 

@@ -1300,3 +1300,16 @@ Once you confirm, I will:
     4. `FROM_ACCOUNT` (Start of interval)
     5. `TO_ACCOUNT` (End of interval)
   - Removed artificial `GL_ACCOUNT_CATEGORY` and `ACCOUNT_TYPE` mandatory constraints from `OBD4`; these attributes natively belong to the G/L Account Master (`FS00` / Table `SKA1`).
+
+### 2026-10-02 IST: Align FAGE Screen Title to "Create/Change Account Group" and Standardize Submit Buttons to "Submit"
+- **Title Correction:**
+  - Updated title and navigation descriptions for code `FAGE` across `src/app/(erp)/[companyCode]/fico/account-groups/change/page.tsx`, `src/shared/lib/functions.ts`, `src/app/(erp)/[companyCode]/navigator/page.tsx`, and `src/shared/kernel/auth/pagePermissions.ts` to:
+    **`Create/Change Account Group – FAGE`**
+  - Removed misleading "Change Only" wording so users recognize the dual create/change functionality.
+- **Button Label Standardization:**
+  - Standardized form submission buttons across `SingleCodePage` (`src/shared/ui/single-code-page.tsx`), Materials (`materials/page.tsx`), and Number Ranges (`number-ranges/page.tsx`) from verbose texts (`Create X`, `Save`, `Update Product`) to clean, universal:
+    **`Submit`**
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) clean with 0 errors.
+  - Zero vendor keywords in source code diff.
+  - Pushed to GitHub repository `main`.
