@@ -9,6 +9,12 @@ export default function AccountGroupsPage({ defaultMode, codeOverride, titleOver
       title={titleOverride || "Account Groups – GL Account Categories"}
       description="Define Account Groups – classify GL accounts by category, specify number ranges (from_account to to_account), and assign field status controls. Groups include Balance Sheet, Non-operating P&L, Operating P&L, Primary & Secondary Cost Elements, Retained Earnings, Reconciliation, GR/IR, and Bank Clearing."
       apiEndpoint="/api/account-groups"
+      referenceConfig={{
+        keyField: "code",
+        displayField: "name",
+        label: "Create with Reference – Copy Account Group (OBD4)",
+        excludedFields: ["code", "id", "created_at", "updated_at"]
+      }}
       defaultMode={defaultMode || "create"}
       initialForm={{
         code: '',

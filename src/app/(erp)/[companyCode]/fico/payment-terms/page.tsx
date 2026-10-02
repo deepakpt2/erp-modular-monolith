@@ -9,6 +9,12 @@ export default function Page() {
       title="Payment Terms"
       description="Define Payment Terms – e.g., NT30 Net 30, 2 percent 10 Net 30 – strict usage: calculates due date from posting date + days – used in PO, SO, IV, Billing"
       apiEndpoint="/api/payment-terms"
+      referenceConfig={{
+        keyField: "code",
+        displayField: "name",
+        label: "Create with Reference – Copy Payment Terms",
+        excludedFields: ["code", "id", "created_at", "updated_at"]
+      }}
       initialForm={{ code: '', name: '', days: '30', discount_percent: '0', discount_days: '0', description: '' }}
       fields={[
         { key: "code", label: "PAYMENT_TERM_CODE", required: true, placeholder: "", description: "Payment term code – e.g., NT30, NT15, 2-10-N30" },

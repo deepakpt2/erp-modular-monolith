@@ -9,6 +9,12 @@ export default function Page() {
       title="Tax Codes – Tax Classification – GST – HSN"
       description="Define Tax Codes – tax classification – e.g., GST0 0%, GST5 5%, GST12 12%, GST18 18%, GST28 28%, IGST18, VAT – rate, ledger account, HSN code, GST type CGST/SGST/IGST/UTGST/CESS, tax rule type INPUT/OUTPUT/BOTH/NONE/EXEMPT, reverse charge – strict industry standard: calculates tax amount on PO, SO, IV, Billing – tax calc engine – tax/HSN or equivalent tax classification – financial – own names"
       apiEndpoint="/api/tax-codes"
+      referenceConfig={{
+        keyField: "code",
+        displayField: "name",
+        label: "Create with Reference – Copy Tax Code (FTXP)",
+        excludedFields: ["code", "id", "created_at", "updated_at"]
+      }}
       initialForm={{ 
         code: '', 
         name: '', 

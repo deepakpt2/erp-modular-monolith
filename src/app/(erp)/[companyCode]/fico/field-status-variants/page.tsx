@@ -9,6 +9,12 @@ export default function Page() {
       title="Field Status Variant"
       description="Define Field Status Variant – groups field status groups – e.g., FFSV-1000 Standard – strict usage: assigned to company code, controls required/suppressed fields per GL account – per guide FFSV-1000 must exist before ELEC – Create Field Status Variant has form now with code to search FSSV/OBC4"
       apiEndpoint="/api/field-status-variants"
+      referenceConfig={{
+        keyField: "code",
+        displayField: "name",
+        label: "Create with Reference – Copy Field Status Variant (OBC4)",
+        excludedFields: ["code", "id", "created_at", "updated_at"]
+      }}
       initialForm={{ code: '', name: '', description: '' }}
       fields={[
         { key: "code", label: "FIELD_STATUS_VARIANT_CODE", required: true, placeholder: "", description: "Variant code – e.g., FFSV-1000 per guide – 1000 Standard – searchable via FSSV or OBC4" },

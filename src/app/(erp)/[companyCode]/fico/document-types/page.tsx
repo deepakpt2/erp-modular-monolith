@@ -9,6 +9,12 @@ export default function Page() {
       title="Document Types"
       description="Define Document Types – e.g., SA GL posting, KA vendor invoice, KG vendor credit memo, RV customer invoice – strict usage: assigns number range, field status variant, reverse doc type"
       apiEndpoint="/api/document-types"
+      referenceConfig={{
+        keyField: "code",
+        displayField: "name",
+        label: "Create with Reference – Copy Document Type",
+        excludedFields: ["code", "id", "created_at", "updated_at"]
+      }}
       initialForm={{ code: '', name: '', description: '', number_range_code: '' }}
       fields={[
         { key: "code", label: "DOCUMENT_TYPE_CODE", required: true, placeholder: "", description: "Doc type code – e.g., SA GL, KA vendor invoice, KG vendor credit, RV customer invoice, RE vendor invoice" },
