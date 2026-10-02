@@ -1,4 +1,5 @@
 "use client";
+
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
 export default function Page() {
@@ -6,44 +7,147 @@ export default function Page() {
     <SingleCodePage
       code="FPPE"
       sapAlias="OB52"
-      title="Posting Period Control – Fiscal/Posting Period – Open/Close"
-      description="Define Posting Period Control – open/close posting periods – variant, account type A/D/K/M/S/V/+, from/to period/year, from/to account range, authorization group, is_open – strict industry standard: enforces FPPE (legacy OB52) T0 BLOCKING – rejects posting if period closed – e.g., close 03/2026 open 04/2026 – fiscal/posting period – financial – own names – F_BKPF_BUP"
+      title="Posting Period Control – Open and Close Posting Periods"
+      description="Standard Industry Customizing Table (T001B): Controls open and closed posting periods for each variant across account types (Normal Periods 1-12 and Special Closing Periods 13-16)."
       apiEndpoint="/api/posting-periods"
-      initialForm={{ 
-        variant_code: 'PPV-1000', 
-        account_type: 'S', 
-        from_account: '1000000000',
-        to_account: '1999999999',
-        authorization_group: 'AUTH01',
-        from_period: '1', 
-        from_year: '2026', 
-        to_period: '12', 
-        to_year: '2026', 
-        is_open: 'true', 
-        description: 'GL open 1-12 2026 for 1000000000-1999999999 – AUTH01' 
+      initialForm={{
+        variant_code: '',
+        account_type: '+',
+        from_account: '',
+        to_account: 'ZZZZZZZZZZ',
+        from_period: '1',
+        from_year: '2026',
+        to_period: '12',
+        to_year: '2026',
+        from_period2: '13',
+        from_year2: '2026',
+        to_period2: '16',
+        to_year2: '2026',
+        authorization_group: '',
+        is_open: 'true',
+        description: 'Standard 1-12 open periods'
       }}
       fields={[
-        { key: "variant_code", label: "POSTING_PERIOD_VARIANT_CODE", required: true, type: "autocomplete", apiUrl: "/api/posting-period-variants", dataKey: "postingPeriodVariants", codeField: "code", placeholder: "", createUrl: "/fico/posting-period-variants", createCode: "FPPC", description: "Variant code – e.g., PPV-1000 – must exist via FPPC FPPC (legacy OBBO) – posting period variant – assigned to company code 1000→PPV-1000 – industry standard" },
-        { key: "account_type", label: "ACCOUNT_TYPE", required: true, type: "select", options: ['+', 'A', 'D', 'K', 'M', 'S', 'V'], placeholder: "", description: "Account type – + All, A Assets, D Customers, K Vendors, M Materials, S GL Accounts, V Contract – strict enforcement – e.g., S for GL 1000000000-1999999999, M for materials – industry standard – FPPE (legacy OB52) – F_BKPF_BUP" },
-        { key: "from_account", label: "FROM_ACCOUNT", placeholder: "", description: "From account – e.g., 1000000000 – account range from – for account type S GL – from/to account – e.g., 1000000000-1999999999 – industry standard – FPPE enhanced – from/to account range" },
-        { key: "to_account", label: "TO_ACCOUNT", placeholder: "", description: "To account – e.g., 1999999999 – account range to – for S GL – to account – industry standard – FPPE enhanced" },
-        { key: "authorization_group", label: "AUTHORIZATION_GROUP", placeholder: "", description: "Authorization group – e.g., AUTH01 – auth group – F_BKPF_BUP – allows open/close per auth group – industry standard – FPPE enhanced – from/to account + auth group" },
-        { key: "from_period", label: "FROM_PERIOD", required: true, placeholder: "", description: "From period – 1-12 – e.g., 1 April for K4 – fiscal period – industry standard" },
-        { key: "from_year", label: "FROM_YEAR", required: true, placeholder: "", description: "From year – e.g., 2026 – fiscal year – industry standard" },
-        { key: "to_period", label: "TO_PERIOD", required: true, placeholder: "", description: "To period – 1-12 – e.g., 12 March for K4 – to period" },
-        { key: "to_year", label: "TO_YEAR", required: true, placeholder: "", description: "To year – e.g., 2026 – to year" },
-        { key: "is_open", label: "IS_OPEN", required: true, type: "select", options: ["true", "false"], placeholder: "", description: "Is open – true open, false closed – strict enforcement – T0 BLOCKING – rejects posting if closed – e.g., close 03/2026 open 04/2026 – industry standard – OB52" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "", description: "Description – e.g., GL open 1-12 2026 – explains open/close – industry standard" },
+        {
+          key: "variant_code",
+          label: "POSTING_PERIOD_VARIANT_CODE",
+          required: true,
+          type: "autocomplete",
+          apiUrl: "/api/posting-period-variants",
+          dataKey: "postingPeriodVariants",
+          codeField: "code",
+          placeholder: "e.g. 1000, KS01, AM01",
+          createUrl: "/fico/posting-period-variants",
+          createCode: "OBBO",
+          description: "Posting Period Variant code (T001B-MANDT / OBBO / FPPC) assigned to Company Code in OBBP"
+        },
+        {
+          key: "account_type",
+          label: "ACCOUNT_TYPE",
+          required: true,
+          type: "select",
+          options: [
+            "+ (Valid for all account types)",
+            "A (Assets)",
+            "D (Customers)",
+            "K (Vendors)",
+            "M (Materials)",
+            "S (G/L Accounts)",
+            "V (Contract Accounts)"
+          ],
+          description: "Account Type (T001B-KOART): + = All accounts (must be maintained first), A/D/K/M/S/V = Specific subledgers"
+        },
+        {
+          key: "from_account",
+          label: "FROM_ACCOUNT",
+          placeholder: "Leave empty for all or specify e.g. 100000",
+          description: "From G/L Account or Subledger range (T001B-VONAK) – leave blank to include starting accounts"
+        },
+        {
+          key: "to_account",
+          label: "TO_ACCOUNT",
+          placeholder: "e.g. ZZZZZZZZZZ",
+          description: "To G/L Account or Subledger range (T001B-BISAK) – default ZZZZZZZZZZ for upper limit"
+        },
+        {
+          key: "from_period",
+          label: "PERIOD_1_FROM_PERIOD",
+          required: true,
+          placeholder: "1",
+          description: "Normal posting period interval 1: start period (T001B-FRPE1, usually 1)"
+        },
+        {
+          key: "from_year",
+          label: "PERIOD_1_FROM_YEAR",
+          required: true,
+          placeholder: "2026",
+          description: "Normal posting period interval 1: start fiscal year (T001B-FRYE1)"
+        },
+        {
+          key: "to_period",
+          label: "PERIOD_1_TO_PERIOD",
+          required: true,
+          placeholder: "12",
+          description: "Normal posting period interval 1: end period (T001B-TOPE1, usually 12)"
+        },
+        {
+          key: "to_year",
+          label: "PERIOD_1_TO_YEAR",
+          required: true,
+          placeholder: "2026",
+          description: "Normal posting period interval 1: end fiscal year (T001B-TOYE1)"
+        },
+        {
+          key: "from_period2",
+          label: "PERIOD_2_SPECIAL_FROM_PERIOD",
+          placeholder: "13",
+          description: "Special closing period interval 2: start period (T001B-FRPE2, e.g. 13 for year-end adjustments)"
+        },
+        {
+          key: "from_year2",
+          label: "PERIOD_2_SPECIAL_FROM_YEAR",
+          placeholder: "2026",
+          description: "Special closing period interval 2: start fiscal year (T001B-FRYE2)"
+        },
+        {
+          key: "to_period2",
+          label: "PERIOD_2_SPECIAL_TO_PERIOD",
+          placeholder: "16",
+          description: "Special closing period interval 2: end period (T001B-TOPE2, e.g. 16 for audit adjustments)"
+        },
+        {
+          key: "to_year2",
+          label: "PERIOD_2_SPECIAL_TO_YEAR",
+          placeholder: "2026",
+          description: "Special closing period interval 2: end fiscal year (T001B-TOYE2)"
+        },
+        {
+          key: "authorization_group",
+          label: "AUTHORIZATION_GROUP",
+          placeholder: "e.g. AUDIT, CLOSE",
+          description: "Authorization Group for period opening/closing (T001B-BRGRU / F_BKPF_BUP) to restrict period 2 postings"
+        },
+        {
+          key: "is_open",
+          label: "IS_OPEN",
+          required: true,
+          type: "select",
+          options: ["true", "false"],
+          description: "Posting Status: true = OPEN for financial documents, false = CLOSED (T0 blocking rejection)"
+        },
+        {
+          key: "description",
+          label: "DESCRIPTION",
+          type: "textarea",
+          placeholder: "Audit/accounting rationale for this period authorization window",
+          description: "Operational or audit note for accounting period control"
+        }
       ]}
       relatedLinks={[
-        { code: "FPPC", label: "Posting Period Variant – PPV-1000 – required – OBBO", route: "/fico/posting-period-variants", description: "Variant – PPV-1000 assigned to company 1000 – FPPC" },
-        { code: "FFYC", label: "Fiscal Calendar – K4 April-March – year-dependent 1-12 + special 13-16 + factory IN01", route: "/fico/fiscal-calendars", description: "Fiscal Calendar – K4 – year-dependent periods 1-12 + special 13-16 + factory calendar IN01 – FFYC OB29" },
-        { code: "FCOA", label: "Chart of Accounts – CA-IN-01 – OPERATIONAL – AG01", route: "/fico/chart-of-accounts", description: "Chart – CA-IN-01 – OPERATIONAL – AG01" },
-        { code: "FGLC", label: "GL Account – 1000000000-1999999999 – account type S", route: "/fico/gl-accounts", description: "GL – 1000000000-1999999999 – S – from/to account" },
-        { code: "IGRC", label: "Goods Receipt IGRC GR_PO (legacy IGRC (legacy MIGO) 101) – checks FPPE (legacy OB52) posting period – T0", route: "/mm/gr", description: "GR 101 – checks posting period – T0 BLOCKING – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)" },
-        { code: "PIVC", label: "Invoice Verification PIVC (legacy MIRO) – checks OB52", route: "/mm/iv", description: "IV – checks posting period – WRX/BSX" },
-        { code: "SBLC", label: "Billing SBLC (legacy VF01) – checks OB52", route: "/sd/billing", description: "Billing – checks posting period" },
-        { code: "FPYP", label: "Payment FPYA (legacy F110) – checks OB52", route: "/fico/payment", description: "Payment – checks posting period" },
+        { code: "OBBO", label: "Define Posting Period Variant (FPPC)", route: "/fico/posting-period-variants", description: "Define Variant" },
+        { code: "OBBP", label: "Assign Company Code to Variant", route: "/fico/assignments/posting-period-variant", description: "Assign Company Code" },
+        { code: "OB29", label: "Fiscal Year Variant (FFYC)", route: "/fico/fiscal-calendars", description: "Define Fiscal Year Periods" },
+        { code: "FB01", label: "Post General Journal", route: "/fico/journal-entries", description: "Document Postings" }
       ]}
     />
   );
