@@ -977,3 +977,17 @@ Once you confirm, I will:
 - **Verification:**
   - Full TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main` using PAT.
+
+### 2026-10-02 IST: Resilient Chart of Accounts Extraction & On-Demand Fallback
+- **Diagnostic:**
+  - In `src/app/api/chart-of-accounts/route.ts`, the query was structured across multiple speculative subqueries (`fin_chart` + `fin_chart` legacy merge) that failed silently to populate `coaRows` if subquery conditions mismatched or if `gl_count` joined on columns before migration completed.
+  - Furthermore, `SingleCodePage` candidate parser expects either `data` or `chartOfAccounts`.
+- **Architectural Solution:**
+  - Modernized `src/app/api/chart-of-accounts/route.ts` GET handler:
+    1. Direct query with COALESCE fallback across `chart_id` and `coa_id` for ledger account counting.
+    2. Graceful nested fallback to direct query `SELECT id, code, name, description, created_at, 0 as gl_count FROM fin_chart ORDER BY code` so errors in `fin_ledger_account` never suppress `fin_chart` records.
+    3. Triggers `seedIndustryStandardBaseline()` whenever count is 0 and immediately refetches.
+    4. Exposes both `data: coaRows` and `chartOfAccounts: coaRows` in the JSON response payload to guarantee candidate match in `SingleCodePage`.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.

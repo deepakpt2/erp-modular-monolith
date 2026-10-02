@@ -16,60 +16,40 @@ export async function GET(req: NextRequest) {
 
   try {
     let coaRows: any[] = [];
-    let source = 'db-merged';
-    let table = 'fin_chart+fin_chart';
+    let source = 'db-fin_chart';
+    let table = 'fin_chart';
     let legalSafe = true;
 
-    // Try new fin_chart
-    let newRows: any[] = [];
-    try {
-      const coaRes = await db.execute(sql`
-        SELECT id, code, name, description, created_at,
-          (SELECT COUNT(*) FROM fin_ledger_account WHERE chart_id = fin_chart.id) as gl_count
-        FROM fin_chart ORDER BY code
-      `);
-      newRows = coaRes.rows as any[];
-    } catch (newErr: any) {
-      console.warn('fin_chart not yet:', newErr.message);
-    }
+    const queryCoa = async (): Promise<any[]> => {
+      try {
+        const coaRes = await db.execute(sql`
+          SELECT id, code, name, description, created_at,
+            COALESCE((
+              SELECT COUNT(*) 
+              FROM fin_ledger_account 
+              WHERE chart_id = fin_chart.id OR coa_id = fin_chart.id
+            ), 0)::int as gl_count
+          FROM fin_chart 
+          ORDER BY code
+        `);
+        return coaRes.rows as any[];
+      } catch (err: any) {
+        // Fallback without subquery in case fin_ledger_account does not yet exist or has missing columns
+        try {
+          const simpleRes = await db.execute(sql`
+            SELECT id, code, name, description, created_at, 0 as gl_count
+            FROM fin_chart 
+            ORDER BY code
+          `);
+          return simpleRes.rows as any[];
+        } catch (plainErr: any) {
+          console.warn('[API FCOA] fin_chart direct query error:', plainErr.message);
+          return [];
+        }
+      }
+    };
 
-    // Try legacy fin_chart – always try, merge
-    let legacyRows: any[] = [];
-    try {
-      const coaRes2 = await db.execute(sql`
-        SELECT id, code, name, description, created_at,
-          (SELECT COUNT(*) FROM fin_ledger_account WHERE coa_id = fin_chart.id) as gl_count
-        FROM fin_chart ORDER BY code
-      `);
-      legacyRows = coaRes2.rows as any[];
-      if (newRows.length === 0 && legacyRows.length > 0) {
-        source = 'db-legacy';
-        table = 'fin_chart';
-        legalSafe = false;
-      }
-    } catch (legacyErr: any) {
-      console.warn('fin_chart not yet:', legacyErr.message);
-      if (newRows.length > 0) {
-        source = 'db-new';
-        table = 'fin_chart';
-      }
-    }
-
-    // Merge unique by code – prefer newRows over legacy
-    const map = new Map<string, any>();
-    for (const r of [...legacyRows, ...newRows]) {
-      const key = (r.code || '').toUpperCase();
-      if (!key) continue;
-      // newRows overwrite legacy if same code
-      if (!map.has(key) || newRows.some(nr => (nr.code||'').toUpperCase() === key)) {
-        map.set(key, r);
-      }
-    }
-    coaRows = Array.from(map.values()).sort((a,b)=> (a.code||'').localeCompare(b.code||''));
-    // If still empty but one of the sources had rows, use that directly (fallback)
-    if (coaRows.length === 0) {
-      coaRows = newRows.length > 0 ? newRows : legacyRows;
-    }
+    coaRows = await queryCoa();
 
     // Enterprise Self-Healing: If 0 charts exist, auto-seed CA-IN-01 baseline on demand
     if (coaRows.length === 0) {
@@ -77,14 +57,7 @@ export async function GET(req: NextRequest) {
         console.log('[API FCOA] 0 Chart of Accounts detected. Running auto-seed for standard baseline (CA-IN-01)...');
         const { seedIndustryStandardBaseline } = await import('@/shared/kernel/db/standardSystemDefaults');
         await seedIndustryStandardBaseline();
-        const refetch = await db.execute(sql`
-          SELECT id, code, name, description, created_at,
-            (SELECT COUNT(*) FROM fin_ledger_account WHERE chart_id = fin_chart.id) as gl_count
-          FROM fin_chart ORDER BY code
-        `);
-        if (refetch.rows.length > 0) {
-          coaRows = refetch.rows as any[];
-        }
+        coaRows = await queryCoa();
       } catch (seedErr: any) {
         console.warn('[API FCOA] Auto-seed attempt warning:', seedErr.message);
       }
@@ -108,6 +81,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
+      data: coaRows,
       chartOfAccounts: coaRows,
       accountGroups: groups,
       count: coaRows.length,
