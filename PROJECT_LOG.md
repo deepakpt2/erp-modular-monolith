@@ -1065,3 +1065,20 @@ Once you confirm, I will:
 - **Verification:**
   - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Align Sales Organization / Commercial Organization (ECOC / OVX2) to Pure Definition Architecture
+- **Requirement & Architectural Principle:**
+  - `OVX2` (`ECOC` / Define Sales Organization / Commercial Organization) is a **pure definition** transaction.
+  - A Sales Organization is defined with its own intrinsic properties (`COMMERCIAL_ORG_CODE` / `VKORG`, `COMMERCIAL_ORG_NAME` / `VTEXT`, `SALES_ORG_CURRENCY` / `WAERS`, and `DESCRIPTION`).
+  - `LEGAL_ENTITY_CODE` (Company Code) does **not** belong on the definition form:
+    1. A Sales Organization can be created independently of Company Code.
+    2. Company Code assignment is maintained strictly in dedicated customizing transaction `OVX3` (`Assign Sales Organization to Company Code` / `/sd/assignments/sales-org-company-code`).
+    3. Distribution Channel assignment is maintained in `OVX8` (`/sd/assignments/channel-sales`).
+    4. Division assignment is maintained in `OVX6` (`/sd/assignments/division-sales`).
+- **Implementation:**
+  - **Schema:** Modified `orgStructureSchema.ts` (`orgCommercialOrg`) so `legalEntityId` is nullable.
+  - **API:** Updated `src/app/api/commercial-orgs/route.ts` to drop `NOT NULL` constraint dynamically on PostgreSQL if present and allow creation without `legal_entity_code`.
+  - **UI Form:** Cleaned `src/app/(erp)/[companyCode]/foundation/commercial-orgs/page.tsx`, removing `LEGAL_ENTITY_CODE` from the form and adding direct related links to `OVX3`, `OVX8`, and `OVX6`.
+- **Verification:**
+  - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
+  - Pushed to GitHub repository `main`.

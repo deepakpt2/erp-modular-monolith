@@ -200,7 +200,7 @@ export const orgBuyerTeam = pgTable('org_buyer_team', {
 export const orgCommercialOrg = pgTable('org_commercial_org', {
   id: uuid('id').primaryKey().defaultRandom(),
   tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),
-  legalEntityId: uuid('legal_entity_id').notNull().references(() => orgLegalEntity.id),
+  legalEntityId: uuid('legal_entity_id').references(() => orgLegalEntity.id), // Optional in pure definition (OVX2); assigned via OVX3
   code: varchar('code', { length: 20 }).notNull(),
   name: varchar('name', { length: 100 }).notNull(),
   currencyCode: varchar('currency_code', { length: 3 }).notNull().default('INR'),
