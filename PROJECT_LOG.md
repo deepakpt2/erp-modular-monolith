@@ -871,6 +871,9 @@ Once you confirm, I will:
   - Resolved KPI card company counter anomaly where empty installations synthesized 4 duplicated `LE-1000` dummy rows from `core_tenant`.
   - Hardcoded fake `LE-1000` mapping removed in `src/app/api/company-codes/route.ts`; cleanly queries `org_legal_entity` and yields an accurate count of 0 on clean installations without synthesizing fake master data.
   - Sanitized baseline seeding in `standardSystemDefaults.ts` and `autoMigrate.ts` in strict compliance with the legal constraint prohibiting vendor naming ("SAP" replaced with "Industry Standard").
+- **Generic 6-Digit GAAP/IFRS Reference Chart & Account Cloning Feature:**
+  - Implemented baseline standard reference chart (`CA-IN-01`) in `standardSystemDefaults.ts` with 18 universal GAAP/IFRS accounts across Assets, Liabilities, Equity, Revenue, and Expense.
+  - Implemented one-click cloning (`copy_from_coa`) in `/api/chart-of-accounts` and `FCOA` UI form, enabling instant bootstrapping of customized operational charts without manual data entry.
 - **Frontend Interaction & Guard Modal (`IndustryDeletionGuardModal`):**
   - Dedicated "Delete" buttons in `/change` view actions and in table row item expansions (`/list`).
   - Interactive enterprise diagnostic modal (`src/shared/ui/sap-deletion-guard-modal.tsx`) rendering structured reasons, document counts, resolution steps with transaction codes, and immediate one-click deactivation.

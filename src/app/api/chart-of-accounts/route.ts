@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { code, name, description, language } = body;
+    const { code, name, description, language, copy_from_coa } = body;
     if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
 
     let primaryRes: any = null;
@@ -166,7 +166,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed to create CoA in both tables: ${errors.join(' | ')}` }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, chartOfAccounts: primaryRes, code: 'FCOA', aliasCodes: ['COA','OB13'], message: `CoA ${code.toUpperCase()} created/updated – FCOA ${legalSafe ? 'legal-safe' : 'legacy merged'} – exists in both fin_chart and fin_chart for downstream safe`, legalSafe, errors: errors.length ? errors : undefined });
+    // If copy_from_coa was specified, copy G/L accounts from source chart to newly created chart
+    let copiedCount = 0;
+    if (copy_from_coa) {
+      const sourceCode = copy_from_coa.toUpperCase().trim();
+      try {
+        const sourceChart = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${sourceCode} LIMIT 1`);
+        if (sourceChart.rows.length > 0) {
+          const srcId = (sourceChart.rows[0] as any).id;
+          const copyRes = await db.execute(sql`
+            INSERT INTO fin_ledger_account (
+              chart_id, coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active
+            )
+            SELECT 
+              ${primaryRes.id}, ${primaryRes.id}, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, true
+            FROM fin_ledger_account
+            WHERE chart_id = ${srcId} OR coa_id = ${srcId}
+            ON CONFLICT DO NOTHING
+            RETURNING id
+          `);
+          copiedCount = copyRes.rows.length;
+        }
+      } catch (copyErr: any) {
+        console.warn('Copy accounts warning:', copyErr.message);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      chartOfAccounts: primaryRes,
+      code: 'FCOA',
+      aliasCodes: ['COA','OB13'],
+      copied_accounts_count: copiedCount,
+      message: `CoA ${code.toUpperCase()} created/updated${copiedCount > 0 ? ` with ${copiedCount} copied accounts from ${copy_from_coa.toUpperCase()}` : ''} – FCOA ${legalSafe ? 'legal-safe' : 'legacy merged'}`,
+      legalSafe,
+      errors: errors.length ? errors : undefined
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

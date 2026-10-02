@@ -372,5 +372,116 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
     console.warn('  ⚠️ Material types baseline note:', e.message);
   }
 
+  // 9. Standard Reference Chart of Accounts & 6-Digit GAAP/IFRS Accounts (CA-IN-01)
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS fin_chart (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        code varchar(20) NOT NULL UNIQUE,
+        name varchar(100) NOT NULL,
+        description text,
+        language varchar(10) DEFAULT 'EN',
+        is_active boolean DEFAULT true,
+        created_at timestamp DEFAULT NOW(),
+        updated_at timestamp DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      INSERT INTO fin_chart (code, name, description, language, is_active)
+      VALUES (
+        'CA-IN-01',
+        'Standard General Chart of Accounts (IFRS / GAAP)',
+        'Standard 6-digit reference chart of accounts for manufacturing, procurement and commercial operations',
+        'EN',
+        true
+      )
+      ON CONFLICT (code) DO NOTHING
+    `);
+
+    // Ensure fin_ledger_account table exists
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS fin_ledger_account (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        chart_id uuid REFERENCES fin_chart(id),
+        coa_id uuid,
+        account_number varchar(30) NOT NULL,
+        name varchar(150) NOT NULL,
+        account_type varchar(20) NOT NULL,
+        is_balance_sheet boolean NOT NULL DEFAULT true,
+        is_reconciliation boolean NOT NULL DEFAULT false,
+        is_blocked boolean NOT NULL DEFAULT false,
+        is_tax_relevant boolean NOT NULL DEFAULT false,
+        is_active boolean NOT NULL DEFAULT true,
+        created_at timestamp DEFAULT NOW(),
+        updated_at timestamp DEFAULT NOW()
+      )
+    `);
+
+    const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'CA-IN-01' LIMIT 1`);
+    if (chartRes.rows.length > 0) {
+      const templateChartId = (chartRes.rows[0] as any).id;
+      await db.execute(sql`
+        INSERT INTO fin_ledger_account (
+          chart_id, coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active
+        )
+        VALUES
+          (${templateChartId}, ${templateChartId}, '100000', 'Main Operating Bank Account', 'ASSET', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '100010', 'Petty Cash Operating Fund', 'ASSET', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '130000', 'Raw Materials Inventory', 'ASSET', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '131000', 'Semi-Finished Goods Inventory', 'ASSET', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '132000', 'Finished Goods Inventory', 'ASSET', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '133000', 'Trading Goods Inventory', 'ASSET', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '140000', 'Trade Accounts Receivable', 'ASSET', true, true, false, true),
+          (${templateChartId}, ${templateChartId}, '160000', 'Trade Accounts Payable', 'LIABILITY', true, true, false, true),
+          (${templateChartId}, ${templateChartId}, '191100', 'GR/IR Interim Clearing Account', 'LIABILITY', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '210000', 'Input Tax Clearing (GST / VAT)', 'LIABILITY', true, false, true, true),
+          (${templateChartId}, ${templateChartId}, '215000', 'Output Tax Payable (GST / VAT)', 'LIABILITY', true, false, true, true),
+          (${templateChartId}, ${templateChartId}, '300000', 'Common Share Capital', 'EQUITY', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '390000', 'Retained Earnings Balance Account', 'EQUITY', true, false, false, true),
+          (${templateChartId}, ${templateChartId}, '400000', 'Domestic Sales Revenue', 'REVENUE', false, false, true, true),
+          (${templateChartId}, ${templateChartId}, '410000', 'Export Sales Revenue', 'REVENUE', false, false, false, true),
+          (${templateChartId}, ${templateChartId}, '500000', 'Cost of Goods Sold (COGS)', 'EXPENSE', false, false, false, true),
+          (${templateChartId}, ${templateChartId}, '510000', 'Purchase Price Variance (PPV)', 'EXPENSE', false, false, false, true),
+          (${templateChartId}, ${templateChartId}, '520000', 'Inventory Count Gain/Loss Variance', 'EXPENSE', false, false, false, true)
+        ON CONFLICT DO NOTHING
+      `).catch(async () => {
+        // Fallback for unique index on (chart_id, account_number)
+        const accounts = [
+          { num: '100000', name: 'Main Operating Bank Account', type: 'ASSET', bs: true, rec: false, tax: false },
+          { num: '100010', name: 'Petty Cash Operating Fund', type: 'ASSET', bs: true, rec: false, tax: false },
+          { num: '130000', name: 'Raw Materials Inventory', type: 'ASSET', bs: true, rec: false, tax: false },
+          { num: '131000', name: 'Semi-Finished Goods Inventory', type: 'ASSET', bs: true, rec: false, tax: false },
+          { num: '132000', name: 'Finished Goods Inventory', type: 'ASSET', bs: true, rec: false, tax: false },
+          { num: '133000', name: 'Trading Goods Inventory', type: 'ASSET', bs: true, rec: false, tax: false },
+          { num: '140000', name: 'Trade Accounts Receivable', type: 'ASSET', bs: true, rec: true, tax: false },
+          { num: '160000', name: 'Trade Accounts Payable', type: 'LIABILITY', bs: true, rec: true, tax: false },
+          { num: '191100', name: 'GR/IR Interim Clearing Account', type: 'LIABILITY', bs: true, rec: false, tax: false },
+          { num: '210000', name: 'Input Tax Clearing (GST / VAT)', type: 'LIABILITY', bs: true, rec: false, tax: true },
+          { num: '215000', name: 'Output Tax Payable (GST / VAT)', type: 'LIABILITY', bs: true, rec: false, tax: true },
+          { num: '300000', name: 'Common Share Capital', type: 'EQUITY', bs: true, rec: false, tax: false },
+          { num: '390000', name: 'Retained Earnings Balance Account', type: 'EQUITY', bs: true, rec: false, tax: false },
+          { num: '400000', name: 'Domestic Sales Revenue', type: 'REVENUE', bs: false, rec: false, tax: true },
+          { num: '410000', name: 'Export Sales Revenue', type: 'REVENUE', bs: false, rec: false, tax: false },
+          { num: '500000', name: 'Cost of Goods Sold (COGS)', type: 'EXPENSE', bs: false, rec: false, tax: false },
+          { num: '510000', name: 'Purchase Price Variance (PPV)', type: 'EXPENSE', bs: false, rec: false, tax: false },
+          { num: '520000', name: 'Inventory Count Gain/Loss Variance', type: 'EXPENSE', bs: false, rec: false, tax: false }
+        ];
+        for (const a of accounts) {
+          await db.execute(sql`
+            INSERT INTO fin_ledger_account (chart_id, coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active)
+            SELECT ${templateChartId}, ${templateChartId}, ${a.num}, ${a.name}, ${a.type}, ${a.bs}, ${a.rec}, ${a.tax}, true
+            WHERE NOT EXISTS (
+              SELECT 1 FROM fin_ledger_account WHERE chart_id = ${templateChartId} AND account_number = ${a.num}
+            )
+          `).catch(() => {});
+        }
+      });
+      console.log('  ✅ Standard 6-digit reference chart & accounts ensured (CA-IN-01: 18 standard GAAP/IFRS accounts)');
+    }
+  } catch (e: any) {
+    console.warn('  ⚠️ Standard chart baseline note:', e.message);
+  }
+
   console.log('🏛️  Baseline Configuration Complete – System ready for enterprise company creation.');
 }

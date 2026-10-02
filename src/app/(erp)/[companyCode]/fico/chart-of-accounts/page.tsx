@@ -15,6 +15,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
         { key: "code", label: "CHART_OF_ACCOUNTS_CODE", required: true, placeholder: "", description: "Chart code – e.g., CA-IN-01 per guide – KSCA, INT" },
         { key: "name", label: "CHART_OF_ACCOUNTS_NAME", required: true, placeholder: "" },
         { key: "language", label: "LANGUAGE", required: true, placeholder: "", description: "Language – EN per guide – FCOA (legacy OB13) dont have language EN to add – now added" },
+        { key: "copy_from_coa", label: "COPY_FROM_TEMPLATE_COA", type: "autocomplete", apiUrl: "/api/chart-of-accounts", dataKey: "chartOfAccounts", codeField: "code", placeholder: "", description: "Optional: Copy all G/L accounts from existing Chart (e.g. CA-IN-01 standard reference template) into this new Chart" },
         { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
       ]}
       relatedLinks={[
