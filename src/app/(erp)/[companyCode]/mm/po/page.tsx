@@ -42,6 +42,48 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const [lines, setLines] = useState<POLine[]>([
     { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }
   ]);
+  const [refPoNumber, setRefPoNumber] = useState<string>('');
+  const [refQuery, setRefQuery] = useState('');
+  const [showRefSuggestions, setShowRefSuggestions] = useState(false);
+
+  function applyPoReference(sourcePo: any) {
+    if (!sourcePo) return;
+    setRefPoNumber(sourcePo.po_number || sourcePo.id || '');
+    if (sourcePo.facility_code || sourcePo.plant_code) setFacilityCode(sourcePo.facility_code || sourcePo.plant_code);
+    if (sourcePo.partner_number || sourcePo.vendor_number) setPartnerNumber(sourcePo.partner_number || sourcePo.vendor_number);
+    if (sourcePo.legal_entity_code || sourcePo.company_code) setLegalEntityCode(sourcePo.legal_entity_code || sourcePo.company_code);
+    if (sourcePo.currency_code || sourcePo.currency) setCurrencyCode(sourcePo.currency_code || sourcePo.currency);
+    if (sourcePo.payment_term_code || sourcePo.payment_terms_code) setPaymentTermCode(sourcePo.payment_term_code || sourcePo.payment_terms_code);
+    if (sourcePo.payment_terms_days) setPaymentTermsDays(String(sourcePo.payment_terms_days));
+    if (sourcePo.incoterms) setIncoterms(sourcePo.incoterms);
+    setHeaderText(sourcePo.header_text ? `${sourcePo.header_text} (Copy)` : `Copy of PO ${sourcePo.po_number}`);
+
+    const sourceLines = sourcePo.lines || sourcePo.items || [];
+    if (Array.isArray(sourceLines) && sourceLines.length > 0) {
+      setLines(sourceLines.map((l: any) => ({
+        item_number: l.item_number || l.material_number || '',
+        quantity: String(l.quantity || '10'),
+        uom_code: l.uom_code || l.uom || 'PC',
+        unit_price: String(l.unit_price || '100'),
+        freight_per_unit: String(l.freight_per_unit || '0'),
+        customs_per_unit: String(l.customs_per_unit || '0'),
+        tax_per_unit: String(l.tax_per_unit || '0'),
+        tax_code: l.tax_code || l.tax_rule_code || 'GST18',
+        overdelivery_tolerance_percent: String(l.overdelivery_tolerance_percent || l.over_tolerance || '10'),
+        underdelivery_tolerance_percent: String(l.underdelivery_tolerance_percent || l.under_tolerance || '10'),
+        inventory_location_code: l.inventory_location_code || l.sloc_id || 'SL01',
+        item_text: l.item_text || '',
+        delivery_text: l.delivery_text || ''
+      })));
+    }
+  }
+
+  function clearPoReference() {
+    setRefPoNumber('');
+    setRefQuery('');
+    setLines([{ item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }]);
+    setHeaderText('');
+  }
   const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
 
   async function load(){
@@ -189,16 +231,16 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
     }
   }
 
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING PPOC (legacy ME21N) – PPOC – fetching POs via /api/po – SAP standard – posting period K FPPE (legacy OB52) – number range PO 4500000000 numeric only always_auto – facility EFCC – vendor PSUC – material EMTC – info record ME11 – payment terms FAPT – org wiring...</div>;
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING PPOC (legacy ME21N) – PPOC – fetching POs via /api/po – Industry standard – posting period K FPPE (legacy OB52) – number range PO 4500000000 numeric only always_auto – facility EFCC – vendor PSUC – material EMTC – info record ME11 – payment terms FAPT – org wiring...</div>;
   const items = data?.pos || data?.purchaseOrders || [];
 
   const classicContent = (
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPOC PURCHASE ORDERS – PPOC (legacy ME21N) – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD – POSTING PERIOD K – NUMBER RANGE PO 4500000000 – INFO RECORD ME11 – PAYMENT TERMS FAPT – ORG WIRED</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPOC PURCHASE ORDERS – PPOC (legacy ME21N) – {Array.isArray(items)?items.length:0} RECORDS – INDUSTRY STANDARD – POSTING PERIOD K – NUMBER RANGE PO 4500000000 – INFO RECORD ME11 – PAYMENT TERMS FAPT – ORG WIRED</div>
         <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
-          <div className="font-bold">⚠️ SAP STANDARD – PPOC PPOC (legacy ME21N) – T0 BLOCKING – ORG WIRED – INFO RECORD ME11</div>
+          <div className="font-bold">⚠️ INDUSTRY STANDARD – PPOC PPOC (legacy ME21N) – T0 BLOCKING – ORG WIRED – INFO RECORD ME11</div>
           <div>• Facility EFCC EFCC (legacy OX10) required – e.g., 1000 – plant – org_facility – T0</div>
           <div>• Vendor PSUC XK01 required – e.g., VEND-1000 – partner_account – currency_code FCYC payment_term_code FAPT recon_account FGLC procurement_division EPDC buyer_team EBTC – T0</div>
           <div>• Material EMTC EMTC (legacy MM01) required – e.g., 10000001 MAT-SPICE-001 – prod_item – valuation_class RAW→1400000001 BSX – T0</div>
@@ -286,9 +328,119 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">🛒</div>
           <div>
-            <div className="font-semibold">Purchase Orders – PPOC (alias PPOC (legacy ME21N)) – SAP Standard – Org Wired – Info Record ME11 – Payment Terms FAPT – Workflow PPOR (legacy ME28) – ELIKZ</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} POs • COMPANY_CODE {companyCode} • API: POST /api/po – facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + payment terms FAPT + info record ME11 + posting period K FPPE (legacy OB52) – T0 BLOCKING – number range PO 4500000000 – workflow SBWP – ELIKZ</div>
+            <div className="font-semibold">Purchase Orders – PPOC (alias ME21N) – Industry Standard – Org Wired – Info Record ME11 – Payment Terms FAPT – Workflow PPOR – ELIKZ</div>
+            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} POs • COMPANY_CODE {companyCode} • API: POST /api/po – facility EFCC + vendor PSUC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + payment terms FAPT + info record ME11 + posting period K FPPE – T0 BLOCKING – number range PO 4500000000 – workflow SBWP – ELIKZ</div>
           </div>
+        </div>
+
+        {/* Create with Reference / Copy PO Banner */}
+        <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50/60 p-3.5 space-y-2.5 text-xs">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                <span className="text-sm">📋</span> Create with Reference – Copy Purchase Order (ME21N)
+              </span>
+              <span className="text-[11px] text-blue-700 hidden sm:inline">
+                Clone Vendor, Terms, Currency, and Line Items from an existing Purchase Order
+              </span>
+            </div>
+            {refPoNumber && (
+              <button
+                type="button"
+                onClick={clearPoReference}
+                className="text-xs px-2.5 py-0.5 rounded-full bg-white border border-blue-300 text-blue-800 hover:bg-blue-100 transition font-medium"
+              >
+                ✕ Clear Reference
+              </button>
+            )}
+          </div>
+
+          {refPoNumber ? (
+            <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-200">
+              <div className="flex items-center gap-2 truncate">
+                <span className="font-mono font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-[11px]">
+                  {refPoNumber}
+                </span>
+                <span className="font-medium truncate text-zinc-800">
+                  {headerText}
+                </span>
+                <span className="text-[11px] text-zinc-500 hidden md:inline">
+                  — {lines.length} lines copied into form below. Edit or submit to generate new sequential PO number.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={refQuery}
+                    onChange={(e) => {
+                      setRefQuery(e.target.value);
+                      setShowRefSuggestions(true);
+                    }}
+                    onFocus={() => setShowRefSuggestions(true)}
+                    placeholder={`Select template PO to copy from (${Array.isArray(items) ? items.length : 0} available)... `}
+                    className="w-full border border-blue-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                  {refQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setRefQuery('')}
+                      className="absolute right-2 top-1.5 text-zinc-400 hover:text-zinc-600 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {Array.isArray(items) && items.length > 0 && (
+                  <span className="text-[11px] text-blue-800 font-medium whitespace-nowrap hidden sm:inline">
+                    {items.length} POs in record
+                  </span>
+                )}
+              </div>
+
+              {showRefSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-blue-200 z-20 max-h-56 overflow-auto divide-y divide-zinc-100">
+                  {(Array.isArray(items) ? items : [])
+                    .filter((it: any) => {
+                      if (!refQuery) return true;
+                      const q = refQuery.toLowerCase();
+                      const num = String(it.po_number || it.id || '').toLowerCase();
+                      const vend = String(it.partner_number || it.vendor_number || '').toLowerCase();
+                      const text = String(it.header_text || '').toLowerCase();
+                      return num.includes(q) || vend.includes(q) || text.includes(q);
+                    })
+                    .slice(0, 15)
+                    .map((it: any, i: number) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onMouseDown={() => {
+                          applyPoReference(it);
+                          setShowRefSuggestions(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center justify-between gap-2 transition"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="font-mono font-bold bg-zinc-100 text-zinc-800 px-1.5 py-0.5 rounded text-[11px]">
+                            {it.po_number || it.id}
+                          </span>
+                          <span className="font-mono text-zinc-600">{it.partner_number || it.vendor_number}</span>
+                          <span className="truncate text-zinc-900">{it.header_text || 'Purchase Order'}</span>
+                          <span className="text-[10px] text-zinc-400">({it.lines?.length || it.items?.length || 0} lines)</span>
+                        </div>
+                        <span className="text-[10px] text-blue-600 font-medium shrink-0 uppercase tracking-wider">Select & Copy →</span>
+                      </button>
+                    ))}
+                  {(!items || items.length === 0) && (
+                    <div className="p-3 text-center text-zinc-400 text-xs">No existing POs available to reference.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -495,6 +647,19 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
             <div className="mt-2 text-xs text-zinc-500">Lines {it.line_count} – Ordered {it.total_ordered_qty} Received {it.total_received_qty} Invoiced {it.total_invoiced_qty || 0} Open {(it.total_ordered_qty - (it.total_received_qty || 0))} – Total {it.total_amount} {it.currency} – Delivery {it.delivery_date} – All ELIKZ {String(it.all_elikz)} – PR Ref {it.pr_ref} – Payment Term {it.payment_term_code || 'NT30'} – Recon FGLC {it.vendor_recon_account_id ? 'wired' : 'default'} – Tax FTXC {it.tax_code || 'GST18'} – Version {it.version || 1}</div>
             <div className="mt-1 text-[10px] text-zinc-400">Version History PPOE (legacy ME22N) CDHDR/CDPOS WORM-lite – {it.version ? `v${it.version}` : 'v1'} – {it.change_history ? JSON.stringify(it.change_history).slice(0,250) : 'Initial CREATE – change_history JSONB – version increment on change – audit trail – purchasing conditions BASE/FREIGHT/CUSTOMS/TAX – partial GR/IV – over/under tolerance 10%/10% – invoice tolerance OBA0/OBA4 VEND-01 – cancellation/reversal PORE/GRRE/IVRE – credit/debit memo RE_CREDIT – approval workflow SBWP'} – Partial GR IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – Partial IV PIVC (legacy MIRO) 51 RE – Over/Under Tolerance UEBTO/UNTTO – Invoice Qty/Value Tolerance OBA0/OBA4 – Cancellation/Reversal GRRE/IVRE/PORE – Credit/Debit Memo RE_CREDIT – Approval Workflow SBWP PPOR (legacy ME28)</div>
             <div className="mt-2 flex gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  applyPoReference(it);
+                  if (typeof window !== 'undefined') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="text-[11px] px-2.5 py-1 rounded-full border bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition"
+                title="Copy this PO into the create form"
+              >
+                Copy As
+              </button>
               <Link href={`/${companyCode}/mm/gr`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">IGRC GR for PO {it.po_number} → IGRC GR_PO (legacy IGRC GR_PO (legacy IGRC (legacy MIGO) 101)) – partial GR – over/under tolerance – ELIKZ</Link>
               <Link href={`/${companyCode}/mm/iv`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">PIVC IV for PO {it.po_number} → PIVC (legacy MIRO) 51 RE – partial IV – qty/value tolerance – credit memo</Link>
               <Link href={`/${companyCode}/workflow/inbox`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">SBWP Release PO PPOR (legacy ME28) → Manager &lt;10000 Owner &gt;=10000 dual</Link>

@@ -917,3 +917,21 @@ Once you confirm, I will:
 - **Compliance & Build Verification:**
   - Zero vendor references in new/modified lines; sanitized legacy comments to "Industry standard".
   - Workspace compiles cleanly with 0 errors (`tsc --noEmit`).
+
+### 2026-10-02 IST: Commercial & Procurement Operational Documents Reference Cloning (Phases 3 & 4)
+- **Objective:** Enable "Create with Reference" and "Copy As" for transactional and commercial documents across Procurement and Sales.
+- **Purchase Orders (`PPOC` / `ME21N` equivalent in `src/app/(erp)/[companyCode]/mm/po/page.tsx`):**
+  - Integrated template selector banner in modern view with real-time suggestion filter across existing POs.
+  - Automatically copies vendor number, facility/plant code, currency, payment terms, Incoterms, and full line item details (`item_number`, `quantity`, `uom_code`, `unit_price`, freight, customs, tax code, and tolerances).
+  - Added "Copy As" action button on every PO card for direct cloning into the active order form.
+- **Sales Orders (`SSOC` / `VA01` equivalent in `src/app/(erp)/[companyCode]/sales/page.tsx`):**
+  - Integrated template selector banner with live search across past sales orders.
+  - Automatically clones customer code, facility, commercial org, sales channel, product line, pricing procedure, and all line items (`product_code`, `quantity`, `unit_price`, `uom_code`, `discount_percent`, `tax_code`).
+  - Added "Copy As" action button directly on sales order cards in modern and classic views.
+- **Purchase Requisitions (`PPRC` / `ME51N` equivalent in `src/app/(erp)/[companyCode]/mm/pr/page.tsx`):**
+  - Integrated template selector banner with real-time suggestion filter across existing PRs.
+  - Automatically clones facility, legal entity, currency, required date, header text, and line items (`item_number`, `quantity`, `uom_code`, `estimated_price`, `inventory_location_code`, `delivery_date`).
+  - Added "Copy As" action button on PR cards.
+- **Verification & Legal Compliance:**
+  - Removed vendor brand names and replaced with "Industry standard" across code comments and UI labels.
+  - Zero TypeScript compiler errors (`tsc --noEmit`).

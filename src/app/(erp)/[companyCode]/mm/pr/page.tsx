@@ -32,6 +32,38 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const [lines, setLines] = useState<PRLine[]>([
     { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }
   ]);
+  const [refPrNumber, setRefPrNumber] = useState<string>('');
+  const [refQuery, setRefQuery] = useState('');
+  const [showRefSuggestions, setShowRefSuggestions] = useState(false);
+
+  function applyPrReference(sourcePr: any) {
+    if (!sourcePr) return;
+    setRefPrNumber(sourcePr.pr_number || sourcePr.id || '');
+    if (sourcePr.facility_code || sourcePr.plant_code) setFacilityCode(sourcePr.facility_code || sourcePr.plant_code);
+    if (sourcePr.legal_entity_code || sourcePr.company_code) setLegalEntityCode(sourcePr.legal_entity_code || sourcePr.company_code);
+    if (sourcePr.currency_code || sourcePr.currency) setCurrencyCode(sourcePr.currency_code || sourcePr.currency);
+    setHeaderText(sourcePr.header_text ? `${sourcePr.header_text} (Copy)` : `Copy of PR ${sourcePr.pr_number}`);
+
+    const sourceLines = sourcePr.lines || sourcePr.items || [];
+    if (Array.isArray(sourceLines) && sourceLines.length > 0) {
+      setLines(sourceLines.map((l: any) => ({
+        item_number: l.item_number || l.material_number || '',
+        quantity: String(l.quantity || '10'),
+        uom_code: l.uom_code || l.uom || 'PC',
+        estimated_price: String(l.estimated_price || l.price || '100'),
+        inventory_location_code: l.inventory_location_code || l.sloc_id || 'SL01',
+        delivery_date: l.delivery_date || new Date().toISOString().split('T')[0],
+        item_text: l.item_text || ''
+      })));
+    }
+  }
+
+  function clearPrReference() {
+    setRefPrNumber('');
+    setRefQuery('');
+    setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+    setHeaderText('');
+  }
   const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
 
   async function load(){
@@ -141,16 +173,16 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
     }
   }
 
-  if(loading) return <div className="p-6 font-mono text-xs">LOADING PPRC (legacy ME51N) – PPRC – fetching PRs via /api/pr – SAP standard – posting period M FPPE (legacy OB52) – number range PR 1000000000 – facility EFCC – material EMTC – org wiring...</div>;
+  if(loading) return <div className="p-6 font-mono text-xs">LOADING PPRC (legacy ME51N) – PPRC – fetching PRs via /api/pr – Industry standard – posting period M FPPE (legacy OB52) – number range PR 1000000000 – facility EFCC – material EMTC – org wiring...</div>;
   const items = data?.purchaseRequisitions || data?.data || [];
 
   const classicContent = (
     <div className="space-y-3 font-mono text-[11px]">
       {msg && <div className="bg-black text-white p-2 whitespace-pre-wrap">{msg}</div>}
       <div className="bg-white border-2 border-black p-3">
-        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPRC PURCHASE REQUISITIONS – PPRC (legacy ME51N) – {Array.isArray(items)?items.length:0} RECORDS – SAP STANDARD – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – ORG WIRED</div>
+        <div className="font-bold border-b-2 border-black pb-1 mb-2">PPRC PURCHASE REQUISITIONS – PPRC (legacy ME51N) – {Array.isArray(items)?items.length:0} RECORDS – INDUSTRY STANDARD – POSTING PERIOD M – NUMBER RANGE PR 1000000000 – ORG WIRED</div>
         <div className="bg-zinc-50 border border-zinc-300 p-2 mb-2 text-[10px]">
-          <div className="font-bold">⚠️ SAP STANDARD – PPRC PPRC (legacy ME51N) – T0 BLOCKING – ORG WIRED</div>
+          <div className="font-bold">⚠️ INDUSTRY STANDARD – PPRC PPRC (legacy ME51N) – T0 BLOCKING – ORG WIRED</div>
           <div>• Facility EFCC EFCC (legacy OX10) required – e.g., 1000 – plant – org_facility – T0</div>
           <div>• Legal Entity ELEC ELEC (legacy OX02) required – e.g., {companyCode} – company code – org_legal_entity – T0</div>
           <div>• Material EMTC EMTC (legacy MM01) required – e.g., 10000001 MAT-SPICE-001 – prod_item – T0 – valuation_class determines BSX</div>
@@ -221,9 +253,119 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center">📋</div>
           <div>
-            <div className="font-semibold">Purchase Requisitions – PPRC (alias PPRC (legacy ME51N)) – SAP Standard – Org Wired – Workflow PPRL (legacy ME54N)</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} PRs • COMPANY_CODE {companyCode} • API: POST /api/pr – facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC + posting period M FPPE (legacy OB52) – T0 BLOCKING – number range PR 1000000000 – workflow SBWP</div>
+            <div className="font-semibold">Purchase Requisitions – PPRC (alias ME51N) – Industry Standard Flow</div>
+            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} PRs • COMPANY_CODE {companyCode} • API: POST /api/pr – facility EFCC + legal entity ELEC + material EMTC + inventory location EILC + UoM EUOC + currency FCYC – T0 BLOCKING – number range PR 1000000000 – workflow SBWP</div>
           </div>
+        </div>
+
+        {/* Create with Reference / Copy PR Banner */}
+        <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50/60 p-3.5 space-y-2.5 text-xs">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                <span className="text-sm">📋</span> Create with Reference – Copy Purchase Requisition (ME51N)
+              </span>
+              <span className="text-[11px] text-blue-700 hidden sm:inline">
+                Clone Facility, Delivery Date, and Line Items from an existing Purchase Requisition
+              </span>
+            </div>
+            {refPrNumber && (
+              <button
+                type="button"
+                onClick={clearPrReference}
+                className="text-xs px-2.5 py-0.5 rounded-full bg-white border border-blue-300 text-blue-800 hover:bg-blue-100 transition font-medium"
+              >
+                ✕ Clear Reference
+              </button>
+            )}
+          </div>
+
+          {refPrNumber ? (
+            <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-200">
+              <div className="flex items-center gap-2 truncate">
+                <span className="font-mono font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-[11px]">
+                  {refPrNumber}
+                </span>
+                <span className="font-medium truncate text-zinc-800">
+                  {headerText}
+                </span>
+                <span className="text-[11px] text-zinc-500 hidden md:inline">
+                  — {lines.length} lines copied into form below. Edit or submit to generate new sequential PR number.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={refQuery}
+                    onChange={(e) => {
+                      setRefQuery(e.target.value);
+                      setShowRefSuggestions(true);
+                    }}
+                    onFocus={() => setShowRefSuggestions(true)}
+                    placeholder={`Select template PR to copy from (${Array.isArray(items) ? items.length : 0} available)... `}
+                    className="w-full border border-blue-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                  {refQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setRefQuery('')}
+                      className="absolute right-2 top-1.5 text-zinc-400 hover:text-zinc-600 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {Array.isArray(items) && items.length > 0 && (
+                  <span className="text-[11px] text-blue-800 font-medium whitespace-nowrap hidden sm:inline">
+                    {items.length} PRs in record
+                  </span>
+                )}
+              </div>
+
+              {showRefSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-blue-200 z-20 max-h-56 overflow-auto divide-y divide-zinc-100">
+                  {(Array.isArray(items) ? items : [])
+                    .filter((it: any) => {
+                      if (!refQuery) return true;
+                      const q = refQuery.toLowerCase();
+                      const num = String(it.pr_number || it.id || '').toLowerCase();
+                      const fac = String(it.facility_code || it.plant_code || '').toLowerCase();
+                      const text = String(it.header_text || '').toLowerCase();
+                      return num.includes(q) || fac.includes(q) || text.includes(q);
+                    })
+                    .slice(0, 15)
+                    .map((it: any, i: number) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onMouseDown={() => {
+                          applyPrReference(it);
+                          setShowRefSuggestions(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center justify-between gap-2 transition"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="font-mono font-bold bg-zinc-100 text-zinc-800 px-1.5 py-0.5 rounded text-[11px]">
+                            {it.pr_number || it.id}
+                          </span>
+                          <span className="font-mono text-zinc-600">{it.facility_code || it.plant_code}</span>
+                          <span className="truncate text-zinc-900">{it.header_text || 'Purchase Requisition'}</span>
+                          <span className="text-[10px] text-zinc-400">({it.lines?.length || it.line_count || 0} lines)</span>
+                        </div>
+                        <span className="text-[10px] text-blue-600 font-medium shrink-0 uppercase tracking-wider">Select & Copy →</span>
+                      </button>
+                    ))}
+                  {(!items || items.length === 0) && (
+                    <div className="p-3 text-center text-zinc-400 text-xs">No existing PRs available to reference.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -365,6 +507,19 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
             </div>
             <div className="mt-2 text-xs text-zinc-500">{it.material_number || it.item_number} – Qty {it.quantity} {it.uom} – Price {it.estimated_price} – Total {it.total_amount} – {it.currency} – Requester {it.requester_first_name}</div>
             <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  applyPrReference(it);
+                  if (typeof window !== 'undefined') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="text-[11px] px-2.5 py-1 rounded-full border bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition"
+                title="Copy PR lines into create form"
+              >
+                Copy As
+              </button>
               <Link href={`/${companyCode}/mm/po`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">PPOC PO from PR →</Link>
               <Link href={`/${companyCode}/workflow/inbox`} className="text-[11px] px-2 py-1 rounded-full border bg-zinc-50 hover:bg-zinc-100">SBWP Release PR PPRL (legacy ME54N) →</Link>
             </div>

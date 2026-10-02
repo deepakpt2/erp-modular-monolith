@@ -13,6 +13,42 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const [msg,setMsg]=useState('');
   const [form,setForm]=useState({customer_code: "", facility_code: "", commercial_org_code: "CO-1000", sales_channel_code: "CH-10", product_line_code: "PL-00", pricing_procedure: "ZPR00", customer_po: ""});
   const [lines,setLines]=useState<any[]>([{product_code: "", quantity: "10", unit_price: "100", uom_code: "PC", discount_percent: "0", tax_code: "GST18"}]);
+  const [refSoNumber, setRefSoNumber] = useState<string>('');
+  const [refQuery, setRefQuery] = useState('');
+  const [showRefSuggestions, setShowRefSuggestions] = useState(false);
+
+  function applySoReference(sourceSo: any) {
+    if (!sourceSo) return;
+    setRefSoNumber(sourceSo.sales_number || sourceSo.id || '');
+    setForm({
+      customer_code: sourceSo.customer_code || sourceSo.customer_number || sourceSo.partner_code || form.customer_code,
+      facility_code: sourceSo.facility_code || sourceSo.plant_code || form.facility_code,
+      commercial_org_code: sourceSo.commercial_org_code || sourceSo.sales_org || form.commercial_org_code,
+      sales_channel_code: sourceSo.sales_channel_code || sourceSo.distribution_channel || form.sales_channel_code,
+      product_line_code: sourceSo.product_line_code || sourceSo.division || form.product_line_code,
+      pricing_procedure: sourceSo.pricing_procedure || form.pricing_procedure,
+      customer_po: sourceSo.customer_po_number ? `${sourceSo.customer_po_number} (Copy)` : form.customer_po
+    });
+
+    const sourceLines = sourceSo.items || sourceSo.lines || [];
+    if (Array.isArray(sourceLines) && sourceLines.length > 0) {
+      setLines(sourceLines.map((l: any) => ({
+        product_code: l.product_code || l.item_number || l.material_number || '',
+        quantity: String(l.quantity || '10'),
+        unit_price: String(l.unit_price || '100'),
+        uom_code: l.uom_code || l.uom || 'PC',
+        discount_percent: String(l.discount_percent || '0'),
+        tax_code: l.tax_code || 'GST18'
+      })));
+    }
+  }
+
+  function clearSoReference() {
+    setRefSoNumber('');
+    setRefQuery('');
+    setForm({customer_code: "", facility_code: "", commercial_org_code: "CO-1000", sales_channel_code: "CH-10", product_line_code: "PL-00", pricing_procedure: "ZPR00", customer_po: ""});
+    setLines([{product_code: "", quantity: "10", unit_price: "100", uom_code: "PC", discount_percent: "0", tax_code: "GST18"}]);
+  }
 
   async function load(){
     setLoading(true);
@@ -89,12 +125,26 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
           <button onClick={()=>setLines([...lines,{product_code: "", quantity: "10", unit_price: "100", uom_code: "PC", discount_percent: "0", tax_code: "GST18"}])} className="mt-2 border-2 border-black px-3 py-1 bg-zinc-100">+ ADD LINE – PRICING VK11</button>
         </div>
         <button onClick={create} className="mt-3 bg-black text-white px-3 py-1 w-full">CREATE SALES ORDER SSOC – ALIAS VA01 – GENERAL ERP – T0 BLOCKING – PRICING VK11 + CREDIT CHECK OB45</button>
-        <div className="text-[9px] text-zinc-500 mt-1">T0 BLOCKING – SO pricing procedure V/08 determination: customer + commercial org + sales channel + product line → procedure ZPR00 → access sequence V/07 searches condition tables (material/customer) → PR00 base price, K004 discount, MWST tax – net value = qty*(price-discount)+tax – used in credit check FD32 OVA8 exposure = open SO + delivery + billing + AR vs limit – posting period FPPE (legacy OB52) account type D – NO DANGLING – General ERP, SAP VA01 alias</div>
+        <div className="text-[9px] text-zinc-500 mt-1">T0 BLOCKING – SO pricing procedure V/08 determination: customer + commercial org + sales channel + product line → procedure ZPR00 → access sequence V/07 searches condition tables (material/customer) → PR00 base price, K004 discount, MWST tax – net value = qty*(price-discount)+tax – used in credit check FD32 OVA8 exposure = open SO + delivery + billing + AR vs limit – posting period FPPE (legacy OB52) account type D – NO DANGLING – General ERP, Industry standard VA01 alias</div>
       </div>
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white border-2 border-black p-2">
-            <div className="font-bold">{it.sales_number} – {it.customer_number || it.customer_name} – {it.facility_code || it.plant_code} – total {it.total_amount} – {it.status} – {it.line_count} lines</div>
+            <div className="flex justify-between items-center">
+              <span className="font-bold">{it.sales_number} – {it.customer_number || it.customer_name} – {it.facility_code || it.plant_code} – total {it.total_amount} – {it.status} – {it.line_count} lines</span>
+              <button
+                type="button"
+                onClick={() => {
+                  applySoReference(it);
+                  if (typeof window !== 'undefined') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="border border-black px-1.5 py-0.5 text-[9px] bg-blue-50 hover:bg-blue-100 font-bold"
+              >
+                COPY AS
+              </button>
+            </div>
             <div className="text-[10px] text-zinc-600">{it.lines?.map((l:any)=>`${l.item_number || l.material_number}:${l.quantity}x${l.unit_price}`).join(' ')}</div>
           </div>
         ))}
@@ -124,9 +174,118 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">🛒</div>
           <div>
-            <div className="font-semibold">Sales Orders – SSOC (alias VA01) – General ERP – T0 BLOCKING – SCUC-FULL + PRICING VK11</div>
-            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} orders • {companyCode} • SSOC uses sales area (ECOC+ESCC+EPLC) → pricing procedure V/08 → VK11 condition records PR00/K004/MWST → net value → credit check FD32 OVA8 – NO DANGLING</div>
+            <div className="font-semibold">Sales Orders – SSOC (alias VA01) – Industry Standard – T0 BLOCKING – SCUC-FULL + PRICING VK11</div>
+            <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} orders • {companyCode} • SSOC uses sales area (ECOC+ESCC+EPLC) → pricing procedure V/08 → VK11 condition records PR00/K004/MWST → net value → credit check – NO DANGLING</div>
           </div>
+        </div>
+
+        {/* Create with Reference / Copy Sales Order Banner */}
+        <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50/60 p-3.5 space-y-2.5 text-xs">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                <span className="text-sm">📋</span> Create with Reference – Copy Sales Order (VA01)
+              </span>
+              <span className="text-[11px] text-blue-700 hidden sm:inline">
+                Clone Customer, Sales Area, Pricing Procedure, and Product Lines from an existing Sales Order
+              </span>
+            </div>
+            {refSoNumber && (
+              <button
+                type="button"
+                onClick={clearSoReference}
+                className="text-xs px-2.5 py-0.5 rounded-full bg-white border border-blue-300 text-blue-800 hover:bg-blue-100 transition font-medium"
+              >
+                ✕ Clear Reference
+              </button>
+            )}
+          </div>
+
+          {refSoNumber ? (
+            <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-200">
+              <div className="flex items-center gap-2 truncate">
+                <span className="font-mono font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-[11px]">
+                  {refSoNumber}
+                </span>
+                <span className="font-medium truncate text-zinc-800">
+                  {form.customer_code} • {form.commercial_org_code} / {form.sales_channel_code}
+                </span>
+                <span className="text-[11px] text-zinc-500 hidden md:inline">
+                  — {lines.length} lines copied into form below. Edit or submit to generate new Sales Order.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={refQuery}
+                    onChange={(e) => {
+                      setRefQuery(e.target.value);
+                      setShowRefSuggestions(true);
+                    }}
+                    onFocus={() => setShowRefSuggestions(true)}
+                    placeholder={`Select template Sales Order to copy from (${Array.isArray(items) ? items.length : 0} available)... `}
+                    className="w-full border border-blue-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                  />
+                  {refQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setRefQuery('')}
+                      className="absolute right-2 top-1.5 text-zinc-400 hover:text-zinc-600 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {Array.isArray(items) && items.length > 0 && (
+                  <span className="text-[11px] text-blue-800 font-medium whitespace-nowrap hidden sm:inline">
+                    {items.length} orders in record
+                  </span>
+                )}
+              </div>
+
+              {showRefSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-blue-200 z-20 max-h-56 overflow-auto divide-y divide-zinc-100">
+                  {(Array.isArray(items) ? items : [])
+                    .filter((it: any) => {
+                      if (!refQuery) return true;
+                      const q = refQuery.toLowerCase();
+                      const num = String(it.sales_number || it.id || '').toLowerCase();
+                      const cust = String(it.customer_number || it.customer_name || it.customer_code || '').toLowerCase();
+                      return num.includes(q) || cust.includes(q);
+                    })
+                    .slice(0, 15)
+                    .map((it: any, i: number) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onMouseDown={() => {
+                          applySoReference(it);
+                          setShowRefSuggestions(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center justify-between gap-2 transition"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="font-mono font-bold bg-zinc-100 text-zinc-800 px-1.5 py-0.5 rounded text-[11px]">
+                            {it.sales_number || it.id}
+                          </span>
+                          <span className="font-mono text-zinc-600">{it.customer_number || it.customer_code}</span>
+                          <span className="truncate text-zinc-900">Total: {it.total_amount || 0}</span>
+                          <span className="text-[10px] text-zinc-400">({it.lines?.length || it.line_count || 0} lines)</span>
+                        </div>
+                        <span className="text-[10px] text-blue-600 font-medium shrink-0 uppercase tracking-wider">Select & Copy →</span>
+                      </button>
+                    ))}
+                  {(!items || items.length === 0) && (
+                    <div className="p-3 text-center text-zinc-400 text-xs">No existing Sales Orders available to reference.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete label="CUSTOMER_CODE * – SCUC – General ERP Customer – XD01 alias – sales area + credit + pricing" value={form.customer_code} onChange={v=>setForm({...form,customer_code:v})} apiUrl="/api/business-partners?role=CUSTOMER" codeField="account_number" nameField="display_name" placeholder="" required createUrl={`/${companyCode}/foundation/customers`} createCode="SCUC" companyCode={companyCode} />
@@ -153,13 +312,28 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
         </div>
 
         <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Sales Order SSOC – Alias VA01 – General ERP – T0 BLOCKING – Pricing VK11 + Credit OB45</button>
-        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – SO pricing procedure V/08 determination: customer + commercial org + sales channel + product line → procedure ZPR00 → access sequence V/07 searches condition tables (material/customer) → PR00 base price, K004 discount, MWST tax – net value calculated – used in credit check FD32 OVA8 exposure = open SO + delivery + billing + AR vs limit – posting period FPPE (legacy OB52) account type D – NO DANGLING – General ERP, SAP VA01 alias – next: Delivery SDLC SDLC (legacy VL01N) PGI 601 INV_OFFSET/INV_POSTING (legacy GBB/BSX) COGS + Billing SBLC SBLC (legacy VF01) VKOA KOFI/KOFK revenue</div>
+        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – SO pricing procedure V/08 determination: customer + commercial org + sales channel + product line → procedure ZPR00 → access sequence V/07 searches condition tables (material/customer) → PR00 base price, K004 discount, MWST tax – net value calculated – used in credit check FD32 OVA8 exposure = open SO + delivery + billing + AR vs limit – posting period FPPE (legacy OB52) account type D – NO DANGLING – General ERP, Industry standard VA01 alias – next: Delivery SDLC SDLC (legacy VL01N) PGI 601 INV_OFFSET/INV_POSTING (legacy GBB/BSX) COGS + Billing SBLC SBLC (legacy VF01) VKOA KOFI/KOFK revenue</div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
-            <div className="flex justify-between items-start"><div className="font-semibold text-sm">{it.sales_number} – {it.customer_number || it.customer_name} – {it.facility_code} – total {it.total_amount} – {it.status} – {it.line_count} lines</div><span className="text-[10px] bg-blue-600 text-white rounded-full px-2 py-0.5">SSOC</span></div>
+            <div className="flex justify-between items-start"><div className="font-semibold text-sm">{it.sales_number} – {it.customer_number || it.customer_name} – {it.facility_code} – total {it.total_amount} – {it.status} – {it.line_count} lines</div><div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    applySoReference(it);
+                    if (typeof window !== 'undefined') {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="text-[11px] px-2.5 py-0.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition font-medium"
+                  title="Copy Sales Order lines into create form"
+                >
+                  Copy As
+                </button>
+                <span className="text-[10px] bg-blue-600 text-white rounded-full px-2 py-0.5">SSOC</span>
+              </div></div>
             <div className="mt-2 text-xs text-zinc-500">{it.lines?.slice(0,3).map((l:any)=>`${l.item_number}:${l.quantity}x${l.unit_price}=${l.line_total}`).join(' • ')}</div>
           </div>
         ))}
