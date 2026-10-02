@@ -112,28 +112,79 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { code, name, description, language, copy_from_coa } = body;
+    const {
+      code,
+      name,
+      description,
+      language = 'EN',
+      gl_account_length = 6,
+      controlling_integration = 'MANUAL',
+      group_chart_of_accounts,
+      is_blocked = false,
+      status = 'ACTIVE',
+      copy_from_coa
+    } = body;
     if (!code || !name) return NextResponse.json({ error: 'code and name required' }, { status: 400 });
 
     let primaryRes: any = null;
     let legalSafe = true;
     let errors: string[] = [];
-    const finalLang = (language || 'EN').toUpperCase();
+    let finalLang = (language || 'EN').toUpperCase().trim();
+    if (finalLang.includes(' ')) {
+      finalLang = finalLang.split(' ')[0].trim();
+    }
+    finalLang = finalLang.slice(0, 10);
+    const finalLen = Math.min(Math.max(parseInt(gl_account_length) || 6, 1), 10);
+    let finalInteg = (controlling_integration || 'MANUAL').toUpperCase().trim();
+    if (finalInteg.includes(' ')) {
+      finalInteg = finalInteg.split(' ')[0].trim();
+    }
+    const finalGroupCoA = group_chart_of_accounts ? group_chart_of_accounts.toUpperCase().trim() : null;
+    const finalBlocked = is_blocked === true || is_blocked === 'true';
 
-    // Ensure language column exists – auto-migrate safe
+    // Ensure standard columns exist – auto-migrate safe
     try {
-      await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'EN'`);
+      await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'EN'`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS gl_account_length INTEGER DEFAULT 6`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS controlling_integration VARCHAR(20) DEFAULT 'MANUAL'`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS group_chart_of_accounts VARCHAR(20)`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT false`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ACTIVE'`).catch(() => {});
+      await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_chart_code ON fin_chart (code)`).catch(() => {});
     } catch {}
 
     // Try fin_chart – new legal-safe with language EN per guide
     try {
-      const res = await db.execute(sql`
-        INSERT INTO fin_chart (code, name, description, language)
-        VALUES (${code.toUpperCase()}, ${name}, ${description || null}, ${finalLang})
-        ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}, language = ${finalLang}, updated_at = NOW()
-        RETURNING id, code, name, language
-      `);
-      primaryRes = res.rows[0];
+      const chartCode = code.toUpperCase().trim();
+      const checkExists = await db.execute(sql`SELECT id FROM fin_chart WHERE UPPER(code) = ${chartCode} LIMIT 1`);
+      if (checkExists.rows.length > 0) {
+        const existingId = (checkExists.rows[0] as any).id;
+        const res = await db.execute(sql`
+          UPDATE fin_chart SET
+            name = ${name},
+            description = ${description || null},
+            language = ${finalLang},
+            gl_account_length = ${finalLen},
+            controlling_integration = ${finalInteg},
+            group_chart_of_accounts = ${finalGroupCoA},
+            is_blocked = ${finalBlocked},
+            status = ${status || 'ACTIVE'},
+            updated_at = NOW()
+          WHERE id = ${existingId}
+          RETURNING id, code, name, language, gl_account_length, controlling_integration, group_chart_of_accounts, is_blocked, status
+        `);
+        primaryRes = res.rows[0];
+      } else {
+        const res = await db.execute(sql`
+          INSERT INTO fin_chart (
+            code, name, description, language, gl_account_length, controlling_integration, group_chart_of_accounts, is_blocked, status
+          ) VALUES (
+            ${chartCode}, ${name}, ${description || null}, ${finalLang}, ${finalLen}, ${finalInteg}, ${finalGroupCoA}, ${finalBlocked}, ${status || 'ACTIVE'}
+          )
+          RETURNING id, code, name, language, gl_account_length, controlling_integration, group_chart_of_accounts, is_blocked, status
+        `);
+        primaryRes = res.rows[0];
+      }
     } catch (newErr: any) {
       console.warn('fin_chart insert failed:', newErr.message);
       errors.push(`fin_chart: ${newErr.message}`);
@@ -214,10 +265,39 @@ export async function PUT(req: NextRequest) {
 
     try {
       let res;
+      const { language, gl_account_length, controlling_integration, group_chart_of_accounts, is_blocked, status } = body;
+      const finalBlocked = is_blocked !== undefined ? (is_blocked === true || is_blocked === 'true') : null;
       if (id) {
-        res = await db.execute(sql`UPDATE fin_chart SET code = COALESCE(${code?.toUpperCase()}, code), name = COALESCE(${name}, name), description = COALESCE(${description}, description), updated_at = NOW() WHERE id = ${id} RETURNING id, code, name`);
+        res = await db.execute(sql`
+          UPDATE fin_chart SET 
+            code = COALESCE(${code?.toUpperCase()}, code), 
+            name = COALESCE(${name}, name), 
+            description = COALESCE(${description}, description),
+            language = COALESCE(${language?.toUpperCase()}, language),
+            gl_account_length = COALESCE(${gl_account_length ? parseInt(gl_account_length) : null}, gl_account_length),
+            controlling_integration = COALESCE(${controlling_integration?.toUpperCase()}, controlling_integration),
+            group_chart_of_accounts = COALESCE(${group_chart_of_accounts?.toUpperCase()}, group_chart_of_accounts),
+            is_blocked = COALESCE(${finalBlocked}, is_blocked),
+            status = COALESCE(${status}, status),
+            updated_at = NOW() 
+          WHERE id = ${id} 
+          RETURNING *
+        `);
       } else {
-        res = await db.execute(sql`UPDATE fin_chart SET name = COALESCE(${name}, name), description = COALESCE(${description}, description), updated_at = NOW() WHERE code = ${code.toUpperCase()} RETURNING id, code, name`);
+        res = await db.execute(sql`
+          UPDATE fin_chart SET 
+            name = COALESCE(${name}, name), 
+            description = COALESCE(${description}, description),
+            language = COALESCE(${language?.toUpperCase()}, language),
+            gl_account_length = COALESCE(${gl_account_length ? parseInt(gl_account_length) : null}, gl_account_length),
+            controlling_integration = COALESCE(${controlling_integration?.toUpperCase()}, controlling_integration),
+            group_chart_of_accounts = COALESCE(${group_chart_of_accounts?.toUpperCase()}, group_chart_of_accounts),
+            is_blocked = COALESCE(${finalBlocked}, is_blocked),
+            status = COALESCE(${status}, status),
+            updated_at = NOW() 
+          WHERE UPPER(code) = ${code.toUpperCase().trim()} 
+          RETURNING *
+        `);
       }
       if (res.rows.length === 0) throw new Error('Not found in fin_chart');
       return NextResponse.json({ success: true, chartOfAccounts: res.rows[0], code: 'FCOA', message: `CoA ${res.rows[0].code} updated – FCOA legal-safe` });

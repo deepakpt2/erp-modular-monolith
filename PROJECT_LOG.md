@@ -1248,3 +1248,27 @@ Once you confirm, I will:
   - Audited for legal constraints (0 vendor names).
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Upgrade Chart of Accounts (`OB13` / `FCOA`) to Full Table `T004` Specification
+- **Architectural Enhancements:**
+  1. **Schema Expansion (`financialsFoundationSchema.ts` & Drizzle migration):**
+     - Extended `fin_chart` (`finChart`) with authentic Table `T004` attributes:
+       - `code`: Chart of Accounts identifier (`T004-KTOPL`)
+       - `name`: Description (`T004T-KTPLT`)
+       - `language`: Maintenance language (`T004-SPRAS`, e.g. `EN`, `DE`, `HI`)
+       - `gl_account_length`: Length of G/L account numbers (`T004-SAKNR`, 1 to 10 digits, default 6)
+       - `controlling_integration`: Integration with Controlling (`T004-INTEG`: `MANUAL` / `AUTOMATIC`)
+       - `group_chart_of_accounts`: Consolidation Group CoA (`T004-KONSZ`)
+       - `is_blocked`: Blocked for maintenance/postings (`T004-XSPER`)
+       - `status`: Lifecycle state (`ACTIVE`, `INACTIVE`)
+  2. **API Upgrades (`/api/chart-of-accounts/route.ts`):**
+     - Dynamic auto-migration ensuring columns `gl_account_length`, `controlling_integration`, `group_chart_of_accounts`, `is_blocked`, and `status`.
+     - Standard select-first upsert pattern preventing index conflicts.
+     - Enhanced template duplication (`copy_from_coa`) to replicate all accounts with proper category and group codes.
+  3. **UI Page Parity (`src/app/(erp)/[companyCode]/fico/chart-of-accounts/page.tsx`):**
+     - Rendered all standard customizing fields with comprehensive explanations.
+     - Preserved active "Create with Reference / Copy As" banner and single-click row duplication.
+- **Verification:**
+  - Audited for strict legal naming compliance (0 vendor names).
+  - TypeScript build (`tsc --noEmit`) verified clean with 0 errors.
+  - Pushed to GitHub repository `main`.

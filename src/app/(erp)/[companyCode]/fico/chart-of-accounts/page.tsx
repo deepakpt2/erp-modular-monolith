@@ -1,4 +1,5 @@
 "use client";
+
 import { SingleCodePage } from '@/shared/ui/single-code-page';
 
 export default function Page({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
@@ -8,7 +9,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
       code={codeOverride || "FCOA"}
       sapAlias="OB13"
       title={titleOverride || "Chart of Accounts"}
-      description="Define Chart of Accounts – KSCA / CA-IN-01 – general CoA – strict usage: groups GL accounts – e.g., KSCA India – per guide needs language EN, chart_of_accounts_code CA-IN-01 is example code"
+      description="Standard Industry Customizing Table (T004): Defines the organizational framework for the General Ledger. Controls the length of G/L account numbers, maintenance language, consolidation group chart of accounts, controlling integration, and posting block status."
       apiEndpoint="/api/chart-of-accounts"
       referenceConfig={{
         keyField: 'code',
@@ -18,23 +19,108 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
           copy_from_coa: (val, record) => record.code || '',
         }
       }}
-      initialForm={{ code: '', name: '', description: '', language: 'EN', copy_from_coa: '' }}
+      initialForm={{
+        code: '',
+        name: '',
+        language: 'EN',
+        gl_account_length: '6',
+        controlling_integration: 'MANUAL',
+        group_chart_of_accounts: '',
+        is_blocked: 'false',
+        status: 'ACTIVE',
+        copy_from_coa: '',
+        description: ''
+      }}
       fields={[
-        { key: "code", label: "CHART_OF_ACCOUNTS_CODE", required: true, placeholder: "", description: "Chart code – e.g., CA-IN-01 per guide – KSCA, INT" },
-        { key: "name", label: "CHART_OF_ACCOUNTS_NAME", required: true, placeholder: "" },
-        { key: "language", label: "LANGUAGE", required: true, placeholder: "", description: "Language – EN per guide – FCOA (legacy OB13) dont have language EN to add – now added" },
-        { key: "copy_from_coa", label: "COPY_FROM_TEMPLATE_COA", type: "autocomplete", apiUrl: "/api/chart-of-accounts", dataKey: "chartOfAccounts", codeField: "code", placeholder: "", description: "Optional: Copy all G/L accounts from existing Chart (e.g. CA-IN-01 standard reference template) into this new Chart" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
+        {
+          key: "code",
+          label: "CHART_OF_ACCOUNTS",
+          required: true,
+          placeholder: "e.g. CA01, 1000, CA-IN-01",
+          description: "4-character Chart of Accounts key (T004-KTOPL) – uniquely identifies the chart of accounts"
+        },
+        {
+          key: "name",
+          label: "CHART_OF_ACCOUNTS_NAME",
+          required: true,
+          placeholder: "e.g. Standard Operational Chart of Accounts",
+          description: "Chart of Accounts description/name (T004T-KTPLT)"
+        },
+        {
+          key: "language",
+          label: "MAINTENANCE_LANGUAGE",
+          required: true,
+          type: "select",
+          options: [
+            "EN (English)",
+            "DE (German)",
+            "FR (French)",
+            "ES (Spanish)",
+            "JA (Japanese)",
+            "HI (Hindi)"
+          ],
+          description: "Maintenance language (T004-SPRAS) – determines the primary language for account descriptions"
+        },
+        {
+          key: "gl_account_length",
+          label: "GL_ACCOUNT_NUMBER_LENGTH",
+          required: true,
+          placeholder: "6",
+          description: "Length of G/L account numbers (T004-SAKNR) – valid range 1 to 10 digits (typically 6 in standard templates)"
+        },
+        {
+          key: "controlling_integration",
+          label: "CONTROLLING_INTEGRATION",
+          required: true,
+          type: "select",
+          options: [
+            "MANUAL (Manual creation of cost elements)",
+            "AUTOMATIC (Automatic creation of cost elements)"
+          ],
+          description: "Integration with Controlling (T004-INTEG): Type 1 = Manual cost element creation, Type 2 = Automatic creation of primary/secondary cost elements"
+        },
+        {
+          key: "group_chart_of_accounts",
+          label: "GROUP_CHART_OF_ACCOUNTS",
+          type: "autocomplete",
+          apiUrl: "/api/chart-of-accounts",
+          dataKey: "chartOfAccounts",
+          codeField: "code",
+          placeholder: "e.g. CONS, GRP01 (Optional)",
+          description: "Group Chart of Accounts (T004-KONSZ) – used for consolidation reporting across multi-GAAP subsidiaries"
+        },
+        {
+          key: "is_blocked",
+          label: "POSTING_BLOCK",
+          required: true,
+          type: "select",
+          options: ["false", "true"],
+          description: "Chart of Accounts Blocked (T004-XSPER): If set to true, accounts in this chart cannot be created or maintained"
+        },
+        {
+          key: "copy_from_coa",
+          label: "COPY_FROM_TEMPLATE_COA",
+          type: "autocomplete",
+          apiUrl: "/api/chart-of-accounts",
+          dataKey: "chartOfAccounts",
+          codeField: "code",
+          placeholder: "Select template (e.g. CA-IN-01) to duplicate accounts",
+          description: "Optional: Replicates all G/L accounts from an existing template chart (e.g. CA-IN-01) into this new chart"
+        },
+        {
+          key: "description",
+          label: "DESCRIPTION",
+          type: "textarea",
+          placeholder: "Operational rationale or statutory accounting standards (e.g. IndAS / IFRS / US-GAAP)",
+          description: "Detailed description of scope and GAAP standards for this chart"
+        }
       ]}
       relatedLinks={[
-        { code: "FGLC", label: "GL Account uses CoA", route: "/fico/gl-accounts", description: "GL Account requires Chart – create CA-IN-01 first" },
-        { code: "OBYC", label: "Auto Account uses CoA", route: "/fico/auto-account-determination", description: "Auto Account – INV_POSTING/GR_IR_CLEARING (legacy BSX/WRX)/GBB needs CoA" },
-        { code: "FFYC", label: "Fiscal Year Variant K4 – needed for ELEC", route: "/fico/fiscal-calendars", description: "Create K4 before ELEC – fiscal_year_variant K4" },
-        { code: "FSSV", label: "Field Status Variant FSSV-1000", route: "/fico/field-status-variants", description: "Create FSSV-1000 before ELEC – field_status_variant" },
-        { code: "FPPC", label: "Posting Period Variant PPV-1000", route: "/fico/posting-period-variants", description: "Create PPV-1000 before ELEC – posting_period_variant" },
-        { code: "FCPC", label: "Credit Control Area CRED-1000 – must exist before FCOA (legacy OB13)/ELEC", route: "/foundation/credit-policy-areas", description: "credit_control_area CRED-1000 didnt create before FCOA (legacy OB13) – create first" },
-        { code: "ECGC", label: "Company Group – root", route: "/foundation/company-groups", description: "ECGC-FMCG-01 must exist before ELEC" },
-        { code: "ELEC", label: "Legal Entity uses CoA – needs CA-IN-01", route: "/foundation/legal-entities", description: "ELEC 1000 needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FSSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000" },
+        { code: "OB62", label: "Assign Company Code to CoA", route: "/fico/assignments/chart-of-accounts", description: "Assign Company Code" },
+        { code: "FS00", label: "G/L Account Master (FGLC)", route: "/fico/gl-accounts", description: "Maintain G/L Accounts" },
+        { code: "OBD4", label: "G/L Account Groups", route: "/fico/account-groups", description: "Define Account Groups" },
+        { code: "OBYC", label: "Auto Account Determination", route: "/fico/auto-account-determination", description: "Account Determination" },
+        { code: "OX02", label: "Company Code (ELEC)", route: "/foundation/legal-entities", description: "Company Codes" }
       ]}
     />
   );

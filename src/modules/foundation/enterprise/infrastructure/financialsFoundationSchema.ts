@@ -143,10 +143,15 @@ export const finPostingCalendarPeriod = pgTable('fin_posting_calendar_period', {
 // Extended with language EN per guide – OB13 needs language
 export const finChart = pgTable('fin_chart', {
   id: uuid('id').primaryKey().defaultRandom(),
-  code: varchar('code', { length: 20 }).notNull().unique(),
-  name: varchar('name', { length: 150 }).notNull(),
+  code: varchar('code', { length: 20 }).notNull().unique(), // T004-KTOPL
+  name: varchar('name', { length: 150 }).notNull(), // T004T-KTPLT
   description: text('description'),
-  language: varchar('language', { length: 10 }).default('EN').notNull(), // Added per guide – OB13 language EN
+  language: varchar('language', { length: 10 }).default('EN').notNull(), // T004-SPRAS
+  glAccountLength: integer('gl_account_length').default(6).notNull(), // T004-SAKNR (length 1 to 10 digits)
+  controllingIntegration: varchar('controlling_integration', { length: 20 }).default('MANUAL').notNull(), // T004-INTEG (1 = Manual, 2 = Automatic)
+  groupChartOfAccounts: varchar('group_chart_of_accounts', { length: 20 }), // T004-KONSZ (Consolidation CoA)
+  isBlocked: boolean('is_blocked').default(false).notNull(), // T004-XSPER (Posting block)
+  status: varchar('status', { length: 20 }).default('ACTIVE').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
