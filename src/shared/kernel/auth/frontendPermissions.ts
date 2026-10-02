@@ -33,6 +33,7 @@ export const FRONTEND_PERMISSIONS: FrontendPermission[] = [
   { pattern: /\/foundation\/inventory-locations/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'WAREHOUSE', 'MATERIAL_MANAGER'], code: 'EILC', description: 'Inventory Location – OX09 – EILC – ENTERPRISE_CONFIG – ADMIN/WAREHOUSE' },
   { pattern: /\/foundation\/procurement-divisions/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'PURCHASER'], code: 'EPDC', description: 'Procurement Division – EPDC – ENTERPRISE_CONFIG – ADMIN/PURCHASER' },
   { pattern: /\/foundation\/buying-teams/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'PURCHASER'], code: 'EBTC', description: 'Buyer Team – EBTC – ENTERPRISE_CONFIG – purchasing group' },
+  { pattern: /\/foundation\/control-areas/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'ACCOUNTANT'], code: 'ECAC', description: 'Control Area – OX06 – ECAC – ADMIN/ACCOUNTANT' },
   { pattern: /\/foundation\/commercial-orgs/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'SALES'], code: 'ECOC', description: 'Commercial Org – ECOC – ENTERPRISE_CONFIG – sales org – ADMIN/SALES' },
   { pattern: /\/foundation\/sales-channels/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'SALES'], code: 'ESCC', description: 'Sales Channel – ESCC – ENTERPRISE_CONFIG – distribution channel' },
   { pattern: /\/foundation\/product-lines/, permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'MATERIAL_MANAGER', 'SALES'], code: 'EPLC', description: 'Product Line – EPLC – ENTERPRISE_CONFIG – division' },

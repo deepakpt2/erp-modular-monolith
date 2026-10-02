@@ -127,7 +127,8 @@ export default function NavigatorPage() {
         { label: 'Inventory Location', code: 'EILC', route: `/foundation/inventory-locations` },
         { label: 'Procurement Division', code: 'EPDC', route: `/foundation/procurement-divisions` },
         { label: 'Buyer Team', code: 'EBTC', route: `/foundation/buying-teams` },
-        { label: 'Commercial Organization', code: 'ECOC', route: `/foundation/commercial-orgs` },
+        { label: 'Management Control Area (OX06)', code: 'ECAC', route: `/foundation/control-areas` },
+        { label: 'Commercial Organization (OVX2)', code: 'ECOC', route: `/foundation/commercial-orgs` },
         { label: 'Sales Channel', code: 'ESCC', route: `/foundation/sales-channels` },
         { label: 'Product Line', code: 'EPLC', route: `/foundation/product-lines` },
         { label: 'Commercial Unit', code: 'EPUC', route: `/foundation/commercial-units` },
@@ -136,7 +137,7 @@ export default function NavigatorPage() {
         { label: 'Warehouse Site', code: 'EWSC', route: `/foundation/warehouse-sites` },
         { label: 'Distribution Path', code: 'EDPC', route: `/foundation/distribution-paths` },
         { label: 'Credit Policy Area', code: 'FCPC', route: `/foundation/credit-policy-areas` },
-        { label: 'Enterprise Config Overview', code: 'ECAC', route: `/foundation/enterprise-structure` },
+        { label: 'Enterprise Config Overview', code: 'ECOV', route: `/foundation/enterprise-structure` },
       ]
     },
     {

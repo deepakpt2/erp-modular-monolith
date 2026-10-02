@@ -991,3 +991,16 @@ Once you confirm, I will:
 - **Verification:**
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Separation and Dedicated Routing for ECAC (Management Control Area) vs ECOC (Commercial Org)
+- **Problem Analysis:**
+  - Searching for function code `ECAC` erroneously routed to `/foundation/commercial-orgs` (the Commercial Organization / Sales Org transaction `ECOC`).
+  - There was no dedicated single-code page for `ECAC` (`/foundation/control-areas`), causing the command search palette to misdirect users into Commercial Org.
+- **Architectural Solution:**
+  - **Dedicated Control Area Page:** Implemented `src/app/(erp)/[companyCode]/foundation/control-areas/page.tsx` backed by `SingleCodePage` connected to `/api/control-areas` (`org_mgmt_control_area`), with fields for `code`, `name`, `currency_code`, and `description`.
+  - **Function Directory & Search Alignment:** Updated `src/shared/lib/functions.ts` to map `ECAC` (`OX06`) directly to `/1000/foundation/control-areas`.
+  - **Enterprise Navigator Integration:** Added `Management Control Area (OX06)` (`ECAC`) under Foundation in `src/app/(erp)/[companyCode]/navigator/page.tsx`.
+  - **RBAC & Authorization Routing:** Added explicit permission entries in `pagePermissions.ts`, `frontendPermissions.ts`, and `routePermissions.ts` for `/foundation/control-areas` and `/api/control-areas`.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.

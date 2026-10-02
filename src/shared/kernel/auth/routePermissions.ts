@@ -109,6 +109,7 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
   { pattern: /^\/api\/facilities/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], description: 'Facilities – OX02 – EFCC – ENTERPRISE_CONFIG – ADMIN only – plant – MDM NOT allowed' },
   { pattern: /^\/api\/company-codes/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], description: 'Company Codes – OX02 – MATERIAL_CREATE – ADMIN only – MDM NOT allowed' },
   { pattern: /^\/api\/buyer-teams/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'PURCHASER'], description: 'Buyer Teams – EBTC – ENTERPRISE_CONFIG – purchasing group – ADMIN/PURCHASER – MDM NOT allowed per SAP IMG' },
+  { pattern: /^\/api\/control-areas/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'ACCOUNTANT'], description: 'Control Areas – ECAC – OX06 – ENTERPRISE_CONFIG – ADMIN/ACCOUNTANT' },
   { pattern: /^\/api\/commercial-orgs/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER', 'SALES'], description: 'Commercial Orgs – EDPC – ECOC – ENTERPRISE_CONFIG – sales org – ADMIN/SALES' },
   { pattern: /^\/api\/company-relationships/, method: '*', permission: 'ENTERPRISE_CONFIG', roles: ['ADMIN', 'OWNER'], description: 'Company Relationships – FCRL – ENTERPRISE_CONFIG – ADMIN only' },
 
