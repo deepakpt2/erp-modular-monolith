@@ -91,7 +91,12 @@ export const orgMgmtControlArea = pgTable('org_mgmt_control_area', {
   tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),
   code: varchar('code', { length: 20 }).notNull(),
   name: varchar('name', { length: 100 }).notNull(),
+  assignmentControl: varchar('assignment_control', { length: 1 }).default('2').notNull(), // 1 = 1:1, 2 = Cross-company-code
+  currencyType: varchar('currency_type', { length: 10 }).default('10').notNull(), // 10 = Company Code Currency, 20 = Controlling Area Currency, 30 = Group Currency
   currencyCode: varchar('currency_code', { length: 3 }).notNull().default('INR'),
+  chartOfAccountsCode: varchar('chart_of_accounts_code', { length: 20 }), // Chart of Accounts
+  fiscalYearVariant: varchar('fiscal_year_variant', { length: 10 }).default('V3'), // Fiscal Year Variant (e.g. K4, V3)
+  costCenterStandardHierarchy: varchar('cost_center_standard_hierarchy', { length: 30 }), // Cost Center Standard Hierarchy (e.g. AM01)
   description: text('description'),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

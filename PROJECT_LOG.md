@@ -1004,3 +1004,23 @@ Once you confirm, I will:
 - **Verification:**
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Enhancement of Controlling Area (ECAC / OX06 / OKKP) Form & Schema
+- **Requirement:**
+  - Expanded Controlling Area definition beyond basic code, name, and currency to full enterprise industry-standard parity (`TKA01` / `OKKP` / `OKPP`):
+    1. **Controlling Area Code & Name** (`KOKRS`, `BEZEI`).
+    2. **Assignment Control** (`assignment_control` / `KNTXT`): `1` (1:1 with Company Code) vs `2` (Cross-Company-Code Cost Accounting, 1:N).
+    3. **Currency Type** (`currency_type`): `10` (Company Code Currency), `20` (Controlling Area Currency), `30` (Group Currency).
+    4. **Currency Code** (`currency_code` / `WAERS`).
+    5. **Chart of Accounts** (`chart_of_accounts_code` / `KTOPL`) with autocomplete lookup.
+    6. **Fiscal Year Variant** (`fiscal_year_variant` / `PERIV`, e.g. `V3`, `K4`) with autocomplete lookup.
+    7. **Cost Center Standard Hierarchy** (`cost_center_standard_hierarchy` / `KHINR`, e.g. `AM01`, `HIER01`).
+- **Implementation:**
+  - Updated Drizzle schema `orgMgmtControlArea` in `src/modules/foundation/enterprise/infrastructure/orgStructureSchema.ts`.
+  - Updated backend API in `src/app/api/control-areas/route.ts` with auto-migration column ensuring and full CRUD persistence.
+  - Enhanced `SingleCodePage` select options in `src/shared/ui/single-code-page.tsx` to support `{ value, label }` objects.
+  - Updated `src/app/(erp)/[companyCode]/foundation/control-areas/page.tsx` with all mandatory enterprise fields and helpful tooltips/placeholders.
+  - Added search aliases `OKKP` and `OKPP` to `src/shared/lib/functions.ts`.
+- **Verification:**
+  - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
+  - Pushed to GitHub repository `main`.

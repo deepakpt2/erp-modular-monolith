@@ -12,7 +12,7 @@ export interface FieldDef {
   required?: boolean;
   placeholder?: string;
   type?: 'text' | 'textarea' | 'select' | 'autocomplete';
-  options?: string[];
+  options?: (string | { value: string; label: string })[];
   apiUrl?: string;
   dataKey?: string;
   codeField?: string;
@@ -556,7 +556,11 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
           <label className={modern ? "text-xs font-medium uppercase tracking-wider text-zinc-600 block" : "text-xs font-mono font-bold uppercase text-black block"}>{field.label}{field.required ? ' *' : ''}</label>
           <select value={value} onChange={e => setForm({ ...form, [field.key]: e.target.value })} className={modern ? `w-full border ${modernBorder} rounded-lg px-3 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white transition-all` : `w-full border-2 ${classicBorder} px-2 py-1.5 text-xs font-mono bg-white text-black rounded-none focus:outline-none min-h-[2.25rem]`}>
             <option value="">{`Select ${field.label}`}</option>
-            {field.options.map(o => <option key={o} value={o}>{o}</option>)}
+            {field.options.map(o => {
+              const val = typeof o === 'string' ? o : o.value;
+              const lbl = typeof o === 'string' ? o : o.label;
+              return <option key={val} value={val}>{lbl}</option>;
+            })}
           </select>
           {field.description && <p className={modern ? "text-xs text-zinc-400 leading-normal" : "text-[0.65rem] font-mono text-black leading-normal"}>{field.description}</p>}
         </div>
