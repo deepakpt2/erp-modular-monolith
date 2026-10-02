@@ -1158,3 +1158,14 @@ Once you confirm, I will:
 - **Verification:**
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Complete Removal of Fallback `ON CONFLICT (code)` in `posting-period-variants` and `posting-calendars`
+- **Root Cause Analysis:**
+  - The exact query string `INSERT INTO fin_posting_calendar (code, name) VALUES ($1, $2) ON CONFLICT (code) DO UPDATE SET name = $3 params: AM01,Posting Period Variant for Aura,Posting Period Variant for Aura` was surviving in the fallback catch block of `posting-period-variants/route.ts` (lines 184–186) and `posting-calendars/route.ts`.
+  - When the primary upsert encountered any transient condition, the fallback block executed this legacy query with `ON CONFLICT (code)`, reproducing the error.
+- **Architectural Solution:**
+  - Replaced all legacy fallback blocks in `src/app/api/posting-period-variants/route.ts` and `src/app/api/posting-calendars/route.ts` with explicit `SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ...` checks followed by clean `UPDATE` or `INSERT`, completely eradicating raw `ON CONFLICT (code)` statements targeting `fin_posting_calendar`.
+- **Verification:**
+  - Verified with `grep` that 0 instances of `ON CONFLICT` targeting `fin_posting_calendar` remain across the entire codebase.
+  - TypeScript build check (`tsc --noEmit`) passes cleanly with 0 errors.
+  - Pushed to GitHub repository `main`.

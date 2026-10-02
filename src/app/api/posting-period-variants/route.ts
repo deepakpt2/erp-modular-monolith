@@ -17,7 +17,7 @@ async function ensureTableNew() {
     const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM fin_posting_calendar`);
     if (parseInt((cnt.rows[0] as any).c || '0') === 0) {
       await db.execute(sql`
-        INSERT INTO fin_posting_calendar (code, name, description) VALUES ('1000', 'Standard Posting Calendar', 'Standard 1-12 open'), ('KS01', 'Kerala Spices Posting Calendar') ON CONFLICT (code) DO NOTHING
+        INSERT INTO fin_posting_calendar (code, name, description) VALUES ('1000', 'Standard Posting Calendar', 'Standard 1-12 open'), ('KS01', 'Kerala Spices Posting Calendar') 
       `);
     }
   } catch (e: any) {
@@ -47,7 +47,7 @@ async function ensureTableLegacy() {
     const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM fin_posting_calendar`);
     if (parseInt((cnt.rows[0] as any).c || '0') === 0) {
       await db.execute(sql`
-        INSERT INTO fin_posting_calendar (code, name) VALUES ('1000', 'Standard Posting Variant'), ('KS01', 'Kerala Spices Posting Period') ON CONFLICT (code) DO NOTHING
+        INSERT INTO fin_posting_calendar (code, name) VALUES ('1000', 'Standard Posting Variant'), ('KS01', 'Kerala Spices Posting Period') 
       `);
       const types = ['+', 'A', 'D', 'K', 'M', 'S'];
       for (const at of types) {
@@ -181,9 +181,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, variant: res.rows[0], code: 'FPPE', message: `Posting variant ${code.toUpperCase()} created – FPPE legal-safe`, legalSafe: true });
     } catch (newErr: any) {
       console.warn('fin_posting_calendar insert failed fallback fin_posting_calendar:', newErr.message);
-      await db.execute(sql`
-        INSERT INTO fin_posting_calendar (code, name) VALUES (${code.toUpperCase()}, ${name || code}) ON CONFLICT (code) DO UPDATE SET name = ${name || code}
-      `);
+      const fbCode = code.toUpperCase().trim();
+      const fbName = name || fbCode;
+      const fbCheck = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ${fbCode} LIMIT 1`).catch(() => ({ rows: [] }));
+      if (fbCheck.rows.length > 0) {
+        await db.execute(sql`UPDATE fin_posting_calendar SET name = ${fbName}, updated_at = NOW() WHERE UPPER(code) = ${fbCode}`).catch(() => {});
+      } else {
+        await db.execute(sql`INSERT INTO fin_posting_calendar (code, name) VALUES (${fbCode}, ${fbName})`).catch(async () => {
+          await db.execute(sql`UPDATE fin_posting_calendar SET name = ${fbName}, updated_at = NOW() WHERE UPPER(code) = ${fbCode}`).catch(() => {});
+        });
+      }
       if (periods && Array.isArray(periods)) {
         for (const p of periods) {
           await db.execute(sql`

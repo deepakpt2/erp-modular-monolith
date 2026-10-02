@@ -150,12 +150,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, postingCalendar: res.rows[0], code: 'FPPC', aliasCodes: ['PPC','OBBO'], message: `Posting Calendar ${code.toUpperCase()} created – FPPC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
       console.warn('fin_posting_calendar insert failed fallback fin_posting_calendar:', newErr.message);
-      const res = await db.execute(sql`
-        INSERT INTO fin_posting_calendar (tenant_id, code, name, description)
-        VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET name = ${name}, description = ${description || null}
-        RETURNING id, code, name
-      `);
+      const fbCode = code.toUpperCase().trim();
+      const fbCheck = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ${fbCode} LIMIT 1`).catch(() => ({ rows: [] }));
+      let res: any;
+      if (fbCheck.rows.length > 0) {
+        res = await db.execute(sql`UPDATE fin_posting_calendar SET name = ${name}, description = ${description || null}, updated_at = NOW() WHERE UPPER(code) = ${fbCode} RETURNING id, code, name`);
+      } else {
+        res = await db.execute(sql`INSERT INTO fin_posting_calendar (tenant_id, code, name, description) VALUES (${tenantId}, ${fbCode}, ${name}, ${description || null}) RETURNING id, code, name`).catch(async () => {
+          return await db.execute(sql`UPDATE fin_posting_calendar SET name = ${name}, description = ${description || null}, updated_at = NOW() WHERE UPPER(code) = ${fbCode} RETURNING id, code, name`);
+        });
+      }
       return NextResponse.json({ success: true, postingCalendar: res.rows[0], code: 'FPPC', aliasCodes: ['OBBO'], message: `Posting Calendar ${code.toUpperCase()} created – FPPC (legacy OBBO) legacy (migrating to FPPC)`, legalSafe: false });
     }
   } catch (e: any) {
