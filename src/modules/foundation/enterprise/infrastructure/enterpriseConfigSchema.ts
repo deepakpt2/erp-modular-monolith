@@ -4,11 +4,14 @@ import { entCompanyCode, entPlant } from './schema';
 // Fiscal Year Variant OB29 K4 April-March
 export const entFiscalYearVariant = pgTable('fin_fiscal_calendar', {
   id: uuid('id').primaryKey().defaultRandom(),
-  code: varchar('code', { length: 4 }).notNull().unique(), // K4, K1, etc
-  description: varchar('description', { length: 100 }).notNull(),
+  tenantId: uuid('tenant_id'),
+  code: varchar('code', { length: 20 }).notNull().unique(), // K4, K1, V3, etc
+  name: varchar('name', { length: 100 }).default('Fiscal Year Variant'),
+  description: varchar('description', { length: 255 }),
   yearDependent: boolean('year_dependent').default(false).notNull(),
   calendarYear: boolean('calendar_year').default(false).notNull(),
   numberOfPeriods: integer('number_of_periods').default(12).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -59,10 +62,16 @@ export const entFieldStatusVariant = pgTable('fin_field_status_variant', {
 
 export const entFieldStatusGroup = pgTable('fin_field_status_group', {
   id: uuid('id').primaryKey().defaultRandom(),
-  variantId: uuid('variant_id').notNull().references(() => entFieldStatusVariant.id),
-  code: varchar('code', { length: 10 }).notNull(), // G001, G004, G005
-  name: varchar('name', { length: 100 }).notNull(),
+  variantId: uuid('variant_id').references(() => entFieldStatusVariant.id),
+  variantCode: varchar('variant_code', { length: 20 }),
+  groupCode: varchar('group_code', { length: 20 }),
+  fieldName: varchar('field_name', { length: 50 }),
+  status: varchar('status', { length: 1 }).default('O'),
+  code: varchar('code', { length: 20 }), // G001, G004, G005
+  name: varchar('name', { length: 100 }),
   description: text('description'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 }, (t) => ({
   uniqueVariantCode: uniqueIndex('uq_field_status_group').on(t.variantId, t.code),
 }));

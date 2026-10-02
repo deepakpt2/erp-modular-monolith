@@ -160,6 +160,13 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
       `);
     });
 
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS name varchar(100) DEFAULT 'Fiscal Variant'`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS description text`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS year_dependent boolean DEFAULT false`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS calendar_year boolean DEFAULT false`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS number_of_periods integer DEFAULT 12`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(()=>{});
+
     await db.execute(sql`
       INSERT INTO fin_fiscal_calendar (code, name, description, year_dependent, calendar_year, number_of_periods, is_active)
       VALUES
@@ -322,6 +329,14 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
         UNIQUE(variant_code, group_code, field_name)
       )
     `);
+    await db.execute(sql`ALTER TABLE fin_field_status_group ADD COLUMN IF NOT EXISTS variant_code varchar(20)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_field_status_group ADD COLUMN IF NOT EXISTS group_code varchar(20)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_field_status_group ADD COLUMN IF NOT EXISTS field_name varchar(50)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_field_status_group ADD COLUMN IF NOT EXISTS status varchar(1) DEFAULT 'O'`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_field_status_group ADD COLUMN IF NOT EXISTS description text`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_field_status_group ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT NOW()`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_field_status_group ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT NOW()`).catch(()=>{});
+
     await db.execute(sql`
       INSERT INTO fin_field_status_group (variant_code, group_code, field_name, status, description) VALUES
         ('FFSV-1000', 'G001', 'cost_center', 'R', 'Cost center required for expense accounts'),
@@ -336,7 +351,7 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
         ('1000', 'G002', 'cost_center', 'S', 'Cost center suppressed for cash accounts'),
         ('1000', 'G002', 'profit_center', 'S', 'Profit center suppressed for cash'),
         ('1000', 'G002', 'tax_code', 'S', 'Tax suppressed for cash')
-      ON CONFLICT (variant_code, group_code, field_name) DO NOTHING
+      ON CONFLICT DO NOTHING
     `);
     console.log('  ✅ Standard Field Status Variants & Groups ensured (FFSV/FFSG: FFSV-1000, 1000, 0001 / G001, G002)');
   } catch (e: any) {
@@ -387,19 +402,36 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
       )
     `);
 
-    await db.execute(sql`
-      INSERT INTO fin_chart (code, name, description, language, is_active)
-      VALUES (
-        'CA-IN-01',
-        'Standard General Chart of Accounts (IFRS / GAAP)',
-        'Standard 6-digit reference chart of accounts for manufacturing, procurement and commercial operations',
-        'EN',
-        true
-      )
-      ON CONFLICT (code) DO NOTHING
-    `);
+    await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS language varchar(10) DEFAULT 'EN'`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_chart ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT NOW()`).catch(()=>{});
 
-    // Ensure fin_ledger_account table exists
+    // Check if CA-IN-01 exists first
+    const existingCheck = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'CA-IN-01' LIMIT 1`).catch(() => ({ rows: [] }));
+    if (existingCheck.rows.length === 0) {
+      await db.execute(sql`
+        INSERT INTO fin_chart (code, name, description, language, is_active)
+        VALUES (
+          'CA-IN-01',
+          'Standard General Chart of Accounts (IFRS / GAAP)',
+          'Standard 6-digit reference chart of accounts for manufacturing, procurement and commercial operations',
+          'EN',
+          true
+        )
+      `).catch(async (insErr) => {
+        // Fallback for minimal table definition
+        await db.execute(sql`
+          INSERT INTO fin_chart (code, name, description)
+          VALUES (
+            'CA-IN-01',
+            'Standard General Chart of Accounts (IFRS / GAAP)',
+            'Standard 6-digit reference chart of accounts for manufacturing, procurement and commercial operations'
+          )
+        `);
+      });
+    }
+
+    // Ensure fin_ledger_account table and required columns exist
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fin_ledger_account (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -417,6 +449,11 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
         updated_at timestamp DEFAULT NOW()
       )
     `);
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS chart_id uuid REFERENCES fin_chart(id)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS coa_id uuid`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_blocked boolean DEFAULT false`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_tax_relevant boolean DEFAULT false`).catch(()=>{});
 
     const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'CA-IN-01' LIMIT 1`);
     if (chartRes.rows.length > 0) {

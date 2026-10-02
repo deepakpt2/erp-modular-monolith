@@ -9,10 +9,13 @@ export const apArStatusEnum = pgEnum('ap_ar_status', ['OPEN', 'PARTIALLY_PAID', 
 
 export const fiChartOfAccounts = pgTable('fin_chart', {
   id: uuid('id').primaryKey().defaultRandom(),
-  code: varchar('code', { length: 10 }).notNull().unique(), // e.g., 'INT'
-  name: varchar('name', { length: 100 }).notNull(),
+  code: varchar('code', { length: 20 }).notNull().unique(), // e.g., 'INT', 'CA-IN-01'
+  name: varchar('name', { length: 150 }).notNull(),
   description: text('description'),
+  language: varchar('language', { length: 10 }).default('EN').notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const fiGlAccount = pgTable('fin_ledger_account', {

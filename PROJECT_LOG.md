@@ -962,3 +962,18 @@ Once you confirm, I will:
 - **Verification:**
   - TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
   - Pushed to remote repository on GitHub via PAT.
+
+### 2026-10-02 IST: Resolution of Schema Drizzle Push / Baseline Seeding Conflict
+- **Root Cause Analysis:**
+  - `auto-migrate` output showed `Failed query: INSERT INTO fin_chart (code, name, description, language, is_active)` and `Existing - 0` because Drizzle schema barrel (`schema.ts`) had two overlapping definitions:
+    1. Legacy `fiChartOfAccounts` in `src/modules/fico/infrastructure/schema.ts` defining `fin_chart` with only `(id, code, name, description, created_at)` without `language` or `is_active`.
+    2. Modern `finChart` in `financialsFoundationSchema.ts` defining `fin_chart` with `language` and `is_active`.
+    3. `drizzle-kit push` prioritized the narrower column set, leading to SQL column errors when inserting `CA-IN-01` (`language`, `is_active`).
+    4. Similar overlaps occurred on `fin_fiscal_calendar` and `fin_field_status_group`.
+- **Architectural Fix:**
+  - Synchronized Drizzle table schemas in `src/modules/fico/infrastructure/schema.ts` (`fiChartOfAccounts`) and `enterpriseConfigSchema.ts` (`entFiscalYearVariant`, `entFieldStatusGroup`) to include the full column sets (`language`, `is_active`, `updated_at`, etc.).
+  - Added defensive `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` directly inside `standardSystemDefaults.ts` prior to baseline inserts.
+  - Ensured `CA-IN-01` and its 18 standard accounts insert cleanly into `fin_chart` and `fin_ledger_account` regardless of prior database state.
+- **Verification:**
+  - Full TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main` using PAT.
