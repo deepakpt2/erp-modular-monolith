@@ -709,13 +709,58 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                                       </div>
                                     </div>
                                     <div className={modern ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs" : "grid grid-cols-1 md:grid-cols-2 gap-1 text-xs font-mono"}>
-                                      {Object.entries(it).map(([k, v]) => (
+                                      {Object.entries(it).filter(([k]) => k !== 'periods').map(([k, v]) => (
                                         <div key={k} className={modern ? "flex gap-2 border-b border-zinc-100 py-1.5" : "flex gap-2 border-b border-black py-1"}>
                                           <span className={modern ? "font-medium text-zinc-500 min-w-24 text-[0.7rem] uppercase tracking-wider" : "font-bold min-w-20 uppercase"}>{k}:</span>
                                           <span className="truncate text-xs font-mono">{String(v ?? '').slice(0, 80)}</span>
                                         </div>
                                       ))}
                                     </div>
+
+                                    {Array.isArray(it.periods) && it.periods.length > 0 && (
+                                      <div className="mt-4 pt-3 border-t border-zinc-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <h5 className={modern ? "font-semibold text-xs text-zinc-700 uppercase tracking-wider" : "font-bold text-xs uppercase"}>
+                                            Posting Periods & Calendar Month Mappings (OB29 / T009B)
+                                          </h5>
+                                          <span className="text-[10px] bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full font-mono">
+                                            {it.periods.length} Periods ({it.number_of_periods || 12} Normal + {it.number_of_special_periods || 4} Special)
+                                          </span>
+                                        </div>
+                                        <div className="border border-zinc-200 rounded-lg overflow-hidden bg-white">
+                                          <table className="w-full text-left text-xs border-collapse">
+                                            <thead>
+                                              <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-medium uppercase text-[10px] tracking-wider">
+                                                <th className="py-2 px-3">Period</th>
+                                                <th className="py-2 px-3">Calendar Month</th>
+                                                <th className="py-2 px-3">Month Name</th>
+                                                <th className="py-2 px-3 text-center">Year Shift</th>
+                                                <th className="py-2 px-3">Description</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-zinc-100 font-mono text-xs">
+                                              {it.periods.map((p: any, idx: number) => {
+                                                const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                                                const mName = p.month_name || monthNames[p.calendar_month] || `Month ${p.calendar_month}`;
+                                                return (
+                                                  <tr key={idx} className="hover:bg-zinc-50/75 transition">
+                                                    <td className="py-1.5 px-3 font-bold text-zinc-800">Period {p.period}</td>
+                                                    <td className="py-1.5 px-3 text-zinc-600">{p.calendar_month}</td>
+                                                    <td className="py-1.5 px-3 font-sans text-zinc-700 font-medium">{mName}</td>
+                                                    <td className="py-1.5 px-3 text-center font-bold">
+                                                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${p.year_shift < 0 ? 'bg-amber-100 text-amber-800' : p.year_shift > 0 ? 'bg-blue-100 text-blue-800' : 'bg-zinc-100 text-zinc-600'}`}>
+                                                        {p.year_shift > 0 ? `+${p.year_shift}` : p.year_shift}
+                                                      </span>
+                                                    </td>
+                                                    <td className="py-1.5 px-3 font-sans text-zinc-500 text-[11px]">{p.description || `Period ${p.period} (${mName})`}</td>
+                                                  </tr>
+                                                );
+                                              })}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </td>
                               </tr>

@@ -11,6 +11,12 @@ export const entFiscalYearVariant = pgTable('fin_fiscal_calendar', {
   yearDependent: boolean('year_dependent').default(false).notNull(),
   calendarYear: boolean('calendar_year').default(false).notNull(),
   numberOfPeriods: integer('number_of_periods').default(12).notNull(),
+  numberOfSpecialPeriods: integer('number_of_special_periods').default(4).notNull(),
+  startMonth: integer('start_month').default(1),
+  endMonth: integer('end_month').default(12),
+  yearShift: integer('year_shift').default(0),
+  fromDate: varchar('from_date', { length: 10 }),
+  toDate: varchar('to_date', { length: 10 }),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

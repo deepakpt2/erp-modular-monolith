@@ -1110,3 +1110,25 @@ Once you confirm, I will:
 - **Verification:**
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Full Parity for Fiscal Year Variant (OB29 / FFYC) Detailed View & Form
+- **Requirement:**
+  - In `/[companyCode]/fico/fiscal-calendars?mode=list`, detailed view lacked the authentic posting period breakdown, calendar month mapping, and year shifts.
+  - The definition form required full parity with industry standard specifications (`T009` / `T009B` / `OB29`):
+    1. Normal Posting Periods (e.g. 12) & Special Periods (e.g. 4 for closing adjustments).
+    2. Calendar Year flag (`XJABR`) vs. Non-Calendar Year (e.g. `V3` April-March).
+    3. Year-Dependent flag (`XKALE`).
+    4. Start and End calendar month configuration.
+    5. Period mappings with Year Shift (-1, 0, +1) for cross-calendar accounting years.
+- **Implementation:**
+  - **Schema & Persistence:**
+    - Updated `finFiscalCalendar` in `orgStructureSchema.ts` and `entFiscalYearVariant` in `enterpriseConfigSchema.ts` with `numberOfSpecialPeriods`, `startMonth`, `endMonth`, and `yearShift`.
+    - Updated `src/app/api/fiscal-calendars/route.ts` to query and synthesize the full 12+4 posting period breakdown (`fin_fiscal_calendar_period`) and return it inside each variant object.
+  - **Detailed View in SingleCodePage (`single-code-page.tsx`):**
+    - Enhanced the expanded item viewer in list/display mode to render an authentic **Posting Periods & Calendar Month Mappings Table**:
+      - Displays each Period (Period 1 to 12), Calendar Month, Month Name (e.g. April to March), Year Shift indicator badges, and Description.
+  - **Form Update (`fiscal-calendars/page.tsx`):**
+    - Expanded form fields to cover `NUMBER_OF_POSTING_PERIODS`, `NUMBER_OF_SPECIAL_PERIODS`, `CALENDAR_YEAR`, `YEAR_DEPENDENT`, `START_CALENDAR_MONTH`, `END_CALENDAR_MONTH`, `YEAR_SHIFT`, and reference date ranges.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.

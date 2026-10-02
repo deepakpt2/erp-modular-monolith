@@ -414,13 +414,19 @@ export const finLegalEntityCreditAssign = pgTable('fin_legal_entity_credit_assig
 // Fiscal Calendar – renamed from fin_fiscal_calendar (OB29)
 export const finFiscalCalendar = pgTable('fin_fiscal_calendar', {
   id: uuid('id').primaryKey().defaultRandom(),
-  tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),
+  tenantId: uuid('tenant_id').references(() => coreTenant.id),
   code: varchar('code', { length: 20 }).notNull(),
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
   yearDependent: boolean('year_dependent').default(false).notNull(),
   calendarYear: boolean('calendar_year').default(false).notNull(),
   numberOfPeriods: integer('number_of_periods').default(12).notNull(),
+  numberOfSpecialPeriods: integer('number_of_special_periods').default(4).notNull(), // Special periods (e.g. 4 for K4/V3)
+  startMonth: integer('start_month').default(1),
+  endMonth: integer('end_month').default(12),
+  yearShift: integer('year_shift').default(0),
+  fromDate: varchar('from_date', { length: 10 }),
+  toDate: varchar('to_date', { length: 10 }),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => ({
