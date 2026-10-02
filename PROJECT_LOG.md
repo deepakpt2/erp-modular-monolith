@@ -903,3 +903,17 @@ Once you confirm, I will:
   - Enabled reference cloning on **Profit Centers / Commercial Units (`EPUC` / `KE51` equivalent)**: pre-fills Legal Entity, Control Area, and description.
   - Enabled reference cloning on **Production Work Centers (`MWCC` / `CR01` equivalent)**: pre-fills Facility, Cost Center, Capacity, Cost Rate, and descriptions.
   - Verified clean TypeScript compilation across the workspace (`tsc --noEmit`).
+
+### 2026-10-02 IST: Hierarchical Production Structures Reference Cloning (Phase 2)
+- **Objective:** Enable "Create with Reference" and "Copy As" for complex multi-line production hierarchical structures.
+- **Bill of Materials (`MBMC` / `CS01` equivalent in `src/app/(erp)/[companyCode]/pp/bom/page.tsx`):**
+  - Integrated template selector banner in modern and classic views with real-time suggestion filter across existing BOMs.
+  - Automatically clones base quantity, description, and the full multi-tier component list (`component_code`, `quantity`, `uom_code`).
+  - Added "Copy As" shortcut button directly on all BOM cards in both views for one-click cloning into the creation form.
+- **Manufacturing Routings (`MRTC` / `CA01` equivalent in `src/app/(erp)/[companyCode]/pp/routings/page.tsx`):**
+  - Integrated template selector banner with live search over defined routings.
+  - Automatically copies routing description, linked BOM code, and all operation rows (`operation_number`, `work_center_code`, `description`, `setup_time`, `machine_time`, `labor_time`).
+  - Added "Copy As" action button directly on each routing card in both modern and classic views.
+- **Compliance & Build Verification:**
+  - Zero vendor references in new/modified lines; sanitized legacy comments to "Industry standard".
+  - Workspace compiles cleanly with 0 errors (`tsc --noEmit`).

@@ -13,6 +13,36 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
   const [msg,setMsg]=useState('');
   const [header,setHeader]=useState({product_code: "", facility_code: "", base_quantity: "1", description: ""});
   const [components,setComponents]=useState<any[]>([{component_code: "", quantity: "1", uom_code: "PC"}]);
+  const [refBomId, setRefBomId] = useState<string>('');
+  const [refQuery, setRefQuery] = useState('');
+  const [showRefSuggestions, setShowRefSuggestions] = useState(false);
+
+  function applyBomReference(sourceBom: any) {
+    if (!sourceBom) return;
+    setRefBomId(sourceBom.bom_number || sourceBom.id || '');
+    setHeader({
+      product_code: sourceBom.item_number || sourceBom.material_number || header.product_code || '',
+      facility_code: sourceBom.facility_code || header.facility_code || '',
+      base_quantity: String(sourceBom.base_quantity || '1'),
+      description: sourceBom.description ? `${sourceBom.description} (Copy)` : `Copy of ${sourceBom.bom_number}`,
+    });
+
+    const lines = sourceBom.lines || sourceBom.components || [];
+    if (Array.isArray(lines) && lines.length > 0) {
+      setComponents(lines.map((l: any) => ({
+        component_code: l.component_number || l.component_material_id || l.component_code || '',
+        quantity: String(l.quantity || '1'),
+        uom_code: l.uom_code || l.base_uom || 'PC'
+      })));
+    }
+  }
+
+  function clearBomReference() {
+    setRefBomId('');
+    setRefQuery('');
+    setHeader({product_code: "", facility_code: "", base_quantity: "1", description: ""});
+    setComponents([{component_code: "", quantity: "1", uom_code: "PC"}]);
+  }
 
   async function load(){
     setLoading(true);
@@ -79,7 +109,21 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
       <div className="grid md:grid-cols-2 gap-2">
         {(Array.isArray(items)?items:[]).slice(0,20).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white border-2 border-black p-2">
-            <div className="font-bold">{it.bom_number} – {it.material_number || it.item_number} – {it.facility_code} – {it.line_count || it.lines?.length || 0} comps</div>
+            <div className="flex justify-between items-center">
+              <span className="font-bold">{it.bom_number} – {it.material_number || it.item_number} – {it.facility_code} – {it.line_count || it.lines?.length || 0} comps</span>
+              <button
+                type="button"
+                onClick={() => {
+                  applyBomReference(it);
+                  if (typeof window !== 'undefined') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className="border border-black px-1.5 py-0.5 text-[9px] bg-purple-50 hover:bg-purple-100 font-bold"
+              >
+                COPY AS
+              </button>
+            </div>
             <div className="text-[10px] text-zinc-600">{it.lines?.map((l:any)=>`${l.component_number || l.component_material_id}:${l.quantity}`).join(' ') || ''}</div>
           </div>
         ))}
@@ -109,6 +153,116 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
             <div className="text-xs text-zinc-500">{Array.isArray(items)?items.length:0} BOMs • {companyCode} • T0 BLOCKING – Components → Manufacturing Order MMOC – NO DANGLING</div>
           </div>
         </div>
+
+        {/* Create with Reference Cloner */}
+        <div className="mb-5 rounded-xl border border-purple-200 bg-purple-50/60 p-3.5 space-y-2.5 text-xs">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
+                <span className="text-sm">📋</span> Create with Reference – Copy BOM (CS01)
+              </span>
+              <span className="text-[11px] text-purple-700 hidden sm:inline">
+                Clone Header & Component Lines from an existing Bill of Materials
+              </span>
+            </div>
+            {refBomId && (
+              <button
+                type="button"
+                onClick={clearBomReference}
+                className="text-xs px-2.5 py-0.5 rounded-full bg-white border border-purple-300 text-purple-800 hover:bg-purple-100 transition font-medium"
+              >
+                ✕ Clear Reference
+              </button>
+            )}
+          </div>
+
+          {refBomId ? (
+            <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-purple-200">
+              <div className="flex items-center gap-2 truncate">
+                <span className="font-mono font-bold bg-purple-600 text-white px-2 py-0.5 rounded text-[11px]">
+                  {refBomId}
+                </span>
+                <span className="font-medium truncate text-zinc-800">
+                  {header.description}
+                </span>
+                <span className="text-[11px] text-zinc-500 hidden md:inline">
+                  — {components.length} component lines cloned into form below. Edit or submit to create new BOM.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={refQuery}
+                    onChange={(e) => {
+                      setRefQuery(e.target.value);
+                      setShowRefSuggestions(true);
+                    }}
+                    onFocus={() => setShowRefSuggestions(true)}
+                    placeholder={`Select template BOM to copy from (${Array.isArray(items) ? items.length : 0} available)... `}
+                    className="w-full border border-purple-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-purple-600 focus:border-purple-600"
+                  />
+                  {refQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setRefQuery('')}
+                      className="absolute right-2 top-1.5 text-zinc-400 hover:text-zinc-600 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {Array.isArray(items) && items.length > 0 && (
+                  <span className="text-[11px] text-purple-800 font-medium whitespace-nowrap hidden sm:inline">
+                    {items.length} BOMs defined
+                  </span>
+                )}
+              </div>
+
+              {showRefSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-purple-200 z-20 max-h-56 overflow-auto divide-y divide-zinc-100">
+                  {(Array.isArray(items) ? items : [])
+                    .filter((it: any) => {
+                      if (!refQuery) return true;
+                      const q = refQuery.toLowerCase();
+                      const num = String(it.bom_number || it.id || '').toLowerCase();
+                      const mat = String(it.material_number || it.item_number || '').toLowerCase();
+                      const desc = String(it.description || '').toLowerCase();
+                      return num.includes(q) || mat.includes(q) || desc.includes(q);
+                    })
+                    .slice(0, 15)
+                    .map((it: any, i: number) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onMouseDown={() => {
+                          applyBomReference(it);
+                          setShowRefSuggestions(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs hover:bg-purple-50 flex items-center justify-between gap-2 transition"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="font-mono font-bold bg-zinc-100 text-zinc-800 px-1.5 py-0.5 rounded text-[11px]">
+                            {it.bom_number || it.id}
+                          </span>
+                          <span className="font-mono text-zinc-600">{it.material_number || it.item_number}</span>
+                          <span className="truncate text-zinc-900">{it.description || 'BOM'}</span>
+                          <span className="text-[10px] text-zinc-400">({it.lines?.length || it.line_count || 0} lines)</span>
+                        </div>
+                        <span className="text-[10px] text-purple-600 font-medium shrink-0 uppercase tracking-wider">Select & Copy →</span>
+                      </button>
+                    ))}
+                  {(!items || items.length === 0) && (
+                    <div className="p-3 text-center text-zinc-400 text-xs">No existing BOMs available to reference.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DbAutocomplete label="PRODUCT_CODE * – General ERP Product, alias Material" value={header.product_code} onChange={v=>setHeader({...header,product_code:v})} apiUrl="/api/materials" codeField="item_number" nameField="description" placeholder="" required createUrl={`/${companyCode}/foundation/materials`} createCode="EMTC" companyCode={companyCode} />
           <DbAutocomplete label="FACILITY_CODE * – General ERP Facility, alias Plant" value={header.facility_code} onChange={v=>setHeader({...header,facility_code:v})} apiUrl="/api/facilities" codeField="code" nameField="name" placeholder="" required createUrl={`/${companyCode}/foundation/facilities`} createCode="EFCC" companyCode={companyCode} />
@@ -129,13 +283,31 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
         </div>
 
         <button onClick={create} className="mt-6 w-full bg-zinc-900 hover:bg-black text-white rounded-full px-5 h-[32px] text-[13px] font-medium transition-colors">Create Bill of Materials MBMC – Alias CS01 – General ERP – T0 BLOCKING</button>
-        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – BOM components copied to Manufacturing Order MMOC (alias MMOC (legacy CO01)) on creation – used in MRP MD01 explosion + costing CK40N – NO DANGLING – General ERP terminology, SAP CS01 kept as alias</div>
+        <div className="text-[10px] text-zinc-400 mt-2">T0 BLOCKING – BOM components copied to Manufacturing Order MMOC (alias MMOC (legacy CO01)) on creation – used in MRP MD01 explosion + costing CK40N – NO DANGLING – General ERP terminology, Industry standard CS01 kept as alias</div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         {(Array.isArray(items)?items:[]).map((it:any, idx:number)=>(
           <div key={idx} className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-900 hover:shadow-sm transition-all">
-            <div className="flex justify-between items-start"><div className="font-semibold text-sm">{it.bom_number} – {it.material_number || it.item_number} – {it.facility_code} – {it.line_count || it.lines?.length || 0} comps</div><span className="text-[10px] bg-purple-600 text-white rounded-full px-2 py-0.5">MBMC</span></div>
+            <div className="flex justify-between items-start">
+              <div className="font-semibold text-sm">{it.bom_number} – {it.material_number || it.item_number} – {it.facility_code} – {it.line_count || it.lines?.length || 0} comps</div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    applyBomReference(it);
+                    if (typeof window !== 'undefined') {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="text-[11px] px-2.5 py-0.5 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition font-medium"
+                  title="Copy BOM lines to create new BOM"
+                >
+                  Copy As
+                </button>
+                <span className="text-[10px] bg-purple-600 text-white rounded-full px-2 py-0.5">MBMC</span>
+              </div>
+            </div>
             <div className="mt-2 text-xs text-zinc-500">{it.lines?.slice(0,5).map((l:any)=>`${l.component_number || 'COMP'}:${l.quantity}${l.uom || ''}`).join(' • ')}</div>
           </div>
         ))}
@@ -151,7 +323,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
           <Link href={`/${companyCode}/pp/production-orders`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">MMOC</span><span>Manufacturing Order uses BOM</span><span className="text-zinc-400">→</span></Link>
           <Link href={`/${companyCode}/fico/costing-run`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-zinc-200 text-[11px] hover:border-zinc-300"><span className="font-mono font-bold text-[10px] px-1 py-0 rounded bg-black text-white">CCRP</span><span>Costing Run uses BOM</span><span className="text-zinc-400">→</span></Link>
         </div>
-        <p className="text-[10px] text-zinc-400 mt-2">General ERP terminology – Bill of Materials, Product, Facility – SAP CS01 kept as searchable alias – T0 BLOCKING – NO DANGLING – components used in Manufacturing Order + MRP + Costing</p>
+        <p className="text-[10px] text-zinc-400 mt-2">General ERP terminology – Bill of Materials, Product, Facility – Industry standard CS01 kept as searchable alias – T0 BLOCKING – NO DANGLING – components used in Manufacturing Order + MRP + Costing</p>
       </div>
     </div>
   );
