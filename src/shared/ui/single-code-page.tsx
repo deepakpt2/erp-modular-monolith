@@ -267,7 +267,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
       }
       const j = await res.json();
       const candidates = [
-        j.data, j[code.toLowerCase()], j[code],
+        j.data, j.postingPeriodVariants, j.postingCalendars, j[code.toLowerCase()], j[code],
         j.companyGroups, j.legalEntities, j.facilities, j.materials, j.items,
         j.chartOfAccounts, j.glAccounts, j.charts, j.accounts, j.costCenters, j.profitCenters,
         j.companyCodes, j.plants, j.storageLocations, j.purchasingOrgs, j.uoms, j.currencies, j.taxCodes,

@@ -11,54 +11,24 @@ import { sql } from 'drizzle-orm';
  * Fallback to legacy
  */
 
-async function ensureTableNew() {
-  try {
-    // fin_posting_calendar already created via schema migration, but ensure sample
-    const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM fin_posting_calendar`);
-    if (parseInt((cnt.rows[0] as any).c || '0') === 0) {
-      await db.execute(sql`
-        INSERT INTO fin_posting_calendar (code, name, description) VALUES ('1000', 'Standard Posting Calendar', 'Standard 1-12 open'), ('KS01', 'Kerala Spices Posting Calendar') 
-      `);
-    }
-  } catch (e: any) {
-    console.warn('ensure posting calendar new failed', e.message);
-  }
-}
-
-async function ensureTableLegacy() {
+async function ensurePostingCalendarTable() {
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fin_posting_calendar (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        code VARCHAR(10) UNIQUE NOT NULL,
-        name VARCHAR(100),
-        created_at TIMESTAMP DEFAULT NOW()
+        tenant_id UUID,
+        code VARCHAR(20) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       );
-    `);
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS fin_posting_calendar_period (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        variant_code VARCHAR(10) REFERENCES fin_posting_calendar(code),
-        account_type VARCHAR(2) NOT NULL,
-        from_period INTEGER, from_year INTEGER, to_period INTEGER, to_year INTEGER,
-        from_period2 INTEGER, from_year2 INTEGER, to_period2 INTEGER, to_year2 INTEGER
-      );
-    `);
-    const cnt = await db.execute(sql`SELECT COUNT(*) as c FROM fin_posting_calendar`);
-    if (parseInt((cnt.rows[0] as any).c || '0') === 0) {
-      await db.execute(sql`
-        INSERT INTO fin_posting_calendar (code, name) VALUES ('1000', 'Standard Posting Variant'), ('KS01', 'Kerala Spices Posting Period') 
-      `);
-      const types = ['+', 'A', 'D', 'K', 'M', 'S'];
-      for (const at of types) {
-        await db.execute(sql`
-          INSERT INTO fin_posting_calendar_period (variant_code, account_type, from_period, from_year, to_period, to_year, from_period2, from_year2, to_period2, to_year2)
-          VALUES ('1000', ${at}, 1, 2024, 12, 2026, 1, 2024, 12, 2026) ON CONFLICT DO NOTHING
-        `);
-      }
-    }
+    `).catch(() => {});
+    await db.execute(sql`ALTER TABLE fin_posting_calendar ALTER COLUMN tenant_id DROP NOT NULL`).catch(() => {});
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_posting_calendar_code ON fin_posting_calendar (code)`).catch(() => {});
   } catch (e: any) {
-    console.warn('ensure posting period legacy failed', e.message);
+    console.warn('ensurePostingCalendarTable error:', e.message);
   }
 }
 
@@ -70,8 +40,7 @@ export async function GET(req: NextRequest) {
   const variantCode = searchParams.get('variantCode') || searchParams.get('code') || 'ALL';
 
   try {
-    await ensureTableNew();
-    await ensureTableLegacy();
+    await ensurePostingCalendarTable();
 
     let variants: any[] = [];
     let periods: any[] = [];
@@ -141,28 +110,29 @@ export async function POST(req: NextRequest) {
       
       const vCode = code.toUpperCase().trim();
       const vName = name || vCode;
+      const vDesc = body.description || null;
       
       const checkExists = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ${vCode} LIMIT 1`);
       let res: any;
       if (checkExists.rows.length > 0) {
         const existingId = (checkExists.rows[0] as any).id;
         res = await db.execute(sql`
-          UPDATE fin_posting_calendar SET name = ${vName}, updated_at = NOW()
+          UPDATE fin_posting_calendar SET name = ${vName}, description = COALESCE(${vDesc}, description), updated_at = NOW()
           WHERE id = ${existingId}
-          RETURNING id, code, name
+          RETURNING id, code, name, description
         `);
       } else {
         try {
           res = await db.execute(sql`
-            INSERT INTO fin_posting_calendar (code, name)
-            VALUES (${vCode}, ${vName})
-            RETURNING id, code, name
+            INSERT INTO fin_posting_calendar (code, name, description)
+            VALUES (${vCode}, ${vName}, ${vDesc})
+            RETURNING id, code, name, description
           `);
         } catch (insErr: any) {
           res = await db.execute(sql`
-            UPDATE fin_posting_calendar SET name = ${vName}, updated_at = NOW()
+            UPDATE fin_posting_calendar SET name = ${vName}, description = COALESCE(${vDesc}, description), updated_at = NOW()
             WHERE UPPER(code) = ${vCode}
-            RETURNING id, code, name
+            RETURNING id, code, name, description
           `);
         }
       }

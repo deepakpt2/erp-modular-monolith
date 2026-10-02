@@ -1169,3 +1169,21 @@ Once you confirm, I will:
   - Verified with `grep` that 0 instances of `ON CONFLICT` targeting `fin_posting_calendar` remain across the entire codebase.
   - TypeScript build check (`tsc --noEmit`) passes cleanly with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Fix Posting Period Variant (`FPPC`/`OBBO`) Persistence, UI List Rendering, and Assignment Suggestions (`OBBP`)
+- **Root Cause Analysis:**
+  - **SingleCodePage empty list:** The endpoint `/api/posting-period-variants` was returning the list keyed under `postingPeriodVariants` but did not provide the standard top-level `data` array. `SingleCodePage` candidate array did not contain `j.postingPeriodVariants`, causing the client to evaluate the list as empty (`[]`).
+  - **Assignment Table suggestions missing:** `DbAutocomplete` expects either `res.data`, the explicit `dataKey`, or recognized entity collections (`postingPeriodVariants`). The API previously threw internal warnings during startup checks (`ensureTableLegacy` / `ensureTableNew`) trying to query unmigrated legacy relations, causing the payload to degrade.
+  - **Incomplete POST fields:** `SingleCodePage` was sending `code`, `name`, and `description`. The insert query only populated `code` and `name`, leaving `description` out of the stored/returned record.
+- **Architectural Solution:**
+  1. **`/api/posting-period-variants/route.ts`:**
+     - Streamlined table ensurement with `ensurePostingCalendarTable()`: ensures `fin_posting_calendar` with nullable `tenant_id` and unique index `uq_fin_posting_calendar_code`.
+     - Standardized GET response to supply `data: variants`, `postingPeriodVariants: variants`, and `count: variants.length`.
+     - Enhanced POST handler to store and return `description`.
+  2. **`src/shared/ui/single-code-page.tsx`:**
+     - Registered `j.postingPeriodVariants` and `j.postingCalendars` in candidate list parser.
+  3. **`src/shared/ui/db-autocomplete.tsx`:**
+     - Added direct extraction for `res.postingPeriodVariants` and `res.postingCalendars`.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.

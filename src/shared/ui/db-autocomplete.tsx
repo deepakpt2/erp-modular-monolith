@@ -94,6 +94,8 @@ export function DbAutocomplete({
         else if (res.data && Array.isArray(res.data)) data = res.data;
         else if (dataKey && res[dataKey] && Array.isArray(res[dataKey])) data = res[dataKey];
         else if (dataKey && res.data && res.data[dataKey] && Array.isArray(res.data[dataKey])) data = res.data[dataKey];
+        else if (res.postingPeriodVariants && Array.isArray(res.postingPeriodVariants)) data = res.postingPeriodVariants;
+        else if (res.postingCalendars && Array.isArray(res.postingCalendars)) data = res.postingCalendars;
         else if (res.controlAreas) data = res.controlAreas;
         else if (res.legalEntities) data = res.legalEntities;
         else if (res.fiscalCalendars) data = res.fiscalCalendars;
