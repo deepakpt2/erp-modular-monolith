@@ -1037,3 +1037,16 @@ Once you confirm, I will:
 - **Verification:**
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Align Plant / Facility (EFCC / OX10) to Pure Definition Architecture
+- **Requirement & Architectural Principle:**
+  - In pure definition transactions (e.g. `OX10` Define Plant / `EFCC`), organizational assignment fields (`LEGAL_ENTITY_CODE` / Company Code) do NOT belong on the definition form.
+  - Plants are defined with statutory physical properties only (Code, Name, City, Country, Address, Description).
+  - The assignment of a Plant to a Company Code is strictly executed in the dedicated assignment transaction `OX18` (`Assign Plant to Company Code` / `/mm/assignments/plant-company-code`).
+- **Implementation:**
+  - **Schema:** Modified `orgStructureSchema.ts` (`orgFacility`) and `schema.ts` (`entPlant`) so `legalEntityId` / `companyCodeId` is nullable.
+  - **API:** Updated `src/app/api/facilities/route.ts` to drop `NOT NULL` constraint dynamically on PostgreSQL if present and allow creation without `legal_entity_code`.
+  - **UI Form:** Cleaned `src/app/(erp)/[companyCode]/foundation/facilities/page.tsx`, removing `LEGAL_ENTITY_CODE` from the form and adding a direct related link to `OX18`.
+- **Verification:**
+  - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
+  - Pushed to GitHub repository `main`.

@@ -119,8 +119,8 @@ export const orgLegalEntityControlAreaAssign = pgTable('org_legal_entity_control
 // Facility – replaces org_facility (SAP T001W, OX10)
 export const orgFacility = pgTable('org_facility', {
   id: uuid('id').primaryKey().defaultRandom(),
-  legalEntityId: uuid('legal_entity_id').notNull().references(() => orgLegalEntity.id),
-  code: varchar('code', { length: 20 }).notNull().unique(), // e.g., FAC-1000
+  legalEntityId: uuid('legal_entity_id').references(() => orgLegalEntity.id), // Optional in pure definition (OX10); assigned via OX18
+  code: varchar('code', { length: 20 }).notNull().unique(), // e.g., FAC-1000, 1000
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
   address: text('address'),

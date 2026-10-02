@@ -6,23 +6,23 @@ export default function Page() {
     <SingleCodePage
       code="EFCC"
       sapAlias="OX10"
-      title="Facility"
-      description="Define Facility – operational site manufacturing plant distribution fulfillment physical hub – uses Legal Entity"
+      title="Facility / Plant"
+      description="Define Facility / Plant – operational manufacturing plant, distribution center, fulfillment hub, or physical site. Pure definition transaction; assignment to Company Code is performed separately in OX18."
       apiEndpoint="/api/facilities"
-      initialForm={{ code: '', name: '', legal_entity_code: '', city: '', country: 'IN', address: '', description: '' }}
+      initialForm={{ code: '', name: '', city: '', country: 'IN', address: '', description: '' }}
       fields={[
-        { key: "code", label: "FACILITY_CODE", required: true, placeholder: "", description: "Facility code – e.g., FAC-1000" },
-        { key: "name", label: "FACILITY_NAME", required: true, placeholder: "" },
-        { key: "legal_entity_code", label: "LEGAL_ENTITY_CODE", required: true, type: "autocomplete", apiUrl: "/api/legal-entities", dataKey: "legalEntities", codeField: "code", placeholder: "", createUrl: "/foundation/legal-entities", createCode: "ELEC", description: "Legal Entity FK – must exist via ELEC" },
-        { key: "city", label: "CITY", placeholder: "" },
-        { key: "country", label: "COUNTRY", placeholder: "" },
-        { key: "address", label: "ADDRESS", type: "textarea", placeholder: "" },
-        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "" },
+        { key: "code", label: "FACILITY_CODE", required: true, placeholder: "", description: "Plant / Facility code (e.g. 1000, 1100, FAC-1000) – T001W-WERKS" },
+        { key: "name", label: "FACILITY_NAME", required: true, placeholder: "", description: "Name of the Facility / Plant – T001W-NAME1" },
+        { key: "city", label: "CITY", placeholder: "", description: "City or location – T001W-ORT01" },
+        { key: "country", label: "COUNTRY", placeholder: "IN", description: "Country code (e.g. IN, US, DE, KW) – T001W-LAND1" },
+        { key: "address", label: "ADDRESS", type: "textarea", placeholder: "", description: "Street address and physical site details" },
+        { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "", description: "Operational notes and plant scope" },
       ]}
       relatedLinks={[
-        { code: "ELEC", label: "Legal Entity – required", route: "/foundation/legal-entities", description: "Legal Entity" },
-        { code: "EILC", label: "Inventory Location uses EFCC", route: "/foundation/inventory-locations", description: "Inventory Location requires Facility" },
-        { code: "EWSC", label: "Warehouse Site uses EFCC", route: "/foundation/warehouse-sites", description: "Warehouse Site" },
+        { code: "OX18", label: "Assign Plant to Company Code (OX18)", route: "/mm/assignments/plant-company-code", description: "Connect Plant to Legal Entity / Company Code" },
+        { code: "EILC", label: "Inventory Location (OX09)", route: "/foundation/inventory-locations", description: "Define Storage Locations under this Plant" },
+        { code: "OX17", label: "Assign Purchasing Org to Plant (OX17)", route: "/mm/assignments/purchasing-plant", description: "Enable Purchasing Organization for this Plant" },
+        { code: "EWSC", label: "Warehouse Site (EWHC)", route: "/foundation/warehouse-sites", description: "Assign Warehouse Number to Plant & Storage Location" },
       ]}
     />
   );

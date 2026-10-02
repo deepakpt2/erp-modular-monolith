@@ -47,7 +47,7 @@ export const entCompanyCode = pgTable('org_legal_entity', {
 
 export const entPlant = pgTable('org_facility', {
   id: uuid('id').primaryKey().defaultRandom(),
-  companyCodeId: uuid('company_code_id').notNull().references(() => entCompanyCode.id),
+  companyCodeId: uuid('company_code_id').references(() => entCompanyCode.id),
   code: varchar('code', { length: 4 }).notNull().unique(), // e.g., '1000' main kitchen, '1100' storage
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
