@@ -164,18 +164,21 @@ export async function POST(req: NextRequest) {
     if (copy_from_coa) {
       const sourceCode = copy_from_coa.toUpperCase().trim();
       try {
-        const sourceChart = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${sourceCode} LIMIT 1`);
+        const sourceChart = await db.execute(sql`SELECT id FROM fin_chart WHERE UPPER(code) = ${sourceCode} LIMIT 1`);
         if (sourceChart.rows.length > 0) {
           const srcId = (sourceChart.rows[0] as any).id;
+          // Ensure unique constraint exists for ON CONFLICT target
+          await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_chart_account ON fin_ledger_account (chart_id, account_number)`).catch(() => {});
+          
           const copyRes = await db.execute(sql`
             INSERT INTO fin_ledger_account (
-              chart_id, coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active
+              chart_id, coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active, account_category, account_group_code
             )
             SELECT 
-              ${primaryRes.id}, ${primaryRes.id}, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, true
+              ${primaryRes.id}, ${primaryRes.id}, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, true, account_category, account_group_code
             FROM fin_ledger_account
             WHERE chart_id = ${srcId} OR coa_id = ${srcId}
-            ON CONFLICT DO NOTHING
+            ON CONFLICT (chart_id, account_number) DO NOTHING
             RETURNING id
           `);
           copiedCount = copyRes.rows.length;

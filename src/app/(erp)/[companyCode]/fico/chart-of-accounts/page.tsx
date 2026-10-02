@@ -10,7 +10,15 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
       title={titleOverride || "Chart of Accounts"}
       description="Define Chart of Accounts – KSCA / CA-IN-01 – general CoA – strict usage: groups GL accounts – e.g., KSCA India – per guide needs language EN, chart_of_accounts_code CA-IN-01 is example code"
       apiEndpoint="/api/chart-of-accounts"
-      initialForm={{ code: '', name: '', description: '', language: 'EN' }}
+      referenceConfig={{
+        keyField: 'code',
+        displayField: 'name',
+        label: 'Create with Reference / Copy Chart of Accounts',
+        fieldTransforms: {
+          copy_from_coa: (val, record) => record.code || '',
+        }
+      }}
+      initialForm={{ code: '', name: '', description: '', language: 'EN', copy_from_coa: '' }}
       fields={[
         { key: "code", label: "CHART_OF_ACCOUNTS_CODE", required: true, placeholder: "", description: "Chart code – e.g., CA-IN-01 per guide – KSCA, INT" },
         { key: "name", label: "CHART_OF_ACCOUNTS_NAME", required: true, placeholder: "" },

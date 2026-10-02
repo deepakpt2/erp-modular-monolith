@@ -1223,3 +1223,28 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) clean with 0 errors.
   - Cleaned all hardcoded dummy values in form `initialForm`.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Implement "Create with Reference / Copy As" on Chart of Accounts (`FCOA` / `OB13`)
+- **Problem Analysis:**
+  - The Chart of Accounts (`FCOA` / `OB13`) page was missing the standard **"Create with Reference / Copy As"** UI banner and row-level copy action available on G/L Accounts, Materials, and Purchase Orders.
+- **Architectural Solution:**
+  1. **Frontend (`src/app/(erp)/[companyCode]/fico/chart-of-accounts/page.tsx`):**
+     - Configured `referenceConfig`:
+       ```typescript
+       referenceConfig={{
+         keyField: 'code',
+         displayField: 'name',
+         label: 'Create with Reference / Copy Chart of Accounts',
+         fieldTransforms: {
+           copy_from_coa: (val, record) => record.code || '',
+         }
+       }}
+       ```
+     - Enables the top **"📋 Create with Reference / Copy Chart of Accounts"** selection search bar in Create mode and the **"Copy As"** button in List/Expanded view.
+     - Automatically maps the source chart's code into `copy_from_coa` and appends `(Copy)` to the name.
+  2. **Backend (`src/app/api/chart-of-accounts/route.ts`):**
+     - Enhanced `copy_from_coa` execution to safely replicate all G/L accounts (`fin_ledger_account`) from the template chart to the newly created chart with `account_category`, `account_group_code`, and proper unique conflict resolution (`uq_fin_chart_account`).
+- **Verification:**
+  - Audited for legal constraints (0 vendor names).
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.
