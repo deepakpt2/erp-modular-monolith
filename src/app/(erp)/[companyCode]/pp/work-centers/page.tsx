@@ -10,6 +10,12 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
       title={titleOverride || "Production Work Centers"}
       description="Create Work Center – Machine/Labor Capacity – assembly line plant floor resource – strict usage: routing operation uses work center, costing run uses work center rate"
       apiEndpoint="/api/work-centers"
+      referenceConfig={{
+        keyField: "code",
+        displayField: "name",
+        label: "Create with Reference – Copy Work Center (CR01)",
+        excludedFields: ["code", "id", "created_at", "updated_at"]
+      }}
       initialForm={{ code: '', name: '', facility_code: '', cost_center_code: '', capacity: '100', cost_rate: '100', description: '' }}
       fields={[
         { key: "code", label: "WORK_CENTER_CODE", required: true, placeholder: "" },

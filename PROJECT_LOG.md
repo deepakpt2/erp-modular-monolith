@@ -899,3 +899,7 @@ Once you confirm, I will:
   - `EMTC` (Material Master / MM01 equivalent in `src/app/(erp)/[companyCode]/foundation/materials/page.tsx`): Built customized multi-tab reference cloner transferring Basic, Purchasing, MRP, Storage (lot, batch, shelf-life), Accounting (valuation class, pricing method, price unit), and Costing while letting sequential internal numbering (MAT-01 / ITEM) generate new unique item codes. Cleaned all legacy vendor references in material page comments and UI badges.
 - **Verification:**
   - `npx tsc --noEmit` passed with 0 errors across entire workspace.
+- **Extended Master Data Coverage (Phase 1 Expansion):**
+  - Enabled reference cloning on **Profit Centers / Commercial Units (`EPUC` / `KE51` equivalent)**: pre-fills Legal Entity, Control Area, and description.
+  - Enabled reference cloning on **Production Work Centers (`MWCC` / `CR01` equivalent)**: pre-fills Facility, Cost Center, Capacity, Cost Rate, and descriptions.
+  - Verified clean TypeScript compilation across the workspace (`tsc --noEmit`).

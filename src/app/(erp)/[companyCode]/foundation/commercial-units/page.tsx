@@ -9,6 +9,12 @@ export default function Page() {
       title="Profit Units – Commercial Units"
       description="Define Profit Unit – General ERP term Profit Unit, alias Profit Center KE51, Commercial Unit – profitability unit – enterprise profit tracking – reporting by profit unit – strict usage: assigned to cost unit, product, sales order, billing – profit reporting – T0 BLOCKING"
       apiEndpoint="/api/profit-units"
+      referenceConfig={{
+        keyField: "code",
+        displayField: "name",
+        label: "Create with Reference – Copy Profit Center / Unit (KE51)",
+        excludedFields: ["code", "id", "created_at", "updated_at"]
+      }}
       initialForm={{ code: '', name: '', legal_entity_code: '', control_area_code: '', description: '' }}
       fields={[
         { key: "code", label: "PROFIT_UNIT_CODE", required: true, placeholder: "", description: "Profit Unit code – General ERP Profit Unit, alias Profit Center KE51, Commercial Unit – e.g., PU-1000 – used in profit reporting – T0" },
