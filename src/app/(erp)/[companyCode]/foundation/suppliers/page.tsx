@@ -9,6 +9,12 @@ export default function Page() {
       title="Supplier – Vendor Master"
       description="Create Supplier – vendor master procurement – central partner_account role VENDOR + procurement view – strict industry standard: used in PO, GR, IV – payment terms due date calc, currency, tax info, reconciliation account, purchasing org/group – T0 BLOCKING – NO DANGLING – own names"
       apiEndpoint="/api/business-partners"
+      referenceConfig={{
+        keyField: "account_number",
+        displayField: "display_name",
+        label: "Create with Reference – Copy Supplier / Vendor (XK01)",
+        excludedFields: ["account_number", "id", "created_at", "updated_at", "is_blocked", "is_deactivated"]
+      }}
       initialForm={{ 
         account_number: '', 
         display_name: '',

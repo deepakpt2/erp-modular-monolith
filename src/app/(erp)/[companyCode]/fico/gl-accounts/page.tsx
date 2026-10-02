@@ -10,6 +10,12 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
       description="Create & Maintain GL Account Master – Chart of Accounts, Account Number, Primary/Secondary Cost Elements, Balance Sheet, Non-operating & Operating P&L, Retained Earnings, Subledger Reconciliation (AP/AR/Asset), GR/IR Clearing, and Bank Clearing accounts."
       apiEndpoint="/api/gl-accounts"
       defaultMode={defaultMode || "create"}
+      referenceConfig={{
+        keyField: "account_number",
+        displayField: "name",
+        label: "Create with Reference – Copy GL Account (FS00)",
+        excludedFields: ["account_number", "id", "created_at", "updated_at", "is_blocked"]
+      }}
       initialForm={{ 
         account_number: '', 
         name: '', 

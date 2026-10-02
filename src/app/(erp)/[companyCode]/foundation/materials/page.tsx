@@ -83,6 +83,60 @@ export default function MaterialMasterPage({ defaultMode, codeOverride, titleOve
   const [uiMode, setUiMode] = useState<'modern' | 'classic'>('modern');
   const [activeTab, setActiveTab] = useState<TabKey>('basic');
   const [form, setForm] = useState<any>(initialForm);
+  const [referenceRecord, setReferenceRecord] = useState<any | null>(null);
+  const [referenceQuery, setReferenceQuery] = useState('');
+  const [showRefSuggestions, setShowRefSuggestions] = useState(false);
+
+  const applyMaterialReference = (sourceMat: any) => {
+    if (!sourceMat) return;
+    setReferenceRecord(sourceMat);
+    setForm({
+      ...initialForm,
+      item_number: '', // keep blank for auto-generation MAT-01
+      description: sourceMat.description ? `${sourceMat.description} (Copy)` : '',
+      description_long: sourceMat.description_long || '',
+      type: sourceMat.type || sourceMat.material_type || '',
+      base_unit: sourceMat.base_unit || sourceMat.base_uom || '',
+      category_code: sourceMat.group_code || sourceMat.category_code || '',
+      barcode: '',
+      hsn_code: sourceMat.hsn_code || '',
+      purchasing_group: sourceMat.purchasing_group || '',
+      buyer_group: sourceMat.buyer_group || '',
+      procurement_division: sourceMat.procurement_division || '',
+      is_quality_active: String(sourceMat.is_quality_active ?? 'false'),
+      planning_type: sourceMat.planning_type || '',
+      planning_controller: sourceMat.planning_controller || '',
+      lot_sizing: sourceMat.lot_sizing || '',
+      min_lot_size: sourceMat.min_lot_size || '',
+      max_lot_size: sourceMat.max_lot_size || '',
+      fixed_lot_size: sourceMat.fixed_lot_size || '',
+      safety_stock: sourceMat.safety_stock || '',
+      reorder_point: sourceMat.reorder_point || '',
+      procurement_method: sourceMat.procurement_method || '',
+      special_procurement_method: sourceMat.special_procurement_method || '',
+      facility_codes: Array.isArray(sourceMat.facility_codes) ? [...sourceMat.facility_codes] : [],
+      plant_codes: Array.isArray(sourceMat.plant_codes) ? [...sourceMat.plant_codes] : [],
+      is_kit: String(sourceMat.is_kit ?? 'false'),
+      is_phantom_kit: String(sourceMat.is_phantom_kit ?? 'false'),
+      landed_cost_scope: sourceMat.landed_cost_scope || '',
+      is_lot_managed: String(sourceMat.is_lot_managed ?? 'true'),
+      lot_control: sourceMat.lot_control || '',
+      shelf_life_days: sourceMat.shelf_life_days || '',
+      inventory_valuation_class: sourceMat.valuation_class || sourceMat.inventory_valuation_class || '',
+      pricing_method: sourceMat.pricing_method || sourceMat.price_control || '',
+      moving_avg_price: sourceMat.moving_avg_price || '',
+      standard_price: sourceMat.standard_price || '',
+      price_unit: sourceMat.price_unit || '1',
+      costing_lot_size: sourceMat.costing_lot_size || '',
+      overhead_group: sourceMat.overhead_group || '',
+    });
+  };
+
+  const clearMaterialReference = () => {
+    setReferenceRecord(null);
+    setReferenceQuery('');
+    setForm(initialForm);
+  };
   const [items, setItems] = useState<any[]>([]);
   const [facilities, setFacilities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,14 +173,14 @@ export default function MaterialMasterPage({ defaultMode, codeOverride, titleOve
         const matRange = ranges.find((r: any) => r.object_type === 'ITEM' || r.code === 'MAT-01' || r.code === 'ITEM-01' || r.code?.includes('MAT') || r.code === 'ITEM-01' || r.object_type === 'MATERIAL');
         if (matRange) {
           const next = (matRange.current_number || matRange.from_number || 10000000) + 1;
-          // SAP STANDARD: purely numeric – no prefix – e.g., 10000001 not MAT-10000001
+          // Industry standard: purely numeric – no prefix – e.g., 10000001 not MAT-10000001
           const isLocked = Number(matRange.current_number) > Number(matRange.from_number);
-          setNextNumberPreview(`${next} (from ${matRange.code} ${matRange.from_number}-${matRange.to_number} – current ${matRange.current_number} – next ${next} – ${isLocked ? `🔒 Locked ${Number(matRange.current_number)-Number(matRange.from_number)} used` : '● Editable'} – SAP numeric, no prefix)`);
+          setNextNumberPreview(`${next} (from ${matRange.code} ${matRange.from_number}-${matRange.to_number} – current ${matRange.current_number} – next ${next} – ${isLocked ? `🔒 Locked ${Number(matRange.current_number)-Number(matRange.from_number)} used` : '● Editable'} – numeric, no prefix)`);
         } else {
-          setNextNumberPreview('No MAT-01/ITEM range found – will use numeric timestamp fallback – create range via FNRC first for sequential – SAP numeric standard');
+          setNextNumberPreview('No MAT-01/ITEM range found – will use numeric timestamp fallback – create range via FNRC first for sequential – standard numeric sequence');
         }
       } catch {
-        setNextNumberPreview('Unable to fetch range – fallback numeric timestamp will be used – SAP standard');
+        setNextNumberPreview('Unable to fetch range – fallback numeric timestamp will be used – standard sequence');
       }
     };
     fetchNext();
@@ -417,20 +471,20 @@ export default function MaterialMasterPage({ defaultMode, codeOverride, titleOve
                   {nextNumberPreview && (
                     <div className={modern ? "mb-4 p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs" : "mb-2 p-2 border bg-zinc-50 text-[11px]"}>
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold">SAP AUTO – INTERNAL – NO MANUAL</span>
+                        <span className="px-2 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold">AUTO – INTERNAL NUMBERING</span>
                         <span className="font-medium">Material Number – Always Auto – Numeric – No Manual Entry – Blocked per your confirmation</span>
                       </div>
                       <div className="mt-2 font-mono text-[11px] bg-white rounded-lg border p-2">
                         Next: {nextNumberPreview}
                       </div>
                       <div className="mt-2 text-[11px] text-zinc-600">
-                        • SAP standard: Material number purely numeric (e.g., 10000001) – no MAT- prefix – random 10 digits like 1234567890 are <b>BLOCKED</b> – system generates via <Link href={`/${companyCode}/fico/number-ranges`} className="text-zinc-900 underline">FNRC</Link> MAT-01/ITEM – internal numbering – EMTC (legacy MM01) style – always auto – per your selection block_manual. If you type random number, backend will ignore and still auto-generate next sequential – audit safe.
+                        • Material number purely numeric (e.g., 10000001) – no MAT- prefix – random 10 digits like 1234567890 are <b>BLOCKED</b> – system generates via <Link href={`/${companyCode}/fico/number-ranges`} className="text-zinc-900 underline">FNRC</Link> MAT-01/ITEM – internal numbering – EMTC (legacy MM01) style – always auto – per your selection block_manual. If you type random number, backend will ignore and still auto-generate next sequential – audit safe.
                       </div>
                     </div>
                   )}
                   <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                     <div className={modern ? "col-span-2 p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs" : "col-span-2 p-2 border bg-zinc-50 text-[11px]"}>
-                      <span className="font-bold">PRODUCT_CODE – Auto Only – SAP Internal – Blocked Manual</span> – System will generate purely numeric like 10000001 via number range MAT-01/ITEM – no manual entry – random 10 digits like 1234567890 are BLOCKED – always auto – per your selection block_manual – PO/PR/GR also always auto – SAP standard – field removed from UI.
+                      <span className="font-bold">PRODUCT_CODE – Auto Only – Internal – Blocked Manual</span> – System will generate purely numeric like 10000001 via number range MAT-01/ITEM – no manual entry – random 10 digits like 1234567890 are BLOCKED – always auto – per your selection block_manual – PO/PR/GR also always auto – standard sequence – field removed from UI.
                     </div>
                   {renderInput('description', 'PRODUCT_NAME / DESCRIPTION', { required: true, desc: 'Short description – single source – wired from foundation as in industry standard – MARA' })}
                   <div className="space-y-1">
@@ -471,7 +525,7 @@ export default function MaterialMasterPage({ defaultMode, codeOverride, titleOve
           <div className="space-y-6">
             <div className={modern ? "bg-zinc-50 rounded-xl p-4 border border-zinc-200" : "border p-3"}>
               <h3 className={modern ? "font-semibold text-sm text-zinc-900" : "font-bold text-xs"}>Purchasing View – Plant Dependent – Single Source</h3>
-              <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement moved to MRP tab only (SAP MRP2) to remove duplicate.</p>
+              <p className="text-[11px] text-zinc-500 mt-1">procurement_method & special_procurement moved to MRP tab only (Industry MRP2) to remove duplicate.</p>
               <div className={modern ? "grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" : "grid grid-cols-2 gap-2 mt-2"}>
                 <div className="space-y-1">
                   <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>PURCHASING_GROUP – Buyer Team – EBTC – wired from foundation</label>
@@ -524,7 +578,7 @@ export default function MaterialMasterPage({ defaultMode, codeOverride, titleOve
               </div>
               {!collapsed['storage_plant'] && (
                 <>
-                  <p className="text-[11px] text-zinc-500 mt-1">Select facilities to extend material to. SAP: EMTC (legacy MM01) creates for one plant, MMSC extends.</p>
+                  <p className="text-[11px] text-zinc-500 mt-1">Select facilities to extend material to. Creates for plant and extends across selected storage locations.</p>
                   <div className="mt-4">
                     <label className={modern ? "text-[11px] font-medium uppercase tracking-widest text-zinc-600" : "text-[11px] font-mono font-bold uppercase text-black"}>FACILITY_CODES / PLANT_CODES * (Multi-select) – Single Source</label>
                     <div className={modern ? "mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-white rounded-xl border max-h-[200px] overflow-auto" : "mt-1 grid grid-cols-3 gap-1 border p-2 max-h-[150px] overflow-auto"}>
@@ -655,6 +709,113 @@ export default function MaterialMasterPage({ defaultMode, codeOverride, titleOve
 
         {mode === 'create' && (
           <form onSubmit={handleSubmit} className={modern ? "bg-white rounded-2xl shadow-sm border border-zinc-200 p-6 space-y-6" : "border p-4 space-y-4"}>
+            {/* Create with Reference Banner */}
+            <div className={modern ? "rounded-xl border border-blue-200 bg-blue-50/60 p-3.5 space-y-2.5 text-xs" : "border-2 border-black p-2 bg-blue-50 space-y-2 text-xs"}>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                    <span className="text-sm">📋</span> Create with Reference – Copy Material Master (EMTC / MM01)
+                  </span>
+                  <span className="text-[11px] text-blue-700 hidden sm:inline">
+                    Clone Basic, Purchasing, MRP, Storage, Accounting & Costing from an existing material
+                  </span>
+                </div>
+                {referenceRecord && (
+                  <button
+                    type="button"
+                    onClick={clearMaterialReference}
+                    className={modern ? "text-xs px-2.5 py-0.5 rounded-full bg-white border border-blue-300 text-blue-800 hover:bg-blue-100 transition font-medium" : "border border-black px-2 py-0.5 text-xs bg-white text-black uppercase font-bold"}
+                  >
+                    ✕ Clear Reference
+                  </button>
+                )}
+              </div>
+
+              {referenceRecord ? (
+                <div className={modern ? "flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-200" : "flex items-center justify-between bg-white border border-black p-2"}>
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="font-mono font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-[11px]">
+                      {referenceRecord.item_number || referenceRecord.code || referenceRecord.material_number}
+                    </span>
+                    <span className="font-medium truncate text-zinc-800">
+                      {referenceRecord.description}
+                    </span>
+                    <span className="text-[11px] text-zinc-500 hidden md:inline">
+                      — material attributes copied into all tabs below. Auto-numbering will assign new sequence on submit.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={referenceQuery}
+                        onChange={(e) => {
+                          setReferenceQuery(e.target.value);
+                          setShowRefSuggestions(true);
+                        }}
+                        onFocus={() => setShowRefSuggestions(true)}
+                        placeholder={`Select template material to copy from (${items.length} available)... `}
+                        className={modern ? "w-full border border-blue-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600" : "w-full border-2 border-black px-2 py-1 text-xs font-mono bg-white"}
+                      />
+                      {referenceQuery && (
+                        <button
+                          type="button"
+                          onClick={() => { setReferenceQuery(''); }}
+                          className="absolute right-2 top-1.5 text-zinc-400 hover:text-zinc-600 text-xs"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    {items.length > 0 && (
+                      <span className="text-[11px] text-blue-800 font-medium whitespace-nowrap hidden sm:inline">
+                        {items.length} materials in catalog
+                      </span>
+                    )}
+                  </div>
+
+                  {showRefSuggestions && (
+                    <div className={modern ? "absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-blue-200 z-20 max-h-56 overflow-auto divide-y divide-zinc-100" : "absolute top-full left-0 right-0 mt-1 bg-white border-2 border-black z-20 max-h-52 overflow-auto"}>
+                      {items
+                        .filter((it: any) => {
+                          if (!referenceQuery) return true;
+                          const q = referenceQuery.toLowerCase();
+                          const num = String(it.item_number || it.code || it.material_number || '').toLowerCase();
+                          const desc = String(it.description || '').toLowerCase();
+                          return num.includes(q) || desc.includes(q);
+                        })
+                        .slice(0, 15)
+                        .map((it: any, i: number) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onMouseDown={() => {
+                              applyMaterialReference(it);
+                              setShowRefSuggestions(false);
+                            }}
+                            className={modern ? "w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center justify-between gap-2 transition" : "w-full text-left px-2 py-1 text-xs font-mono hover:bg-black hover:text-white flex items-center justify-between gap-2 border-b border-black last:border-0"}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <span className="font-mono font-bold bg-zinc-100 text-zinc-800 px-1.5 py-0.5 rounded text-[11px]">
+                                {it.item_number || it.code || it.material_number}
+                              </span>
+                              <span className="truncate text-zinc-900">{it.description}</span>
+                              <span className="text-[10px] text-zinc-400">({it.type || it.material_type})</span>
+                            </div>
+                            <span className="text-[10px] text-blue-600 font-medium shrink-0 uppercase tracking-wider">Select & Copy →</span>
+                          </button>
+                        ))}
+                      {items.length === 0 && (
+                        <div className="p-3 text-center text-zinc-400 text-xs">No materials in system yet to reference.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <div className={modern ? "flex gap-2 border-b pb-3 overflow-x-auto" : "flex gap-1 border-b pb-2 overflow-x-auto"}>
               {TABS.map(t => {
                 const missing = missingPerTab[t.key].length;
@@ -714,6 +875,24 @@ export default function MaterialMasterPage({ defaultMode, codeOverride, titleOve
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] text-zinc-400">{it.base_unit || it.base_uom}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          applyMaterialReference(it);
+                          if (typeof window !== 'undefined') {
+                            window.history.pushState({}, '', `/${companyCode}/foundation/materials?mode=create`);
+                          }
+                          const createLinks = document.querySelectorAll('a[href*="mode=create"]');
+                          if (createLinks.length > 0) {
+                            (createLinks[0] as HTMLElement).click();
+                          }
+                        }}
+                        className={modern ? "text-[11px] px-2.5 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition font-medium" : "text-[10px] border px-1 bg-blue-100 font-bold"}
+                        title="Create new material using this record as template"
+                      >
+                        Copy As
+                      </button>
                       <Link href={`/${companyCode}/foundation/materials?mode=change`} onClick={e => { e.stopPropagation(); setSelectedCode(it.item_number || it.code); }} className={modern ? "text-[11px] px-2 py-1 rounded-full bg-black text-white" : "text-[10px] border px-1 bg-black text-white"}>Edit</Link>
                     </div>
                   </div>

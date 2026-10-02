@@ -9,6 +9,12 @@ export default function Page() {
       title="Partner Account – Central Business Partner"
       description="Create Partner Account – central business partner master – role VENDOR/CUSTOMER/BOTH/EMPLOYEE/CONTACT – display name legal name gst pan tax id email phone address currency – strict industry standard: central partner used by supplier (PSUC XK01) and customer (SCUC XD01) – contextual views vendor/customer – T0 BLOCKING – own names"
       apiEndpoint="/api/business-partners"
+      referenceConfig={{
+        keyField: "account_number",
+        displayField: "display_name",
+        label: "Create with Reference – Copy Business Partner (BP)",
+        excludedFields: ["account_number", "id", "created_at", "updated_at", "is_blocked", "is_deactivated"]
+      }}
       initialForm={{ 
         account_number: '', 
         display_name: '',

@@ -877,3 +877,25 @@ Once you confirm, I will:
 - **Frontend Interaction & Guard Modal (`IndustryDeletionGuardModal`):**
   - Dedicated "Delete" buttons in `/change` view actions and in table row item expansions (`/list`).
   - Interactive enterprise diagnostic modal (`src/shared/ui/sap-deletion-guard-modal.tsx`) rendering structured reasons, document counts, resolution steps with transaction codes, and immediate one-click deactivation.
+
+---
+
+## 9. Future Changes Log
+
+### 2026-10-02 IST: Universal Reference Master Data Implementation (Phase 1)
+- **Objective:** Implement "Copy As" / "Create with Reference" pattern across core master data entities without infringing legal constraints.
+- **Universal Engine (`src/shared/ui/single-code-page.tsx`):**
+  - Added extensible `ReferenceConfig` interface and optional prop `referenceConfig` to `SingleCodePage`.
+  - Configurable properties: `keyField`, `displayField`, `excludedFields`, `fieldTransforms`, `label`, `sourceEndpoint`.
+  - In **Create Mode**: Added prominent template selector banner allowing instant selection from existing records with live search, autofilling all matching form fields while clearing entity primary identifiers and stamping `(Copy)` on descriptive fields. Provides one-click "Clear Reference" option.
+  - In **List Mode**: Added "Copy As" action button on every row adjacent to Edit / Delete, which preloads the template record and transitions directly into Create mode with attributes pre-populated.
+  - Sanitized UI text and comments to ensure complete adherence to legal naming requirements ("Industry standard").
+- **Core Entities Enabled:**
+  - `FGLC` (General Ledger Accounts / FS00 equivalent): Reference template pre-fills CoA, Account Group, Account Type, Account Category, Balance Sheet flag, and Reconciliation settings while prompting for new GL Account Number.
+  - `FCCA` / `CCUC` (Cost Units / KS01 equivalent): Clones Legal Entity, Control Area, and descriptive parameters.
+  - `EPAC` (Central Business Partners / BP equivalent): Clones partner role, tax details, currency, address, and profile settings.
+  - `PSUC` (Suppliers / Vendors / XK01 equivalent): Clones purchasing division, buyer team, payment terms, reconciliation account, and tax status.
+  - `SCUC` (Customers / XD01 equivalent): Clones commercial org, sales channel, product line, credit policy area, pricing group, and reconciliation settings.
+  - `EMTC` (Material Master / MM01 equivalent in `src/app/(erp)/[companyCode]/foundation/materials/page.tsx`): Built customized multi-tab reference cloner transferring Basic, Purchasing, MRP, Storage (lot, batch, shelf-life), Accounting (valuation class, pricing method, price unit), and Costing while letting sequential internal numbering (MAT-01 / ITEM) generate new unique item codes. Cleaned all legacy vendor references in material page comments and UI badges.
+- **Verification:**
+  - `npx tsc --noEmit` passed with 0 errors across entire workspace.

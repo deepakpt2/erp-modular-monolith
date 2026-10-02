@@ -10,6 +10,12 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
       title={titleOverride || "Cost Units – Cost Centers"}
       description="Create Cost Unit – General ERP term Cost Unit, alias Cost Center KS01 – code + legal entity – e.g., CC-1000 – strict usage: cost unit required for expense GL via field status OBC5, actuals via CCA report KSB1, production order cost, payroll posting – T0 BLOCKING – NO DANGLING"
       apiEndpoint="/api/cost-centers"
+      referenceConfig={{
+        keyField: "code",
+        displayField: "name",
+        label: "Create with Reference – Copy Cost Center (KS01)",
+        excludedFields: ["code", "id", "created_at", "updated_at"]
+      }}
       initialForm={{ code: '', name: '', company_code: '', legal_entity_code: '', control_area_code: '', description: '' }}
       fields={[
         { key: "code", label: "COST_UNIT_CODE", required: true, placeholder: "", description: "Cost Unit code – General ERP Cost Unit, alias Cost Center KS01 – e.g., CU-1000, CC-1000 – used as FK in expense postings, production orders, payroll – T0 BLOCKING" },

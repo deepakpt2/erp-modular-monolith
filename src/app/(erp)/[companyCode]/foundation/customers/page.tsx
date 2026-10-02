@@ -9,6 +9,12 @@ export default function Page() {
       title="Customer – Customer Master"
       description="Create Customer – customer master sales – central partner_account role CUSTOMER + sales view – strict industry standard: used in SO, Delivery, Billing – sales organisation/channel, pricing, credit check, payment terms, currency, tax info, reconciliation account – T0 BLOCKING – NO DANGLING – own names"
       apiEndpoint="/api/business-partners"
+      referenceConfig={{
+        keyField: "account_number",
+        displayField: "display_name",
+        label: "Create with Reference – Copy Customer (XD01)",
+        excludedFields: ["account_number", "id", "created_at", "updated_at", "is_blocked", "is_deactivated"]
+      }}
       initialForm={{ 
         account_number: '', 
         display_name: '',

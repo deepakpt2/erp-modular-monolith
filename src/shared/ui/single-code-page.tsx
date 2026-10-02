@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { DbAutocomplete } from '@/shared/ui/db-autocomplete';
 import { canUserAccessPage, getPagePermission } from '@/shared/kernel/auth/pagePermissions';
-import { IndustryDeletionGuardModal as SapDeletionGuardModal, DeletionDiagnostic } from '@/shared/ui/sap-deletion-guard-modal';
+import { IndustryDeletionGuardModal, DeletionDiagnostic } from '@/shared/ui/sap-deletion-guard-modal';
 
 export interface FieldDef {
   key: string;
@@ -22,6 +22,15 @@ export interface FieldDef {
   description?: string;
 }
 
+export interface ReferenceConfig {
+  sourceEndpoint?: string;
+  keyField?: string;
+  displayField?: string;
+  excludedFields?: string[];
+  fieldTransforms?: Record<string, (val: any, record: any) => any>;
+  label?: string;
+}
+
 export interface SingleCodePageProps {
   code: string;
   sapAlias?: string;
@@ -32,6 +41,7 @@ export interface SingleCodePageProps {
   relatedLinks: { code: string; label: string; route: string; description: string; count?: number }[];
   initialForm: Record<string, any>;
   defaultMode?: 'create' | 'list' | 'change';
+  referenceConfig?: ReferenceConfig | boolean;
 }
 
 // Auto-classify fields into tabs if form is large
@@ -87,7 +97,7 @@ function classifyFields(fields: FieldDef[]): TabDef[] {
   return result.length ? result : [{ key: 'basic', label: 'General', desc: 'All fields', fields }];
 }
 
-export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint, fields, relatedLinks, initialForm, defaultMode }: SingleCodePageProps) {
+export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint, fields, relatedLinks, initialForm, defaultMode, referenceConfig }: SingleCodePageProps) {
   const params = useParams();
   const searchParams = useSearchParams();
   const companyCode = params.companyCode as string;
@@ -95,6 +105,9 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   const mode = modeParam === 'display' ? 'list' : modeParam;
   const querySelected = searchParams.get('selected');
   const [uiMode, setUiMode] = useState<'modern' | 'classic'>('modern');
+  const [referenceRecord, setReferenceRecord] = useState<any | null>(null);
+  const [referenceQuery, setReferenceQuery] = useState('');
+  const [showRefSuggestions, setShowRefSuggestions] = useState(false);
   const [form, setForm] = useState<Record<string, any>>(initialForm);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +150,73 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     fetchMe();
   }, [code]);
 
-  const fieldsKey = useMemo(() => JSON.stringify(fields.map(f=>f.key)), [fields]);
+
+  const resolvedRefConfig = useMemo<ReferenceConfig | null>(() => {
+    if (!referenceConfig) return null;
+    if (typeof referenceConfig === 'boolean') {
+      return {
+        keyField: code === 'EMTC' ? 'item_number' : (code === 'FGLC' || code === 'FS00') ? 'account_number' : (code === 'EPAC' || code === 'PSUC' || code === 'SCUC') ? 'account_number' : 'code',
+        displayField: (code === 'EMTC' || code === 'materials') ? 'description' : (code === 'EPAC' || code === 'PSUC' || code === 'SCUC') ? 'display_name' : 'name',
+        excludedFields: ['id', 'created_at', 'updated_at', 'uuid', 'is_blocked', 'is_deactivated', 'deletion_flag', 'current_number'],
+      };
+    }
+    return {
+      keyField: referenceConfig.keyField || (code === 'EMTC' ? 'item_number' : (code === 'FGLC' || code === 'FS00') ? 'account_number' : (code === 'EPAC' || code === 'PSUC' || code === 'SCUC') ? 'account_number' : 'code'),
+      displayField: referenceConfig.displayField || ((code === 'EMTC' || code === 'materials') ? 'description' : (code === 'EPAC' || code === 'PSUC' || code === 'SCUC') ? 'display_name' : 'name'),
+      excludedFields: referenceConfig.excludedFields || ['id', 'created_at', 'updated_at', 'uuid', 'is_blocked', 'is_deactivated', 'deletion_flag', 'current_number'],
+      fieldTransforms: referenceConfig.fieldTransforms,
+      sourceEndpoint: referenceConfig.sourceEndpoint,
+      label: referenceConfig.label,
+    };
+  }, [referenceConfig, code]);
+
+  const applyReference = (record: any) => {
+    if (!record) return;
+    const keyField = resolvedRefConfig?.keyField || 'code';
+    const excluded = new Set([
+      keyField,
+      'id',
+      'created_at',
+      'updated_at',
+      'uuid',
+      'is_blocked',
+      'is_deactivated',
+      'deletion_flag',
+      'current_number',
+      ...(resolvedRefConfig?.excludedFields || [])
+    ]);
+
+    const newFormData: Record<string, any> = { ...initialForm };
+    Object.keys(record).forEach(k => {
+      if (!excluded.has(k) && k in initialForm) {
+        let val = record[k];
+        if (resolvedRefConfig?.fieldTransforms && resolvedRefConfig.fieldTransforms[k]) {
+          val = resolvedRefConfig.fieldTransforms[k](val, record);
+        }
+        newFormData[k] = val ?? initialForm[k];
+      }
+    });
+
+    // Suffix (Copy) to name or description if available
+    if (newFormData.name && typeof newFormData.name === 'string') {
+      newFormData.name = `${newFormData.name} (Copy)`;
+    } else if (newFormData.description && typeof newFormData.description === 'string' && !newFormData.description.includes('(Copy)')) {
+      newFormData.description = `${newFormData.description} (Copy)`;
+    } else if (newFormData.display_name && typeof newFormData.display_name === 'string') {
+      newFormData.display_name = `${newFormData.display_name} (Copy)`;
+    }
+
+    setReferenceRecord(record);
+    setForm(newFormData);
+  };
+
+  const clearReference = () => {
+    setReferenceRecord(null);
+    setReferenceQuery('');
+    setForm(initialForm);
+  };
+
+    const fieldsKey = useMemo(() => JSON.stringify(fields.map(f=>f.key)), [fields]);
   const tabs = useMemo(() => classifyFields(fields), [fieldsKey]);
 
   useEffect(() => {
@@ -318,7 +397,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
 
   const handleDelete = async (targetCodeOrId: string, itemRecord?: any) => {
     if (!targetCodeOrId) return;
-    const confirmMsg = `Are you sure you want to delete ${title} [${targetCodeOrId}]? SAP standard safety checks will verify there are no active dependencies or postings.`;
+    const confirmMsg = `Are you sure you want to delete ${title} [${targetCodeOrId}]? Industry standard safety checks will verify there are no active dependencies or postings.`;
     if (!window.confirm(confirmMsg)) return;
 
     setIsDeleting(true);
@@ -341,7 +420,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
 
       if (!res.ok) {
         if (res.status === 409 && data.diagnostic) {
-          // Trigger SAP diagnostic error modal
+          // Trigger diagnostic error modal
           setDeletionDiagnostic(data.diagnostic);
           setMessage(`❌ Deletion blocked: ${data.error}`);
           return;
@@ -580,6 +659,27 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                                     <div className="flex justify-between items-start mb-2">
                                       <h4 className={modern ? "font-semibold text-sm" : "font-bold text-xs uppercase"}>View Details – {it.code || it.account_number || it.item_number}</h4>
                                       <div className="flex gap-1.5">
+                                                                                {resolvedRefConfig && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              applyReference(it);
+                                              const currentPath = typeof window !== 'undefined' ? window.location.pathname.replace(/\/(list|change|display)$/, '') : '';
+                                              if (typeof window !== 'undefined') {
+                                                window.history.pushState({}, '', `${currentPath}?mode=create`);
+                                              }
+                                              const modeButtons = document.querySelectorAll('a[href*="mode=create"]');
+                                              if (modeButtons.length > 0) {
+                                                (modeButtons[0] as HTMLElement).click();
+                                              }
+                                            }}
+                                            className={modern ? "h-7 px-3 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs inline-flex items-center font-medium transition" : "border-2 border-black px-2 py-0.5 text-xs bg-blue-100 text-black uppercase font-bold"}
+                                            title="Create new record using this master record as template"
+                                          >
+                                            Copy As
+                                          </button>
+                                        )}
                                         <Link
                                           href={`${typeof window !== 'undefined' ? (window.location.pathname.replace(/\/(list|change|display)$/, '') + '/change') : ''}?selected=${encodeURIComponent(it.code || it.account_number || it.item_number || '')}`}
                                           onClick={() => setSelectedCode(it.code || it.account_number || it.item_number)}
@@ -701,6 +801,116 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                 {(code === 'EMTC' || apiEndpoint.includes('materials')) && <span className={modern ? "text-xs bg-zinc-100 border border-zinc-200 rounded-full px-2.5 py-0.5 font-mono" : "text-xs border-2 border-black px-1 bg-white uppercase"}>Auto MAT-01 if blank</span>}
               </div>
             </div>
+
+            {resolvedRefConfig && (
+              <div className={modern ? "rounded-xl border border-blue-200 bg-blue-50/60 p-3.5 space-y-2.5 text-xs" : "border-2 border-black p-2 bg-blue-50 space-y-2 text-xs"}>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                      <span className="text-sm">📋</span> {resolvedRefConfig.label || "Create with Reference / Copy As"}
+                    </span>
+                    <span className="text-[11px] text-blue-700 hidden sm:inline">
+                      Clone attributes from an existing master record
+                    </span>
+                  </div>
+                  {referenceRecord && (
+                    <button
+                      type="button"
+                      onClick={clearReference}
+                      className={modern ? "text-xs px-2.5 py-0.5 rounded-full bg-white border border-blue-300 text-blue-800 hover:bg-blue-100 transition font-medium" : "border border-black px-2 py-0.5 text-xs bg-white text-black uppercase font-bold"}
+                    >
+                      ✕ Clear Reference
+                    </button>
+                  )}
+                </div>
+
+                {referenceRecord ? (
+                  <div className={modern ? "flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-200" : "flex items-center justify-between bg-white border border-black p-2"}>
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="font-mono font-bold bg-blue-600 text-white px-2 py-0.5 rounded text-[11px]">
+                        {referenceRecord[resolvedRefConfig.keyField || 'code'] || referenceRecord.code || referenceRecord.account_number || referenceRecord.item_number}
+                      </span>
+                      <span className="font-medium truncate text-zinc-800">
+                        {referenceRecord[resolvedRefConfig.displayField || 'name'] || referenceRecord.name || referenceRecord.description || referenceRecord.display_name}
+                      </span>
+                      <span className="text-[11px] text-zinc-500 hidden md:inline">
+                        — attributes copied into form below. Specify unique identifier to save.
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={referenceQuery}
+                          onChange={(e) => {
+                            setReferenceQuery(e.target.value);
+                            setShowRefSuggestions(true);
+                          }}
+                          onFocus={() => setShowRefSuggestions(true)}
+                          placeholder={`Select template record to copy from (${items.length} available)... `}
+                          className={modern ? "w-full border border-blue-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600" : "w-full border-2 border-black px-2 py-1 text-xs font-mono bg-white"}
+                        />
+                        {referenceQuery && (
+                          <button
+                            type="button"
+                            onClick={() => { setReferenceQuery(''); }}
+                            className="absolute right-2 top-1.5 text-zinc-400 hover:text-zinc-600 text-xs"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      {items.length > 0 && (
+                        <span className="text-[11px] text-blue-800 font-medium whitespace-nowrap hidden sm:inline">
+                          {items.length} records in catalog
+                        </span>
+                      )}
+                    </div>
+
+                    {showRefSuggestions && (
+                      <div className={modern ? "absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-blue-200 z-20 max-h-56 overflow-auto divide-y divide-zinc-100" : "absolute top-full left-0 right-0 mt-1 bg-white border-2 border-black z-20 max-h-52 overflow-auto"}>
+                        {items
+                          .filter((it: any) => {
+                            if (!referenceQuery) return true;
+                            const q = referenceQuery.toLowerCase();
+                            const codeVal = String(it[resolvedRefConfig.keyField || 'code'] || it.code || it.account_number || it.item_number || '').toLowerCase();
+                            const nameVal = String(it[resolvedRefConfig.displayField || 'name'] || it.name || it.description || it.display_name || '').toLowerCase();
+                            return codeVal.includes(q) || nameVal.includes(q);
+                          })
+                          .slice(0, 15)
+                          .map((it: any, i: number) => {
+                            const recKey = it[resolvedRefConfig.keyField || 'code'] || it.code || it.account_number || it.item_number;
+                            const recName = it[resolvedRefConfig.displayField || 'name'] || it.name || it.description || it.display_name || '';
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                onMouseDown={() => {
+                                  applyReference(it);
+                                  setShowRefSuggestions(false);
+                                }}
+                                className={modern ? "w-full text-left px-3 py-2 text-xs hover:bg-blue-50 flex items-center justify-between gap-2 transition" : "w-full text-left px-2 py-1 text-xs font-mono hover:bg-black hover:text-white flex items-center justify-between gap-2 border-b border-black last:border-0"}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className="font-mono font-bold bg-zinc-100 text-zinc-800 px-1.5 py-0.5 rounded text-[11px]">{recKey}</span>
+                                  <span className="truncate text-zinc-900">{recName}</span>
+                                </div>
+                                <span className="text-[10px] text-blue-600 font-medium shrink-0 uppercase tracking-wider">Select & Copy →</span>
+                              </button>
+                            );
+                          })}
+                        {items.length === 0 && (
+                          <div className="p-3 text-center text-zinc-400 text-xs">No records available to reference yet.</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             {showTabs ? (
               <>
                 <div className={modern ? "flex gap-1.5 bg-zinc-100 rounded-full p-1 w-fit overflow-x-auto" : "flex gap-0 border-2 border-black w-fit overflow-x-auto"}>
@@ -760,7 +970,7 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
         </div>
       </div>
 
-      <SapDeletionGuardModal
+      <IndustryDeletionGuardModal
         isOpen={!!deletionDiagnostic}
         onClose={() => setDeletionDiagnostic(null)}
         diagnostic={deletionDiagnostic}
