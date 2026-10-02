@@ -1208,3 +1208,18 @@ Once you confirm, I will:
   - Zero forbidden vendor terms in modified files.
   - TypeScript compilation passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Resolve Posting Period Control DB Query Parameter Mismatch and Standard Field Parity
+- **Root Cause of Query Failure:**
+  - In `src/app/api/posting-periods/route.ts`, the parameter count in `existCheck` did not align with `$1..$5` when `calId` was passed as undefined or when `account_type` had an enum cast mismatch (`account_type::fin_posting_account_type` vs `VARCHAR(10)`).
+  - Ensured `fin_posting_calendar_period.account_type` is converted to `VARCHAR(10)` and handled with explicit fallback logic.
+- **Clarification on Industry Standard Structure (`OB52` / `T001B`):**
+  - **Account Column ("ZZZZZZ"):** In standard configuration table `T001B`, the account range is specified with `VONAK` (From Account) and `BISAK` (To Account). In legacy master templates, `ZZZZZZZZZZ` was used as the universal upper bound wildcard to cover all accounts up to the maximum character limit. We removed the hardcoded placeholder so users see a clean empty field by default, with helpful placeholder hints.
+  - **Year-End Adjustment Periods (Special Periods 13–16):** Yes, this is 100% standard in `OB52`. In Table `T001B`, every row contains two period intervals:
+    1. **Interval 1 (Normal Operations):** `FRPE1`/`FRYE1` to `TOPE1`/`TOYE1` (e.g., Periods 1–12 for regular business operations).
+    2. **Interval 2 (Special / Year-End Adjustment Periods):** `FRPE2`/`FRYE2` to `TOPE2`/`TOYE2` (e.g., Periods 13–16 for year-end closing, audit adjustments, tax true-ups).
+    3. **Authorization Group (`BRGRU`):** Restricts Interval 2 so only closing controllers or auditors with authorization group `F_BKPF_BUP` can post into special periods 13–16 after periods 1–12 are locked.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) clean with 0 errors.
+  - Cleaned all hardcoded dummy values in form `initialForm`.
+  - Pushed to GitHub repository `main`.

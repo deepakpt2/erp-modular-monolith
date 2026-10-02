@@ -62,9 +62,17 @@ async function ensurePostingPeriodsSchema() {
     `).catch(() => {});
 
     // 3. Ensure any missing columns exist on existing table
+    await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS posting_calendar_id UUID REFERENCES fin_posting_calendar(id)`).catch(() => {});
     await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS variant_code VARCHAR(20)`).catch(() => {});
+    await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS account_type VARCHAR(10) DEFAULT '+'`).catch(() => {});
+    // If account_type was created as an enum, convert it or ensure VARCHAR compatibility
+    await db.execute(sql`ALTER TABLE fin_posting_calendar_period ALTER COLUMN account_type TYPE VARCHAR(10) USING account_type::text`).catch(() => {});
     await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS from_account VARCHAR(30) DEFAULT ''`).catch(() => {});
     await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS to_account VARCHAR(30) DEFAULT 'ZZZZZZZZZZ'`).catch(() => {});
+    await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS from_period INTEGER DEFAULT 1`).catch(() => {});
+    await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS from_year INTEGER DEFAULT 2026`).catch(() => {});
+    await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS to_period INTEGER DEFAULT 12`).catch(() => {});
+    await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS to_year INTEGER DEFAULT 2026`).catch(() => {});
     await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS from_period2 INTEGER DEFAULT 13`).catch(() => {});
     await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS from_year2 INTEGER DEFAULT 2026`).catch(() => {});
     await db.execute(sql`ALTER TABLE fin_posting_calendar_period ADD COLUMN IF NOT EXISTS to_period2 INTEGER DEFAULT 16`).catch(() => {});
@@ -130,7 +138,7 @@ export async function GET(req: NextRequest) {
         COALESCE(p.variant_code, c.code, '1000') as variant_code,
         p.account_type,
         COALESCE(p.from_account, '') as from_account,
-        COALESCE(p.to_account, 'ZZZZZZZZZZ') as to_account,
+        COALESCE(p.to_account, '') as to_account,
         COALESCE(p.from_period, 1) as from_period,
         COALESCE(p.from_year, 2026) as from_year,
         COALESCE(p.to_period, 12) as to_period,
@@ -188,7 +196,7 @@ export async function POST(req: NextRequest) {
       variant_code,
       account_type = '+',
       from_account = '',
-      to_account = 'ZZZZZZZZZZ',
+      to_account = '',
       from_period = 1,
       from_year = 2026,
       to_period = 12,
@@ -231,14 +239,41 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if matching row exists by variant, account_type, and period window
-    const existCheck = await db.execute(sql`
-      SELECT id FROM fin_posting_calendar_period
-      WHERE (UPPER(variant_code) = ${vCode} OR posting_calendar_id = ${calId})
-        AND UPPER(account_type) = ${acctType.toUpperCase()}
-        AND from_period = ${parseInt(from_period)}
-        AND from_year = ${parseInt(from_year)}
-      LIMIT 1
-    `);
+    const calIdParam = calId || null;
+    const fromP = parseInt(from_period) || 1;
+    const fromY = parseInt(from_year) || 2026;
+    const toP = parseInt(to_period) || 12;
+    const toY = parseInt(to_year) || 2026;
+    const fromP2 = parseInt(from_period2) || 13;
+    const fromY2 = parseInt(from_year2) || fromY;
+    const toP2 = parseInt(to_period2) || 16;
+    const toY2 = parseInt(to_year2) || toY;
+
+    let existCheck: any;
+    try {
+      if (calIdParam) {
+        existCheck = await db.execute(sql`
+          SELECT id FROM fin_posting_calendar_period
+          WHERE (UPPER(COALESCE(variant_code, '')) = ${vCode} OR posting_calendar_id = ${calIdParam})
+            AND UPPER(account_type::text) = ${acctType.toUpperCase()}
+            AND from_period = ${fromP}
+            AND from_year = ${fromY}
+          LIMIT 1
+        `);
+      } else {
+        existCheck = await db.execute(sql`
+          SELECT id FROM fin_posting_calendar_period
+          WHERE UPPER(COALESCE(variant_code, '')) = ${vCode}
+            AND UPPER(account_type::text) = ${acctType.toUpperCase()}
+            AND from_period = ${fromP}
+            AND from_year = ${fromY}
+          LIMIT 1
+        `);
+      }
+    } catch (checkErr: any) {
+      console.warn('existCheck error in posting-periods:', checkErr.message);
+      existCheck = { rows: [] };
+    }
 
     let resultRow: any;
     if (existCheck.rows.length > 0) {
@@ -246,16 +281,16 @@ export async function POST(req: NextRequest) {
       const upd = await db.execute(sql`
         UPDATE fin_posting_calendar_period SET
           variant_code = ${vCode},
-          posting_calendar_id = ${calId},
+          posting_calendar_id = ${calIdParam},
           account_type = ${acctType},
           from_account = ${from_account || ''},
-          to_account = ${to_account || 'ZZZZZZZZZZ'},
-          to_period = ${parseInt(to_period)},
-          to_year = ${parseInt(to_year)},
-          from_period2 = ${parseInt(from_period2 || 13)},
-          from_year2 = ${parseInt(from_year2 || from_year)},
-          to_period2 = ${parseInt(to_period2 || 16)},
-          to_year2 = ${parseInt(to_year2 || to_year)},
+          to_account = ${to_account || ''},
+          to_period = ${toP},
+          to_year = ${toY},
+          from_period2 = ${fromP2},
+          from_year2 = ${fromY2},
+          to_period2 = ${toP2},
+          to_year2 = ${toY2},
           authorization_group = ${authorization_group || null},
           is_open = ${isOpenVal},
           description = ${description || null},
@@ -272,9 +307,9 @@ export async function POST(req: NextRequest) {
           from_period2, from_year2, to_period2, to_year2,
           authorization_group, is_open, description
         ) VALUES (
-          ${calId}, ${vCode}, ${acctType}, ${from_account || ''}, ${to_account || 'ZZZZZZZZZZ'},
-          ${parseInt(from_period)}, ${parseInt(from_year)}, ${parseInt(to_period)}, ${parseInt(to_year)},
-          ${parseInt(from_period2 || 13)}, ${parseInt(from_year2 || from_year)}, ${parseInt(to_period2 || 16)}, ${parseInt(to_year2 || to_year)},
+          ${calIdParam}, ${vCode}, ${acctType}, ${from_account || ''}, ${to_account || 'ZZZZZZZZZZ'},
+          ${fromP}, ${fromY}, ${toP}, ${toY},
+          ${fromP2}, ${fromY2}, ${toP2}, ${toY2},
           ${authorization_group || null}, ${isOpenVal}, ${description || null}
         )
         RETURNING *
