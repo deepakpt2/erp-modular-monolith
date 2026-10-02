@@ -948,3 +948,17 @@ Once you confirm, I will:
   - Strict compliance with legal constraints prohibiting vendor naming ("Industry standard" applied throughout).
   - TypeScript compilation clean across all application modules (`tsc --noEmit` passed with 0 errors).
   - All 5 phases of the "Create with Reference" / "Copy As" architecture are now 100% complete.
+
+### 2026-10-02 IST: Automatic Enterprise Self-Healing Baseline Seeding (Docker Zero-Manual-Step Guarantee)
+- **Problem:** When running `docker compose up -d --build` on an existing Docker setup, Docker does not re-run exited one-shot services (`auto-migrate`) if the database volume was previously created, causing standard reference data like Chart of Accounts (`CA-IN-01`) and the 18 standard G/L accounts to be missing without manual migration commands.
+- **Solution (Two-Tier Automatic Seeding):**
+  1. **Server Lifecycle Startup Hook (`src/instrumentation.ts`):**
+     - On Next.js node runtime startup, executes an asynchronous background hook that automatically verifies and seeds the standard industry baseline (`seedIndustryStandardBaseline()`) in non-blocking fashion.
+     - Automatically ensures `CA-IN-01`, standard tax codes, currencies, UoMs, movement types, document types, and account groups whenever the application boots in Docker or standalone mode.
+  2. **API-Level Self-Healing Fallback (`/api/chart-of-accounts` and `/api/gl-accounts`):**
+     - If queries to `fin_chart` or `fin_ledger_account` detect 0 records, the API routes immediately trigger `seedIndustryStandardBaseline()` on demand and return the seeded records in the same request.
+  3. **Zero Manual Migration Requirement:**
+     - Standard reference data now seeds completely automatically on `docker compose up` without requiring `docker compose run auto-migrate` or manual database intervention.
+- **Verification:**
+  - TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
+  - Pushed to remote repository on GitHub via PAT.

@@ -71,6 +71,25 @@ export async function GET(req: NextRequest) {
       coaRows = newRows.length > 0 ? newRows : legacyRows;
     }
 
+    // Enterprise Self-Healing: If 0 charts exist, auto-seed CA-IN-01 baseline on demand
+    if (coaRows.length === 0) {
+      try {
+        console.log('[API FCOA] 0 Chart of Accounts detected. Running auto-seed for standard baseline (CA-IN-01)...');
+        const { seedIndustryStandardBaseline } = await import('@/shared/kernel/db/standardSystemDefaults');
+        await seedIndustryStandardBaseline();
+        const refetch = await db.execute(sql`
+          SELECT id, code, name, description, created_at,
+            (SELECT COUNT(*) FROM fin_ledger_account WHERE chart_id = fin_chart.id) as gl_count
+          FROM fin_chart ORDER BY code
+        `);
+        if (refetch.rows.length > 0) {
+          coaRows = refetch.rows as any[];
+        }
+      } catch (seedErr: any) {
+        console.warn('[API FCOA] Auto-seed attempt warning:', seedErr.message);
+      }
+    }
+
     // Account groups – try both
     let groups: any[] = [];
     try {

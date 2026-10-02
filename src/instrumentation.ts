@@ -7,6 +7,19 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     console.log('[INSTRUMENTATION] Node.js runtime - checking enterprise mode');
 
+    // Auto-seed industry standard baseline (CA-IN-01, standard tax codes, currencies, uoms, doc types)
+    // Runs in the background on startup so standard enterprise reference data is always present automatically
+    setTimeout(async () => {
+      try {
+        console.log('[INSTRUMENTATION] Checking and ensuring standard reference baseline (CoA CA-IN-01, tax, currencies)...');
+        const { seedIndustryStandardBaseline } = await import('@/shared/kernel/db/standardSystemDefaults');
+        await seedIndustryStandardBaseline();
+        console.log('[INSTRUMENTATION] ✅ Industry standard baseline auto-seed completed successfully.');
+      } catch (err: any) {
+        console.warn('[INSTRUMENTATION] ⚠️ Standard baseline check warning (non-fatal):', err.message);
+      }
+    }, 1500);
+
     if (process.env.ENTERPRISE_MODE === 'true' || process.env.AUTO_START_JOB_WORKER === 'true' || process.env.MVP_NO_AUTH === 'false') {
       console.log('[INSTRUMENTATION] Enterprise mode detected - starting job worker in 5s');
       

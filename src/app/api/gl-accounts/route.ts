@@ -48,6 +48,23 @@ export async function GET(req: NextRequest) {
       const result = await db.execute(query);
       glRows = result.rows as any[];
 
+      // Enterprise Self-Healing: If 0 G/L accounts exist in system, auto-seed standard baseline (CA-IN-01 + 18 accounts)
+      if (glRows.length === 0 && (!search || search.trim() === '')) {
+        try {
+          const totalGlCheck = await db.execute(sql`SELECT COUNT(*) as c FROM fin_ledger_account`);
+          const totalCount = Number((totalGlCheck.rows[0] as any)?.c || 0);
+          if (totalCount === 0) {
+            console.log('[API FGLC] 0 G/L accounts detected in system. Auto-seeding standard baseline (CA-IN-01 + 18 accounts)...');
+            const { seedIndustryStandardBaseline } = await import('@/shared/kernel/db/standardSystemDefaults');
+            await seedIndustryStandardBaseline();
+            const refetched = await db.execute(query);
+            glRows = refetched.rows as any[];
+          }
+        } catch (glSeedErr: any) {
+          console.warn('[API FGLC] Auto-seed baseline attempt note:', glSeedErr.message);
+        }
+      }
+
       const coasRes = await db.execute(sql`SELECT id, code, name, description FROM fin_chart ORDER BY code`);
       coaRows = coasRes.rows as any[];
     } catch (newErr: any) {
