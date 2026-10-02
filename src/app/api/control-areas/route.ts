@@ -14,7 +14,7 @@ async function ensureControlAreaSchema() {
     CREATE TABLE IF NOT EXISTS org_mgmt_control_area (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       tenant_id uuid,
-      code varchar(20) NOT NULL UNIQUE,
+      code varchar(20) NOT NULL,
       name varchar(100) NOT NULL,
       assignment_control varchar(1) DEFAULT '2',
       currency_type varchar(10) DEFAULT '10',
@@ -35,6 +35,8 @@ async function ensureControlAreaSchema() {
   await db.execute(sql`ALTER TABLE org_mgmt_control_area ADD COLUMN IF NOT EXISTS fiscal_year_variant varchar(10) DEFAULT 'V3'`).catch(() => {});
   await db.execute(sql`ALTER TABLE org_mgmt_control_area ADD COLUMN IF NOT EXISTS cost_center_standard_hierarchy varchar(30)`).catch(() => {});
   await db.execute(sql`ALTER TABLE org_mgmt_control_area ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(() => {});
+  // Ensure a unique index exists on code so ON CONFLICT (code) or ON CONFLICT (tenant_id, code) works
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_org_control_area_code ON org_mgmt_control_area (code)`).catch(() => {});
 }
 
 export async function GET(req: NextRequest) {
@@ -122,28 +124,65 @@ export async function POST(req: NextRequest) {
     const fyv = fiscal_year_variant ? fiscal_year_variant.toUpperCase().trim() : 'V3';
     const stdHierarchy = cost_center_standard_hierarchy ? cost_center_standard_hierarchy.toUpperCase().trim() : null;
 
-    const res = await db.execute(sql`
-      INSERT INTO org_mgmt_control_area (
-        tenant_id, code, name, assignment_control, currency_type, currency_code,
-        chart_of_accounts_code, fiscal_year_variant, cost_center_standard_hierarchy,
-        description, is_active, updated_at
-      ) VALUES (
-        ${tenantId}, ${coCode}, ${name}, ${assignCtrl}, ${currType}, ${currCode},
-        ${coaCode}, ${fyv}, ${stdHierarchy},
-        ${description || null}, true, NOW()
-      )
-      ON CONFLICT (code) DO UPDATE SET 
-        name = ${name},
-        assignment_control = ${assignCtrl},
-        currency_type = ${currType},
-        currency_code = ${currCode},
-        chart_of_accounts_code = ${coaCode},
-        fiscal_year_variant = ${fyv},
-        cost_center_standard_hierarchy = ${stdHierarchy},
-        description = ${description || null},
-        updated_at = NOW()
-      RETURNING id, code, name, assignment_control, currency_type, currency_code, chart_of_accounts_code, fiscal_year_variant, cost_center_standard_hierarchy
+    // Check if record exists first to ensure compatibility whether unique constraint is on (code) or (tenant_id, code)
+    const existingCheck = await db.execute(sql`
+      SELECT id FROM org_mgmt_control_area 
+      WHERE UPPER(code) = ${coCode}
+      LIMIT 1
     `);
+
+    let res: any;
+    if (existingCheck.rows.length > 0) {
+      const existingId = (existingCheck.rows[0] as any).id;
+      res = await db.execute(sql`
+        UPDATE org_mgmt_control_area SET 
+          tenant_id = COALESCE(${tenantId}, tenant_id),
+          name = ${name},
+          assignment_control = ${assignCtrl},
+          currency_type = ${currType},
+          currency_code = ${currCode},
+          chart_of_accounts_code = ${coaCode},
+          fiscal_year_variant = ${fyv},
+          cost_center_standard_hierarchy = ${stdHierarchy},
+          description = ${description || null},
+          is_active = true,
+          updated_at = NOW()
+        WHERE id = ${existingId}
+        RETURNING id, code, name, assignment_control, currency_type, currency_code, chart_of_accounts_code, fiscal_year_variant, cost_center_standard_hierarchy
+      `);
+    } else {
+      try {
+        res = await db.execute(sql`
+          INSERT INTO org_mgmt_control_area (
+            tenant_id, code, name, assignment_control, currency_type, currency_code,
+            chart_of_accounts_code, fiscal_year_variant, cost_center_standard_hierarchy,
+            description, is_active, updated_at
+          ) VALUES (
+            ${tenantId}, ${coCode}, ${name}, ${assignCtrl}, ${currType}, ${currCode},
+            ${coaCode}, ${fyv}, ${stdHierarchy},
+            ${description || null}, true, NOW()
+          )
+          RETURNING id, code, name, assignment_control, currency_type, currency_code, chart_of_accounts_code, fiscal_year_variant, cost_center_standard_hierarchy
+        `);
+      } catch (insertErr: any) {
+        // Fallback in case of race condition / unique collision
+        res = await db.execute(sql`
+          UPDATE org_mgmt_control_area SET 
+            name = ${name},
+            assignment_control = ${assignCtrl},
+            currency_type = ${currType},
+            currency_code = ${currCode},
+            chart_of_accounts_code = ${coaCode},
+            fiscal_year_variant = ${fyv},
+            cost_center_standard_hierarchy = ${stdHierarchy},
+            description = ${description || null},
+            is_active = true,
+            updated_at = NOW()
+          WHERE UPPER(code) = ${coCode}
+          RETURNING id, code, name, assignment_control, currency_type, currency_code, chart_of_accounts_code, fiscal_year_variant, cost_center_standard_hierarchy
+        `);
+      }
+    }
 
     return NextResponse.json({
       success: true,

@@ -1024,3 +1024,16 @@ Once you confirm, I will:
 - **Verification:**
   - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Resolve PostgreSQL Unique Index Mismatch on `org_mgmt_control_area`
+- **Root Cause Analysis:**
+  - The PostgreSQL error `INSERT INTO org_mgmt_control_area ... ON CONFLICT (code) DO UPDATE ...` occurred because the existing table in PostgreSQL was defined with a composite unique constraint `UNIQUE (tenant_id, code)` (named `uq_org_control_area_tenant_code`) rather than a single-column unique constraint on `(code)` alone.
+  - In PostgreSQL, `ON CONFLICT (target)` requires a unique or exclusion constraint matching the exact specified target columns. When the target specifies `(code)` but the unique constraint is on `(tenant_id, code)`, Postgres aborts with `there is no unique or exclusion constraint matching the ON CONFLICT specification`.
+- **Architectural Solution:**
+  - In `src/app/api/control-areas/route.ts`:
+    1. Ensured index `uq_org_control_area_code` via `CREATE UNIQUE INDEX IF NOT EXISTS uq_org_control_area_code ON org_mgmt_control_area (code)`.
+    2. Replaced fragile `ON CONFLICT (code)` with a safe select-first upsert pattern: checks `SELECT id FROM org_mgmt_control_area WHERE UPPER(code) = ...`. If found, performs an `UPDATE WHERE id = ...`; otherwise executes `INSERT` with an inner fallback update.
+    3. Handles both legacy multi-tenant schemas and single-column unique constraints seamlessly without SQL constraint syntax mismatch.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.
