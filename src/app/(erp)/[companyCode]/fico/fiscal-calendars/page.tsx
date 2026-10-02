@@ -1,11 +1,12 @@
 "use client";
 import { SingleCodePage } from '@/shared/ui/single-code-page';
-export default function Page() {
+export default function Page({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
   return (
     <SingleCodePage
-      code="FFYC"
+      defaultMode={defaultMode}
+      code={codeOverride || "FFYC"}
       sapAlias="OB29"
-      title="Fiscal Calendar"
+      title={titleOverride || "Fiscal Calendar"}
       description="Define Fiscal Calendar – K4 April-March India, V3 Calendar Year Jan-Dec – FROM_DATE TO_DATE optional – variant is year-independent – K4 works for any year via START_MONTH=4 END_MONTH=3 – year_dependent, calendar_year, number_of_periods per guide – strict usage: calculates fiscal year/period from posting date – e.g., 2026-05-15 K4 → FY2026 P02"
       apiEndpoint="/api/fiscal-calendars"
       initialForm={{ code: '', name: '', from_date: '', to_date: '', start_month: '4', end_month: '3', year_shift: '0', year_dependent: 'false', calendar_year: 'false', number_of_periods: '12', description: '' }}

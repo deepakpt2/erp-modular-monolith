@@ -1096,3 +1096,17 @@ Once you confirm, I will:
 - **Verification:**
   - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Add Subroutes for Fiscal Calendar: Change, Display, and List
+- **Problem Analysis:**
+  - Navigating to `/[companyCode]/fico/fiscal-calendars/change?selected=K4` produced a 404 error because Next.js App Router only had `src/app/(erp)/[companyCode]/fico/fiscal-calendars/page.tsx` without sub-routes for `/change`, `/display`, or `/list`.
+- **Architectural Solution:**
+  - Updated `src/app/(erp)/[companyCode]/fico/fiscal-calendars/page.tsx` to accept props `{ defaultMode, codeOverride, titleOverride }`.
+  - Added dedicated Next.js page components:
+    - `src/app/(erp)/[companyCode]/fico/fiscal-calendars/change/page.tsx` (`defaultMode="change"`, `code="FFYE"`, `Change Fiscal Calendar Variant`).
+    - `src/app/(erp)/[companyCode]/fico/fiscal-calendars/display/page.tsx` (`defaultMode="display"`, `code="FFYV"`, `Display Fiscal Calendar Variant`).
+    - `src/app/(erp)/[companyCode]/fico/fiscal-calendars/list/page.tsx` (`defaultMode="list"`, `code="FFYL"`, `Fiscal Calendar Variants List`).
+  - Added corresponding function entries to `src/shared/lib/functions.ts` (`FFYE`, `FFYV`, `FFYL`).
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.
