@@ -1050,3 +1050,18 @@ Once you confirm, I will:
 - **Verification:**
   - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Align Purchasing Organization / Procurement Division (EPDC / OX08) to Pure Definition Architecture
+- **Requirement & Architectural Principle:**
+  - `OX08` (`EPDC` / Define Purchasing Organization / Procurement Division) is a **pure definition** transaction.
+  - A Purchasing Organization is defined with its own intrinsic properties (`PROCUREMENT_DIVISION_CODE` / `EKORG`, `PROCUREMENT_DIVISION_NAME` / `EKOTX`, `DESCRIPTION`, `TENANT_CODE`).
+  - `LEGAL_ENTITY_CODE` (Company Code) does **not** belong on the definition form:
+    1. A Purchasing Organization can be cross-company (assigned to no specific company code or multiple plants across company codes in cross-company procurement).
+    2. Company Code assignment is maintained strictly in dedicated transaction `OX01` (`Assign Purchasing Organization to Company Code` / `/mm/assignments/purchasing-org-company-code`).
+    3. Plant assignment is maintained strictly in dedicated transaction `OX17` (`Assign Purchasing Organization to Plant` / `/mm/assignments/purchasing-org-plant`).
+- **Implementation:**
+  - Removed `legal_entity_code` from `initialForm` and `fields` in `src/app/(erp)/[companyCode]/foundation/procurement-divisions/page.tsx`.
+  - Added direct links to `OX01` and `OX17` customizing transactions in the Related Customizing section.
+- **Verification:**
+  - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
+  - Pushed to GitHub repository `main`.
