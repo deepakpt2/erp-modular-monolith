@@ -1,7 +1,7 @@
 /**
  * Assignment Resolver & Diagnostic Engine
  * 
- * In standard SAP SPRO Enterprise Structure, assignments are maintained in dedicated
+ * In industry standard enterprise structure customizing, assignments are maintained in dedicated
  * assignment tables (OB62, OB37, OB38, OBBP, OBC5, OX19, OX18, OX10, OX17, OVX3, etc.).
  * 
  * This resolver reads assignments and produces clear, actionable business errors

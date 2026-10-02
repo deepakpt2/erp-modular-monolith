@@ -22,6 +22,33 @@ export async function GET(req: NextRequest) {
     let legalSafe = true;
 
     try {
+      // Ensure org_legal_entity table and required columns exist
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS org_legal_entity (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          tenant_id UUID,
+          code VARCHAR(20) NOT NULL UNIQUE,
+          name VARCHAR(150) NOT NULL,
+          currency_code VARCHAR(3) DEFAULT 'INR',
+          country_code VARCHAR(2) DEFAULT 'IN',
+          city VARCHAR(100),
+          chart_of_accounts_code VARCHAR(20) DEFAULT 'CA-IN-01',
+          fiscal_year_variant VARCHAR(20) DEFAULT 'K4',
+          field_status_variant VARCHAR(20) DEFAULT 'FFSV-1000',
+          posting_period_variant VARCHAR(20) DEFAULT 'PPV-1000',
+          credit_control_area VARCHAR(20) DEFAULT 'CRED-1000',
+          address TEXT,
+          street VARCHAR(200),
+          postal_code VARCHAR(20),
+          region VARCHAR(100),
+          tax_id VARCHAR(50),
+          gst_number VARCHAR(30),
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `);
+
       const result = await db.execute(sql`
         SELECT 
           le.id, le.code, le.name, le.currency_code, le.country_code as country, le.is_active,
@@ -38,64 +65,10 @@ export async function GET(req: NextRequest) {
       `);
       rows = result.rows as any[];
     } catch (newErr: any) {
-      console.warn('org_legal_entity not yet, fallback org_legal_entity:', newErr.message);
-      source = 'db-legacy';
-      table = 'org_legal_entity';
-      legalSafe = false;
-      try {
-        const result = await db.execute(sql`
-          SELECT 
-            cc.id, cc.code, cc.name, cc.currency_code, cc.city, cc.country, cc.coa_id,
-            cc.address, cc.street, cc.postal_code, cc.region, cc.tax_id, cc.gst_number, cc.pan, cc.cin, cc.phone, cc.email, cc.website, cc.legal_form, cc.registration_number, cc.is_active,
-            coa.code as coa_code, coa.name as coa_name,
-            c.code as client_code, c.name as client_name,
-            (SELECT COUNT(*) FROM org_facility WHERE company_code_id = cc.id) as plant_count,
-            (SELECT COUNT(*) FROM fin_cost_center WHERE company_code_id = cc.id) as cost_center_count,
-            (SELECT COUNT(*) FROM core_number_range WHERE company_code_id = cc.id) as number_range_count
-          FROM org_legal_entity cc
-          LEFT JOIN fin_chart coa ON cc.coa_id = coa.id
-          LEFT JOIN core_tenant c ON cc.client_id = c.id
-          ORDER BY cc.code
-        `);
-        rows = result.rows as any[];
-      } catch (legacyErr: any) {
-        console.warn('org_legal_entity also failed, trying fin_chart + core_tenant fallback:', legacyErr.message);
-        // Try minimal fallback – maybe only core_tenant exists
-        try {
-          const tRes = await db.execute(sql`SELECT id, code, name FROM core_tenant ORDER BY code`);
-          rows = tRes.rows.map((r: any) => ({
-            id: r.id,
-            code: 'LE-1000',
-            name: 'Main Legal Entity',
-            currency_code: 'INR',
-            coa_code: 'INT',
-            client_code: r.code,
-            client_name: r.name,
-            plant_count: 0,
-            cost_center_count: 0,
-            number_range_count: 0,
-            is_active: true,
-          }));
-          source = 'db-minimal';
-          table = 'core_tenant';
-          legalSafe = true;
-        } catch (e: any) {
-          console.error('All company code fallbacks failed:', e.message);
-          return NextResponse.json({
-            companyCodes: [],
-            legalEntities: [],
-            count: 0,
-            code: 'ELEC',
-            aliasCodes: ['O02', 'OX02', 'FIN-LE-CR'],
-            helperCode: 'ELEC',
-            table: 'org_legal_entity',
-            source: 'none',
-            legalSafe: true,
-            message: 'No legal entity / company code tables yet – fresh empty – ELEC legal-safe – run db:init-prod or db:create-admin – tables org_legal_entity (was org_legal_entity) code LE-1000',
-            error: e.message,
-          });
-        }
-      }
+      console.warn('org_legal_entity fetch note:', newErr.message);
+      // Clean fallback: return empty list if table or column issue occurs on fresh setup
+      rows = [];
+      source = 'db-empty-fallback';
     }
 
     let fiscalVariants: any[] = [];

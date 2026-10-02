@@ -1,7 +1,7 @@
 /**
- * Standard System Baseline Data (SAP Client 000 Standard Configuration)
+ * Standard System Baseline Data (Industry Standard Baseline Configuration)
  * 
- * In standard SAP (Client 000 baseline tables), these tables are pre-populated 
+ * In industry standard enterprise ERP (baseline configuration tables), these tables are pre-populated 
  * at the system level and do NOT belong to any specific company code. 
  * They are universal reference masters required for standard system operation:
  * 
@@ -23,10 +23,10 @@
 import { db } from './client';
 import { sql } from 'drizzle-orm';
 
-export async function seedSapStandardBaseline(): Promise<void> {
-  console.log('🏛️  Applying Standard Baseline Configuration (SAP Client 000 baseline)...');
+export async function seedIndustryStandardBaseline(): Promise<void> {
+  console.log('🏛️  Applying Standard Baseline Configuration (Industry Standard Baseline)...');
 
-  // 0. System Client / Tenant (SAP T000 / core_tenant)
+  // 0. System Client / Tenant (T000 / core_tenant)
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS core_tenant (
@@ -45,7 +45,7 @@ export async function seedSapStandardBaseline(): Promise<void> {
         ('1000', 'Enterprise Client 1000', 'Default production enterprise client 1000', true),
         ('100', 'Standard Client 100', 'Standard operating client 100', true),
         ('TEN-100', 'Master Tenant 100', 'Master root tenant TEN-100', true),
-        ('000', 'SAP Reference Client 000', 'Golden baseline system client 000', true)
+        ('000', 'Standard Reference Client 000', 'Golden baseline system client 000', true)
       ON CONFLICT (code) DO NOTHING
     `);
     console.log('  ✅ Standard System Tenants ensured (T000: 1000, 100, TEN-100, 000)');

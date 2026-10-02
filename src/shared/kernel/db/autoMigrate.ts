@@ -4,7 +4,7 @@
  * Responsibilities:
  * 1. Checks DB connection.
  * 2. Migrates schemas/types safely via Drizzle and raw SQL if necessary.
- * 3. Pre-populates universal SAP Client 000 reference standards:
+ * 3. Pre-populates universal baseline reference standards:
  *    - Currencies (TCURC)
  *    - Units of Measure (T006)
  *    - Fiscal Year Variants (T009)
@@ -22,7 +22,7 @@
 import { db } from './client';
 import { sql } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
-import { seedSapStandardBaseline } from './sapStandardDefaults';
+import { seedIndustryStandardBaseline } from './standardSystemDefaults';
 
 async function waitForDb(retries = 30) {
   for (let i = 0; i < retries; i++) {
@@ -98,7 +98,7 @@ async function ensureAdmin() {
 }
 
 async function runAutoMigrate() {
-  console.log('🚀 Auto Migrate starting (schema, SAP client 000 baseline & admin only)...');
+  console.log('🚀 Auto Migrate starting (schema, industry standard baseline & admin only)...');
   console.log(`   AUTO_MIGRATE=${process.env.AUTO_MIGRATE}`);
   console.log(`   ADMIN_EMAIL=${process.env.ADMIN_EMAIL || 'admin@er.deepakpt.com'}`);
 
@@ -137,9 +137,9 @@ async function runAutoMigrate() {
     console.log('✅ Core tables exist, skipping initial push.');
   }
 
-  // Pre-populate standard SAP system-level client 000 baseline reference tables
+  // Pre-populate standard industry system-level baseline reference tables
   try {
-    await seedSapStandardBaseline();
+    await seedIndustryStandardBaseline();
   } catch (err: any) {
     console.warn('⚠️ Standard baseline seeding warning (non-fatal):', err.message);
   }
@@ -148,7 +148,7 @@ async function runAutoMigrate() {
   await ensureAdmin();
 
   console.log('');
-  console.log('✅ Auto Migrate completed: clean schema & SAP system baseline ready.');
+  console.log('✅ Auto Migrate completed: clean schema & system baseline ready.');
   console.log(`   Admin Login: ${process.env.ADMIN_EMAIL || 'admin@er.deepakpt.com'}`);
   console.log('');
 }
