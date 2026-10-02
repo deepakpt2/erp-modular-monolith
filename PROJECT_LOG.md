@@ -1082,3 +1082,17 @@ Once you confirm, I will:
 - **Verification:**
   - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Portal Rendering for Autocomplete Suggestions Dropdown
+- **Problem Analysis:**
+  - In customizing tables (such as `SapAssignmentTable` for Assign Company Code to Controlling Area `OX19`), table cells are enclosed inside parent containers with `overflow-x-auto` / `overflow-hidden`.
+  - When the autocomplete suggestions dropdown opened (`position: absolute; z-index: 50`), it was clipped by the table wrapper boundaries, hiding the suggestion items underneath table rows and making selections difficult.
+- **Architectural Solution:**
+  - Modernized `DbAutocomplete` (`src/shared/ui/db-autocomplete.tsx`):
+    1. Uses `createPortal(dropdownMenu, document.body)` so the dropdown menu escapes any parent clipping container (`overflow-hidden` / `overflow-x-auto`).
+    2. Calculates coordinates dynamically via `getBoundingClientRect()` against the input field.
+    3. Added scroll and window resize listeners so the dropdown floats cleanly right below the input with a high `z-index: 99999`.
+    4. Ensured proper click-outside handlers considering both the wrapper and the portaled dropdown element.
+- **Verification:**
+  - Verified TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
+  - Pushed to GitHub repository `main`.
