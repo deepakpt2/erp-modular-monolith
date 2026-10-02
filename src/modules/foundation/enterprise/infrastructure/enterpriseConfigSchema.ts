@@ -36,8 +36,11 @@ export const entFiscalYearPeriod = pgTable('fin_fiscal_calendar_period', {
 // Posting Period Variant OBBO
 export const entPostingPeriodVariant = pgTable('fin_posting_calendar', {
   id: uuid('id').primaryKey().defaultRandom(),
-  code: varchar('code', { length: 10 }).notNull().unique(), // KS01, 1000
+  tenantId: uuid('tenant_id'),
+  code: varchar('code', { length: 20 }).notNull().unique(), // KS01, 1000
   name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

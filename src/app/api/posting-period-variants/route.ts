@@ -136,12 +136,36 @@ export async function POST(req: NextRequest) {
     if (!code) return NextResponse.json({ error: 'code required' }, { status: 400 });
 
     try {
-      const res = await db.execute(sql`
-        INSERT INTO fin_posting_calendar (code, name)
-        VALUES (${code.toUpperCase()}, ${name || code})
-        ON CONFLICT (code) DO UPDATE SET name = ${name || code}, updated_at = NOW()
-        RETURNING id, code, name
-      `);
+      // Ensure unique index on code exists
+      await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_posting_calendar_code ON fin_posting_calendar (code)`).catch(()=>{});
+      
+      const vCode = code.toUpperCase().trim();
+      const vName = name || vCode;
+      
+      const checkExists = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ${vCode} LIMIT 1`);
+      let res: any;
+      if (checkExists.rows.length > 0) {
+        const existingId = (checkExists.rows[0] as any).id;
+        res = await db.execute(sql`
+          UPDATE fin_posting_calendar SET name = ${vName}, updated_at = NOW()
+          WHERE id = ${existingId}
+          RETURNING id, code, name
+        `);
+      } else {
+        try {
+          res = await db.execute(sql`
+            INSERT INTO fin_posting_calendar (code, name)
+            VALUES (${vCode}, ${vName})
+            RETURNING id, code, name
+          `);
+        } catch (insErr: any) {
+          res = await db.execute(sql`
+            UPDATE fin_posting_calendar SET name = ${vName}, updated_at = NOW()
+            WHERE UPPER(code) = ${vCode}
+            RETURNING id, code, name
+          `);
+        }
+      }
       const calId = (res.rows[0] as any).id;
 
       if (periods && Array.isArray(periods)) {
@@ -195,7 +219,15 @@ export async function PUT(req: NextRequest) {
       if (calRes.rows.length === 0) {
         // Auto-create variant if not exists for FPPE (legacy OB52)
         try {
-          const newVar = await db.execute(sql`INSERT INTO fin_posting_calendar (code, name) VALUES (${variant_code.toUpperCase()}, ${variant_code.toUpperCase()}) ON CONFLICT (code) DO UPDATE SET name = ${variant_code.toUpperCase()} RETURNING id`);
+          let newVar: any;
+          const varCheck = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ${variant_code.toUpperCase()} LIMIT 1`);
+          if (varCheck.rows.length > 0) {
+            newVar = varCheck;
+          } else {
+            newVar = await db.execute(sql`INSERT INTO fin_posting_calendar (code, name) VALUES (${variant_code.toUpperCase()}, ${variant_code.toUpperCase()}) RETURNING id`).catch(async () => {
+              return await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ${variant_code.toUpperCase()} LIMIT 1`);
+            });
+          }
           const calIdNew = (newVar.rows[0] as any).id;
           await db.execute(sql`
             INSERT INTO fin_posting_calendar_period (posting_calendar_id, from_period, to_period, account_type, is_open, from_year, to_year)

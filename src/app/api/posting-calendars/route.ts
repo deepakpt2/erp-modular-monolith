@@ -96,12 +96,41 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const res = await db.execute(sql`
-        INSERT INTO fin_posting_calendar (tenant_id, code, name, description)
-        VALUES (${tenantId}, ${code.toUpperCase()}, ${name}, ${description || null})
-        ON CONFLICT (tenant_id, code) DO UPDATE SET name = ${name}, description = ${description || null}
-        RETURNING id, code, name
-      `);
+      await db.execute(sql`ALTER TABLE fin_posting_calendar ALTER COLUMN tenant_id DROP NOT NULL`).catch(()=>{});
+      await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_posting_calendar_code ON fin_posting_calendar (code)`).catch(()=>{});
+
+      const pCode = code.toUpperCase().trim();
+      const checkExists = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ${pCode} LIMIT 1`);
+      let res: any;
+      if (checkExists.rows.length > 0) {
+        const existingId = (checkExists.rows[0] as any).id;
+        res = await db.execute(sql`
+          UPDATE fin_posting_calendar SET 
+            tenant_id = COALESCE(${tenantId}, tenant_id),
+            name = ${name},
+            description = ${description || null},
+            updated_at = NOW()
+          WHERE id = ${existingId}
+          RETURNING id, code, name
+        `);
+      } else {
+        try {
+          res = await db.execute(sql`
+            INSERT INTO fin_posting_calendar (tenant_id, code, name, description)
+            VALUES (${tenantId}, ${pCode}, ${name}, ${description || null})
+            RETURNING id, code, name
+          `);
+        } catch (insErr: any) {
+          res = await db.execute(sql`
+            UPDATE fin_posting_calendar SET 
+              name = ${name},
+              description = ${description || null},
+              updated_at = NOW()
+            WHERE UPPER(code) = ${pCode}
+            RETURNING id, code, name
+          `);
+        }
+      }
       const calId = (res.rows[0] as any).id;
 
       if (periods && Array.isArray(periods)) {

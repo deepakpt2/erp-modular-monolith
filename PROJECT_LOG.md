@@ -1144,3 +1144,17 @@ Once you confirm, I will:
 - **Verification:**
   - TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Resolve PostgreSQL Unique Index Constraint Mismatch on `fin_posting_calendar`
+- **Root Cause Analysis:**
+  - The PostgreSQL error `INSERT INTO fin_posting_calendar (code, name) VALUES (...) ON CONFLICT (code) DO UPDATE ...` occurred because the existing table in PostgreSQL had a composite unique index on `(tenant_id, code)` (named `uq_fin_posting_calendar_tenant_code`) rather than a single-column unique index on `(code)` alone.
+  - When raw SQL executes `ON CONFLICT (code)`, PostgreSQL searches for a matching unique constraint on `(code)`. Failing to find it, the query terminates with error: `there is no unique or exclusion constraint matching the ON CONFLICT specification`.
+- **Architectural Solution:**
+  - In `src/app/api/posting-period-variants/route.ts` and `src/app/api/posting-calendars/route.ts`:
+    1. Ensured index `uq_fin_posting_calendar_code` via `CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_posting_calendar_code ON fin_posting_calendar (code)`.
+    2. Relaxed tenant constraint via `ALTER TABLE fin_posting_calendar ALTER COLUMN tenant_id DROP NOT NULL`.
+    3. Replaced fragile `ON CONFLICT (code)` with a safe select-first upsert pattern: checks `SELECT id FROM fin_posting_calendar WHERE UPPER(code) = ...`. If found, performs an `UPDATE WHERE id = ...`; otherwise executes `INSERT` with an inner fallback update.
+    4. Synchronized Drizzle schema in `orgStructureSchema.ts` and `enterpriseConfigSchema.ts`.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.

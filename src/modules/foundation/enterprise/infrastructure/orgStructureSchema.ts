@@ -436,7 +436,7 @@ export const finFiscalCalendar = pgTable('fin_fiscal_calendar', {
 // Posting Calendar – renamed from fin_posting_calendar (OBBO)
 export const finPostingCalendar = pgTable('fin_posting_calendar', {
   id: uuid('id').primaryKey().defaultRandom(),
-  tenantId: uuid('tenant_id').notNull().references(() => coreTenant.id),
+  tenantId: uuid('tenant_id').references(() => coreTenant.id),
   code: varchar('code', { length: 20 }).notNull(),
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
