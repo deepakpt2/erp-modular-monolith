@@ -1313,3 +1313,27 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) clean with 0 errors.
   - Zero vendor keywords in source code diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Implement Dedicated Retained Earnings Account Screen (`FREC` / `OB53`)
+- **Problem Analysis:**
+  - Searching for `FREC` or `OB53` ("Define Retained Earnings Account") redirected to `/1000/fico/gl-accounts` (`FGLC`), as no dedicated page existed for defining the retained earnings equity account.
+- **Architectural Solution:**
+  1. **New Page (`src/app/(erp)/[companyCode]/fico/retained-earnings/page.tsx`):**
+     - Built dedicated `FREC` (`OB53`) screen:
+       - `CHART_OF_ACCOUNTS`: Autocomplete linked to `/api/chart-of-accounts` (`FCOA` / `OB13`).
+       - `PL_STATEMENT_ACCOUNT_TYPE`: Standard P&L Statement Account Type (default `X`).
+       - `RETAINED_EARNINGS_ACCOUNT`: Autocomplete linked to `/api/gl-accounts` (`FS00` / `FGLC`).
+       - `DESCRIPTION`: Accounting notes and equity balance carry-forward details.
+       - "Submit" button and "Create with Reference / Copy As" capability.
+  2. **API & Persistence (`src/app/api/retained-earnings/route.ts`):**
+     - Added dynamic table migration ensuring `pl_account_type` column and composite unique index `uq_fin_retained_chart_pl_account`.
+     - Resilient select-then-upsert mechanism by Chart ID and P&L Account Type.
+     - Added aliases `OB53`, `FRGC`, `FIN-RE-CR`.
+  3. **Navigation & Command Search:**
+     - Updated `src/shared/lib/functions.ts`: Pointed `FREC` route to `/[companyCode]/fico/retained-earnings`.
+     - Updated `src/app/(erp)/[companyCode]/navigator/page.tsx`: Added `FREC` to Financials menu.
+     - Updated `src/shared/kernel/auth/pagePermissions.ts`: Added permission record for `FREC`.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.

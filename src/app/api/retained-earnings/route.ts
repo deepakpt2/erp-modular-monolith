@@ -10,9 +10,33 @@ import { sql } from 'drizzle-orm';
  * Fallback to legacy fi_retained_earnings
  */
 
+async function ensureRetainedEarningsSchema() {
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS fin_retained_earnings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        chart_id UUID NOT NULL REFERENCES fin_chart(id),
+        coa_id UUID,
+        pl_account_type VARCHAR(10) DEFAULT 'X',
+        account_number VARCHAR(30) NOT NULL,
+        description VARCHAR(200),
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `).catch(() => {});
+    await db.execute(sql`ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS pl_account_type VARCHAR(10) DEFAULT 'X'`).catch(() => {});
+    await db.execute(sql`ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS description VARCHAR(200)`).catch(() => {});
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_retained_chart_pl_account ON fin_retained_earnings (chart_id, pl_account_type)`).catch(() => {});
+  } catch (e: any) {
+    console.warn('ensureRetainedEarningsSchema error:', e.message);
+  }
+}
+
 export async function GET(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+
+  await ensureRetainedEarningsSchema();
 
   try {
     let rows: any[] = [];
@@ -22,7 +46,18 @@ export async function GET(req: NextRequest) {
 
     try {
       const res = await db.execute(sql`
-        SELECT re.*, c.code as chart_code, c.name as chart_name, la.account_number, la.name as gl_name
+        SELECT 
+          re.id,
+          re.chart_id,
+          c.code as chart_code,
+          c.name as chart_name,
+          COALESCE(re.pl_account_type, 'X') as pl_account_type,
+          re.account_number,
+          la.name as gl_name,
+          COALESCE(re.description, 'Retained Earnings') as description,
+          re.created_at,
+          c.code || ' [' || COALESCE(re.pl_account_type, 'X') || ']' as code,
+          COALESCE(re.account_number, '') || ' – ' || COALESCE(la.name, 'Retained Earnings') as name
         FROM fin_retained_earnings re
         JOIN fin_chart c ON re.chart_id = c.id
         LEFT JOIN fin_ledger_account la ON la.account_number = re.account_number AND la.chart_id = re.chart_id
@@ -76,38 +111,57 @@ export async function POST(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
 
+  await ensureRetainedEarningsSchema();
   try {
     const body = await req.json();
-    const { chart_code, coa_code, account_number, description } = body;
+    const { chart_code, coa_code, account_number, pl_account_type = 'X', description } = body;
     const finalChartCode = chart_code || coa_code;
     if (!finalChartCode || !account_number) return NextResponse.json({ error: 'chart_code/coa_code and account_number required' }, { status: 400 });
 
-    try {
-      const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
-      if (chartRes.rows.length === 0) return NextResponse.json({ error: `Chart ${finalChartCode} not found in fin_chart` }, { status: 404 });
-      const chartId = (chartRes.rows[0] as any).id;
+    const cCode = finalChartCode.toUpperCase().trim();
+    const accNum = account_number.toString().trim();
+    const plType = (pl_account_type || 'X').toString().toUpperCase().trim();
 
-      const res = await db.execute(sql`
-        INSERT INTO fin_retained_earnings (chart_id, coa_id, account_number, description)
-        VALUES (${chartId}, ${chartId}, ${account_number}, ${description || null})
-        ON CONFLICT (chart_id, account_number) DO UPDATE SET description = ${description || null}
-        RETURNING id, account_number
-      `);
-      return NextResponse.json({ success: true, retainedEarnings: res.rows[0], code: 'FRGC', message: `Retained earnings ${account_number} for chart ${finalChartCode.toUpperCase()} created – FRGC legal-safe`, legalSafe: true });
-    } catch (newErr: any) {
-      console.warn('fin_retained_earnings insert failed fallback fi_retained_earnings:', newErr.message);
-      const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalChartCode.toUpperCase()} LIMIT 1`);
-      if (chartRes.rows.length === 0) return NextResponse.json({ error: `Chart ${finalChartCode} not found` }, { status: 404 });
-      const chartId = (chartRes.rows[0] as any).id;
+    const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE UPPER(code) = ${cCode} LIMIT 1`);
+    if (chartRes.rows.length === 0) return NextResponse.json({ error: `Chart ${finalChartCode} not found in fin_chart` }, { status: 404 });
+    const chartId = (chartRes.rows[0] as any).id;
 
-      const res = await db.execute(sql`
-        INSERT INTO fi_retained_earnings (coa_id, account_number)
-        VALUES (${chartId}, ${account_number})
-        ON CONFLICT (coa_id, account_number) DO NOTHING
-        RETURNING id, account_number
+    // Check if mapping for this chart and pl_account_type already exists
+    const checkExisting = await db.execute(sql`
+      SELECT id FROM fin_retained_earnings 
+      WHERE chart_id = ${chartId} AND UPPER(COALESCE(pl_account_type, 'X')) = ${plType}
+      LIMIT 1
+    `);
+
+    let resRow: any;
+    if (checkExisting.rows.length > 0) {
+      const existId = (checkExisting.rows[0] as any).id;
+      const upd = await db.execute(sql`
+        UPDATE fin_retained_earnings SET
+          account_number = ${accNum},
+          description = ${description || null}
+        WHERE id = ${existId}
+        RETURNING *
       `);
-      return NextResponse.json({ success: true, retainedEarnings: res.rows[0], code: 'FRGC', message: `Retained earnings ${account_number} for chart ${finalChartCode.toUpperCase()} created – OB53 legacy (migrating to FRGC)`, legalSafe: false });
+      resRow = upd.rows[0];
+    } else {
+      const ins = await db.execute(sql`
+        INSERT INTO fin_retained_earnings (chart_id, coa_id, pl_account_type, account_number, description)
+        VALUES (${chartId}, ${chartId}, ${plType}, ${accNum}, ${description || null})
+        RETURNING *
+      `);
+      resRow = ins.rows[0];
     }
+
+    return NextResponse.json({
+      success: true,
+      retainedEarnings: resRow,
+      data: resRow,
+      code: 'FREC',
+      aliasCodes: ['OB53', 'FRGC'],
+      message: `Retained earnings account ${accNum} (Type ${plType}) for Chart ${cCode} saved successfully.`,
+      legalSafe: true
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
