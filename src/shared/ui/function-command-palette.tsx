@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { FUNCTIONS, MODULE_CLASSIFICATION, searchFunctions } from '@/shared/lib/functions';
 
 // Env flag to show/hide helper code badge – code is just a helper to identify function, not the destination
@@ -12,6 +12,14 @@ export function FunctionCommandPalette() {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Automatically reset search query and close palette on route transitions
+  useEffect(() => {
+    setOpen(false);
+    setQuery('');
+    setSelectedIndex(0);
+  }, [pathname]);
 
   const results = useMemo(() => {
     if (!query) return FUNCTIONS.slice(0, 8);
@@ -44,6 +52,7 @@ export function FunctionCommandPalette() {
   const handleSelect = (route: string) => {
     setOpen(false);
     setQuery('');
+    setSelectedIndex(0);
     router.push(route);
   };
 

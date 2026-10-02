@@ -1132,3 +1132,15 @@ Once you confirm, I will:
 - **Verification:**
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Clear Command Search State and Auto-Dismiss on Navigation
+- **Problem Analysis:**
+  - When a user searched for a function in the Command Palette (`Ctrl+K` or `/`) and clicked a result, the palette closed, but the search query and previous result state lingered in component memory. When visiting the next page or reopening search, the previous query was still populated.
+- **Architectural Solution:**
+  - Modernized `src/shared/ui/function-command-palette.tsx`:
+    1. Added `usePathname()` listener from `next/navigation` to observe route transitions.
+    2. Hooked route change lifecycle to reset `query = ''`, `selectedIndex = 0`, and ensure `open = false`.
+    3. Updated `handleSelect()` to synchronously clear `query` and reset the cursor before pushing the new route.
+- **Verification:**
+  - TypeScript compilation clean (`tsc --noEmit` passed with 0 errors).
+  - Pushed to GitHub repository `main`.
