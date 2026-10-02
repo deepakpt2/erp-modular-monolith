@@ -26,14 +26,14 @@ export default function Page() {
           label: "CONTROLLING_AREA_CODE",
           required: true,
           placeholder: "",
-          description: "4-character Controlling Area code (e.g. 1000, CA01, AM01) – TKA01-KOKRS"
+          description: "4-character Controlling Area code (e.g. 1000, CA01, AM01)"
         },
         {
           key: "name",
           label: "CONTROLLING_AREA_NAME",
           required: true,
           placeholder: "",
-          description: "Name of the Controlling Area – TKA01-BEZEI"
+          description: "Name of the Controlling Area"
         },
         {
           key: "assignment_control",
@@ -45,7 +45,7 @@ export default function Page() {
             { value: "2", label: "2: Cross-Company-Code Cost Accounting (1:N)" }
           ],
           placeholder: "",
-          description: "Assignment Control: Determines whether multiple company codes can be assigned to this controlling area (TKA01-KNTXT)"
+          description: "Assignment Control: Determines whether multiple company codes can be assigned to this controlling area"
         },
         {
           key: "currency_type",
@@ -71,7 +71,7 @@ export default function Page() {
           placeholder: "",
           createUrl: "/fico/currencies",
           createCode: "FCYC",
-          description: "Controlling Area Currency (e.g. INR, USD, EUR, KWD) – TKA01-WAERS"
+          description: "Controlling Area Currency (e.g. INR, USD, EUR, KWD)"
         },
         {
           key: "chart_of_accounts_code",
@@ -83,7 +83,7 @@ export default function Page() {
           placeholder: "",
           createUrl: "/fico/chart-of-accounts",
           createCode: "FCOA",
-          description: "Operative Chart of Accounts for cost elements (e.g. CA-IN-01) – TKA01-KTOPL"
+          description: "Operative Chart of Accounts for cost elements (e.g. CA-IN-01)"
         },
         {
           key: "fiscal_year_variant",
@@ -96,14 +96,14 @@ export default function Page() {
           placeholder: "",
           createUrl: "/fico/fiscal-calendars",
           createCode: "FFYC",
-          description: "Fiscal Year Variant for Management Accounting (e.g. V3, K4, V6, V9) – TKA01-PERIV"
+          description: "Fiscal Year Variant for Management Accounting (e.g. V3, K4, V6, V9)"
         },
         {
           key: "cost_center_standard_hierarchy",
           label: "STANDARD_HIERARCHY",
           required: true,
           placeholder: "",
-          description: "Cost Center Standard Hierarchy Top Node (e.g. AM01, HIER01, H1000) – TKA01-KHINR"
+          description: "Cost Center Standard Hierarchy Top Node (e.g. AM01, HIER01, H1000)"
         },
         {
           key: "description",

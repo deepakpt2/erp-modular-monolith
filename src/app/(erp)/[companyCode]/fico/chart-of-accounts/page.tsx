@@ -9,7 +9,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
       code={codeOverride || "FCOA"}
       sapAlias="OB13"
       title={titleOverride || "Chart of Accounts"}
-      description="Standard Industry Customizing Table (T004): Defines the organizational framework for the General Ledger. Controls the length of G/L account numbers, maintenance language, consolidation group chart of accounts, controlling integration, and posting block status."
+      description="Industry Standard Configuration: Defines the organizational framework for the General Ledger. Controls the length of G/L account numbers, maintenance language, consolidation group chart of accounts, controlling integration, and posting block status."
       apiEndpoint="/api/chart-of-accounts"
       referenceConfig={{
         keyField: 'code',
@@ -37,14 +37,14 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
           label: "CHART_OF_ACCOUNTS",
           required: true,
           placeholder: "e.g. CA01, 1000, CA-IN-01",
-          description: "4-character Chart of Accounts key (T004-KTOPL) – uniquely identifies the chart of accounts"
+          description: "4-character Chart of Accounts key – uniquely identifies the chart of accounts"
         },
         {
           key: "name",
           label: "CHART_OF_ACCOUNTS_NAME",
           required: true,
           placeholder: "e.g. Standard Operational Chart of Accounts",
-          description: "Chart of Accounts description/name (T004T-KTPLT)"
+          description: "Chart of Accounts description/name"
         },
         {
           key: "language",
@@ -59,14 +59,14 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
             "JA (Japanese)",
             "HI (Hindi)"
           ],
-          description: "Maintenance language (T004-SPRAS) – determines the primary language for account descriptions"
+          description: "Maintenance language – determines the primary language for account descriptions"
         },
         {
           key: "gl_account_length",
           label: "GL_ACCOUNT_NUMBER_LENGTH",
           required: true,
           placeholder: "6",
-          description: "Length of G/L account numbers (T004-SAKNR) – valid range 1 to 10 digits (typically 6 in standard templates)"
+          description: "Length of G/L account numbers – valid range 1 to 10 digits (typically 6 in standard templates)"
         },
         {
           key: "controlling_integration",
@@ -77,7 +77,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
             "MANUAL (Manual creation of cost elements)",
             "AUTOMATIC (Automatic creation of cost elements)"
           ],
-          description: "Integration with Controlling (T004-INTEG): Type 1 = Manual cost element creation, Type 2 = Automatic creation of primary/secondary cost elements"
+          description: "Integration with Controlling: Type 1 = Manual cost element creation, Type 2 = Automatic creation of primary/secondary cost elements"
         },
         {
           key: "group_chart_of_accounts",
@@ -87,7 +87,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
           dataKey: "chartOfAccounts",
           codeField: "code",
           placeholder: "e.g. CONS, GRP01 (Optional)",
-          description: "Group Chart of Accounts (T004-KONSZ) – used for consolidation reporting across multi-GAAP subsidiaries"
+          description: "Group Chart of Accounts – used for consolidation reporting across multi-GAAP subsidiaries"
         },
         {
           key: "is_blocked",
@@ -95,7 +95,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
           required: true,
           type: "select",
           options: ["false", "true"],
-          description: "Chart of Accounts Blocked (T004-XSPER): If set to true, accounts in this chart cannot be created or maintained"
+          description: "Chart of Accounts Blocked: If set to true, accounts in this chart cannot be created or maintained"
         },
         {
           key: "copy_from_coa",

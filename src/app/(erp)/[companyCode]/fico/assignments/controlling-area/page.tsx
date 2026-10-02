@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OX19"
       sapAlias="FCCA"
       title="Assign Company Code to Controlling Area"
-      description="SAP Customizing Table (V_001_D): Connects legal entities to controlling areas for management accounting, cost center accounting, and internal orders."
+      description="Industry Standard Customizing: Connects legal entities to controlling areas for management accounting, cost center accounting, and internal orders."
       apiEndpoint="/api/assignments/controlling-area"
       companyCode={companyCode}
       primaryKeys={["company_code"]}

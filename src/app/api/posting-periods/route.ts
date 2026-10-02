@@ -4,17 +4,17 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * OB52 / FPPE - Open and Close Posting Periods (Table T001B / fin_posting_calendar_period)
+ * OB52 / FPPE - Open and Close Posting Periods (fin_posting_calendar_period)
  * Industry Standard structure:
- * - Variant (T001B-MANDT / variant_code)
- * - Account Type (T001B-KOART: +, A, D, K, M, S, V)
- * - From Account (T001B-VONAK)
- * - To Account (T001B-BISAK)
- * - Normal Period 1: From Period (T001B-FRPE1), From Year (T001B-FRYE1)
- * - Normal Period 1: To Period (T001B-TOPE1), To Year (T001B-TOYE1)
- * - Special Period 2: From Period 2 (T001B-FRPE2), From Year 2 (T001B-FRYE2)
- * - Special Period 2: To Period 2 (T001B-TOPE2), To Year 2 (T001B-TOYE2)
- * - Authorization Group (T001B-BRGRU)
+ * - Variant 
+ * - Account Type 
+ * - From Account
+ * - To Account
+ * - Normal Period 1: From Period, From Year
+ * - Normal Period 1: To Period, To Year
+ * - Special Period 2: From Period 2, From Year 2
+ * - Special Period 2: To Period 2, To Year 2
+ * - Authorization Group
  * - Is Open flag (is_open)
  */
 

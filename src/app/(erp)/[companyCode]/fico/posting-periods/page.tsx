@@ -8,7 +8,7 @@ export default function Page() {
       code="FPPE"
       sapAlias="OB52"
       title="Posting Period Control – Open and Close Posting Periods"
-      description="Industry Standard Customizing Table (T001B): Controls open and closed posting periods for each variant across account types (+, A, D, K, M, S, V) for Period 1 (Normal 1-12) and Period 2 (Special 13-16)."
+      description="Industry Standard Configuration: Controls open and closed posting periods for each variant across account types (+, A, D, K, M, S, V) for Period 1 (Normal 1-12) and Period 2 (Special 13-16)."
       apiEndpoint="/api/posting-periods"
       initialForm={{
         variant_code: '',
@@ -39,7 +39,7 @@ export default function Page() {
           placeholder: "e.g. 1000, KS01, AM01",
           createUrl: "/fico/posting-period-variants",
           createCode: "OBBO",
-          description: "Posting Period Variant code (T001B-MANDT / OBBO / FPPC)"
+          description: "Posting Period Variant code "
         },
         {
           key: "account_type",
@@ -55,77 +55,77 @@ export default function Page() {
             "S (G/L Accounts)",
             "V (Contract Accounts)"
           ],
-          description: "Account Type (T001B-KOART): + must be maintained first for all accounts, followed by specific subledgers"
+          description: "Account Type: + must be maintained first for all accounts, followed by specific subledgers"
         },
         {
           key: "from_account",
           label: "FROM_ACCOUNT",
           placeholder: "e.g. 100000 (leave blank for all accounts)",
-          description: "From G/L Account or Subledger range (T001B-VONAK) – leave blank to include starting accounts"
+          description: "From G/L Account or Subledger range – leave blank to include starting accounts"
         },
         {
           key: "to_account",
           label: "TO_ACCOUNT",
           placeholder: "e.g. 999999 (leave blank for all accounts)",
-          description: "To G/L Account or Subledger range (T001B-BISAK) – leave blank to include all ending accounts"
+          description: "To G/L Account or Subledger range – leave blank to include all ending accounts"
         },
         {
           key: "from_period",
           label: "PERIOD_1_FROM_PERIOD",
           required: true,
           placeholder: "1",
-          description: "Interval 1: Normal posting start period (T001B-FRPE1, usually 1)"
+          description: "Interval 1: Normal posting start period "
         },
         {
           key: "from_year",
           label: "PERIOD_1_FROM_YEAR",
           required: true,
           placeholder: "2026",
-          description: "Interval 1: Normal posting start fiscal year (T001B-FRYE1)"
+          description: "Interval 1: Normal posting start fiscal year"
         },
         {
           key: "to_period",
           label: "PERIOD_1_TO_PERIOD",
           required: true,
           placeholder: "12",
-          description: "Interval 1: Normal posting end period (T001B-TOPE1, usually 12)"
+          description: "Interval 1: Normal posting end period "
         },
         {
           key: "to_year",
           label: "PERIOD_1_TO_YEAR",
           required: true,
           placeholder: "2026",
-          description: "Interval 1: Normal posting end fiscal year (T001B-TOYE1)"
+          description: "Interval 1: Normal posting end fiscal year"
         },
         {
           key: "from_period2",
           label: "PERIOD_2_SPECIAL_FROM_PERIOD",
           placeholder: "13",
-          description: "Interval 2: Special closing start period (T001B-FRPE2, e.g. 13 for year-end audit adjustments)"
+          description: "Interval 2: Special closing start period "
         },
         {
           key: "from_year2",
           label: "PERIOD_2_SPECIAL_FROM_YEAR",
           placeholder: "2026",
-          description: "Interval 2: Special closing start fiscal year (T001B-FRYE2)"
+          description: "Interval 2: Special closing start fiscal year"
         },
         {
           key: "to_period2",
           label: "PERIOD_2_SPECIAL_TO_PERIOD",
           placeholder: "16",
-          description: "Interval 2: Special closing end period (T001B-TOPE2, e.g. 16 for year-end audit adjustments)"
+          description: "Interval 2: Special closing end period "
         },
         {
           key: "to_year2",
           label: "PERIOD_2_SPECIAL_TO_YEAR",
           placeholder: "2026",
-          description: "Interval 2: Special closing end fiscal year (T001B-TOYE2)"
+          description: "Interval 2: Special closing end fiscal year"
         },
         {
           key: "authorization_group",
           label: "AUTHORIZATION_GROUP",
           placeholder: "e.g. AUDIT, CLOSE",
-          description: "Authorization Group for period opening/closing (T001B-BRGRU) to restrict special period postings"
+          description: "Authorization Group for period opening/closing to restrict special period postings"
         },
         {
           key: "is_open",

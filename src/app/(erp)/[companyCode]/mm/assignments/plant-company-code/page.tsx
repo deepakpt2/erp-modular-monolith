@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OX18"
       sapAlias="EFLA"
       title="Assign Plant to Company Code"
-      description="SAP Customizing Table (T001K / T001W): Connects physical manufacturing and logistics plants to statutory legal entities."
+      description="Industry Standard Customizing: Connects physical manufacturing and logistics plants to statutory legal entities."
       apiEndpoint="/api/assignments/plant-company-code"
       companyCode={companyCode}
       primaryKeys={["company_code", "plant_code"]}

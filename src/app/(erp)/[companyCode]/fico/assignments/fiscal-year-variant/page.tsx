@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OB37"
       sapAlias="FLFA"
       title="Assign Company Code to Fiscal Year Variant"
-      description="SAP Customizing Table (V_001_A): Connects statutory company codes to fiscal year calendars (e.g. K4 calendar year or V3 non-calendar April–March)."
+      description="Industry Standard Customizing: Connects statutory company codes to fiscal year calendars (e.g. K4 calendar year or V3 non-calendar April–March)."
       apiEndpoint="/api/assignments/fyv"
       companyCode={companyCode}
       primaryKeys={["company_code"]}

@@ -11,10 +11,10 @@ export default function Page() {
       apiEndpoint="/api/facilities"
       initialForm={{ code: '', name: '', city: '', country: 'IN', address: '', description: '' }}
       fields={[
-        { key: "code", label: "FACILITY_CODE", required: true, placeholder: "", description: "Plant / Facility code (e.g. 1000, 1100, FAC-1000) – T001W-WERKS" },
-        { key: "name", label: "FACILITY_NAME", required: true, placeholder: "", description: "Name of the Facility / Plant – T001W-NAME1" },
-        { key: "city", label: "CITY", placeholder: "", description: "City or location – T001W-ORT01" },
-        { key: "country", label: "COUNTRY", placeholder: "IN", description: "Country code (e.g. IN, US, DE, KW) – T001W-LAND1" },
+        { key: "code", label: "FACILITY_CODE", required: true, placeholder: "", description: "Plant / Facility code (e.g. 1000, 1100, FAC-1000)" },
+        { key: "name", label: "FACILITY_NAME", required: true, placeholder: "", description: "Name of the Facility / Plant" },
+        { key: "city", label: "CITY", placeholder: "", description: "City or location" },
+        { key: "country", label: "COUNTRY", placeholder: "IN", description: "Country code (e.g. IN, US, DE, KW)" },
         { key: "address", label: "ADDRESS", type: "textarea", placeholder: "", description: "Street address and physical site details" },
         { key: "description", label: "DESCRIPTION", type: "textarea", placeholder: "", description: "Operational notes and plant scope" },
       ]}

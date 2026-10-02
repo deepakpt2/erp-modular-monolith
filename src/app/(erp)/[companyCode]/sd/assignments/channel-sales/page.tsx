@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OVX8"
       sapAlias="OVX8"
       title="Assign Distribution Channel to Sales Organization"
-      description="SAP Customizing Table (TVKOV): Assigns wholesale, retail, or direct distribution channels to sales organizations."
+      description="Industry Standard Customizing: Assigns wholesale, retail, or direct distribution channels to sales organizations."
       apiEndpoint="/api/assignments/channel-sales"
       companyCode={companyCode}
       primaryKeys={["sales_org_code", "distribution_channel_code"]}

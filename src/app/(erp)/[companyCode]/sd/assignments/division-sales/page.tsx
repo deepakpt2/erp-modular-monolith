@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OVX6"
       sapAlias="OVX6"
       title="Assign Division to Sales Organization"
-      description="SAP Customizing Table (TVKOS): Assigns product line divisions to sales organizations for sales area determination."
+      description="Industry Standard Customizing: Assigns product line divisions to sales organizations for sales area determination."
       apiEndpoint="/api/assignments/division-sales"
       companyCode={companyCode}
       primaryKeys={["sales_org_code", "division_code"]}

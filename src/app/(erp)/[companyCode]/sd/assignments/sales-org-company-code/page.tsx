@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OVX3"
       sapAlias="OVX3"
       title="Assign Sales Organization to Company Code"
-      description="SAP Customizing Table (TVKO): Connects commercial sales organizations to legal entities for invoicing and revenue recognition."
+      description="Industry Standard Customizing: Connects commercial sales organizations to legal entities for invoicing and revenue recognition."
       apiEndpoint="/api/assignments/sales-company-code"
       companyCode={companyCode}
       primaryKeys={["sales_org_code", "company_code"]}

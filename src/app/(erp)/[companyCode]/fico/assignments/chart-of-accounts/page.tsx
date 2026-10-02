@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OB62"
       sapAlias="FLC2"
       title="Assign Company Code to Chart of Accounts"
-      description="SAP Customizing Table (V_001_B): Maps statutory company codes to an operational chart of accounts and optional country-specific chart of accounts."
+      description="Industry Standard Customizing: Maps statutory company codes to an operational chart of accounts and optional country-specific chart of accounts."
       apiEndpoint="/api/assignments/coa"
       companyCode={companyCode}
       primaryKeys={["company_code"]}

@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OBC5"
       sapAlias="FFSA"
       title="Assign Company Code to Field Status Variant"
-      description="SAP Customizing Table (V_001_M): Assigns company codes to field status variants (e.g. FFSV-1000) controlling field requirements on G/L postings."
+      description="Industry Standard Customizing: Assigns company codes to field status variants (e.g. FFSV-1000) controlling field requirements on G/L postings."
       apiEndpoint="/api/assignments/field-status"
       companyCode={companyCode}
       primaryKeys={["company_code"]}

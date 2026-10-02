@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OX17"
       sapAlias="OX17"
       title="Assign Purchasing Organization to Plant"
-      description="SAP Customizing Table (T024W): Links purchasing organizations to physical receiving and manufacturing plants."
+      description="Industry Standard Customizing: Links purchasing organizations to physical receiving and manufacturing plants."
       apiEndpoint="/api/assignments/purchasing-plant"
       companyCode={companyCode}
       primaryKeys={["purchasing_org_code", "plant_code"]}

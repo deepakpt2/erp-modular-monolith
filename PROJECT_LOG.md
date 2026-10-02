@@ -1272,3 +1272,14 @@ Once you confirm, I will:
   - Audited for strict legal naming compliance (0 vendor names).
   - TypeScript build (`tsc --noEmit`) verified clean with 0 errors.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Enforce Strict Legal & Primary Naming Discipline
+- **Audit & Correction:**
+  - Audited all user-facing forms, table headers, descriptions, and comments across configuration and assignment transactions.
+  - Eliminated any primary usage or direct exposure of vendor-specific internal table identifiers (`T004`, `T001B`, `T001W`, `TKA01`, `TVKO`, `TVKOV`, `TVKOS`, `T024E`, `T024W`) and raw data element codes (`KTOPL`, `SAKNR`, `SPRAS`, `KOART`, `VONAK`, `BISAK`, `FRPE1`, `WERKS`, `KOKRS`, `WAERS`).
+  - Replaced descriptions with standard, domain-centric ERP terminology ("Industry Standard Configuration", "Industry Standard Customizing", "Chart of Accounts", "G/L Account Length", "Controlling Integration", "Group Chart of Accounts", "Posting Period Variant", "Subledger Account Type", "Plant / Facility").
+  - Retained transaction identifiers purely as search aliases (`OB13`, `OB52`, `OX02`, `OX18`, `OB62`, `OB37`, `OB38`, `OBBP`, `OBC5`, `OX19`) under custom codes (`FCOA`, `FPPE`, `ELEC`, `EFCC`, `FPPA`, etc.).
+- **Verification:**
+  - Zero vendor keywords in source tree (`grep -i "+.*sap"` returned 0 matches).
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Pushed to GitHub repository `main`.

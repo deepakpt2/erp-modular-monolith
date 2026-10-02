@@ -11,7 +11,7 @@ export default function Page({ params }: { params: Promise<{ companyCode: string
       code="OB38"
       sapAlias="FLCA"
       title="Assign Company Code to Credit Control Area"
-      description="SAP Customizing Table (V_001_K): Links company codes to central credit control areas for customer credit exposure management."
+      description="Industry Standard Customizing: Links company codes to central credit control areas for customer credit exposure management."
       apiEndpoint="/api/assignments/cca"
       companyCode={companyCode}
       primaryKeys={["company_code"]}
