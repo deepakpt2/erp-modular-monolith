@@ -2,8 +2,8 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Document Helpers – SAP-like unique document number + immutable audit trail
- * Legal-safe own IP – FNDC (was BKPF/MKPF/VBAK/SNRO/FBN1)
+ * Document Helpers – Unique sequential document numbering + immutable audit trail
+ * Industry standard enterprise design
  */
 
 export async function getNextDocumentNumber(objectType: string, companyCode?: string, fiscalYear?: string): Promise<{ document_number: string; current_number: number; prefix: string; code: string }> {

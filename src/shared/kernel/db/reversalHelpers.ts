@@ -3,14 +3,14 @@ import { sql } from 'drizzle-orm';
 import { getNextDocumentNumber, createDocumentEntry, updateDocumentWithAudit } from './documentHelpers';
 
 /**
- * Reversal & Adjustment Helpers – SAP-like but legal-safe own IP
+ * Reversal & Adjustment Helpers – Industry standard immutable accounting audit trail
  * Edit = Reversal or Adjustment document, not direct UPDATE – immutable audit trail
  * 
- * Legal-safe codes (MOOA 4-char):
- * PORE = Procurement Order Reversal (was ME21N reversal – own IP PPOC)
- * POAD = Procurement Order Adjustment (was PO change after GR)
+ * Standard function codes (MOOA 4-char):
+ * PORE = Procurement Order Reversal (legacy ME21N reversal – own IP PPOC)
+ * POAD = Procurement Order Adjustment (PO change after GR)
  * POCO = Procurement Order Correction
- * GRRE = Goods Receipt Reversal (was MIGO 102 reversal of 101 – own IP GR_PO_REV (legacy 102) reversal of GR_PO (legacy 101))
+ * GRRE = Goods Receipt Reversal (legacy 102 reversal of 101 – own IP GR_PO_REV reversal of GR_PO)
  * GRAD = Goods Receipt Adjustment
  * GRCO = Goods Receipt Correction
  * IVRE = Invoice Verification Reversal (was MR8M)

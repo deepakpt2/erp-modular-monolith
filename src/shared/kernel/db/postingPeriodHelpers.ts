@@ -2,8 +2,8 @@ import { db } from '@/shared/kernel/db/client';
 import { sql } from 'drizzle-orm';
 
 /**
- * Posting Period & Fiscal Year Helpers – SAP-like FFYC/FPPC/FPPE (legacy OB29/OBBO/OB52) own IP enforcement
- * Legal-safe own IP – FPPE/FPPC/FFYC
+ * Posting Period & Fiscal Year Helpers – Industry standard period & fiscal calendar controls
+ * Own IP enforcement – FPPE/FPPC/FFYC
  * 
  * Functions:
  * - getFiscalYearPeriodFromDate(companyCode, postingDate): Calculates fiscal year and period from posting date via fiscal calendar
