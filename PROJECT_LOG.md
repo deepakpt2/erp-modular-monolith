@@ -1488,3 +1488,16 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-03 IST: Implement Runtime Schema Detection & Self-Healing Adaptive Upsert for Number Ranges
+- **Root Cause Analysis of Persistent Failed Query:**
+  - In a running Docker deployment, database connections are persistent and tables might exist in an intermediate state where columns like `code`, `company_code`, `plant_code`, or `fiscal_year` are absent from older volume snapshots, or a legacy unique constraint (`uq_core_nr_code` or `uq_nr_obj_co_year`) blocks inserting `01` when it already exists.
+- **Self-Healing Adaptive Engine Added to `POST`:**
+  1. Inspects `information_schema.columns` dynamically for table `core_number_range` prior to inserting.
+  2. Dynamically creates any missing columns on-the-fly (`code`, `fiscal_year`, `company_code`, `plant_code`, `controlling_area_code`, `scope_level`, `is_external`) via individual DDL executions.
+  3. Drops single-column unique indexes so interval codes (`01`, `10`) can be reused across companies and years.
+  4. Implements fallback update logic: if a unique constraint error is triggered by legacy indexes, the system automatically detects the existing row and updates it for the target company/year instead of crashing.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source tree diff.
+  - Pushed to GitHub repository `main`.

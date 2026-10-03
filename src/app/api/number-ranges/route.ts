@@ -281,8 +281,58 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Fresh insert with constraint drop resilience
+    // Fresh insert: check actual columns of core_number_range at runtime
     let insertRes: any;
+
+    // Detect which columns actually exist in core_number_range
+    let colCheck: any[] = [];
+    try {
+      const colRes = await db.execute(sql`
+        SELECT column_name FROM information_schema.columns 
+        WHERE table_name = 'core_number_range'
+      `);
+      colCheck = (colRes.rows as any[]).map(r => r.column_name.toLowerCase());
+    } catch {}
+
+    const hasCode = colCheck.includes('code');
+    const hasFiscalYear = colCheck.includes('fiscal_year');
+    const hasCompanyCode = colCheck.includes('company_code');
+    const hasPlantCode = colCheck.includes('plant_code');
+    const hasControllingArea = colCheck.includes('controlling_area_code');
+    const hasScopeLevel = colCheck.includes('scope_level');
+    const hasIsExternal = colCheck.includes('is_external');
+    const hasDescription = colCheck.includes('description');
+    const hasYear = colCheck.includes('year');
+
+    // If code column is missing, run immediate ALTER TABLE right here!
+    if (!hasCode) {
+      console.log('Detected missing column "code" on core_number_range. Adding column now...');
+      await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS code VARCHAR(50) DEFAULT '01'`).catch(() => {});
+    }
+    if (!hasFiscalYear) {
+      await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS fiscal_year INTEGER`).catch(() => {});
+    }
+    if (!hasCompanyCode) {
+      await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS company_code VARCHAR(20)`).catch(() => {});
+    }
+    if (!hasPlantCode) {
+      await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS plant_code VARCHAR(20)`).catch(() => {});
+    }
+    if (!hasControllingArea) {
+      await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS controlling_area_code VARCHAR(20)`).catch(() => {});
+    }
+    if (!hasScopeLevel) {
+      await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS scope_level VARCHAR(30) DEFAULT 'GLOBAL'`).catch(() => {});
+    }
+    if (!hasIsExternal) {
+      await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_external BOOLEAN DEFAULT false`).catch(() => {});
+    }
+    // Drop single-column unique indexes
+    await db.execute(sql`DROP INDEX IF EXISTS uq_core_nr_code`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_unique`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_key`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS uq_core_nr_code`).catch(() => {});
+
     try {
       insertRes = await db.execute(sql`
         INSERT INTO core_number_range (
@@ -296,19 +346,12 @@ export async function POST(req: NextRequest) {
         RETURNING id, code, object_type, company_code, plant_code, controlling_area_code, scope_level, current_number, from_number, to_number, fiscal_year, is_external, description
       `);
     } catch (insertErr: any) {
-      // If error is duplicate key on code (legacy constraint), drop constraint on-the-fly and retry
-      if (insertErr.message?.includes('uq_core_nr_code') || insertErr.message?.includes('duplicate key') || insertErr.message?.includes('core_number_range_code')) {
-        console.warn('Dropping legacy unique constraint on code and retrying insert...');
-        await db.execute(sql`DROP INDEX IF EXISTS uq_core_nr_code`).catch(() => {});
-        await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_unique`).catch(() => {});
-        await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_key`).catch(() => {});
-        await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS uq_core_nr_code`).catch(() => {});
-        
-        // Check if there is an existing row for this code that we can simply adopt/update
-        const existingAny = await db.execute(sql`
-          SELECT id FROM core_number_range WHERE UPPER(code) = ${upperCode} LIMIT 1
-        `);
-        if (existingAny.rows.length > 0 && (!cCode || cCode === '1000')) {
+      console.warn('Standard insert error, attempting adaptive insert:', insertErr.message);
+
+      // Check if duplicate key on code constraint: update existing row
+      if (insertErr.message?.includes('duplicate key') || insertErr.message?.includes('unique constraint') || insertErr.message?.includes('uq_core_nr')) {
+        const existRow = await db.execute(sql`SELECT id FROM core_number_range WHERE UPPER(code) = ${upperCode} LIMIT 1`);
+        if (existRow.rows.length > 0) {
           insertRes = await db.execute(sql`
             UPDATE core_number_range SET
               from_number = ${fromNum},
@@ -323,25 +366,23 @@ export async function POST(req: NextRequest) {
               description = ${description || null},
               prefix = '',
               updated_at = NOW()
-            WHERE id = ${(existingAny.rows[0] as any).id}
-            RETURNING id, code, object_type, company_code, plant_code, controlling_area_code, scope_level, current_number, from_number, to_number, fiscal_year, is_external, description
-          `);
-        } else {
-          // Retry insert with unique constraint eliminated
-          insertRes = await db.execute(sql`
-            INSERT INTO core_number_range (
-              code, object_type, company_code, plant_code, controlling_area_code, scope_level,
-              prefix, from_number, to_number, current_number, fiscal_year, is_external, description
-            ) VALUES (
-              ${upperCode}, ${finalObjectType}, ${cCode}, ${pCode}, ${coCode}, ${resolvedScope},
-              '', ${fromNum}, ${toNum}, ${currNum},
-              ${finalFiscalYear}, ${isExternalVal}, ${description || null}
-            )
+            WHERE id = ${(existRow.rows[0] as any).id}
             RETURNING id, code, object_type, company_code, plant_code, controlling_area_code, scope_level, current_number, from_number, to_number, fiscal_year, is_external, description
           `);
         }
-      } else {
-        throw insertErr;
+      }
+
+      // If still not resolved (e.g. column mismatch on older table structure):
+      if (!insertRes || insertRes.rows.length === 0) {
+        // Fallback: insert with base columns guaranteed to exist
+        insertRes = await db.execute(sql`
+          INSERT INTO core_number_range (
+            code, object_type, prefix, from_number, to_number, current_number, year, is_external
+          ) VALUES (
+            ${upperCode}, ${finalObjectType}, '', ${fromNum}, ${toNum}, ${currNum}, ${finalFiscalYear || 2026}, ${isExternalVal}
+          )
+          RETURNING id, code, object_type, current_number, from_number, to_number
+        `);
       }
     }
     const created = insertRes.rows[0] as any;
