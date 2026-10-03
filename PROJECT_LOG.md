@@ -1524,3 +1524,9 @@ Once you confirm, I will:
   - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-03 IST: Mandatory Architecture Directive: Breaking Schema Changes & Complex Workarounds
+- **Strict Protocol Confirmed:**
+  - In this development stage, **never introduce complex backward-compatibility workarounds, defensive fallback tables, or runtime DDL hacks** to accommodate outdated development data.
+  - If an enterprise requirement or bug fix requires a structural schema change (e.g. altering keys, dropping constraints, modifying column types/relationships) that would break existing test data, **always stop and ask the user for confirmation first via `ask_user`** before implementing.
+  - The team will reset the database cleanly from scratch (`docker compose down -v`) with standard data whenever structural changes are approved, keeping the codebase lean, standard, and maintainable.
