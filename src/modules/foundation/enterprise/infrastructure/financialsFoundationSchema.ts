@@ -240,15 +240,20 @@ export const finAutoPostingRule = pgTable('fin_auto_posting_rule', {
 // Document Type – replaces fin_document_type – legal-safe fin_document_type
 export const finDocumentType = pgTable('fin_document_type', {
   id: uuid('id').primaryKey().defaultRandom(),
-  code: varchar('code', { length: 20 }).notNull().unique(),
-  codeLegacy: varchar('code_legacy', { length: 10 }),
-  name: varchar('name', { length: 150 }).notNull(),
+  code: varchar('code', { length: 20 }).notNull().unique(), // T003-BLART (e.g. SA, KR, KZ, RE, DR, DZ, WA, WE)
+  name: varchar('name', { length: 150 }).notNull(), // T003T-LTEXT
   description: text('description'),
-  numberRangeCode: varchar('number_range_code', { length: 50 }),
-  numberRangeFrom: varchar('number_range_from', { length: 30 }),
-  numberRangeTo: varchar('number_range_to', { length: 30 }),
-  accountTypesAllowed: varchar('account_types_allowed', { length: 30 }).default('ALL'),
-  reverseDocumentType: varchar('reverse_document_type', { length: 20 }),
+  numberRangeCode: varchar('number_range_code', { length: 50 }).notNull().default('01'), // T003-NUMKR (e.g. 01, 10, 19, 50)
+  reverseDocumentType: varchar('reverse_document_type', { length: 20 }), // T003-STBLA (Reverse doc type, e.g. AB)
+  accountTypesAllowed: varchar('account_types_allowed', { length: 50 }).default('ALL'), // Allowed account types (Assets, Customers, Vendors, Materials, G/L)
+  isAllowedAsset: boolean('is_allowed_asset').default(true).notNull(),
+  isAllowedCustomer: boolean('is_allowed_customer').default(true).notNull(),
+  isAllowedVendor: boolean('is_allowed_vendor').default(true).notNull(),
+  isAllowedMaterial: boolean('is_allowed_material').default(true).notNull(),
+  isAllowedGl: boolean('is_allowed_gl').default(true).notNull(),
+  isNegativePostingAllowed: boolean('is_negative_posting_allowed').default(false).notNull(), // T003-XNEGP (Negative postings permitted)
+  referenceRequired: boolean('reference_required').default(false).notNull(), // T003-XBLNR (Reference number mandatory)
+  docHeaderRequired: boolean('doc_header_required').default(false).notNull(), // T003-XBKTXT (Doc header text mandatory)
   legacyCode: varchar('legacy_code', { length: 10 }),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),

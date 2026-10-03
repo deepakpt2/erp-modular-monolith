@@ -1354,3 +1354,17 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source code diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Standard Implementation Alignment: Document Types (`OBA7`) & Number Range Assignment
+- **Blueprint Alignment:**
+  - Standard enterprise implementation plans configure Document Types (`OBA7` / `FDTC`) with:
+    1. **Document Type Key (`BLART`):** 2 characters (e.g., `SA`, `KR`, `KZ`, `DR`, `DZ`, `RE`, `WA`, `WE`).
+    2. **Number Range Interval (`NUMKR`):** 2 characters (e.g., `01`, `10`, `19`, `50`), which links directly to the intervals maintained in Number Ranges (`FBN1` / `FNRC`).
+    3. **Allowed Account Types:** Assets (`A`), Customers (`D`), Vendors (`K`), Materials (`M`), G/L (`S`).
+    4. **Control Data:** Reverse Document Type, Reference Number Mandatory, Header Text Mandatory, Negative Postings Allowed.
+- **Data Reusability from Implementation Guides:**
+  - A consultant with a standard ERP configuration sheet can copy the exact interval number (e.g. `01`), document type (e.g. `SA`), and range bounds (`0100000000` to `0199999999`) directly into this application.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source tree diff.
+  - Pushed to GitHub repository `main`.
