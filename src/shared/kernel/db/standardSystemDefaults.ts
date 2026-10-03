@@ -571,9 +571,17 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
           { num: '520000', name: 'Inventory Count Gain/Loss Variance', type: 'EXPENSE', bs: false, rec: false, tax: false }
         ];
         for (const a of accounts) {
+          let grp = 'ASST';
+          let cat = 'BALANCE_SHEET';
+          const n = parseInt(a.num, 10);
+          if (n >= 200000 && n < 300000) { grp = 'LIAB'; cat = 'BALANCE_SHEET'; }
+          else if (n >= 300000 && n < 400000) { grp = 'EQTY'; cat = (n === 390000 ? 'RETAINED_EARNINGS' : 'BALANCE_SHEET'); }
+          else if (n >= 400000 && n < 500000) { grp = 'REVN'; cat = 'OPERATING_EXP_INC'; }
+          else if (n >= 500000 && n < 600000) { grp = 'EXPN'; cat = 'OPERATING_EXP_INC'; }
+
           await db.execute(sql`
-            INSERT INTO fin_ledger_account (chart_id, coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active)
-            SELECT ${templateChartId}, ${templateChartId}, ${a.num}, ${a.name}, ${a.type}, ${a.bs}, ${a.rec}, ${a.tax}, true
+            INSERT INTO fin_ledger_account (chart_id, coa_id, account_group_code, account_number, name, account_type, account_category, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active)
+            SELECT ${templateChartId}, ${templateChartId}, ${grp}, ${a.num}, ${a.name}, ${a.type}, ${cat}, ${a.bs}, ${a.rec}, ${a.tax}, true
             WHERE NOT EXISTS (
               SELECT 1 FROM fin_ledger_account WHERE chart_id = ${templateChartId} AND account_number = ${a.num}
             )

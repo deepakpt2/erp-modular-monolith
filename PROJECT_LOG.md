@@ -1654,3 +1654,9 @@ Once you confirm, I will:
   - Rebuilt G/L Account page UI:
     - Clean autocomplete for `CHART_OF_ACCOUNTS_CODE` and `ACCOUNT_GROUP_CODE`.
     - Validated interval hints (e.g. `ASST`, `LIAB`, `EQTY`, `REVN`, `EXPN`).
+
+## Standard Baseline CoA (CA-IN-01) Alignment with Rebuilt Architecture
+- Verified and aligned the standard reference baseline seed (`seedIndustryStandardBaseline` in `src/shared/kernel/db/standardSystemDefaults.ts`) to be 100% compliant with the rebuilt `fin_ledger_account` schema:
+  - Account Groups: `ASST` (100000-199999), `LIAB` (200000-299999), `EQTY` (300000-399999), `REVN` (400000-499999), and `EXPN` (500000-599999).
+  - All 18 standard GAAP/IFRS accounts explicitly carry their authentic `account_group_code`, `account_category`, and `account_type`.
+  - Copying Chart of Accounts (`copy_from_coa` in `FCOA` / `OB13`) replicates `account_group_code` and `account_category` seamlessly into any newly created Chart of Accounts.
