@@ -396,11 +396,16 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
         }
         try { j = JSON.parse(txt); } catch { j = { error: txt.slice(0,200) }; }
       }
-      if (!res.ok) throw new Error(j.error || `Failed ${res.status}`);
+      if (!res.ok) {
+        const errorDetail = j.detail || j.message || j.error || `HTTP ${res.status}`;
+        const fullErr = j.query ? `${errorDetail} | Query: ${j.query}` : errorDetail;
+        throw new Error(fullErr);
+      }
       setMessage(`✅ ${title} ${payload.code || payload.item_number || payload.account_number} ${mode === 'change' ? 'updated' : 'created'} – ${code}`);
       fetchItems();
       if (mode === 'create') setForm(initialForm);
     } catch (err: any) {
+      console.error('Submit error details:', err);
       setMessage(`❌ ${err.message}`);
     }
   };

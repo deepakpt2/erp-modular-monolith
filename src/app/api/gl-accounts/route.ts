@@ -192,7 +192,12 @@ export async function POST(req: NextRequest) {
       message: `G/L Account ${account_number} created successfully`,
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error('API /api/gl-accounts POST error:', e);
+    return NextResponse.json({ 
+      error: e.message || 'Database error while creating G/L account',
+      detail: e.detail || e.hint || e.message,
+      query: e.query || null
+    }, { status: 500 });
   }
 }
 
@@ -317,7 +322,12 @@ export async function PUT(req: NextRequest) {
       message: `G/L account ${res.rows[0].account_number} updated successfully`,
     });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error('API /api/gl-accounts PUT error:', e);
+    return NextResponse.json({ 
+      error: e.message || 'Database error while updating G/L account',
+      detail: e.detail || e.hint || e.message,
+      query: e.query || null
+    }, { status: 500 });
   }
 }
 

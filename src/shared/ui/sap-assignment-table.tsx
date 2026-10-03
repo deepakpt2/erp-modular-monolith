@@ -125,7 +125,10 @@ export function SapAssignmentTable({
         body: JSON.stringify(newRowForm)
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to save assignment');
+      if (!res.ok) {
+        const errorDetail = json.detail || json.message || json.error || `HTTP ${res.status}`;
+        throw new Error(errorDetail);
+      }
       setMessage({ type: 'success', text: json.message || 'Assignment saved successfully.' });
       setIsAddingNew(false);
       setNewRowForm({});

@@ -1680,3 +1680,13 @@ Once you confirm, I will:
   - Removed all `::fin_ledger_account_type` explicit casts in `src/app/api/gl-accounts/route.ts` (`POST` and `PUT`).
   - Standardized `accountType` in `financialsFoundationSchema.ts` and `fin_ledger_account` to `varchar(30)`.
   - Added safe column type alteration `ALTER TABLE fin_ledger_account ALTER COLUMN account_type TYPE varchar(30)` in `standardSystemDefaults.ts` to ensure compatibility whether existing or new database volumes are used.
+
+## Surface Detailed Database Error Diagnostics Across Master & Assignment Forms
+- **Requirement:** Surface detailed, actionable error diagnostics (error message, PostgreSQL error detail/hint, and failed query snippet) directly in UI message banners during development & debugging across all forms, instead of displaying generic "Failed query" or "Failed 500".
+- **Implementation:**
+  - In `src/shared/ui/single-code-page.tsx`:
+    - Updated `handleSubmit` to extract and display `j.detail`, `j.hint`, `j.message`, or `j.query` when a backend request returns a non-200 status code.
+  - In `src/shared/ui/sap-assignment-table.tsx`:
+    - Updated inline row submit and delete error handlers to surface full diagnostic messages from the backend response.
+  - In `src/app/api/gl-accounts/route.ts`:
+    - Updated `POST` and `PUT` exception handlers to return `{ error, detail, query }` in HTTP 500 responses for instant diagnosis.
