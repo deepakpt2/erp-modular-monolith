@@ -53,3 +53,8 @@ fix_apis.js
 .env
 patch_auth.js
 fix_double.js
+
+# Manual Seed & Host Debug Scripts (not pushed to git)
+manual_seed_injection.sql
+scripts/manual_seed_injection.sql
+*.manual_seed.sql
