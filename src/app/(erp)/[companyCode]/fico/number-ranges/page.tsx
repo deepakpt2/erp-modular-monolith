@@ -520,11 +520,7 @@ export default function NumberRangesPage() {
                         <td className="py-2.5 px-3 font-mono font-bold text-zinc-900">{r.code}</td>
                         <td className="py-2.5 px-3 font-mono text-zinc-600">{r.company_code || 'ALL'}</td>
                         <td className="py-2.5 px-3 font-mono text-zinc-600">{r.fiscal_year || '9999'}</td>
-                        <td className="py-2.5 px-3 font-mono">
-                          <span className="px-2 py-0.5 rounded-full bg-zinc-100 border text-zinc-700 text-[10px]">
-                            {r.object_type}
-                          </span>
-                        </td>
+                        
                         <td className="py-2.5 px-3 font-mono text-zinc-600">{r.from_number}</td>
                         <td className="py-2.5 px-3 font-mono text-zinc-600">{r.to_number}</td>
                         <td className="py-2.5 px-3 font-mono font-bold text-zinc-900">

@@ -1393,3 +1393,22 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source tree diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Resolve Number Range SQL Query Failure and Align FI Form to Standard Specification
+- **Object Type Clarification in Standard ERP:**
+  - In standard enterprise systems (`FBN1` / Table `NRIV`), the object type (`RF_BELEG`) is **internal to the transaction** and **NEVER an end-user input field**. The user provides:
+    1. Company Code (Initial Screen / Parameter)
+    2. Interval Identifier (`No` – 2 chars, e.g. `01`, `10`)
+    3. Year (`GJAHR` – e.g. `2026` or `9999`)
+    4. From Number (`FROMNUMBER`)
+    5. To Number (`TONUMBER`)
+    6. Current Status (`NRLEVEL`)
+    7. External Flag (`EXT`)
+  - Removed the synthetic `OBJECT_TYPE` input field from the FI Number Range UI (`FNRC` / `FBN1`), setting it transparently to `FI_DOC` behind the scenes.
+- **Root Cause & Resolution for SQL Failure:**
+  - **Error Root Cause:** An old legacy fallback branch in `/api/number-ranges` attempted an `INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number, company_code_id, year, description) ... ON CONFLICT (code) DO UPDATE ...` when the primary insert threw an error. The conflict clause failed because `core_number_range` has a composite uniqueness index `(object_type, legal_entity_id, fiscal_year)` or `uq_core_nr_code`, plus PostgreSQL enum casting mismatches on `company_code_id` (empty string passed as UUID) and `object_type`.
+  - **Resolution:** Replaced the fragile `ON CONFLICT` and broken fallback with robust select-then-upsert logic matching by `(code, company_code, fiscal_year)`, ensuring proper UUID/nullable handling, and converting `object_type` column to `VARCHAR(50)` to prevent enum errors.
+- **Verification:**
+  - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.
