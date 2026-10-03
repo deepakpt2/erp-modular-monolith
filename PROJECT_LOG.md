@@ -1660,3 +1660,14 @@ Once you confirm, I will:
   - Account Groups: `ASST` (100000-199999), `LIAB` (200000-299999), `EQTY` (300000-399999), `REVN` (400000-499999), and `EXPN` (500000-599999).
   - All 18 standard GAAP/IFRS accounts explicitly carry their authentic `account_group_code`, `account_category`, and `account_type`.
   - Copying Chart of Accounts (`copy_from_coa` in `FCOA` / `OB13`) replicates `account_group_code` and `account_category` seamlessly into any newly created Chart of Accounts.
+
+## Fix G/L Accounts PUT Empty Enum Cast Error & Parameter Binding
+- **Problem:**
+  - When saving or updating a G/L Account via `PUT /api/gl-accounts`, PostgreSQL failed with:
+    `Failed query: UPDATE fin_ledger_account SET name = COALESCE($1, name), account_group_code = COALESCE($2, account_group_code), ... account_type = COALESCE($4::fin_ledger_account_type, account_type) ... params: Cash / Bank, ASET, , , ...`
+  - Cause: When `account_type` is empty or null, `$4::fin_ledger_account_type` in SQL attempts to cast `''` (or null with empty string coercion) directly to the enum type before `COALESCE` can evaluate, triggering an `invalid input value for enum fin_ledger_account_type: ""` error and aborting the transaction.
+- **Solution:**
+  - In `src/app/api/gl-accounts/route.ts` (`PUT`), replaced inline `COALESCE($x::fin_ledger_account_type, account_type)` with conditional Drizzle SQL expressions:
+    - If `finalAccountType` is provided and valid (`ASSET`, `LIABILITY`, `EQUITY`, `REVENUE`, `EXPENSE`), it applies `${finalAccountType}::fin_ledger_account_type`.
+    - If empty/null, it preserves the existing column value (`account_type`) directly in the SQL statement without executing an invalid enum cast.
+    - Applied identical safe expression binding across `account_category`, `account_group_code`, `name`, `description`, and booleans.

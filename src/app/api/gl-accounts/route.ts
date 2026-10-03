@@ -220,9 +220,11 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'id or account_number required' }, { status: 400 });
     }
 
-    const trimmedAccountGroup = account_group_code ? account_group_code.toString().trim().toUpperCase() : null;
+    const trimmedAccountGroup = (account_group_code && typeof account_group_code === 'string' && account_group_code.trim()) 
+      ? account_group_code.trim().toUpperCase() 
+      : null;
 
-    // Inherit from Account Group if set to INHERIT_FROM_GROUP
+    // Inherit from Account Group if set to INHERIT_FROM_GROUP or unspecified
     if (trimmedAccountGroup && (!account_type || account_type === 'INHERIT_FROM_GROUP' || !account_category || account_category === 'INHERIT_FROM_GROUP')) {
       const agRes = await db.execute(sql`SELECT account_type, account_category FROM fin_account_group WHERE code = ${trimmedAccountGroup} LIMIT 1`);
       if (agRes.rows.length > 0) {
@@ -232,22 +234,56 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const finalAccountType = (account_type && account_type !== 'INHERIT_FROM_GROUP') ? account_type : null;
-    const finalAccountCategory = (account_category && account_category !== 'INHERIT_FROM_GROUP') ? account_category : null;
+    const validAccountTypes = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
+    const finalAccountType = (account_type && validAccountTypes.includes(account_type.toString().toUpperCase())) 
+      ? account_type.toString().toUpperCase() 
+      : null;
+
+    const finalAccountCategory = (account_category && account_category !== 'INHERIT_FROM_GROUP' && account_category.toString().trim()) 
+      ? account_category.toString().trim() 
+      : null;
+
+    const nameVal = (name !== undefined && name !== null && name.toString().trim()) ? name.toString().trim() : null;
+    const descVal = (description !== undefined && description !== null) ? description.toString().trim() : null;
+
+    const bsVal = is_balance_sheet !== undefined ? (is_balance_sheet === true || is_balance_sheet === 'true') : null;
+    const recVal = is_reconciliation !== undefined ? (is_reconciliation === true || is_reconciliation === 'true') : null;
+    const taxVal = is_tax_relevant !== undefined ? (is_tax_relevant === true || is_tax_relevant === 'true') : null;
+    const blkVal = is_blocked !== undefined ? (is_blocked === true || is_blocked === 'true') : null;
+
+    // Build safe SQL fragments without casting empty/null expressions
+    const accountTypeSql = finalAccountType 
+      ? sql`${finalAccountType}::fin_ledger_account_type` 
+      : sql`account_type`;
+
+    const accountGroupSql = trimmedAccountGroup 
+      ? sql`${trimmedAccountGroup}` 
+      : sql`account_group_code`;
+
+    const accountCategorySql = finalAccountCategory 
+      ? sql`${finalAccountCategory}` 
+      : sql`account_category`;
+
+    const nameSql = nameVal !== null ? sql`${nameVal}` : sql`name`;
+    const bsSql = bsVal !== null ? sql`${bsVal}` : sql`is_balance_sheet`;
+    const recSql = recVal !== null ? sql`${recVal}` : sql`is_reconciliation`;
+    const taxSql = taxVal !== null ? sql`${taxVal}` : sql`is_tax_relevant`;
+    const blkSql = blkVal !== null ? sql`${blkVal}` : sql`is_blocked`;
+    const descSql = descVal !== null ? sql`${descVal}` : sql`description`;
 
     let res;
     if (id) {
       res = await db.execute(sql`
         UPDATE fin_ledger_account SET
-          name = COALESCE(${name}, name),
-          account_group_code = COALESCE(${trimmedAccountGroup}, account_group_code),
-          account_category = COALESCE(${finalAccountCategory}, account_category),
-          account_type = COALESCE(${finalAccountType}::fin_ledger_account_type, account_type),
-          is_balance_sheet = COALESCE(${is_balance_sheet !== undefined ? (is_balance_sheet === true || is_balance_sheet === 'true') : null}, is_balance_sheet),
-          is_reconciliation = COALESCE(${is_reconciliation !== undefined ? (is_reconciliation === true || is_reconciliation === 'true') : null}, is_reconciliation),
-          is_tax_relevant = COALESCE(${is_tax_relevant !== undefined ? (is_tax_relevant === true || is_tax_relevant === 'true') : null}, is_tax_relevant),
-          is_blocked = COALESCE(${is_blocked !== undefined ? (is_blocked === true || is_blocked === 'true') : null}, is_blocked),
-          description = COALESCE(${description || null}, description),
+          name = ${nameSql},
+          account_group_code = ${accountGroupSql},
+          account_category = ${accountCategorySql},
+          account_type = ${accountTypeSql},
+          is_balance_sheet = ${bsSql},
+          is_reconciliation = ${recSql},
+          is_tax_relevant = ${taxSql},
+          is_blocked = ${blkSql},
+          description = ${descSql},
           updated_at = NOW()
         WHERE id = ${id}
         RETURNING id, chart_id, account_group_code, account_number, name, account_category, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_blocked, description
@@ -255,15 +291,15 @@ export async function PUT(req: NextRequest) {
     } else {
       res = await db.execute(sql`
         UPDATE fin_ledger_account SET
-          name = COALESCE(${name}, name),
-          account_group_code = COALESCE(${trimmedAccountGroup}, account_group_code),
-          account_category = COALESCE(${finalAccountCategory}, account_category),
-          account_type = COALESCE(${finalAccountType}::fin_ledger_account_type, account_type),
-          is_balance_sheet = COALESCE(${is_balance_sheet !== undefined ? (is_balance_sheet === true || is_balance_sheet === 'true') : null}, is_balance_sheet),
-          is_reconciliation = COALESCE(${is_reconciliation !== undefined ? (is_reconciliation === true || is_reconciliation === 'true') : null}, is_reconciliation),
-          is_tax_relevant = COALESCE(${is_tax_relevant !== undefined ? (is_tax_relevant === true || is_tax_relevant === 'true') : null}, is_tax_relevant),
-          is_blocked = COALESCE(${is_blocked !== undefined ? (is_blocked === true || is_blocked === 'true') : null}, is_blocked),
-          description = COALESCE(${description || null}, description),
+          name = ${nameSql},
+          account_group_code = ${accountGroupSql},
+          account_category = ${accountCategorySql},
+          account_type = ${accountTypeSql},
+          is_balance_sheet = ${bsSql},
+          is_reconciliation = ${recSql},
+          is_tax_relevant = ${taxSql},
+          is_blocked = ${blkSql},
+          description = ${descSql},
           updated_at = NOW()
         WHERE account_number = ${account_number}
         RETURNING id, chart_id, account_group_code, account_number, name, account_category, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_blocked, description
