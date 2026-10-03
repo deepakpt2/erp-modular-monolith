@@ -1604,3 +1604,13 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source tree diff.
   - Pushed to GitHub repository `main`.
+
+## Fix G/L Master Account Group Persistence & Baseline Alignment (FS00 / FGLC)
+- **Problem:** When editing or displaying an existing G/L account in FS00 / FGLC (`/fico/gl-accounts`), the `account_group_code` field defaulted to `G001` or did not reflect updates correctly because:
+  1. The `initialForm` state in `src/app/(erp)/[companyCode]/fico/gl-accounts/page.tsx` was hardcoded to `account_group_code: 'G001'` (which was a legacy field status group code rather than an authentic chart account group code).
+  2. The `PUT` endpoint in `src/app/api/gl-accounts/route.ts` omitted updating `account_group_code`, `account_category`, `is_reconciliation`, `is_tax_relevant`, and `is_balance_sheet` when updated by `account_number` without `id`.
+  3. The standard baseline seed (`seedIndustryStandardBaseline` in `src/shared/kernel/db/standardSystemDefaults.ts`) seeded G/L accounts without explicit `account_group_code` and `account_category` values, leaving newly seeded accounts blank.
+- **Solution:**
+  1. Updated `src/app/api/gl-accounts/route.ts` `PUT` handler to reliably update and return `account_group_code`, `account_category`, `is_reconciliation`, `is_tax_relevant`, and `is_balance_sheet` across both `id` and `account_number` execution paths.
+  2. Changed `initialForm` in `src/app/(erp)/[companyCode]/fico/gl-accounts/page.tsx` to default to `ASST` (authentic asset group).
+  3. Enhanced `src/shared/kernel/db/standardSystemDefaults.ts` to automatically define standard account groups (`ASST`, `LIAB`, `EQTY`, `REVN`, `EXPN`) for `CA-IN-01` and map the standard 18 baseline accounts directly to their appropriate groups and categories.
