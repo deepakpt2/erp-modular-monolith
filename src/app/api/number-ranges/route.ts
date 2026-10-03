@@ -18,7 +18,19 @@ import { sql } from 'drizzle-orm';
  * - Delete blocked if used
  */
 
+async function ensureNumberRangeSchema() {
+  try {
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS company_code VARCHAR(20)`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_external BOOLEAN DEFAULT false`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_buffered BOOLEAN DEFAULT false`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS buffer_size INTEGER DEFAULT 10`).catch(() => {});
+  } catch (e: any) {
+    console.warn('ensureNumberRangeSchema error:', e.message);
+  }
+}
+
 export async function GET(req: NextRequest) {
+  await ensureNumberRangeSchema();
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
   try {
@@ -107,7 +119,21 @@ export async function POST(req: NextRequest) {
   if (authCheck) return authCheck;
   try {
     const body = await req.json();
-    const { code, object_type, objectType, from_number, to_number, current_number, legal_entity_id, fiscal_year, description, year } = body;
+    const {
+      code,
+      object_type,
+      objectType,
+      company_code,
+      from_number,
+      to_number,
+      current_number,
+      legal_entity_id,
+      fiscal_year,
+      description,
+      is_external = false,
+      year
+    } = body;
+    const isExternalVal = is_external === true || is_external === 'true';
     const finalObjectType = objectType || object_type;
     const finalFiscalYear = fiscal_year ?? year ?? null;
     if (!code || !finalObjectType) return NextResponse.json({ error: 'code and object_type/objectType required' }, { status: 400 });
@@ -153,14 +179,24 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const cCode = company_code ? company_code.toUpperCase().trim() : null;
       const res = await db.execute(sql`
-        INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number, legal_entity_id, fiscal_year, description)
-        VALUES (${upperCode}, ${upperObjType}::core_number_range_object_type, '', ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET object_type = ${upperObjType}::core_number_range_object_type, prefix = '', from_number = ${from_number || 1}, to_number = ${to_number || 9999999999}, current_number = ${current_number || from_number || 1}, description = ${description || null}, updated_at = NOW()
-        RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
+        INSERT INTO core_number_range (code, object_type, company_code, prefix, from_number, to_number, current_number, legal_entity_id, fiscal_year, is_external, description)
+        VALUES (${upperCode}, ${upperObjType}::core_number_range_object_type, ${cCode}, '', ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${isExternalVal}, ${description || null})
+        ON CONFLICT (code) DO UPDATE SET 
+          object_type = ${upperObjType}::core_number_range_object_type,
+          company_code = COALESCE(${cCode}, core_number_range.company_code),
+          prefix = '',
+          from_number = ${from_number || 1},
+          to_number = ${to_number || 9999999999},
+          current_number = ${current_number || from_number || 1},
+          is_external = ${isExternalVal},
+          description = ${description || null},
+          updated_at = NOW()
+        RETURNING id, code, object_type, company_code, current_number, from_number, to_number, fiscal_year, is_external
       `);
       const row = res.rows[0] as any;
-      return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1, used_count: 0, is_locked: false }, code: 'FNRC', message: `Number range ${upperCode}${finalFiscalYear ? ` FY ${finalFiscalYear}` : ''} created – Industry standard numeric – next ${Number(row.current_number)+1}`, legalSafe: true, sap_standard: true });
+      return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1, used_count: 0, is_locked: false }, code: 'FNRC', message: `Number range ${upperCode}${finalFiscalYear ? ` FY ${finalFiscalYear}` : ''} created – Industry standard numeric – next ${Number(row.current_number)+1}`, legalSafe: true, industry_standard: true });
     } catch (newErr: any) {
       console.warn('core_number_range insert failed fallback core_number_range:', newErr.message);
       try {

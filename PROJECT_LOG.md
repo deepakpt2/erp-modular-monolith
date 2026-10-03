@@ -1337,3 +1337,20 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Upgrade Number Ranges (`FNRC` / `FBN1`) to Full Standard Interval Specification with UI Exhaustion Tracking
+- **Standard Field Parity (`FBN1` / Table `NRIV`):**
+  - **Interval Identifier (`No`):** 2-character interval identifier (`01`, `10`, `50`, etc.).
+  - **Company Code (`BUKRS`):** Binding interval to a statutory legal entity.
+  - **Fiscal Year (`GJAHR`):** Annual rollover or non-year-dependent (`9999`).
+  - **From Number / To Number (`FROMNUMBER` / `TONUMBER`):** Numeric interval boundaries (10-digit standard).
+  - **Current Status (`NRLEVEL`):** Current consumption counter with initial start defaulting to From Number.
+  - **External Indicator (`EXT`):** Flag distinguishing internal system assignment from external manual numbering.
+- **Modern Exhaustion Tracking Improvements:**
+  - Added live analytical summary cards: **Healthy (<75%)**, **Warning (75%–89%)**, **Critical (≥90%)**, and **Exhausted (100%)**.
+  - Visual color-coded progress bars on every row displaying real-time percentage and remaining capacity count (e.g., `45,200 left`).
+  - Strict consumption safety: once numbers are consumed, `from_number` and `object_type` are locked to maintain audit continuity, while allowing safe expansion of `to_number`.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source code diff.
+  - Pushed to GitHub repository `main`.
