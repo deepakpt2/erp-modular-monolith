@@ -1690,3 +1690,17 @@ Once you confirm, I will:
     - Updated inline row submit and delete error handlers to surface full diagnostic messages from the backend response.
   - In `src/app/api/gl-accounts/route.ts`:
     - Updated `POST` and `PUT` exception handlers to return `{ error, detail, query }` in HTTP 500 responses for instant diagnosis.
+
+## Standardize G/L Account UPDATE Query with Direct COALESCE
+- In `PUT /api/gl-accounts`, replaced dynamic SQL expression fragments with clean, direct parameterized `COALESCE`:
+  - `name = COALESCE($1, name)`
+  - `account_group_code = COALESCE($2, account_group_code)`
+  - `account_category = COALESCE($3, account_category)`
+  - `account_type = COALESCE($4, account_type)`
+  - `is_balance_sheet = COALESCE($5, is_balance_sheet)`
+  - `is_reconciliation = COALESCE($6, is_reconciliation)`
+  - `is_tax_relevant = COALESCE($7, is_tax_relevant)`
+  - `is_blocked = COALESCE($8, is_blocked)`
+  - `description = COALESCE($9, description)`
+  - `WHERE account_number = $10`
+- Extracted and surfaced `e.detail` and `e.message` clearly in the response body so any constraint error or parameter issue displays immediately in the UI banner.
