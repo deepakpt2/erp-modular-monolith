@@ -1767,3 +1767,8 @@ Once you confirm, I will:
 
 ## Standardize fin_fiscal_calendar Column Names in manual_seed_injection.sql
 - Replaced synthetic names (`is_year_dependent`, `number_of_posting_periods`) with pure standard schema column names (`year_dependent`, `calendar_year`, `number_of_periods`, `number_of_special_periods`) matching `orgStructureSchema.ts` / `enterpriseConfigSchema.ts`.
+
+## Add Explicit Unique Indexes for ON CONFLICT Targets in manual_seed_injection.sql
+- Error: `there is no unique or exclusion constraint matching the ON CONFLICT specification`.
+- Cause: In standard schema `orgStructureSchema.ts`, unique constraints like `fin_fiscal_calendar` are composite on `(tenant_id, code)` rather than bare `(code)`. An `ON CONFLICT (code)` therefore fails without a dedicated unique index on `(code)`.
+- Solution: Added explicit `CREATE UNIQUE INDEX IF NOT EXISTS` for all single-field upsert targets (`fin_fiscal_calendar (code)`, `fin_posting_calendar (code)`, `fin_chart (code)`, etc.) right before inserts.

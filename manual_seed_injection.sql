@@ -344,6 +344,14 @@ CREATE TABLE IF NOT EXISTS core_number_range (
   updated_at timestamp DEFAULT NOW() NOT NULL
 );
 
+-- Ensure critical unique indexes exist for all ON CONFLICT targets
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_fiscal_calendar_code ON fin_fiscal_calendar (code);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_posting_calendar_code ON fin_posting_calendar (code);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_chart_code ON fin_chart (code);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_account_group_chart_code ON fin_account_group (chart_id, code);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_retained_chart_pl ON fin_retained_earnings (chart_id, pl_account_type);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_org_facility_code ON org_facility (code);
+
 -- Ensure default tenant
 INSERT INTO core_tenant (code, name, description)
 VALUES ('DEFAULT', 'Default Enterprise Tenant', 'System Default Tenant')
@@ -553,9 +561,17 @@ ON CONFLICT (sales_org_code, company_code) DO UPDATE SET
 -- ------------------------------------------------------------------------------
 
 -- Ensure Fiscal Year Variant V3 exists
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_fiscal_calendar_code ON fin_fiscal_calendar (code);
+
 INSERT INTO fin_fiscal_calendar (code, name, description, year_dependent, calendar_year, number_of_periods, number_of_special_periods)
 VALUES ('V3', 'April to March (4 Special Periods)', 'Standard Indian Fiscal Year (V3)', false, false, 12, 4)
-ON CONFLICT (code) DO NOTHING;
+ON CONFLICT (code) DO UPDATE SET
+  name = EXCLUDED.name,
+  description = EXCLUDED.description,
+  year_dependent = EXCLUDED.year_dependent,
+  calendar_year = EXCLUDED.calendar_year,
+  number_of_periods = EXCLUDED.number_of_periods,
+  number_of_special_periods = EXCLUDED.number_of_special_periods;
 
 -- Assign Fiscal Year Variant (OB37)
 UPDATE fin_company_assignment
