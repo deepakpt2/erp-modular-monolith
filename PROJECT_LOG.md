@@ -1725,3 +1725,30 @@ Once you confirm, I will:
   - Added idempotent creation of the unique index:
     `CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_chart_account ON fin_ledger_account (chart_id, account_number)`
     in `standardSystemDefaults.ts` and `src/app/api/gl-accounts/route.ts` (POST and PUT).
+
+## Manual Seed Injection Script (manual_seed_injection.sql)
+- Created standalone SQL injection script `manual_seed_injection.sql` to re-seed clean baseline enterprise setups from host outside Docker containers.
+- Encapsulates Steps 1 through 8:
+  - Step 1: Define Company (OX15 - AMCO) and Company Code (OX02 - AM01).
+  - Step 2: Maintain Controlling Area (OKKP - AM01).
+  - Step 3: Define Plant (OX10 - P001) and Storage Locations (OX09 - RM01, FG01).
+  - Step 4: Define Purchasing Org (OX08 - P001) and Sales Org (OVX5 - S001).
+  - Step 5: Enterprise Structure Assignments:
+    - OKKS / OX19: Company Code AM01 -> Controlling Area AM01.
+    - OX18: Plant P001 -> Company Code AM01.
+    - OX01: Purch Org P001 -> Company Code AM01.
+    - OX17: Purch Org P001 -> Plant P001.
+    - OVX3: Sales Org S001 -> Company Code AM01.
+  - Step 6: FI Global Settings:
+    - OB37: Assign FYV V3 to AM01.
+    - OBBO: Define Posting Period Variant AM01.
+    - OBBP: Assign Posting Period Variant AM01 to AM01.
+    - OB52: Open period 1/2026 to 12/2026 for AM01.
+  - Step 7: G/L Prerequisites:
+    - OB13: Define CoA AMCO (length 4).
+    - OB62: Assign CoA AMCO to AM01.
+    - OBD4: Define Account Groups under AMCO (ASET, LIAB, EQTY, REVE, EXPN).
+  - Step 8: Retained Earnings & Number Ranges:
+    - OB53: Define Retained Earnings (AMCO, X, 3000).
+    - FBN1: Number range interval 01 for AM01, year 2026, 1 to 9999999.
+- Tracked in git so user can pull it directly on server.
