@@ -1704,3 +1704,14 @@ Once you confirm, I will:
   - `description = COALESCE($9, description)`
   - `WHERE account_number = $10`
 - Extracted and surfaced `e.detail` and `e.message` clearly in the response body so any constraint error or parameter issue displays immediately in the UI banner.
+
+## Fix G/L Accounts updated_at Column Absence in Postgres
+- **Log finding analysis:**
+  - Container log confirmed the exact error:
+    `column "updated_at" of relation "fin_ledger_account" does not exist (code: 42703)`
+  - Cause: The development container's postgres volume had an existing `fin_ledger_account` table created earlier without the `updated_at` (or `created_at`) timestamp columns. When `UPDATE ... updated_at = NOW()` ran, PostgreSQL rejected the query with `code 42703`.
+- **Solution:**
+  - Added safe schema migrations in both `standardSystemDefaults.ts` and `src/app/api/gl-accounts/route.ts`:
+    - `ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT NOW()`
+    - `ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT NOW()`
+  - Ensures the table possesses the standard audit timestamp columns regardless of container age.
