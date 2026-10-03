@@ -216,9 +216,15 @@ CREATE TABLE IF NOT EXISTS fin_fiscal_calendar (
   code varchar(20) NOT NULL UNIQUE,
   name varchar(100) NOT NULL,
   description text,
-  is_year_dependent boolean DEFAULT false NOT NULL,
-  number_of_posting_periods integer DEFAULT 12 NOT NULL,
+  year_dependent boolean DEFAULT false NOT NULL,
+  calendar_year boolean DEFAULT false NOT NULL,
+  number_of_periods integer DEFAULT 12 NOT NULL,
   number_of_special_periods integer DEFAULT 4 NOT NULL,
+  start_month integer DEFAULT 1,
+  end_month integer DEFAULT 12,
+  year_shift integer DEFAULT 0,
+  from_date varchar(10),
+  to_date varchar(10),
   is_active boolean DEFAULT true NOT NULL,
   created_at timestamp DEFAULT NOW() NOT NULL
 );
@@ -547,8 +553,8 @@ ON CONFLICT (sales_org_code, company_code) DO UPDATE SET
 -- ------------------------------------------------------------------------------
 
 -- Ensure Fiscal Year Variant V3 exists
-INSERT INTO fin_fiscal_calendar (code, name, description, is_year_dependent, number_of_posting_periods, number_of_special_periods)
-VALUES ('V3', 'April to March (4 Special Periods)', 'Standard Indian Fiscal Year (V3)', false, 12, 4)
+INSERT INTO fin_fiscal_calendar (code, name, description, year_dependent, calendar_year, number_of_periods, number_of_special_periods)
+VALUES ('V3', 'April to March (4 Special Periods)', 'Standard Indian Fiscal Year (V3)', false, false, 12, 4)
 ON CONFLICT (code) DO NOTHING;
 
 -- Assign Fiscal Year Variant (OB37)

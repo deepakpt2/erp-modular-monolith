@@ -1764,3 +1764,6 @@ Once you confirm, I will:
   - Maintained pure standard table structures (`fin_retained_earnings`, `fin_ledger_account`, `fin_chart`, `fin_account_group`, `fin_company_assignment`, etc.).
   - Preserved canonical constraints (`uq_fin_retained_chart_pl` on `(chart_id, pl_account_type)`).
 - Ready for clean scratch install execution: `docker compose down -v && docker compose up -d` followed by script execution.
+
+## Standardize fin_fiscal_calendar Column Names in manual_seed_injection.sql
+- Replaced synthetic names (`is_year_dependent`, `number_of_posting_periods`) with pure standard schema column names (`year_dependent`, `calendar_year`, `number_of_periods`, `number_of_special_periods`) matching `orgStructureSchema.ts` / `enterpriseConfigSchema.ts`.
