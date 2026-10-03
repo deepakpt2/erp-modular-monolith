@@ -1514,3 +1514,13 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source tree diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-03 IST: Codebase Sanitization & Pure Architecture Standardization
+- **Directive Executed:**
+  - Standardized all tables, APIs, and backend functions by removing defensive legacy fallbacks, runtime ALTER table patches, and multi-version schema adapters.
+  - Aligned `autoMigrate.ts` so that starting from a fresh database volume automatically invokes `npx drizzle-kit push --force` to create 100% pure standard enterprise tables from the single-source-of-truth Drizzle schema files, followed by baseline system reference data seeding.
+  - Sanitized Document Types (`/api/document-types`) and Number Ranges (`/api/number-ranges`) to perform standard SQL CRUD against standard table schemas without legacy error traps.
+- **Verification:**
+  - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.
