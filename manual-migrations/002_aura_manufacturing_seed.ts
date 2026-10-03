@@ -206,10 +206,8 @@ export async function seedAuraManufacturing() {
   }
 
   // OB37: Assign FYV to AM01
-  await db.execute(sql`
-    UPDATE fin_company_assignment SET fiscal_year_variant_code = 'V3', updated_at = NOW() WHERE company_code = 'AM01';
-    UPDATE org_legal_entity SET fiscal_calendar_code = 'V3', fiscal_year_variant = 'V3', updated_at = NOW() WHERE code = 'AM01';
-  `);
+  await db.execute(sql`UPDATE fin_company_assignment SET fiscal_year_variant_code = 'V3', updated_at = NOW() WHERE company_code = 'AM01'`);
+  await db.execute(sql`UPDATE org_legal_entity SET fiscal_calendar_code = 'V3', fiscal_year_variant = 'V3', updated_at = NOW() WHERE code = 'AM01'`);
 
   // OBBO: Define Posting Period Variant (AM01)
   const ppvCheck = await db.execute(sql`SELECT id FROM fin_posting_calendar WHERE UPPER(code) = 'AM01' LIMIT 1`);
@@ -226,20 +224,18 @@ export async function seedAuraManufacturing() {
   }
 
   // OBBP: Assign PPV to AM01
-  await db.execute(sql`
-    UPDATE fin_company_assignment SET posting_period_variant_code = 'AM01', updated_at = NOW() WHERE company_code = 'AM01';
-    UPDATE org_legal_entity SET posting_period_variant = 'AM01', updated_at = NOW() WHERE code = 'AM01';
-  `);
+  await db.execute(sql`UPDATE fin_company_assignment SET posting_period_variant_code = 'AM01', updated_at = NOW() WHERE company_code = 'AM01'`);
+  await db.execute(sql`UPDATE org_legal_entity SET posting_period_variant = 'AM01', updated_at = NOW() WHERE code = 'AM01'`);
 
   // OB52: Open Posting Period (1/2026 to 12/2026 for ALL)
+  await db.execute(sql`DELETE FROM fin_posting_calendar_period WHERE posting_calendar_id = ${ppvId} AND from_period = 1 AND account_type = 'ALL'`);
   await db.execute(sql`
-    DELETE FROM fin_posting_calendar_period WHERE posting_calendar_id = ${ppvId} AND from_period = 1 AND account_type = 'ALL';
     INSERT INTO fin_posting_calendar_period (
       posting_calendar_id, variant_code, account_type, from_period, from_year, to_period, to_year, is_open, description
     )
     VALUES (
       ${ppvId}, 'AM01', 'ALL', 1, 2026, 12, 2026, true, 'Open period 1/2026 to 12/2026 for AM01'
-    );
+    )
   `);
 
   // --------------------------------------------------------------------------
@@ -263,10 +259,8 @@ export async function seedAuraManufacturing() {
   }
 
   // OB62 / OBOB: Assign CoA to Company Code AM01
-  await db.execute(sql`
-    UPDATE fin_company_assignment SET chart_of_accounts_code = 'AMCO', updated_at = NOW() WHERE company_code = 'AM01';
-    UPDATE org_legal_entity SET chart_of_accounts_code = 'AMCO', updated_at = NOW() WHERE code = 'AM01';
-  `);
+  await db.execute(sql`UPDATE fin_company_assignment SET chart_of_accounts_code = 'AMCO', updated_at = NOW() WHERE company_code = 'AM01'`);
+  await db.execute(sql`UPDATE org_legal_entity SET chart_of_accounts_code = 'AMCO', updated_at = NOW() WHERE code = 'AM01'`);
 
   // OBD4: Define Account Groups
   const groups = [
@@ -278,10 +272,10 @@ export async function seedAuraManufacturing() {
   ];
 
   for (const g of groups) {
+    await db.execute(sql`DELETE FROM fin_account_group WHERE chart_id = ${chartId} AND UPPER(code) = ${g.code}`);
     await db.execute(sql`
-      DELETE FROM fin_account_group WHERE chart_id = ${chartId} AND UPPER(code) = ${g.code};
       INSERT INTO fin_account_group (chart_id, coa_id, code, name, from_account, to_account, account_type, account_category)
-      VALUES (${chartId}, ${chartId}, ${g.code}, ${g.name}, ${g.from}, ${g.to}, ${g.type}, ${g.cat});
+      VALUES (${chartId}, ${chartId}, ${g.code}, ${g.name}, ${g.from}, ${g.to}, ${g.type}, ${g.cat})
     `);
   }
 
@@ -291,23 +285,24 @@ export async function seedAuraManufacturing() {
   console.log('📌 [Step 8] Retained Earnings (AMCO/X/3000) & FI Number Range (AM01/01/2026)...');
 
   // OB53: Define Retained Earnings Account
+  await db.execute(sql`DELETE FROM fin_retained_earnings WHERE chart_id = ${chartId} AND pl_account_type = 'X'`);
   await db.execute(sql`
-    DELETE FROM fin_retained_earnings WHERE chart_id = ${chartId} AND pl_account_type = 'X';
     INSERT INTO fin_retained_earnings (chart_id, coa_id, pl_account_type, account_number, description)
-    VALUES (${chartId}, ${chartId}, 'X', '3000', 'Retained Earnings Balance Account for AMCO');
+    VALUES (${chartId}, ${chartId}, 'X', '3000', 'Retained Earnings Balance Account for AMCO')
   `);
 
   // FBN1: Document Number Ranges
   await db.execute(sql`
     DELETE FROM core_number_range 
-    WHERE object_type = 'FI_DOC' AND UPPER(company_code) = 'AM01' AND code = '01' AND fiscal_year = 2026;
-
+    WHERE object_type = 'FI_DOC' AND UPPER(company_code) = 'AM01' AND code = '01' AND fiscal_year = 2026
+  `);
+  await db.execute(sql`
     INSERT INTO core_number_range (
       code, object_type, company_code, scope_level, fiscal_year, year, prefix, from_number, to_number, current_number, description
     )
     VALUES (
       '01', 'FI_DOC', 'AM01', 'COMPANY_CODE', 2026, 2026, '', 1, 9999999, 0, 'FI Accounting Documents for AM01 FY2026'
-    );
+    )
   `);
 
   console.log('=================================================================');

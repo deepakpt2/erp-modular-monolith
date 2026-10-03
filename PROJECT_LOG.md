@@ -1779,3 +1779,8 @@ Once you confirm, I will:
 - Added script `"db:seed:aura": "tsx manual-migrations/002_aura_manufacturing_seed.ts"` to `package.json`.
 - Can be executed inside the container environment using Docker compose:
   `docker compose run --rm migrator npm run db:seed:aura`
+
+## Fix Multi-Statement Prepared Query Error in 002_aura_manufacturing_seed.ts
+- **Error:** `error: cannot insert multiple commands into a prepared statement (code: 42601)`
+- **Cause:** PostgreSQL node-postgres prepared statements do not allow multiple semi-colon separated statements in a single `db.execute(sql\`...\`)` call.
+- **Solution:** Separated multi-command queries (e.g. `DELETE ...; INSERT ...;` and `UPDATE ...; UPDATE ...;`) into distinct, sequential `await db.execute(...)` calls.
