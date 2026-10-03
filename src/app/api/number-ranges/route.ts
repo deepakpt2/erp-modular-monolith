@@ -20,6 +20,9 @@ import { sql } from 'drizzle-orm';
 
 async function ensureNumberRangeSchema() {
   try {
+    // 1. Ensure columns exist with explicit individual awaits
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS code VARCHAR(50) DEFAULT '01'`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS fiscal_year INTEGER`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS company_code VARCHAR(20)`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS plant_code VARCHAR(20)`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS controlling_area_code VARCHAR(20)`).catch(() => {});
@@ -28,8 +31,11 @@ async function ensureNumberRangeSchema() {
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_buffered BOOLEAN DEFAULT false`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS buffer_size INTEGER DEFAULT 10`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range ALTER COLUMN object_type TYPE VARCHAR(50)`).catch(() => {});
-    // Drop single-column unique indexes/constraints individually so each one executes even if another fails
+
+    // 2. Drop legacy single-column unique indexes and constraints
     await db.execute(sql`DROP INDEX IF EXISTS uq_core_nr_code`).catch(() => {});
+    await db.execute(sql`DROP INDEX IF EXISTS uq_nr_obj_co_year`).catch(() => {});
+    await db.execute(sql`DROP INDEX IF EXISTS uq_core_nr_obj_le_year`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_unique`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_key`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS uq_core_nr_code`).catch(() => {});

@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
           ct.code as client_code, ct.name as client_name,
           (SELECT COUNT(*) FROM org_facility WHERE legal_entity_id = le.id) as plant_count,
           (SELECT COUNT(*) FROM org_cost_unit WHERE legal_entity_id = le.id) as cost_center_count,
-          (SELECT COUNT(*) FROM core_number_range WHERE fiscal_year = EXTRACT(YEAR FROM NOW())::int) as number_range_count
+          (SELECT COUNT(*) FROM core_number_range WHERE (company_code = le.code OR company_code IS NULL)) as number_range_count
         FROM org_legal_entity le
         LEFT JOIN fin_chart fc ON fc.code = le.chart_of_accounts_code
         LEFT JOIN core_tenant ct ON le.tenant_id = ct.id

@@ -40,12 +40,16 @@ export const coreNumberRangeObjectTypeEnum = pgEnum('core_nr_object_type', [
 
 export const coreNumberRange = pgTable('core_number_range', {
   id: uuid('id').primaryKey().defaultRandom(),
-  code: varchar('code', { length: 50 }).notNull(), // e.g., ITEM-01, PO-01, FI-DOC-01 – legal-safe with code for search
-  objectType: coreNumberRangeObjectTypeEnum('object_type').notNull(),
+  code: varchar('code', { length: 50 }).notNull().default('01'),
+  objectType: varchar('object_type', { length: 50 }).notNull(),
+  companyCode: varchar('company_code', { length: 20 }),
+  plantCode: varchar('plant_code', { length: 20 }),
+  controllingAreaCode: varchar('controlling_area_code', { length: 20 }),
+  scopeLevel: varchar('scope_level', { length: 30 }).default('GLOBAL'),
   legalEntityId: uuid('legal_entity_id').references(() => orgLegalEntity.id),
-  companyCodeId: uuid('company_code_id'), // legacy column for backward compat – was company_code_id
-  fiscalYear: integer('fiscal_year'), // nullable – was year, notNull previously – now nullable for yearly reset optional
-  year: integer('year'), // legacy alias for fiscal_year
+  companyCodeId: uuid('company_code_id'),
+  fiscalYear: integer('fiscal_year'),
+  year: integer('year'),
   prefix: varchar('prefix', { length: 20 }).notNull().default(''),
   fromNumber: bigint('from_number', { mode: 'number' }).notNull(),
   toNumber: bigint('to_number', { mode: 'number' }).notNull(),
@@ -57,10 +61,7 @@ export const coreNumberRange = pgTable('core_number_range', {
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (t) => ({
-  // uniqueCode: removed to allow interval codes (01, 10, etc.) per company code / fiscal year
-  // uniqueRange: uniqueIndex('uq_core_nr_obj_le_year')
-}));
+});
 
 export const coreNumberRangeBuffer = pgTable('core_number_range_buffer', {
   id: uuid('id').primaryKey().defaultRandom(),

@@ -167,26 +167,20 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
     await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS number_of_periods integer DEFAULT 12`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(()=>{});
 
-    await db.execute(sql`
-      INSERT INTO fin_fiscal_calendar (code, name, description, year_dependent, calendar_year, number_of_periods, is_active)
-      VALUES
-        ('K4', 'Calendar Year (Jan-Dec + 4 Special)', 'Standard calendar year: 12 posting periods + 4 special periods', false, true, 12, true),
-        ('V3', 'April to March (Apr-Mar + 4 Special)', 'Standard UK / India fiscal year: April to March', false, false, 12, true),
-        ('V6', 'July to June (Jul-Jun + 4 Special)', 'Standard Australia / Egypt fiscal year: July to June', false, false, 12, true),
-        ('V9', 'October to September (Oct-Sep + 4 Special)', 'Standard US Federal fiscal year: October to September', false, false, 12, true)
-      ON CONFLICT (code) DO NOTHING
-    `).catch(async () => {
+    // Robust insertion using WHERE NOT EXISTS to avoid requiring unique constraint on code
+    const defaultVariants = [
+      { code: 'K4', name: 'Calendar Year (Jan-Dec + 4 Special)', desc: 'Standard calendar year: 12 posting periods + 4 special periods', yd: false, cy: true, p: 12 },
+      { code: 'V3', name: 'April to March (Apr-Mar + 4 Special)', desc: 'Standard UK / India fiscal year: April to March', yd: false, cy: false, p: 12 },
+      { code: 'V6', name: 'July to June (Jul-Jun + 4 Special)', desc: 'Standard Australia / Egypt fiscal year: July to June', yd: false, cy: false, p: 12 },
+      { code: 'V9', name: 'October to September (Oct-Sep + 4 Special)', desc: 'Standard US Federal fiscal year: October to September', yd: false, cy: false, p: 12 }
+    ];
+    for (const v of defaultVariants) {
       await db.execute(sql`
         INSERT INTO fin_fiscal_calendar (code, name, description, year_dependent, calendar_year, number_of_periods, is_active)
-        SELECT 'K4', 'Calendar Year (Jan-Dec + 4 Special)', 'Standard calendar year: 12 posting periods', false, true, 12, true
-        WHERE NOT EXISTS (SELECT 1 FROM fin_fiscal_calendar WHERE code = 'K4')
-      `);
-      await db.execute(sql`
-        INSERT INTO fin_fiscal_calendar (code, name, description, year_dependent, calendar_year, number_of_periods, is_active)
-        SELECT 'V3', 'April to March (Apr-Mar + 4 Special)', 'Standard UK / India fiscal year: April to March', false, false, 12, true
-        WHERE NOT EXISTS (SELECT 1 FROM fin_fiscal_calendar WHERE code = 'V3')
-      `);
-    });
+        SELECT ${v.code}, ${v.name}, ${v.desc}, ${v.yd}, ${v.cy}, ${v.p}, true
+        WHERE NOT EXISTS (SELECT 1 FROM fin_fiscal_calendar WHERE UPPER(code) = ${v.code})
+      `).catch(() => {});
+    }
     console.log('  ✅ Standard Fiscal Year Variants ensured (FFYC / T009: K4 Jan-Dec, V3 Apr-Mar, V6 Jul-Jun, V9 Oct-Sep)');
   } catch (e: any) {
     console.warn('  ⚠️ Fiscal variant baseline note:', e.message);

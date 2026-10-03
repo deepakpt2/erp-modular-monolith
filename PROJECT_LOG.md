@@ -1472,3 +1472,19 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-03 IST: Resolve PostgreSQL Server Errors for Fiscal Calendars & Missing Columns on `core_number_range`
+- **Error 1: `there is no unique or exclusion constraint matching the ON CONFLICT specification` on `fin_fiscal_calendar`**
+  - **Root Cause:** Table `fin_fiscal_calendar` does not have a single-column unique constraint on `(code)` alone (it is scoped by `tenant_id, code` or composite index). `standardSystemDefaults.ts` attempted an `INSERT ... ON CONFLICT (code) DO NOTHING`.
+  - **Resolution:** Replaced the fragile `ON CONFLICT (code)` with a robust `WHERE NOT EXISTS (SELECT 1 FROM fin_fiscal_calendar WHERE UPPER(code) = ...)` pattern that executes deterministically without demanding single-column constraints.
+- **Error 2: `column "code" does not exist at character 55` & `column "code" of relation "core_number_range" does not exist`**
+  - **Root Cause:** The PostgreSQL database table `core_number_range` was originally created from `src/modules/foundation/number-range/infrastructure/schema.ts` (`entNumberRange`), which originally defined `(id, object_type, company_code_id, year, prefix, from_number, to_number, current_number)` and did **not** have columns `code` or `fiscal_year`! When queries selected or inserted `code`, Postgres failed with `column "code" does not exist`.
+  - **Resolution:**
+    1. Synchronized `src/modules/foundation/number-range/infrastructure/schema.ts` with `code`, `companyCode`, `plantCode`, `controllingAreaCode`, `scopeLevel`, and `fiscalYear`.
+    2. Added explicit `ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS code VARCHAR(50) DEFAULT '01'` and `ADD COLUMN IF NOT EXISTS fiscal_year INTEGER` to both `src/shared/kernel/db/autoMigrate.ts` and `src/app/api/number-ranges/route.ts`.
+- **Error 3: `column "fiscal_year" does not exist at character 540` in `company-codes/route.ts`**
+  - **Resolution:** Replaced the unmigrated subquery in `company-codes/route.ts` with a resilient count matching by company code.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.

@@ -112,6 +112,8 @@ async function runAutoMigrate() {
   // Migration for core_number_range standard interval schema
   try {
     console.log('🔄 Ensuring core_number_range standard schema & dropping legacy single-code uniqueness...');
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS code VARCHAR(50) DEFAULT '01'`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS fiscal_year INTEGER`);
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS company_code VARCHAR(20)`);
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS plant_code VARCHAR(20)`);
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS controlling_area_code VARCHAR(20)`);
