@@ -1772,3 +1772,10 @@ Once you confirm, I will:
 - Error: `there is no unique or exclusion constraint matching the ON CONFLICT specification`.
 - Cause: In standard schema `orgStructureSchema.ts`, unique constraints like `fin_fiscal_calendar` are composite on `(tenant_id, code)` rather than bare `(code)`. An `ON CONFLICT (code)` therefore fails without a dedicated unique index on `(code)`.
 - Solution: Added explicit `CREATE UNIQUE INDEX IF NOT EXISTS` for all single-field upsert targets (`fin_fiscal_calendar (code)`, `fin_posting_calendar (code)`, `fin_chart (code)`, etc.) right before inserts.
+
+## Native TypeScript Seed Runner for Aura Manufacturing (db:seed:aura)
+- Created `manual-migrations/002_aura_manufacturing_seed.ts` containing the automated TypeScript seed runner for Steps 1 through 8.
+- Uses direct application database client and standard baseline initializer `seedIndustryStandardBaseline()`.
+- Added script `"db:seed:aura": "tsx manual-migrations/002_aura_manufacturing_seed.ts"` to `package.json`.
+- Can be executed inside the container environment using Docker compose:
+  `docker compose run --rm migrator npm run db:seed:aura`

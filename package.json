@@ -16,7 +16,8 @@
     "db:create-admin": "tsx src/shared/kernel/db/createAdmin.ts",
     "db:auto-migrate": "tsx src/shared/kernel/db/autoMigrate.ts",
     "db:manual:fictional": "tsx manual-migrations/001_fictional_company_1000_fmcg_test_only.ts",
-    "db:manual:fictional:wipe": "FULL_WIPE=true tsx manual-migrations/001_fictional_company_1000_fmcg_test_only.ts"
+    "db:manual:fictional:wipe": "FULL_WIPE=true tsx manual-migrations/001_fictional_company_1000_fmcg_test_only.ts",
+    "db:seed:aura": "tsx manual-migrations/002_aura_manufacturing_seed.ts"
   },
   "dependencies": {
     "@auth/pg-adapter": "^1.8.0",
