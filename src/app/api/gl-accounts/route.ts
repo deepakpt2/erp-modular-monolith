@@ -164,9 +164,9 @@ export async function GET(req: NextRequest) {
       } catch {}
     }
 
-    // Ensure account_group_code is populated: if null in DB, dynamically match against account groups
+    // Return exact account_group_code from DB; only fallback to range matching if field is strictly null/empty
     const enrichedGlRows = glRows.map((acc: any) => {
-      let groupCode = acc.account_group_code;
+      let groupCode = (acc.account_group_code || '').toString().trim();
       if (!groupCode && accountGroups.length > 0) {
         const numVal = parseInt(acc.account_number, 10);
         if (!isNaN(numVal)) {
@@ -182,7 +182,7 @@ export async function GET(req: NextRequest) {
       }
       return {
         ...acc,
-        account_group_code: groupCode || ''
+        account_group_code: groupCode
       };
     });
 
@@ -232,29 +232,77 @@ export async function POST(req: NextRequest) {
     const finalCoaCode = coa_code || chart_code;
     if (!finalCoaCode || !account_number || !name) return NextResponse.json({ error: 'coa_code/chart_code, account_number, name required' }, { status: 400 });
 
+    const finalAccountGroup = account_group_code ? account_group_code.toString().trim().toUpperCase() : null;
+
     // SAP parity: If account_group_code is provided, inherit account_category and account_type from the group
-    if (account_group_code) {
+    if (finalAccountGroup) {
       try {
-        const agRes = await db.execute(sql`SELECT account_type, account_category FROM fin_account_group WHERE code = ${account_group_code.toUpperCase()} LIMIT 1`);
+        const agRes = await db.execute(sql`SELECT account_type, account_category FROM fin_account_group WHERE code = ${finalAccountGroup} LIMIT 1`);
         if (agRes.rows.length > 0) {
           const ag = agRes.rows[0] as any;
-          if (ag.account_category && !account_category) account_category = ag.account_category;
-          if (ag.account_type && !account_type) account_type = ag.account_type;
+          if (ag.account_category && (!account_category || account_category === 'INHERIT_FROM_GROUP')) account_category = ag.account_category;
+          if (ag.account_type && (!account_type || account_type === 'INHERIT_FROM_GROUP')) account_type = ag.account_type;
         }
       } catch {}
     }
+
+    const finalAccountType = (account_type && account_type !== 'INHERIT_FROM_GROUP') ? account_type : 'ASSET';
+    const finalAccountCategory = (account_category && account_category !== 'INHERIT_FROM_GROUP') ? account_category : 'BALANCE_SHEET';
 
     try {
       const coaRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = ${finalCoaCode.toUpperCase()} LIMIT 1`);
       if (coaRes.rows.length === 0) return NextResponse.json({ error: `CoA ${finalCoaCode} not found in fin_chart` }, { status: 404 });
       const coaId = (coaRes.rows[0] as any).id;
 
-      const res = await db.execute(sql`
-        INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code)
-        VALUES (${coaId}, ${account_number}, ${name}, ${account_type || 'ASSET'}::fin_ledger_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${account_category || null}, ${account_group_code || null})
-        ON CONFLICT (chart_id, account_number) DO UPDATE SET name = ${name}, account_type = ${account_type || 'ASSET'}::fin_ledger_account_type, is_balance_sheet = ${is_balance_sheet || false}, account_category = COALESCE(${account_category || null}, fin_ledger_account.account_category), account_group_code = COALESCE(${account_group_code || null}, fin_ledger_account.account_group_code), updated_at = NOW()
-        RETURNING id, account_number, name, account_type, account_category, account_group_code
-      `);
+      let res;
+      try {
+        res = await db.execute(sql`
+          INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code)
+          VALUES (${coaId}, ${account_number}, ${name}, ${finalAccountType}::fin_ledger_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${finalAccountCategory}, ${finalAccountGroup})
+          ON CONFLICT (chart_id, account_number) DO UPDATE SET 
+            name = ${name}, 
+            account_type = ${finalAccountType}::fin_ledger_account_type, 
+            is_balance_sheet = ${is_balance_sheet || false}, 
+            is_reconciliation = ${is_reconciliation || false},
+            is_tax_relevant = ${is_tax_relevant || false},
+            account_category = ${finalAccountCategory}, 
+            account_group_code = ${finalAccountGroup}, 
+            updated_at = NOW()
+          RETURNING id, account_number, name, account_type, account_category, account_group_code
+        `);
+      } catch (insertErr1: any) {
+        try {
+          res = await db.execute(sql`
+            INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code)
+            VALUES (${coaId}, ${account_number}, ${name}, ${finalAccountType}::gl_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${finalAccountCategory}, ${finalAccountGroup})
+            ON CONFLICT (chart_id, account_number) DO UPDATE SET 
+              name = ${name}, 
+              account_type = ${finalAccountType}::gl_account_type, 
+              is_balance_sheet = ${is_balance_sheet || false}, 
+              is_reconciliation = ${is_reconciliation || false},
+              is_tax_relevant = ${is_tax_relevant || false},
+              account_category = ${finalAccountCategory}, 
+              account_group_code = ${finalAccountGroup}, 
+              updated_at = NOW()
+            RETURNING id, account_number, name, account_type, account_category, account_group_code
+          `);
+        } catch (insertErr2: any) {
+          res = await db.execute(sql`
+            INSERT INTO fin_ledger_account (chart_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code)
+            VALUES (${coaId}, ${account_number}, ${name}, ${finalAccountType}, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${finalAccountCategory}, ${finalAccountGroup})
+            ON CONFLICT (chart_id, account_number) DO UPDATE SET 
+              name = ${name}, 
+              account_type = ${finalAccountType}, 
+              is_balance_sheet = ${is_balance_sheet || false}, 
+              is_reconciliation = ${is_reconciliation || false},
+              is_tax_relevant = ${is_tax_relevant || false},
+              account_category = ${finalAccountCategory}, 
+              account_group_code = ${finalAccountGroup}, 
+              updated_at = NOW()
+            RETURNING id, account_number, name, account_type, account_category, account_group_code
+          `);
+        }
+      }
       return NextResponse.json({ success: true, glAccount: res.rows[0], code: 'FGLC', message: `G/L Account ${account_number} created – FGLC legal-safe`, legalSafe: true });
     } catch (newErr: any) {
       console.warn('fin_ledger_account insert failed fallback fin_ledger_account:', newErr.message);
@@ -264,8 +312,16 @@ export async function POST(req: NextRequest) {
 
       const res = await db.execute(sql`
         INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code)
-        VALUES (${coaId}, ${account_number}, ${name}, ${account_type || 'ASSET'}::gl_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${account_category || null}, ${account_group_code || null})
-        ON CONFLICT (coa_id, account_number) DO UPDATE SET name = ${name}, account_type = ${account_type || 'ASSET'}::gl_account_type, is_balance_sheet = ${is_balance_sheet || false}, account_category = COALESCE(${account_category || null}, fin_ledger_account.account_category), account_group_code = COALESCE(${account_group_code || null}, fin_ledger_account.account_group_code), updated_at = NOW()
+        VALUES (${coaId}, ${account_number}, ${name}, ${finalAccountType}::gl_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${finalAccountCategory}, ${finalAccountGroup})
+        ON CONFLICT (coa_id, account_number) DO UPDATE SET 
+          name = ${name}, 
+          account_type = ${finalAccountType}::gl_account_type, 
+          is_balance_sheet = ${is_balance_sheet || false}, 
+          is_reconciliation = ${is_reconciliation || false},
+          is_tax_relevant = ${is_tax_relevant || false},
+          account_category = ${finalAccountCategory}, 
+          account_group_code = ${finalAccountGroup}, 
+          updated_at = NOW()
         RETURNING id, account_number, name, account_type, account_category, account_group_code
       `);
       return NextResponse.json({ success: true, glAccount: res.rows[0], code: 'FGLC', message: `G/L Account ${account_number} created – FGLC (legacy FS00) legacy (migrating to FGLC)`, legalSafe: false });
@@ -281,73 +337,139 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, account_number, name, account_type, is_blocked, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code, description } = body;
+    let { id, account_number, name, account_type, is_blocked, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code, description } = body;
     if (!id && !account_number) return NextResponse.json({ error: 'id or account_number required' }, { status: 400 });
 
     const finalAccountGroup = account_group_code ? account_group_code.toString().trim().toUpperCase() : null;
 
-    try {
-      let res;
-      if (id) {
-        res = await db.execute(sql`
-          UPDATE fin_ledger_account SET
-            account_number = COALESCE(${account_number}, account_number),
-            name = COALESCE(${name}, name),
-            account_type = COALESCE(${account_type}::fin_ledger_account_type, account_type),
-            is_blocked = COALESCE(${is_blocked}, is_blocked),
-            is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
-            is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
-            is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
-            account_category = COALESCE(${account_category ?? null}, account_category),
-            account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
-            updated_at = NOW()
-          WHERE id = ${id}
-          RETURNING id, account_number, name, account_type, account_category, account_group_code
-        `);
-      } else {
-        res = await db.execute(sql`
-          UPDATE fin_ledger_account SET
-            name = COALESCE(${name}, name),
-            account_type = COALESCE(${account_type}::fin_ledger_account_type, account_type),
-            is_blocked = COALESCE(${is_blocked}, is_blocked),
-            is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
-            is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
-            is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
-            account_category = COALESCE(${account_category ?? null}, account_category),
-            account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
-            updated_at = NOW()
-          WHERE account_number = ${account_number}
-          RETURNING id, account_number, name, account_type, account_category, account_group_code
-        `);
-      }
-      if (res.rows.length === 0) throw new Error('Not found in fin_ledger_account');
-      return NextResponse.json({ success: true, glAccount: res.rows[0], code: 'FGLC', message: `G/L ${res.rows[0].account_number} updated – FGLC legal-safe` });
-    } catch (newErr: any) {
-      let res;
-      if (id) {
-        res = await db.execute(sql`
-          UPDATE fin_ledger_account SET
-            account_number = COALESCE(${account_number}, account_number),
-            name = COALESCE(${name}, name),
-            account_type = COALESCE(${account_type}::gl_account_type, account_type),
-            is_blocked = COALESCE(${is_blocked}, is_blocked),
-            is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet)
-          WHERE id = ${id}
-          RETURNING id, account_number, name
-        `);
-      } else {
-        res = await db.execute(sql`
-          UPDATE fin_ledger_account SET
-            name = COALESCE(${name}, name),
-            account_type = COALESCE(${account_type}::gl_account_type, account_type),
-            is_blocked = COALESCE(${is_blocked}, is_blocked)
-          WHERE account_number = ${account_number}
-          RETURNING id, account_number, name
-        `);
-      }
-      if (res.rows.length === 0) return NextResponse.json({ error: 'G/L not found' }, { status: 404 });
-      return NextResponse.json({ success: true, glAccount: res.rows[0], message: `G/L ${res.rows[0].account_number} updated – FGLC (legacy FS00) legacy` });
+    // If account_group_code is provided and account_type is 'INHERIT_FROM_GROUP' or omitted, look up group
+    if (finalAccountGroup) {
+      try {
+        const agRes = await db.execute(sql`SELECT account_type, account_category FROM fin_account_group WHERE code = ${finalAccountGroup} LIMIT 1`);
+        if (agRes.rows.length > 0) {
+          const ag = agRes.rows[0] as any;
+          if (ag.account_category && (!account_category || account_category === 'INHERIT_FROM_GROUP')) account_category = ag.account_category;
+          if (ag.account_type && (!account_type || account_type === 'INHERIT_FROM_GROUP')) account_type = ag.account_type;
+        }
+      } catch {}
     }
+
+    // Clean account_type if it is 'INHERIT_FROM_GROUP'
+    const finalAccountType = (account_type && account_type !== 'INHERIT_FROM_GROUP') ? account_type : null;
+    const finalAccountCategory = (account_category && account_category !== 'INHERIT_FROM_GROUP') ? account_category : null;
+
+    // Ensure columns exist
+    try {
+      await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category VARCHAR(50)`);
+      await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code VARCHAR(50)`);
+    } catch {}
+
+    // 1. Try updating with text type cast or string
+    let res;
+    try {
+      if (id) {
+        res = await db.execute(sql`
+          UPDATE fin_ledger_account SET
+            name = COALESCE(${name}, name),
+            account_type = COALESCE(${finalAccountType}::fin_ledger_account_type, account_type),
+            is_blocked = COALESCE(${is_blocked}, is_blocked),
+            is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+            is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
+            is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
+            account_category = COALESCE(${finalAccountCategory}, account_category),
+            account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
+            updated_at = NOW()
+          WHERE id = ${id}
+          RETURNING id, account_number, name, account_type, account_category, account_group_code
+        `);
+      } else {
+        res = await db.execute(sql`
+          UPDATE fin_ledger_account SET
+            name = COALESCE(${name}, name),
+            account_type = COALESCE(${finalAccountType}::fin_ledger_account_type, account_type),
+            is_blocked = COALESCE(${is_blocked}, is_blocked),
+            is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+            is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
+            is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
+            account_category = COALESCE(${finalAccountCategory}, account_category),
+            account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
+            updated_at = NOW()
+          WHERE account_number = ${account_number}
+          RETURNING id, account_number, name, account_type, account_category, account_group_code
+        `);
+      }
+    } catch (castErr1: any) {
+      // 2. Try updating without casting to fin_ledger_account_type
+      try {
+        if (id) {
+          res = await db.execute(sql`
+            UPDATE fin_ledger_account SET
+              name = COALESCE(${name}, name),
+              account_type = COALESCE(${finalAccountType}::gl_account_type, account_type),
+              is_blocked = COALESCE(${is_blocked}, is_blocked),
+              is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+              is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
+              is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
+              account_category = COALESCE(${finalAccountCategory}, account_category),
+              account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
+              updated_at = NOW()
+            WHERE id = ${id}
+            RETURNING id, account_number, name, account_type, account_category, account_group_code
+          `);
+        } else {
+          res = await db.execute(sql`
+            UPDATE fin_ledger_account SET
+              name = COALESCE(${name}, name),
+              account_type = COALESCE(${finalAccountType}::gl_account_type, account_type),
+              is_blocked = COALESCE(${is_blocked}, is_blocked),
+              is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+              is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
+              is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
+              account_category = COALESCE(${finalAccountCategory}, account_category),
+              account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
+              updated_at = NOW()
+            WHERE account_number = ${account_number}
+            RETURNING id, account_number, name, account_type, account_category, account_group_code
+          `);
+        }
+      } catch (castErr2: any) {
+        // 3. Fallback without any enum casting for account_type (supports varchar column)
+        if (id) {
+          res = await db.execute(sql`
+            UPDATE fin_ledger_account SET
+              name = COALESCE(${name}, name),
+              account_type = COALESCE(${finalAccountType}, account_type),
+              is_blocked = COALESCE(${is_blocked}, is_blocked),
+              is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+              is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
+              is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
+              account_category = COALESCE(${finalAccountCategory}, account_category),
+              account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
+              updated_at = NOW()
+            WHERE id = ${id}
+            RETURNING id, account_number, name, account_type, account_category, account_group_code
+          `);
+        } else {
+          res = await db.execute(sql`
+            UPDATE fin_ledger_account SET
+              name = COALESCE(${name}, name),
+              account_type = COALESCE(${finalAccountType}, account_type),
+              is_blocked = COALESCE(${is_blocked}, is_blocked),
+              is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+              is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
+              is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
+              account_category = COALESCE(${finalAccountCategory}, account_category),
+              account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
+              updated_at = NOW()
+            WHERE account_number = ${account_number}
+            RETURNING id, account_number, name, account_type, account_category, account_group_code
+          `);
+        }
+      }
+    }
+
+    if (!res || res.rows.length === 0) return NextResponse.json({ error: 'G/L account not found' }, { status: 404 });
+    return NextResponse.json({ success: true, glAccount: res.rows[0], code: 'FGLC', message: `G/L ${res.rows[0].account_number} updated – FGLC legal-safe` });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

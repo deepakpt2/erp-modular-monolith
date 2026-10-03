@@ -1625,3 +1625,16 @@ Once you confirm, I will:
   3. In `src/app/api/gl-accounts/route.ts`:
      - Added dynamic resolution in `GET`: if an account in the database has a blank/null `account_group_code`, the API dynamically matches its `account_number` against defined account groups' `from_account` and `to_account` intervals.
      - Preserved `account_group_code` and `account_category` in the fallback `GET` and `POST` queries.
+
+## Fix G/L Master Account Group Persistence & Inherit Type Handling (FS00 / FGLC)
+- **Problem:** When editing a G/L account with `account_group_code` set to `LIAB` (or any other non-ASST group), the edit form repeatedly reverted or displayed `ASST` because:
+  1. In `POST` and `PUT` handlers of `/api/gl-accounts/route.ts`, if `account_type` was `'INHERIT_FROM_GROUP'` (the default dropdown selection) or an enum cast failed (`fin_ledger_account_type`), PostgreSQL threw an unhandled type casting exception during the update statement.
+  2. In the `catch` fallback block of the update query, `account_group_code` and `account_category` were omitted from the fallback update query, resulting in the update ignoring the new group selection.
+  3. Dynamic account group resolution in `GET /api/gl-accounts` now prioritizes the database's actual saved `account_group_code` and only falls back to range matching if strictly empty/null.
+- **Solution:**
+  1. In `src/app/api/gl-accounts/route.ts`:
+     - Handled `'INHERIT_FROM_GROUP'` explicitly in `POST` and `PUT` so it resolves against `fin_account_group` and falls back to clean, valid types instead of attempting invalid enum casts.
+     - Implemented resilient fallback queries in `PUT` and `POST` that preserve `account_group_code` and `account_category` across all database driver versions.
+     - Preserved exact database values of `account_group_code` during `GET`.
+  2. In `src/shared/ui/single-code-page.tsx`:
+     - Enhanced `useEffect` form hydration in edit mode to merge and normalize all fields (including stringifying booleans for select controls) so values like `LIAB` properly populate and bind to the `DbAutocomplete` input.

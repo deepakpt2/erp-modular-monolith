@@ -306,11 +306,12 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
     if (mode === 'change' && selectedCode) {
       const found = items.find((it: any) => (it.code || it.account_number || it.item_number) === selectedCode);
       if (found) {
-        // Overlay found item fields on top of initialForm, keeping defined values from found
-        const merged: Record<string, any> = { ...initialForm };
+        // Overlay found item fields on top of initialForm
+        const merged: Record<string, any> = { ...initialForm, ...found };
+        // Ensure string conversion and normalize boolean values
         Object.keys(found).forEach(k => {
-          if (found[k] !== undefined) {
-            merged[k] = found[k];
+          if (found[k] !== undefined && found[k] !== null) {
+            merged[k] = typeof found[k] === 'boolean' ? String(found[k]) : found[k];
           }
         });
         setForm(merged);
