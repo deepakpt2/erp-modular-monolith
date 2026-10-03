@@ -1421,3 +1421,16 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source tree diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Eradicate Legacy SQL Fallback in Number Ranges API
+- **Error Identification:**
+  - The query `INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number, company_code_id, year, description) ... ON CONFLICT (code) DO UPDATE ...` was originating from an unreached legacy fallback branch in `/api/number-ranges/route.ts` that caught errors from the main block and tried to execute legacy raw SQL with invalid column mappings (`company_code_id` passed as empty string rather than UUID).
+- **Resolution:**
+  - Completely erased the legacy query and fragile `ON CONFLICT (code)` fallback block.
+  - Rewrote the `POST` handler to perform standard lookup-then-upsert matching by interval code, company code, and fiscal year.
+  - Handled numeric boundaries, lock rules, and scope assignments safely.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero occurrences of `company_code_id, year` left anywhere in the codebase.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.

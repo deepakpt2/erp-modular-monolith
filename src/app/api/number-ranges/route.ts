@@ -147,6 +147,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const authCheck = await requireApiAuth(req as any);
   if (authCheck) return authCheck;
+
+  await ensureNumberRangeSchema();
+
   try {
     const body = await req.json();
     const {
@@ -160,105 +163,130 @@ export async function POST(req: NextRequest) {
       from_number,
       to_number,
       current_number,
-      legal_entity_id,
       fiscal_year,
       description,
       is_external = false,
       year
     } = body;
+
     const isExternalVal = is_external === true || is_external === 'true';
-    const finalObjectType = objectType || object_type;
-    const finalFiscalYear = fiscal_year ?? year ?? null;
-    if (!code || !finalObjectType) return NextResponse.json({ error: 'code and object_type/objectType required' }, { status: 400 });
+    const finalObjectType = (objectType || object_type || 'FI_DOC').toString().trim().toUpperCase();
+    const finalFiscalYear = fiscal_year !== undefined && fiscal_year !== null && fiscal_year !== '' ? Number(fiscal_year) : (year ? Number(year) : null);
 
-    const upperCode = code.toUpperCase();
-    const upperObjType = finalObjectType.toUpperCase();
-    // Industry standard: prefix forced to empty – no prefix in number range
-    const cleanPrefix = '';
+    if (!code) {
+      return NextResponse.json({ error: 'Interval code is required (e.g. 01, 10, 50)' }, { status: 400 });
+    }
 
+    const upperCode = code.toString().trim().toUpperCase();
+    const fromNum = Number(from_number) || 1;
+    const toNum = Number(to_number) || 9999999999;
+    const currNum = current_number !== undefined && current_number !== null && current_number !== '' ? Number(current_number) : fromNum;
+    const cCode = company_code ? company_code.toString().trim().toUpperCase() : null;
+    const pCode = plant_code ? plant_code.toString().trim().toUpperCase() : null;
+    const coCode = controlling_area_code ? controlling_area_code.toString().trim().toUpperCase() : null;
+    const resolvedScope = scope_level ? scope_level.toString().trim().toUpperCase() : (cCode ? 'COMPANY_CODE' : (pCode ? 'PLANT' : (coCode ? 'CONTROLLING_AREA' : 'GLOBAL')));
+
+    // Check existing row by code and optional scope/year
+    let existing: any = null;
     try {
-      let existing: any = null;
-      try {
-        if (finalFiscalYear) {
-          const exRes = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${upperCode} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1) LIMIT 1`);
-          if (exRes.rows.length > 0) existing = exRes.rows[0] as any;
-        } else {
-          const exRes = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number, fiscal_year FROM core_number_range WHERE code = ${upperCode} LIMIT 1`);
-          if (exRes.rows.length > 0) existing = exRes.rows[0] as any;
-        }
-      } catch {}
+      let q = sql`SELECT id, code, object_type, company_code, from_number, to_number, current_number, fiscal_year, is_external FROM core_number_range WHERE UPPER(code) = ${upperCode}`;
+      if (cCode) {
+        q = sql`${q} AND (UPPER(company_code) = ${cCode} OR company_code IS NULL)`;
+      }
+      if (finalFiscalYear) {
+        q = sql`${q} AND (fiscal_year = ${finalFiscalYear} OR fiscal_year IS NULL)`;
+      }
+      q = sql`${q} ORDER BY company_code NULLS LAST, fiscal_year NULLS LAST LIMIT 1`;
+      const exRes = await db.execute(q);
+      if (exRes.rows.length > 0) {
+        existing = exRes.rows[0];
+      }
+    } catch (lookupErr: any) {
+      console.warn('Existing interval lookup warning:', lookupErr.message);
+    }
 
-      if (existing) {
-        const isUsed = Number(existing.current_number) > Number(existing.from_number);
-        const usedCount = Number(existing.current_number) - Number(existing.from_number);
-        if (isUsed) {
-          if (from_number && Number(from_number) !== Number(existing.from_number)) {
-            return NextResponse.json({ error: `Range ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already used ${usedCount} times (current ${existing.current_number} > from ${existing.from_number}), cannot change from_number –  locked – only to_number increase, description allowed. Next available ${Number(existing.current_number)+1}. Create new range ${upperCode}-NEW instead.` }, { status: 400 });
-          }
-          if (upperObjType !== String(existing.object_type).toUpperCase()) {
-            return NextResponse.json({ error: `Range ${existing.code} already used ${usedCount} times, cannot change object_type –  locked` }, { status: 400 });
-          }
-          if (to_number && Number(to_number) < Number(existing.current_number)) {
-            return NextResponse.json({ error: `Range ${existing.code} already used ${usedCount} times, cannot reduce to_number ${existing.to_number} → ${to_number} below current ${existing.current_number} – would lose numbers. Only increase allowed. Next ${Number(existing.current_number)+1}` }, { status: 400 });
-          }
-          const newTo = to_number ? Number(to_number) : Number(existing.to_number);
-          const res = await db.execute(sql`
-            UPDATE core_number_range SET to_number = ${newTo}, description = COALESCE(${description || null}, description), prefix = '', updated_at = NOW()
-            WHERE code = ${upperCode} AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1)
-            RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
-          `);
-          const updated = res.rows[0] as any;
-          return NextResponse.json({ success: true, numberRange: { ...updated, next_number: Number(updated.current_number)+1, used_count: usedCount, is_locked: true }, code: 'FNRC', message: `Range ${upperCode} used ${usedCount} times – locked 🔒 – only to_number increase/description updated – Industry standard – next ${Number(updated.current_number)+1}`, locked: true, usedCount, next_number: Number(updated.current_number)+1 });
+    if (existing) {
+      const isUsed = Number(existing.current_number) > Number(existing.from_number);
+      const usedCount = Math.max(0, Number(existing.current_number) - Number(existing.from_number));
+
+      if (isUsed) {
+        if (Number(fromNum) !== Number(existing.from_number)) {
+          return NextResponse.json({
+            error: `Interval ${existing.code}${existing.fiscal_year ? ` FY ${existing.fiscal_year}` : ''} already in active use (${usedCount} documents issued). Starting number cannot be altered to maintain audit trail. Only upper bound (To Number) expansion is allowed.`
+          }, { status: 400 });
+        }
+        if (Number(toNum) < Number(existing.current_number)) {
+          return NextResponse.json({
+            error: `Cannot reduce To Number ${existing.to_number} to ${toNum} below current consumed level ${existing.current_number}.`
+          }, { status: 400 });
         }
       }
 
-      const cCode = company_code ? company_code.toUpperCase().trim() : null;
-      const res = await db.execute(sql`
-        INSERT INTO core_number_range (code, object_type, company_code, prefix, from_number, to_number, current_number, legal_entity_id, fiscal_year, is_external, description)
-        VALUES (${upperCode}, ${upperObjType}::core_number_range_object_type, ${cCode}, '', ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${isExternalVal}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET 
-          object_type = ${upperObjType}::core_number_range_object_type,
-          company_code = COALESCE(${cCode}, core_number_range.company_code),
-          prefix = '',
-          from_number = ${from_number || 1},
-          to_number = ${to_number || 9999999999},
-          current_number = ${current_number || from_number || 1},
+      const newTo = Number(toNum);
+      const newFrom = isUsed ? Number(existing.from_number) : fromNum;
+      const newCurr = isUsed ? Number(existing.current_number) : currNum;
+
+      const updateRes = await db.execute(sql`
+        UPDATE core_number_range SET
+          from_number = ${newFrom},
+          to_number = ${newTo},
+          current_number = ${newCurr},
+          company_code = COALESCE(${cCode}, company_code),
+          plant_code = COALESCE(${pCode}, plant_code),
+          controlling_area_code = COALESCE(${coCode}, controlling_area_code),
+          scope_level = COALESCE(${resolvedScope}, scope_level),
+          description = COALESCE(${description || null}, description),
           is_external = ${isExternalVal},
-          description = ${description || null},
+          prefix = '',
           updated_at = NOW()
-        RETURNING id, code, object_type, company_code, current_number, from_number, to_number, fiscal_year, is_external
+        WHERE id = ${existing.id}
+        RETURNING id, code, object_type, company_code, plant_code, controlling_area_code, scope_level, current_number, from_number, to_number, fiscal_year, is_external, description
       `);
-      const row = res.rows[0] as any;
-      return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1, used_count: 0, is_locked: false }, code: 'FNRC', message: `Number range ${upperCode}${finalFiscalYear ? ` FY ${finalFiscalYear}` : ''} created – Industry standard numeric – next ${Number(row.current_number)+1}`, legalSafe: true, industry_standard: true });
-    } catch (newErr: any) {
-      console.warn('core_number_range insert failed fallback core_number_range:', newErr.message);
-      try {
-        const exLegacy = await db.execute(sql`SELECT id, code, object_type, from_number, to_number, current_number FROM core_number_range WHERE code = ${upperCode} LIMIT 1`);
-        if (exLegacy.rows.length > 0) {
-          const existing = exLegacy.rows[0] as any;
-          const isUsed = Number(existing.current_number) > Number(existing.from_number);
-          if (isUsed) {
-            const usedCount = Number(existing.current_number) - Number(existing.from_number);
-            if (from_number && Number(from_number) !== Number(existing.from_number)) {
-              return NextResponse.json({ error: `Legacy range ${existing.code} used ${usedCount} times, cannot change from_number –  locked – next ${Number(existing.current_number)+1}` }, { status: 400 });
-            }
-            if (to_number && Number(to_number) < Number(existing.current_number)) {
-              return NextResponse.json({ error: `Legacy range ${existing.code} used ${usedCount} times, cannot reduce to_number below current ${existing.current_number}` }, { status: 400 });
-            }
-          }
-        }
-      } catch {}
-      const res = await db.execute(sql`
-        INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number, company_code_id, year, description)
-        VALUES (${upperCode}, ${upperObjType}, '', ${from_number || 1}, ${to_number || 9999999999}, ${current_number || from_number || 1}, ${legal_entity_id || null}, ${finalFiscalYear}, ${description || null})
-        ON CONFLICT (code) DO UPDATE SET object_type = ${upperObjType}, prefix = '', from_number = ${from_number || 1}, to_number = ${to_number || 9999999999}, current_number = ${current_number || from_number || 1}, description = ${description || null}
-        RETURNING id, code, object_type, current_number, from_number, to_number
-      `);
-      const row = res.rows[0] as any;
-      return NextResponse.json({ success: true, numberRange: { ...row, next_number: Number(row.current_number)+1 }, code: 'FNRC', message: `Number range ${upperCode} created – FNRC (legacy FBN1) legacy –  numeric – next ${Number(row.current_number)+1}`, legalSafe: false });
+      const updated = updateRes.rows[0] as any;
+      return NextResponse.json({
+        success: true,
+        numberRange: {
+          ...updated,
+          next_number: Number(updated.current_number) + 1,
+          used_count: usedCount,
+          is_locked: isUsed
+        },
+        code: 'FNRC',
+        message: `Number range ${upperCode} updated successfully.`,
+        legalSafe: true,
+        industry_standard: true
+      });
     }
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+
+    // Fresh insert
+    const insertRes = await db.execute(sql`
+      INSERT INTO core_number_range (
+        code, object_type, company_code, plant_code, controlling_area_code, scope_level,
+        prefix, from_number, to_number, current_number, fiscal_year, is_external, description
+      ) VALUES (
+        ${upperCode}, ${finalObjectType}, ${cCode}, ${pCode}, ${coCode}, ${resolvedScope},
+        '', ${fromNum}, ${toNum}, ${currNum},
+        ${finalFiscalYear}, ${isExternalVal}, ${description || null}
+      )
+      RETURNING id, code, object_type, company_code, plant_code, controlling_area_code, scope_level, current_number, from_number, to_number, fiscal_year, is_external, description
+    `);
+    const created = insertRes.rows[0] as any;
+    return NextResponse.json({
+      success: true,
+      numberRange: {
+        ...created,
+        next_number: Number(created.current_number) + 1,
+        used_count: 0,
+        is_locked: false
+      },
+      code: 'FNRC',
+      message: `Number range ${upperCode}${finalFiscalYear ? ` FY ${finalFiscalYear}` : ''} created successfully.`,
+      legalSafe: true,
+      industry_standard: true
+    });
+  } catch (err: any) {
+    console.error('Number range POST error:', err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
