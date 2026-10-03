@@ -90,12 +90,13 @@ export async function POST(req: NextRequest) {
   if (authCheck) return authCheck;
 
   try {
-    // Ensure updated_at and required audit columns exist
+    // Ensure updated_at, required columns, and unique constraint exist for ON CONFLICT
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT NOW()`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT NOW()`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code varchar(50)`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category varchar(50)`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS description text`).catch(()=>{});
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_chart_account ON fin_ledger_account (chart_id, account_number)`).catch(()=>{});
     const body = await req.json();
     let {
       coa_code,
@@ -212,12 +213,13 @@ export async function PUT(req: NextRequest) {
   if (authCheck) return authCheck;
 
   try {
-    // Ensure updated_at and required audit columns exist
+    // Ensure updated_at, required columns, and unique constraint exist for ON CONFLICT
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT NOW()`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT NOW()`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code varchar(50)`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category varchar(50)`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS description text`).catch(()=>{});
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_chart_account ON fin_ledger_account (chart_id, account_number)`).catch(()=>{});
     const body = await req.json();
     let {
       id,

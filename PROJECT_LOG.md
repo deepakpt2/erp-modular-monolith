@@ -1715,3 +1715,13 @@ Once you confirm, I will:
     - `ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT NOW()`
     - `ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS created_at timestamp DEFAULT NOW()`
   - Ensures the table possesses the standard audit timestamp columns regardless of container age.
+
+## Fix G/L Accounts Missing Unique Constraint for ON CONFLICT (42P10)
+- **Log finding analysis:**
+  - Container log confirmed error:
+    `[cause]: error: there is no unique or exclusion constraint matching the ON CONFLICT specification (code: 42P10)`
+  - Cause: In older database volumes where `fin_ledger_account` was created without the `(chart_id, account_number)` unique index, PostgreSQL rejects `ON CONFLICT (chart_id, account_number)`.
+- **Solution:**
+  - Added idempotent creation of the unique index:
+    `CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_chart_account ON fin_ledger_account (chart_id, account_number)`
+    in `standardSystemDefaults.ts` and `src/app/api/gl-accounts/route.ts` (POST and PUT).
