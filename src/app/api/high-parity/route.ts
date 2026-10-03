@@ -706,7 +706,7 @@ export async function POST(req: NextRequest) {
       // FRPC sample – authorization objects, role authorizations, user roles
       await db.execute(sql`INSERT INTO fin_authorization_object (code, description) VALUES ('M_BEST_WRK', 'Plant authorization for purchasing') ON CONFLICT (code) DO NOTHING`);
       await db.execute(sql`INSERT INTO fin_role_authorization (role_code, auth_object_code, field_name, field_value) VALUES ('PURCHASER', 'M_BEST_WRK', 'plant', '1000') ON CONFLICT DO NOTHING`);
-      await db.execute(sql`INSERT INTO fin_user_role (user_id, role_code) VALUES ('admin@er.deepakpt.com', 'PURCHASER') ON CONFLICT (user_id, role_code) DO NOTHING`);
+      await db.execute(sql`INSERT INTO fin_user_role (user_id, role_code) VALUES ('admin@example.com', 'PURCHASER') ON CONFLICT (user_id, role_code) DO NOTHING`);
 
       return NextResponse.json({
         success: true,

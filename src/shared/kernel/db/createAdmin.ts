@@ -4,15 +4,15 @@
  * 
  * Usage:
  *   npx tsx src/shared/kernel/db/createAdmin.ts
- *   npx tsx src/shared/kernel/db/createAdmin.ts --email=you@er.deepakpt.com --password=StrongPass@123
+ *   npx tsx src/shared/kernel/db/createAdmin.ts --email=you@example.com --password=StrongPass@123
  *   ADMIN_EMAIL=you@domain.com ADMIN_PASSWORD=StrongPass@123 npx tsx src/shared/kernel/db/createAdmin.ts
  * 
  * In Docker:
  *   docker compose exec app npm run db:create-admin
- *   docker compose exec app npx tsx src/shared/kernel/db/createAdmin.ts --email=you@er.deepakpt.com --password=StrongPass
+ *   docker compose exec app npx tsx src/shared/kernel/db/createAdmin.ts --email=you@example.com --password=StrongPass
  * 
  * Or via SQL directly (if container not running):
- *   docker compose exec postgres psql -U postgres -d erp -c "UPDATE auth_user SET password_hash = '\$2a\$10\$...' WHERE email = 'admin@er.deepakpt.com'"
+ *   docker compose exec postgres psql -U postgres -d erp -c "UPDATE auth_user SET password_hash = '\$2a\$10\$...' WHERE email = 'admin@example.com'"
  */
 
 import { db } from './client';
@@ -27,13 +27,13 @@ async function createAdmin() {
     return arg ? arg.split('=')[1] : undefined;
   };
 
-  const adminEmail = getArg('email') || process.env.ADMIN_EMAIL || 'admin@er.deepakpt.com';
+  const adminEmail = getArg('email') || process.env.ADMIN_EMAIL || 'admin@example.com';
   const adminPassword = getArg('password') || process.env.ADMIN_PASSWORD || 'Admin@123456';
   const adminName = getArg('name') || process.env.ADMIN_NAME || 'System Admin';
 
   console.log(`🔐 Creating first admin user (production safe, no demo data)...`);
   console.log(`   Email: ${adminEmail}`);
-  console.log(`   Domain: ${process.env.DOMAIN || 'er.deepakpt.com'}`);
+  console.log(`   Domain: ${process.env.DOMAIN || 'erp.example.com'}`);
 
   // Validate
   if (!adminEmail.includes('@')) {
@@ -78,7 +78,7 @@ async function createAdmin() {
   console.log(`   Role: OWNER (can approve all workflows, manage users)`);
   console.log(`   Hash: ${hash.substring(0, 20)}...`);
   console.log('');
-  console.log(`   Login: https://${process.env.DOMAIN || 'er.deepakpt.com'}/login`);
+  console.log(`   Login: https://${process.env.DOMAIN || 'erp.example.com'}/login`);
   console.log('');
   console.log(`   🔒 Security:`);
   console.log(`   - Change password after first login via UI or re-run this script`);
@@ -94,7 +94,7 @@ async function createAdmin() {
   console.log(`   1. docker compose up -d postgres (or full app)`);
   console.log(`   2. docker compose exec app npm run db:push  (creates tables)`);
   console.log(`   3. docker compose exec app npm run db:create-admin  (creates first admin, NO demo data)`);
-  console.log(`   4. Login at https://er.deepakpt.com/login`);
+  console.log(`   4. Login at https://erp.example.com/login`);
   console.log(`   OR for full foundation without demo materials:`);
 
   process.exit(0);

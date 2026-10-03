@@ -74,11 +74,11 @@ services:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required in .env}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@er.deepakpt.com}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123456}
       ADMIN_NAME: ${ADMIN_NAME:-System Admin}
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
-      DOMAIN: ${DOMAIN:-er.deepakpt.com}
+      DOMAIN: ${DOMAIN:-erp.example.com}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       MVP_NO_AUTH: ${MVP_NO_AUTH:-false}
       POS_WEBHOOK_API_KEY: ${POS_WEBHOOK_API_KEY:-enterprise-pos-key-kspl-2024}
@@ -112,11 +112,11 @@ services:
       POS_WEBHOOK_API_KEY: ${POS_WEBHOOK_API_KEY:-enterprise-pos-key-kspl-2024}
       ENTERPRISE_MODE: "true"
       DMS_STORAGE_PATH: ${DMS_STORAGE_PATH:-/data/dms}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@er.deepakpt.com}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123456}
       ADMIN_NAME: ${ADMIN_NAME:-System Admin}
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
-      DOMAIN: ${DOMAIN:-er.deepakpt.com}
+      DOMAIN: ${DOMAIN:-erp.example.com}
     volumes:
       - dms_data:/data/dms
     labels:
@@ -142,11 +142,11 @@ services:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required in .env}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@er.deepakpt.com}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@123456}
       ADMIN_NAME: ${ADMIN_NAME:-System Admin}
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-User@123456}
-      DOMAIN: ${DOMAIN:-er.deepakpt.com}
+      DOMAIN: ${DOMAIN:-erp.example.com}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
     depends_on:
       postgres:

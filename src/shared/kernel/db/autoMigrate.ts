@@ -38,7 +38,7 @@ async function checkTablesExist() {
 }
 
 async function ensureAdmin() {
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@er.deepakpt.com';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123456';
   const adminName = process.env.ADMIN_NAME || 'System Admin';
 
@@ -107,7 +107,7 @@ async function runAutoMigrate() {
   await ensureAdmin();
 
   console.log('✅ Clean database initialization complete.');
-  console.log(`   Admin Login: ${process.env.ADMIN_EMAIL || 'admin@er.deepakpt.com'}`);
+  console.log(`   Admin Login: ${process.env.ADMIN_EMAIL || 'admin@example.com'}`);
 }
 
 runAutoMigrate()

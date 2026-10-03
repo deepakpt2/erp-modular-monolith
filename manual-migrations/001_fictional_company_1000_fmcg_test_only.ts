@@ -115,7 +115,7 @@ async function fullWipe() {
 }
 
 async function ensureAdmin() {
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@er.deepakpt.com';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123456';
   const hash = await bcrypt.hash(adminPassword, 10);
   try {
@@ -1378,7 +1378,7 @@ async function setupFictionalCompany() {
   console.log('   Cost Centers CC-1000/1001/1002 + Profit Centers PC-1000/1001 + Control Area CA01 – Procurement Division PO01 + Buyer Team BT-100 – EPDC OX08 EBTC OME4');
   console.log('   Business Partners VEND-1000 Spices Supplier VEND-1001 Turmeric Traders CUST-1000 – payment_term_code NT30 FAPT recon FGLC 2000000000 procurement_division PO01 buyer_team BT-100 currency INR tax GST18 FTXC – PSUC XK01 SCUC XD01 EPAC BP01');
   console.log('   Materials 10000001 Black Pepper RAW + 10000002 Turmeric RAW – EMTC EMTC – valuation_class RAW price_control S standard 100/80 moving_avg 100/80 tax GST18/GST12 HSN 09041110/09103020 – Info Records ME11 VEND-1000+10000001→100 VEND-1001+10000002→80');
-  console.log('   Roles 6 + Users 4 – ERP_ADMIN PURCHASER WAREHOUSE ACCOUNTANT MANAGER OWNER – password User@123 – superadmin admin@er.deepakpt.com / Admin@123456');
+  console.log('   Roles 6 + Users 4 – ERP_ADMIN PURCHASER WAREHOUSE ACCOUNTANT MANAGER OWNER – password User@123 – superadmin admin@example.com / Admin@123456');
   console.log('   Workflow Definitions PR_APPROVAL PO_APPROVAL – Manager <10000 Owner >=10000 dual – SBWP ME54N/PPOR');
   console.log('');
   console.log('   Purchase 1 – Black Pepper:');

@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
         ON CONFLICT (user_id, role_code) DO NOTHING
         RETURNING *
       `);
-      return NextResponse.json({ success: true, data: res.rows[0] || { user_id, role_code }, code: 'FRPC', message: `User role ${user_id}→${role_code} created – e.g., admin@er.deepakpt.com with PURCHASER role` });
+      return NextResponse.json({ success: true, data: res.rows[0] || { user_id, role_code }, code: 'FRPC', message: `User role ${user_id}→${role_code} created – e.g., admin@example.com with PURCHASER role` });
     }
 
     if (type === 'check') {

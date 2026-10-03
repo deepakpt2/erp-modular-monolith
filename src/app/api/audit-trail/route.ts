@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     const { object_type, object_id, user_id, transaction_code, description, changes } = body;
 
     if (!object_type || !object_id || !user_id || !changes) {
-      return NextResponse.json({ error: 'object_type, object_id, user_id, changes array required – e.g., object_type MATERIAL, object_id 10001, user_id admin@er.deepakpt.com, changes [{field_name: description, old_value: Spice, new_value: Premium Spice}]' }, { status: 400 });
+      return NextResponse.json({ error: 'object_type, object_id, user_id, changes array required – e.g., object_type MATERIAL, object_id 10001, user_id admin@example.com, changes [{field_name: description, old_value: Spice, new_value: Premium Spice}]' }, { status: 400 });
     }
 
     const changeNumber = await createChangeDoc({
