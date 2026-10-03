@@ -164,21 +164,22 @@ export const finLedgerAccountTypeEnum = pgEnum('fin_ledger_account_type', ['ASSE
 export const finLedgerAccount = pgTable('fin_ledger_account', {
   id: uuid('id').primaryKey().defaultRandom(),
   chartId: uuid('chart_id').notNull().references(() => finChart.id),
-  coaId: uuid('coa_id'), // legacy alias for chart_id
+  accountGroupCode: varchar('account_group_code', { length: 50 }).notNull(),
   accountNumber: varchar('account_number', { length: 30 }).notNull(),
   name: varchar('name', { length: 150 }).notNull(),
-  accountType: finLedgerAccountTypeEnum('account_type').notNull(),
-  isBalanceSheet: boolean('is_balance_sheet').notNull(),
+  accountCategory: varchar('account_category', { length: 50 }).notNull().default('BALANCE_SHEET'),
+  accountType: finLedgerAccountTypeEnum('account_type').notNull().default('ASSET'),
+  isBalanceSheet: boolean('is_balance_sheet').default(true).notNull(),
   isReconciliation: boolean('is_reconciliation').default(false).notNull(),
   isBlocked: boolean('is_blocked').default(false).notNull(),
-  accountCategory: varchar('account_category', { length: 50 }),
-  accountGroupCode: varchar('account_group_code', { length: 50 }),
   isTaxRelevant: boolean('is_tax_relevant').default(false).notNull(),
+  description: text('description'),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => ({
   uniqueChartAccount: uniqueIndex('uq_fin_chart_account').on(t.chartId, t.accountNumber),
+  idxChartAccountGroup: index('idx_fin_chart_account_group').on(t.chartId, t.accountGroupCode),
 }));
 
 // Tax Rule – replaces fin_tax_rule – legal-safe fin_tax_rule – sample GST0/5/12/18/28, IGST, VAT 5% kept

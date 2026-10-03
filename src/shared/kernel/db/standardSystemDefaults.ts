@@ -494,31 +494,32 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
       }
     }
 
-    // Ensure fin_ledger_account table and required columns exist
+    // Pure standard fin_ledger_account table creation with account_group_code as a first-class citizen
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fin_ledger_account (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        chart_id uuid REFERENCES fin_chart(id),
-        coa_id uuid,
+        chart_id uuid NOT NULL REFERENCES fin_chart(id),
+        account_group_code varchar(50) NOT NULL,
         account_number varchar(30) NOT NULL,
         name varchar(150) NOT NULL,
-        account_type varchar(20) NOT NULL,
+        account_category varchar(50) NOT NULL DEFAULT 'BALANCE_SHEET',
+        account_type varchar(20) NOT NULL DEFAULT 'ASSET',
         is_balance_sheet boolean NOT NULL DEFAULT true,
         is_reconciliation boolean NOT NULL DEFAULT false,
         is_blocked boolean NOT NULL DEFAULT false,
         is_tax_relevant boolean NOT NULL DEFAULT false,
+        description text,
         is_active boolean NOT NULL DEFAULT true,
         created_at timestamp DEFAULT NOW(),
-        updated_at timestamp DEFAULT NOW()
+        updated_at timestamp DEFAULT NOW(),
+        CONSTRAINT uq_fin_chart_account UNIQUE (chart_id, account_number)
       )
     `);
-    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS chart_id uuid REFERENCES fin_chart(id)`).catch(()=>{});
-    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS coa_id uuid`).catch(()=>{});
-    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code varchar(50)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category varchar(50)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS description text`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_blocked boolean DEFAULT false`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_tax_relevant boolean DEFAULT false`).catch(()=>{});
-    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category varchar(50)`).catch(()=>{});
-    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code varchar(50)`).catch(()=>{});
 
     const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'CA-IN-01' LIMIT 1`);
     if (chartRes.rows.length > 0) {

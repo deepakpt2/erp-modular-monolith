@@ -1638,3 +1638,19 @@ Once you confirm, I will:
      - Preserved exact database values of `account_group_code` during `GET`.
   2. In `src/shared/ui/single-code-page.tsx`:
      - Enhanced `useEffect` form hydration in edit mode to merge and normalize all fields (including stringifying booleans for select controls) so values like `LIAB` properly populate and bind to the `DbAutocomplete` input.
+
+## Rebuild G/L Accounts Table, API & Forms from Scratch
+- **Refactoring Scope:**
+  - Removed all legacy fallback queries, double-wrappers, and obsolete workarounds in `/api/gl-accounts` and `fin_ledger_account`.
+  - Defined `fin_ledger_account` with modern, strict industry standard typing:
+    - Primary fields: `id`, `chart_id`, `account_group_code` (mandatory), `account_number`, `name`, `account_category`, `account_type`, `is_balance_sheet`, `is_reconciliation`, `is_tax_relevant`, `is_blocked`, `description`, `created_at`, `updated_at`.
+    - Unique constraint: `(chart_id, account_number)`
+    - Index: `(chart_id, account_group_code)`
+  - Clean API routes (`GET`, `POST`, `PUT`, `DELETE`):
+    - Dedicated direct queries targeting `fin_ledger_account` joining `fin_chart`.
+    - Explicit handling and persistence of `account_group_code` without defaulting to any synthetic values.
+    - Clean inheritance of `account_category` and `account_type` from `fin_account_group` when `INHERIT_FROM_GROUP` is selected.
+    - `PUT` accurately updates `account_group_code` by `id` or `account_number` without throwing enum or legacy casting errors.
+  - Rebuilt G/L Account page UI:
+    - Clean autocomplete for `CHART_OF_ACCOUNTS_CODE` and `ACCOUNT_GROUP_CODE`.
+    - Validated interval hints (e.g. `ASST`, `LIAB`, `EQTY`, `REVN`, `EXPN`).
