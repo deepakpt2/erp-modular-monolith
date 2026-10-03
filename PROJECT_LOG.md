@@ -1573,3 +1573,16 @@ Once you confirm, I will:
   - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-03 IST: Extend Search Clear (✕) Button Across All Application Tables & Pages
+- **Coverage Expanded:**
+  - In addition to `SingleCodePage` (which controls master data such as Fiscal Calendars, Field Status Variants, Chart of Accounts, Legal Entities, etc.), the dedicated **`✕` Clear Search** button is now implemented across:
+    1. Financial Document Number Ranges (`/fico/number-ranges`).
+    2. Purchasing Number Ranges (`/mm/purchasing-number-ranges`).
+    3. Material Document Number Ranges (`/mm/material-doc-number-ranges`).
+    4. Sales Document Number Ranges (`/sd/sales-number-ranges`).
+  - The clear button appears dynamically inside the input box on the right whenever characters are typed, and instantly clears the search query and resets the filtered table upon click.
+- **Verification:**
+  - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.

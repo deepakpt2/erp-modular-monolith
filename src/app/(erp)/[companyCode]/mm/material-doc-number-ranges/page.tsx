@@ -368,13 +368,25 @@ export default function MaterialDocNumberRangesPage() {
         {/* Controls Bar */}
         <div className="bg-slate-800/70 p-4 rounded-lg border border-slate-700/80 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-1 items-center gap-3 w-full md:w-auto">
-            <input
+            <div className="relative flex items-center flex-1 max-w-md">
+              <input
               type="text"
               placeholder="Filter by interval No, plant, description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 flex-1 max-w-md"
-            />
+              className="bg-slate-900 border border-slate-700 rounded pl-3 pr-8 py-1.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 w-full"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 text-slate-400 hover:text-white text-xs font-bold p-1"
+                  title="Clear Search"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="text-xs text-slate-400 font-mono">

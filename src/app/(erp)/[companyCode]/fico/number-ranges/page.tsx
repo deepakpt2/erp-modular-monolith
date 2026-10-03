@@ -239,12 +239,24 @@ export default function NumberRangesPage() {
         {/* Toolbar & Filter Bar */}
         <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Filter by Range No, Object, FY, or Company Code..."
-              className="border border-zinc-200 rounded-lg px-3 py-1.5 text-xs w-64 focus:outline-none focus:ring-1 focus:ring-black"
-            />
+            <div className="relative flex items-center">
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Filter by Range No, FY, or Company Code..."
+                className="border border-zinc-200 rounded-lg pl-3 pr-8 py-1.5 text-xs w-64 focus:outline-none focus:ring-1 focus:ring-black"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 text-zinc-400 hover:text-zinc-700 text-xs font-bold p-1"
+                  title="Clear Search"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
             
             <select
               value={filterExhaustion}
