@@ -40,7 +40,7 @@ export const coreNumberRangeObjectTypeEnum = pgEnum('core_nr_object_type', [
 
 export const coreNumberRange = pgTable('core_number_range', {
   id: uuid('id').primaryKey().defaultRandom(),
-  code: varchar('code', { length: 50 }).notNull().unique(), // e.g., ITEM-01, PO-01, FI-DOC-01 – legal-safe with code for search
+  code: varchar('code', { length: 50 }).notNull(), // e.g., ITEM-01, PO-01, FI-DOC-01 – legal-safe with code for search
   objectType: coreNumberRangeObjectTypeEnum('object_type').notNull(),
   legalEntityId: uuid('legal_entity_id').references(() => orgLegalEntity.id),
   companyCodeId: uuid('company_code_id'), // legacy column for backward compat – was company_code_id
@@ -58,7 +58,7 @@ export const coreNumberRange = pgTable('core_number_range', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => ({
-  uniqueCode: uniqueIndex('uq_core_nr_code').on(t.code),
+  // uniqueCode: removed to allow interval codes (01, 10, etc.) per company code / fiscal year
   uniqueRange: uniqueIndex('uq_core_nr_obj_le_year').on(t.objectType, t.legalEntityId, t.fiscalYear),
 }));
 

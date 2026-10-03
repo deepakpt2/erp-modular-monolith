@@ -1434,3 +1434,21 @@ Once you confirm, I will:
   - Zero occurrences of `company_code_id, year` left anywhere in the codebase.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Resolve Unique Key Constraint Violation on Number Range Intervals
+- **Root Cause Analysis:**
+  - The PostgreSQL query:
+    ```sql
+    INSERT INTO core_number_range (code, object_type, company_code, plant_code, controlling_area_code, scope_level, prefix, from_number, to_number, current_number, fiscal_year, is_external, description)
+    VALUES ('01', 'FI_DOC', 'AM01', NULL, NULL, 'COMPANY_CODE', '', 1, 9999999, 1, 2026, false, NULL)
+    ```
+    failed because PostgreSQL had a legacy unique constraint/index on `core_number_range (code)` alone (`uq_core_nr_code` or `core_number_range_code_unique`).
+  - An interval identifier in standard enterprise ERP (like `01` or `10`) is **NOT globally unique across all companies or years**. Interval `01` can and should exist simultaneously for company `1000` (FY `2026`), company `AM01` (FY `2026`), and company `AM01` (FY `2027`).
+- **Resolution:**
+  - Executed migration in `ensureNumberRangeSchema` to drop single-column unique indexes (`DROP INDEX IF EXISTS uq_core_nr_code`, `ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_unique`).
+  - Updated Drizzle schema in `financialsFoundationSchema.ts` removing the `.unique()` modifier on `code`.
+  - Upgraded lookup logic to search deterministically by `(UPPER(code), UPPER(company_code), fiscal_year)` so inserting `01` for `AM01` succeeds immediately without colliding with `01` of other entities.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.

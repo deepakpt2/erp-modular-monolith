@@ -18,19 +18,25 @@ import { sql } from 'drizzle-orm';
  * - Delete blocked if used
  */
 
+let schemaEnsured = false;
 async function ensureNumberRangeSchema() {
+  if (schemaEnsured) return;
   try {
-    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS company_code VARCHAR(20)`).catch(() => {});
-    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS plant_code VARCHAR(20)`).catch(() => {});
-    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS controlling_area_code VARCHAR(20)`).catch(() => {});
-    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS scope_level VARCHAR(30) DEFAULT 'GLOBAL'`).catch(() => {});
-    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_external BOOLEAN DEFAULT false`).catch(() => {});
-    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_buffered BOOLEAN DEFAULT false`).catch(() => {});
-    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS buffer_size INTEGER DEFAULT 10`).catch(() => {});
-    // Alter object_type column to VARCHAR to prevent enum mismatch errors
-    await db.execute(sql`ALTER TABLE core_number_range ALTER COLUMN object_type TYPE VARCHAR(50)`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS company_code VARCHAR(20)`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS plant_code VARCHAR(20)`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS controlling_area_code VARCHAR(20)`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS scope_level VARCHAR(30) DEFAULT 'GLOBAL'`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_external BOOLEAN DEFAULT false`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_buffered BOOLEAN DEFAULT false`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS buffer_size INTEGER DEFAULT 10`);
+    await db.execute(sql`ALTER TABLE core_number_range ALTER COLUMN object_type TYPE VARCHAR(50)`);
+    // Drop single-column unique index uq_core_nr_code if it exists, so interval codes like '01' can exist across companies/years!
+    await db.execute(sql`DROP INDEX IF EXISTS uq_core_nr_code`);
+    await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_unique`);
+    await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_key`);
+    schemaEnsured = true;
   } catch (e: any) {
-    console.warn('ensureNumberRangeSchema error:', e.message);
+    console.warn('ensureNumberRangeSchema warning:', e.message);
   }
 }
 
@@ -186,20 +192,33 @@ export async function POST(req: NextRequest) {
     const coCode = controlling_area_code ? controlling_area_code.toString().trim().toUpperCase() : null;
     const resolvedScope = scope_level ? scope_level.toString().trim().toUpperCase() : (cCode ? 'COMPANY_CODE' : (pCode ? 'PLANT' : (coCode ? 'CONTROLLING_AREA' : 'GLOBAL')));
 
-    // Check existing row by code and optional scope/year
+    // Deterministic lookup by code + scope (company_code / plant_code) + fiscal_year
     let existing: any = null;
     try {
-      let q = sql`SELECT id, code, object_type, company_code, from_number, to_number, current_number, fiscal_year, is_external FROM core_number_range WHERE UPPER(code) = ${upperCode}`;
-      if (cCode) {
-        q = sql`${q} AND (UPPER(company_code) = ${cCode} OR company_code IS NULL)`;
-      }
-      if (finalFiscalYear) {
-        q = sql`${q} AND (fiscal_year = ${finalFiscalYear} OR fiscal_year IS NULL)`;
-      }
-      q = sql`${q} ORDER BY company_code NULLS LAST, fiscal_year NULLS LAST LIMIT 1`;
+      let q = sql`
+        SELECT id, code, object_type, company_code, plant_code, controlling_area_code, from_number, to_number, current_number, fiscal_year, is_external 
+        FROM core_number_range 
+        WHERE UPPER(code) = ${upperCode}
+          AND COALESCE(UPPER(company_code), '') = COALESCE(${cCode}, '')
+          AND COALESCE(fiscal_year, -1) = COALESCE(${finalFiscalYear}, -1)
+        LIMIT 1
+      `;
       const exRes = await db.execute(q);
       if (exRes.rows.length > 0) {
         existing = exRes.rows[0];
+      } else {
+        // Fallback: check if exact code exists without company code / year
+        const fallbackRes = await db.execute(sql`
+          SELECT id, code, object_type, company_code, plant_code, controlling_area_code, from_number, to_number, current_number, fiscal_year, is_external 
+          FROM core_number_range 
+          WHERE UPPER(code) = ${upperCode}
+            AND company_code IS NULL
+            AND fiscal_year IS NULL
+          LIMIT 1
+        `);
+        if (fallbackRes.rows.length > 0 && !cCode && !finalFiscalYear) {
+          existing = fallbackRes.rows[0];
+        }
       }
     } catch (lookupErr: any) {
       console.warn('Existing interval lookup warning:', lookupErr.message);
