@@ -1752,3 +1752,8 @@ Once you confirm, I will:
     - OB53: Define Retained Earnings (AMCO, X, 3000).
     - FBN1: Number range interval 01 for AM01, year 2026, 1 to 9999999.
 - Tracked in git so user can pull it directly on server.
+
+## Fix fin_retained_earnings Schema Drift in manual_seed_injection.sql
+- **Error:** `ERROR: column "pl_account_type" does not exist` when executing `CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_retained_chart_pl_account ON fin_retained_earnings (chart_id, pl_account_type)`.
+- **Cause:** An older definition of `fin_retained_earnings` in the database had columns `(chart_code, retained_earnings_account)` instead of `(chart_id, pl_account_type, account_number)`.
+- **Solution:** Added `ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS ...` for all required columns (`chart_id`, `chart_code`, `coa_id`, `pl_account_type`, `account_number`, `retained_earnings_account`, `description`) prior to creating the unique index and performing Step 8 upsert.

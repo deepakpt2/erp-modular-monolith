@@ -285,14 +285,24 @@ CREATE TABLE IF NOT EXISTS fin_account_group (
 
 CREATE TABLE IF NOT EXISTS fin_retained_earnings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  chart_id UUID NOT NULL REFERENCES fin_chart(id),
+  chart_id UUID REFERENCES fin_chart(id),
+  chart_code VARCHAR(50),
   coa_id UUID,
   pl_account_type VARCHAR(10) DEFAULT 'X',
-  account_number VARCHAR(30) NOT NULL,
-  description VARCHAR(200),
+  account_number VARCHAR(30),
+  retained_earnings_account VARCHAR(50),
+  description TEXT,
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW()
 );
+ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS chart_id UUID REFERENCES fin_chart(id);
+ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS chart_code VARCHAR(50);
+ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS coa_id UUID;
+ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS pl_account_type VARCHAR(10) DEFAULT 'X';
+ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS account_number VARCHAR(30);
+ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS retained_earnings_account VARCHAR(50);
+ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_retained_chart_pl_account ON fin_retained_earnings (chart_id, pl_account_type);
 
 CREATE TABLE IF NOT EXISTS core_number_range (
@@ -664,10 +674,12 @@ DECLARE
 BEGIN
   SELECT id INTO v_chart_id FROM fin_chart WHERE code = 'AMCO' LIMIT 1;
   IF v_chart_id IS NOT NULL THEN
-    INSERT INTO fin_retained_earnings (chart_id, coa_id, pl_account_type, account_number, description)
-    VALUES (v_chart_id, v_chart_id, 'X', '3000', 'Retained Earnings Balance Account for AMCO')
+    INSERT INTO fin_retained_earnings (chart_id, chart_code, coa_id, pl_account_type, account_number, retained_earnings_account, description)
+    VALUES (v_chart_id, 'AMCO', v_chart_id, 'X', '3000', '3000', 'Retained Earnings Balance Account for AMCO')
     ON CONFLICT (chart_id, pl_account_type) DO UPDATE SET
+      chart_code = EXCLUDED.chart_code,
       account_number = EXCLUDED.account_number,
+      retained_earnings_account = EXCLUDED.retained_earnings_account,
       description = EXCLUDED.description;
   END IF;
 END $$;
