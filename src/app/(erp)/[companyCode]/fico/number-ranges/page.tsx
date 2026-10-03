@@ -474,7 +474,6 @@ export default function NumberRangesPage() {
                     <th className="py-2.5 px-3">No.</th>
                     <th className="py-2.5 px-3">Company</th>
                     <th className="py-2.5 px-3">FY</th>
-                    <th className="py-2.5 px-3">Object</th>
                     <th className="py-2.5 px-3">From Number</th>
                     <th className="py-2.5 px-3">To Number</th>
                     <th className="py-2.5 px-3">Current Status</th>

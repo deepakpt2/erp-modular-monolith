@@ -656,7 +656,9 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
                     </thead>
                     <tbody>
                       {filteredListItems.map((it: any, i: number) => {
-                        const isExpanded = expandedItem && (expandedItem.code === it.code || expandedItem.id === it.id || (expandedItem.account_number && expandedItem.account_number === it.account_number) || (expandedItem.item_number && expandedItem.item_number === it.item_number));
+                        const itemKey = it.id || it.account_number || it.code || it.item_number || `row-${i}`;
+                        const expandedKey = expandedItem ? (expandedItem.id || expandedItem.account_number || expandedItem.code || expandedItem.item_number) : null;
+                        const isExpanded = !!expandedKey && expandedKey === itemKey;
                         return (
                           <React.Fragment key={i}>
                             <tr

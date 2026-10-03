@@ -1586,3 +1586,21 @@ Once you confirm, I will:
   - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-03 IST: Fix G/L Master Accordion Expansion & Correct Number Range Table Column Alignment
+- **Defect 1: GL Master Expanding One Item Expands All Items**
+  - **Root Cause:** In `SingleCodePage`, row expansion was checked with:
+    `expandedItem && (expandedItem.code === it.code || ...)`
+    In G/L Account Master records (`/api/gl-accounts`), items have `account_number`, but `code` is undefined. Since `undefined === undefined` evaluates to `true` in JavaScript, clicking any one G/L account matched every other account in the list, causing all rows to expand simultaneously.
+  - **Resolution:** Replaced the loose comparison with deterministic primary key resolution (`it.id || it.account_number || it.code || it.item_number || 'row-i'`). Now, expanding an item expands only that individual row.
+- **Defect 2: Number Range View – From Number and To Number Inverted**
+  - **Root Cause:** In `src/app/(erp)/[companyCode]/fico/number-ranges/page.tsx`, when the synthetic `OBJECT_TYPE` column was removed earlier, `<th className="py-2.5 px-3">Object</th>` was inadvertently left in the `<thead>` while its `<td>` had been removed from `<tbody>`.
+  - This 1-column header offset shifted all table cells to the left by one column:
+    - Header *"From Number"* was sitting over `r.to_number`!
+    - Header *"To Number"* was sitting over `r.current_number`!
+  - **Backend Check:** Verified `/api/number-ranges` — the backend was completely correct (`from_number: 1, to_number: 9999999, current_number: 1`). The issue was purely this 1-column header shift in the frontend view.
+  - **Resolution:** Removed the orphaned `<th className="py-2.5 px-3">Object</th>` from `<thead>`. Headers and data columns now align 1:1 (`No.` → `Company` → `FY` → `From Number` → `To Number` → `Current Status` → `Ext` → `Exhaustion Status` → `Actions`).
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source tree diff.
+  - Pushed to GitHub repository `main`.
