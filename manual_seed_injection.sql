@@ -1,19 +1,18 @@
 -- ==============================================================================
--- ERP MANUAL SEED INJECTION SCRIPT (Host / Debug Tool)
+-- ENTERPRISE ERP MANUAL SEED INJECTION SCRIPT (Clean, Pure Standard Version)
 -- ==============================================================================
--- Can be executed from the host machine against PostgreSQL:
+-- This script is designed for a pristine / clean database install.
+-- Run from your host against PostgreSQL:
 --
--- Example execution:
---   docker compose exec -T db psql -U erp_user -d erp_db < manual_seed_injection.sql
--- or:
---   psql -h localhost -p 5432 -U erp_user -d erp_db -f manual_seed_injection.sql
+--   docker compose exec -T postgres psql -U postgres -d erp < manual_seed_injection.sql
 -- ==============================================================================
 
 BEGIN;
 
 -- ------------------------------------------------------------------------------
--- PRE-CHECK: Ensure baseline prerequisite tables exist
+-- PRE-CHECK: Ensure standard enterprise tables exist
 -- ------------------------------------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS core_tenant (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code varchar(20) NOT NULL UNIQUE,
@@ -148,7 +147,7 @@ CREATE TABLE IF NOT EXISTS org_commercial_org (
   CONSTRAINT uq_org_commercial_org_tenant_code UNIQUE (tenant_id, code)
 );
 
--- Central assignment schema tables
+-- Assignments
 CREATE TABLE IF NOT EXISTS fin_company_assignment (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_code VARCHAR(20) NOT NULL UNIQUE,
@@ -237,7 +236,7 @@ CREATE TABLE IF NOT EXISTS fin_posting_calendar (
 
 CREATE TABLE IF NOT EXISTS fin_posting_calendar_period (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  posting_calendar_id uuid REFERENCES fin_posting_calendar(id),
+  posting_calendar_id uuid NOT NULL REFERENCES fin_posting_calendar(id),
   variant_code varchar(20),
   account_type varchar(20) DEFAULT 'ALL' NOT NULL,
   from_period integer NOT NULL,
@@ -269,7 +268,7 @@ CREATE TABLE IF NOT EXISTS fin_chart (
 
 CREATE TABLE IF NOT EXISTS fin_account_group (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  chart_id uuid REFERENCES fin_chart(id),
+  chart_id uuid NOT NULL REFERENCES fin_chart(id),
   coa_id uuid,
   code varchar(50) NOT NULL,
   name varchar(200) NOT NULL,
@@ -283,27 +282,36 @@ CREATE TABLE IF NOT EXISTS fin_account_group (
   CONSTRAINT uq_fin_account_group UNIQUE (chart_id, code)
 );
 
+CREATE TABLE IF NOT EXISTS fin_ledger_account (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  chart_id uuid NOT NULL REFERENCES fin_chart(id),
+  account_group_code varchar(50) NOT NULL,
+  account_number varchar(30) NOT NULL,
+  name varchar(150) NOT NULL,
+  account_category varchar(50) NOT NULL DEFAULT 'BALANCE_SHEET',
+  account_type varchar(30) NOT NULL DEFAULT 'ASSET',
+  is_balance_sheet boolean NOT NULL DEFAULT true,
+  is_reconciliation boolean NOT NULL DEFAULT false,
+  is_blocked boolean NOT NULL DEFAULT false,
+  is_tax_relevant boolean NOT NULL DEFAULT false,
+  description text,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp DEFAULT NOW() NOT NULL,
+  updated_at timestamp DEFAULT NOW() NOT NULL,
+  CONSTRAINT uq_fin_chart_account UNIQUE (chart_id, account_number)
+);
+
 CREATE TABLE IF NOT EXISTS fin_retained_earnings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  chart_id UUID REFERENCES fin_chart(id),
-  chart_code VARCHAR(50),
+  chart_id UUID NOT NULL REFERENCES fin_chart(id),
   coa_id UUID,
-  pl_account_type VARCHAR(10) DEFAULT 'X',
-  account_number VARCHAR(30),
-  retained_earnings_account VARCHAR(50),
-  description TEXT,
+  pl_account_type VARCHAR(10) DEFAULT 'X' NOT NULL,
+  account_number VARCHAR(30) NOT NULL,
+  description VARCHAR(200),
   is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT NOW(),
+  CONSTRAINT uq_fin_retained_chart_pl UNIQUE (chart_id, pl_account_type)
 );
-ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS chart_id UUID REFERENCES fin_chart(id);
-ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS chart_code VARCHAR(50);
-ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS coa_id UUID;
-ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS pl_account_type VARCHAR(10) DEFAULT 'X';
-ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS account_number VARCHAR(30);
-ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS retained_earnings_account VARCHAR(50);
-ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS description TEXT;
-ALTER TABLE fin_retained_earnings ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_fin_retained_chart_pl_account ON fin_retained_earnings (chart_id, pl_account_type);
 
 CREATE TABLE IF NOT EXISTS core_number_range (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -330,7 +338,7 @@ CREATE TABLE IF NOT EXISTS core_number_range (
   updated_at timestamp DEFAULT NOW() NOT NULL
 );
 
--- Ensure primary default tenant
+-- Ensure default tenant
 INSERT INTO core_tenant (code, name, description)
 VALUES ('DEFAULT', 'Default Enterprise Tenant', 'System Default Tenant')
 ON CONFLICT (code) DO NOTHING;
@@ -510,7 +518,7 @@ VALUES ('P001', 'AM01', 'Plant P001 to Company Code AM01', NOW())
 ON CONFLICT (plant_code, company_code) DO UPDATE SET
   updated_at = NOW();
 
--- Also set foreign key reference on org_facility if applicable
+-- Link Plant to Company Code on Facility master
 UPDATE org_facility f
 SET legal_entity_id = le.id
 FROM org_legal_entity le
@@ -570,7 +578,7 @@ SET posting_period_variant = 'AM01', updated_at = NOW()
 WHERE code = 'AM01';
 
 -- Open and Close Posting Periods (OB52)
--- Variant: AM01 | Account Type: ALL (+) | Period 1: 1 / 2026 to 12 / 2026
+-- Variant: AM01 | Account Type: ALL | Period 1: 1 / 2026 to 12 / 2026
 DO $$
 DECLARE
   v_cal_id uuid;
@@ -674,12 +682,10 @@ DECLARE
 BEGIN
   SELECT id INTO v_chart_id FROM fin_chart WHERE code = 'AMCO' LIMIT 1;
   IF v_chart_id IS NOT NULL THEN
-    INSERT INTO fin_retained_earnings (chart_id, chart_code, coa_id, pl_account_type, account_number, retained_earnings_account, description)
-    VALUES (v_chart_id, 'AMCO', v_chart_id, 'X', '3000', '3000', 'Retained Earnings Balance Account for AMCO')
+    INSERT INTO fin_retained_earnings (chart_id, coa_id, pl_account_type, account_number, description)
+    VALUES (v_chart_id, v_chart_id, 'X', '3000', 'Retained Earnings Balance Account for AMCO')
     ON CONFLICT (chart_id, pl_account_type) DO UPDATE SET
-      chart_code = EXCLUDED.chart_code,
       account_number = EXCLUDED.account_number,
-      retained_earnings_account = EXCLUDED.retained_earnings_account,
       description = EXCLUDED.description;
   END IF;
 END $$;
