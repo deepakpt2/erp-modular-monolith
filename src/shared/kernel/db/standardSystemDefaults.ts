@@ -515,6 +515,7 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
         CONSTRAINT uq_fin_chart_account UNIQUE (chart_id, account_number)
       )
     `);
+    await db.execute(sql`ALTER TABLE fin_ledger_account ALTER COLUMN account_type TYPE varchar(30)`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code varchar(50)`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category varchar(50)`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS description text`).catch(()=>{});

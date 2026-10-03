@@ -168,7 +168,7 @@ export const finLedgerAccount = pgTable('fin_ledger_account', {
   accountNumber: varchar('account_number', { length: 30 }).notNull(),
   name: varchar('name', { length: 150 }).notNull(),
   accountCategory: varchar('account_category', { length: 50 }).notNull().default('BALANCE_SHEET'),
-  accountType: finLedgerAccountTypeEnum('account_type').notNull().default('ASSET'),
+  accountType: varchar('account_type', { length: 30 }).notNull().default('ASSET'),
   isBalanceSheet: boolean('is_balance_sheet').default(true).notNull(),
   isReconciliation: boolean('is_reconciliation').default(false).notNull(),
   isBlocked: boolean('is_blocked').default(false).notNull(),

@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
         ${account_number.toString().trim()},
         ${name.toString().trim()},
         ${account_category},
-        ${account_type}::fin_ledger_account_type,
+        ${account_type},
         ${is_balance_sheet === true || is_balance_sheet === 'true'},
         ${is_reconciliation === true || is_reconciliation === 'true'},
         ${is_tax_relevant === true || is_tax_relevant === 'true'},
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
         account_group_code = ${trimmedAccountGroup},
         name = ${name.toString().trim()},
         account_category = ${account_category},
-        account_type = ${account_type}::fin_ledger_account_type,
+        account_type = ${account_type},
         is_balance_sheet = ${is_balance_sheet === true || is_balance_sheet === 'true'},
         is_reconciliation = ${is_reconciliation === true || is_reconciliation === 'true'},
         is_tax_relevant = ${is_tax_relevant === true || is_tax_relevant === 'true'},
@@ -253,7 +253,7 @@ export async function PUT(req: NextRequest) {
 
     // Build safe SQL fragments without casting empty/null expressions
     const accountTypeSql = finalAccountType 
-      ? sql`${finalAccountType}::fin_ledger_account_type` 
+      ? sql`${finalAccountType}` 
       : sql`account_type`;
 
     const accountGroupSql = trimmedAccountGroup 

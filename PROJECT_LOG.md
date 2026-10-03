@@ -1671,3 +1671,12 @@ Once you confirm, I will:
     - If `finalAccountType` is provided and valid (`ASSET`, `LIABILITY`, `EQUITY`, `REVENUE`, `EXPENSE`), it applies `${finalAccountType}::fin_ledger_account_type`.
     - If empty/null, it preserves the existing column value (`account_type`) directly in the SQL statement without executing an invalid enum cast.
     - Applied identical safe expression binding across `account_category`, `account_group_code`, `name`, `description`, and booleans.
+
+## Remove PostgreSQL Custom Enum Type Cast for Account Type
+- **Root Cause Analysis:**
+  - The query `account_type = $4::fin_ledger_account_type` failed with an input error because the database table column was created as standard `varchar(20)` in `standardSystemDefaults.ts` (`account_type varchar(20) NOT NULL`), but the SQL query explicitly invoked PostgreSQL casting `::fin_ledger_account_type`.
+  - In PostgreSQL, if the target column is `varchar` rather than the user-defined `type fin_ledger_account_type`, or if the enum type `fin_ledger_account_type` was never created with `CREATE TYPE`, explicit casting with `::fin_ledger_account_type` causes PostgreSQL to reject the query with type mismatch / type not found / input errors even with valid input values.
+- **Solution:**
+  - Removed all `::fin_ledger_account_type` explicit casts in `src/app/api/gl-accounts/route.ts` (`POST` and `PUT`).
+  - Standardized `accountType` in `financialsFoundationSchema.ts` and `fin_ledger_account` to `varchar(30)`.
+  - Added safe column type alteration `ALTER TABLE fin_ledger_account ALTER COLUMN account_type TYPE varchar(30)` in `standardSystemDefaults.ts` to ensure compatibility whether existing or new database volumes are used.
