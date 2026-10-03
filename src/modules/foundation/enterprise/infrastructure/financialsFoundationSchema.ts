@@ -171,6 +171,8 @@ export const finLedgerAccount = pgTable('fin_ledger_account', {
   isBalanceSheet: boolean('is_balance_sheet').notNull(),
   isReconciliation: boolean('is_reconciliation').default(false).notNull(),
   isBlocked: boolean('is_blocked').default(false).notNull(),
+  accountCategory: varchar('account_category', { length: 50 }),
+  accountGroupCode: varchar('account_group_code', { length: 50 }),
   isTaxRelevant: boolean('is_tax_relevant').default(false).notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
