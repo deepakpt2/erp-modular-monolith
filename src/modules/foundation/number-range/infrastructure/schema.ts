@@ -37,7 +37,7 @@ export const entNumberRange = pgTable('core_number_range', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => ({
-  uniqueRange: uniqueIndex('uq_nr_obj_co_year').on(t.objectType, t.companyCodeId, t.year),
+  // uniqueRange: uniqueIndex('uq_nr_obj_co_year')
 }));
 
 export const entNumberRangeBuffer = pgTable('core_number_range_buffer', {

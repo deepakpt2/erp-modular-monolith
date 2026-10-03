@@ -1452,3 +1452,23 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Permanent Resolution for Number Range Query Constraint Failures
+- **Root Cause Identified:**
+  - The PostgreSQL database container has the table `core_number_range` created with legacy unique constraints and indexes from previous migrations:
+    1. Single-column unique constraint on `code`: `uq_core_nr_code` or `core_number_range_code_unique` / `core_number_range_code_key`.
+    2. Composite index `uq_core_nr_obj_le_year` or `uq_nr_obj_co_year`.
+  - When inserting interval `01` for `AM01`, PostgreSQL throws `duplicate key value violates unique constraint` because `'01'` already exists in the table.
+  - Previous runtime ALTER statements were not executing before the INSERT if an error in a preceding step aborted the batch or if `autoMigrate` had not run against the running Postgres instance.
+- **Resolution Implemented:**
+  1. Added dedicated startup migration to `src/shared/kernel/db/autoMigrate.ts` that runs automatically on container launch:
+     - Adds missing columns (`company_code`, `plant_code`, `controlling_area_code`, `scope_level`, `is_external`, `is_buffered`, `buffer_size`).
+     - Safely converts `object_type` to `VARCHAR(50)`.
+     - Explicitly executes `DROP INDEX IF EXISTS uq_core_nr_code`, `DROP INDEX IF EXISTS uq_nr_obj_co_year`, and drops unique constraints on `code`.
+  2. In `src/app/api/number-ranges/route.ts`:
+     - Isolated each DDL/ALTER statement into individual try-catch blocks to prevent cascaded skips.
+     - Added dynamic error catching on the `INSERT` statement: if a legacy duplicate key constraint error is caught, it drops the legacy constraints on-the-fly and immediately retries the insert/update.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.

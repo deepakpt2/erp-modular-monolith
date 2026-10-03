@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
         res = await db.execute(sql`
           UPDATE core_number_range 
           SET current_number = current_number + 1, updated_at = NOW()
-          WHERE object_type = ${upperType}::core_number_range_object_type 
+          WHERE object_type = ${upperType} 
           AND plant_code = ${plantCode.toUpperCase()}
           AND (fiscal_year = ${fiscalYear || null} OR fiscal_year IS NULL)
           ORDER BY fiscal_year DESC NULLS LAST
@@ -209,7 +209,7 @@ export async function GET(req: NextRequest) {
         res = await db.execute(sql`
           UPDATE core_number_range 
           SET current_number = current_number + 1, updated_at = NOW()
-          WHERE object_type = ${upperType}::core_number_range_object_type 
+          WHERE object_type = ${upperType} 
           AND (company_code = ${companyCode.toUpperCase()} OR legal_entity_id IN (SELECT id FROM org_legal_entity WHERE code = ${companyCode} LIMIT 1) OR company_code IS NULL)
           AND (fiscal_year = ${fiscalYear} OR fiscal_year IS NULL)
           ORDER BY fiscal_year DESC NULLS LAST, company_code DESC NULLS LAST
@@ -222,7 +222,7 @@ export async function GET(req: NextRequest) {
         res = await db.execute(sql`
           UPDATE core_number_range 
           SET current_number = current_number + 1, updated_at = NOW()
-          WHERE object_type = ${upperType}::core_number_range_object_type 
+          WHERE object_type = ${upperType} 
           AND controlling_area_code = ${controllingArea.toUpperCase()}
           ORDER BY fiscal_year DESC NULLS LAST
           LIMIT 1
@@ -234,7 +234,7 @@ export async function GET(req: NextRequest) {
         res = await db.execute(sql`
           UPDATE core_number_range 
           SET current_number = current_number + 1, updated_at = NOW()
-          WHERE object_type = ${upperType}::core_number_range_object_type
+          WHERE object_type = ${upperType}
           RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
         `);
         
@@ -314,8 +314,7 @@ export async function GET(req: NextRequest) {
       try {
         const newRange = await db.execute(sql`
           INSERT INTO core_number_range (code, object_type, prefix, from_number, to_number, current_number)
-          VALUES (${`${upperType}-01`}, ${upperType}::core_number_range_object_type, '', ${def.from}, ${def.to}, ${def.from})
-          ON CONFLICT (code) DO UPDATE SET current_number = core_number_range.current_number + 1, updated_at = NOW()
+          VALUES (${`${upperType}-01`}, ${upperType}, '', ${def.from}, ${def.to}, ${def.from})
           RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
         `);
         const row = newRange.rows[0] as any;

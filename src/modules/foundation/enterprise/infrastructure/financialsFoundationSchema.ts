@@ -59,7 +59,7 @@ export const coreNumberRange = pgTable('core_number_range', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => ({
   // uniqueCode: removed to allow interval codes (01, 10, etc.) per company code / fiscal year
-  uniqueRange: uniqueIndex('uq_core_nr_obj_le_year').on(t.objectType, t.legalEntityId, t.fiscalYear),
+  // uniqueRange: uniqueIndex('uq_core_nr_obj_le_year')
 }));
 
 export const coreNumberRangeBuffer = pgTable('core_number_range_buffer', {

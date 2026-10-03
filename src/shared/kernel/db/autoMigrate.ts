@@ -109,6 +109,26 @@ async function runAutoMigrate() {
 
   await waitForDb();
 
+  // Migration for core_number_range standard interval schema
+  try {
+    console.log('🔄 Ensuring core_number_range standard schema & dropping legacy single-code uniqueness...');
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS company_code VARCHAR(20)`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS plant_code VARCHAR(20)`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS controlling_area_code VARCHAR(20)`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS scope_level VARCHAR(30) DEFAULT 'GLOBAL'`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_external BOOLEAN DEFAULT false`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_buffered BOOLEAN DEFAULT false`);
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS buffer_size INTEGER DEFAULT 10`);
+    await db.execute(sql`ALTER TABLE core_number_range ALTER COLUMN object_type TYPE VARCHAR(50)`).catch(() => {});
+    await db.execute(sql`DROP INDEX IF EXISTS uq_core_nr_code`);
+    await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_unique`);
+    await db.execute(sql`ALTER TABLE core_number_range DROP CONSTRAINT IF EXISTS core_number_range_code_key`);
+    console.log('✅ core_number_range schema migration applied.');
+  } catch (nrMigrateErr: any) {
+    console.warn('⚠️ core_number_range migration note:', nrMigrateErr.message);
+  }
+
+
   // Handle prod_item_type enum/table collision if necessary
   try {
     await db.execute(sql`
