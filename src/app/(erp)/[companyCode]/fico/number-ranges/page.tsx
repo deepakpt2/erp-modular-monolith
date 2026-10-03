@@ -27,10 +27,7 @@ interface NumberRange {
   is_locked?: boolean;
 }
 
-const OBJECT_TYPES = [
-  'FI_DOC', 'MATERIAL', 'ITEM', 'PARTNER', 'PO', 'PR', 'GR', 'IV', 'SO',
-  'BILLING', 'DELIVERY', 'PROD_ORDER', 'MRP', 'LOT', 'ASSET_POSTING', 'JOURNAL'
-];
+
 
 export default function NumberRangesPage() {
   const params = useParams();
@@ -58,7 +55,7 @@ export default function NumberRangesPage() {
     description: string;
   }>({
     code: '',
-    company_code: companyCode,
+    company_code: '',
     fiscal_year: '2026',
     object_type: 'FI_DOC',
     from_number: '0100000000',
@@ -95,12 +92,12 @@ export default function NumberRangesPage() {
         String(r.fiscal_year || '').includes(search) ||
         (r.company_code || '').toLowerCase().includes(search.toLowerCase());
 
-      const matchesObj = filterObj === 'ALL' || r.object_type === filterObj;
+      const matchesObj = true;
       const matchesExhaustion = filterExhaustion === 'ALL' || r.exhaustion_status === filterExhaustion;
 
       return matchesSearch && matchesObj && matchesExhaustion;
     });
-  }, [ranges, search, filterObj, filterExhaustion]);
+  }, [ranges, search, filterExhaustion]);
 
   // Exhaustion metrics
   const exhaustedCount = ranges.filter(r => r.exhaustion_status === 'EXHAUSTED').length;
@@ -248,14 +245,7 @@ export default function NumberRangesPage() {
               placeholder="Filter by Range No, Object, FY, or Company Code..."
               className="border border-zinc-200 rounded-lg px-3 py-1.5 text-xs w-64 focus:outline-none focus:ring-1 focus:ring-black"
             />
-            <select
-              value={filterObj}
-              onChange={e => setFilterObj(e.target.value)}
-              className="border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none"
-            >
-              <option value="ALL">All Objects</option>
-              {OBJECT_TYPES.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
+            
             <select
               value={filterExhaustion}
               onChange={e => setFilterExhaustion(e.target.value)}
@@ -274,7 +264,7 @@ export default function NumberRangesPage() {
               setEditing(null);
               setForm({
                 code: '',
-                company_code: companyCode,
+                company_code: '',
                 fiscal_year: '2026',
                 object_type: 'FI_DOC',
                 from_number: '',
@@ -355,21 +345,7 @@ export default function NumberRangesPage() {
                 <p className="text-[11px] text-zinc-400">Leave blank or 9999 for non-year-dependent cumulative numbering</p>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium uppercase tracking-wider text-zinc-600 block">
-                  OBJECT_TYPE * {editing && <span className="text-zinc-400 font-normal">(Locked)</span>}
-                </label>
-                <select
-                  value={form.object_type}
-                  onChange={e => setForm({ ...form, object_type: e.target.value })}
-                  disabled={!!editing}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm min-h-[2.5rem] focus:outline-none ${editing ? 'bg-zinc-100 border-zinc-200' : 'border-zinc-200 bg-white focus:border-black'}`}
-                  required
-                >
-                  {OBJECT_TYPES.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-                <p className="text-[11px] text-zinc-400">Target document classification (FI_DOC for accounting)</p>
-              </div>
+              
 
               <div className="space-y-1">
                 <label className="text-xs font-medium uppercase tracking-wider text-zinc-600 block">

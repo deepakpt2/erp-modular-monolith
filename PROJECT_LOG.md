@@ -1412,3 +1412,12 @@ Once you confirm, I will:
   - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Complete Removal of OBJECT_TYPE & Empty Default for COMPANY_CODE on Accounting Number Ranges
+- **FBN1 Form Standard Alignment:**
+  - Completely purged the `OBJECT_TYPE` input field, object dropdown filter, and associated state from `/fico/number-ranges`. The object type is strictly an internal engine classification (`FI_DOC`) and is never surfaced to end-users in standard accounting interval configuration.
+  - Reset `company_code` default value from hardcoded `1000` to empty (`''`), allowing manual entry or standard inheritance per consultant requirements.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source tree diff.
+  - Pushed to GitHub repository `main`.
