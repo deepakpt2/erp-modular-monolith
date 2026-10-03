@@ -1614,3 +1614,14 @@ Once you confirm, I will:
   1. Updated `src/app/api/gl-accounts/route.ts` `PUT` handler to reliably update and return `account_group_code`, `account_category`, `is_reconciliation`, `is_tax_relevant`, and `is_balance_sheet` across both `id` and `account_number` execution paths.
   2. Changed `initialForm` in `src/app/(erp)/[companyCode]/fico/gl-accounts/page.tsx` to default to `ASST` (authentic asset group).
   3. Enhanced `src/shared/kernel/db/standardSystemDefaults.ts` to automatically define standard account groups (`ASST`, `LIAB`, `EQTY`, `REVN`, `EXPN`) for `CA-IN-01` and map the standard 18 baseline accounts directly to their appropriate groups and categories.
+
+## Fix G/L Master Account Group Code Blank Default and Dynamic Group Matching
+- **Problem:** When editing or inspecting accounts created or loaded in FS00 / FGLC (`/fico/gl-accounts`), `ACCOUNT_GROUP_CODE` showed as `'ASST'` across all accounts because:
+  1. The default value in `initialForm` was previously switched from `'G001'` to `'ASST'`, forcing an initial `'ASST'` value on newly created accounts or overriding unspecified fields.
+  2. Accounts previously stored without an explicit `account_group_code` or retrieved via legacy queries fell back to `'ASST'`.
+- **Solution:**
+  1. Set `initialForm.account_group_code` to empty string `''` in `src/app/(erp)/[companyCode]/fico/gl-accounts/page.tsx` so the field requires explicit selection or inherits dynamically without pre-populating `'ASST'`.
+  2. In `src/shared/ui/single-code-page.tsx`, ensured the selected item's field values faithfully overlay onto form state upon editing (`mode === 'change'`).
+  3. In `src/app/api/gl-accounts/route.ts`:
+     - Added dynamic resolution in `GET`: if an account in the database has a blank/null `account_group_code`, the API dynamically matches its `account_number` against defined account groups' `from_account` and `to_account` intervals.
+     - Preserved `account_group_code` and `account_category` in the fallback `GET` and `POST` queries.

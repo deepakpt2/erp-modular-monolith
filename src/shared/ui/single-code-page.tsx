@@ -305,7 +305,16 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
   useEffect(() => {
     if (mode === 'change' && selectedCode) {
       const found = items.find((it: any) => (it.code || it.account_number || it.item_number) === selectedCode);
-      if (found) setForm({ ...initialForm, ...found });
+      if (found) {
+        // Overlay found item fields on top of initialForm, keeping defined values from found
+        const merged: Record<string, any> = { ...initialForm };
+        Object.keys(found).forEach(k => {
+          if (found[k] !== undefined) {
+            merged[k] = found[k];
+          }
+        });
+        setForm(merged);
+      }
     }
     if (mode === 'create') setForm(initialForm);
   }, [mode, selectedCode, items]);

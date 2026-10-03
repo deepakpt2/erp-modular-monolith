@@ -76,6 +76,8 @@ export async function GET(req: NextRequest) {
       let query = sql`
         SELECT 
           gl.id, gl.account_number, gl.name, gl.account_type, gl.is_balance_sheet, gl.is_reconciliation, gl.is_tax_relevant, gl.is_blocked,
+          COALESCE(gl.account_category, null) as account_category,
+          COALESCE(gl.account_group_code, null) as account_group_code,
           coa.code as coa_code, coa.name as coa_name,
           (SELECT COUNT(*) FROM fin_auto_posting_rule WHERE gl_account_id = gl.id) as auto_det_count
         FROM fin_ledger_account gl
@@ -162,9 +164,31 @@ export async function GET(req: NextRequest) {
       } catch {}
     }
 
+    // Ensure account_group_code is populated: if null in DB, dynamically match against account groups
+    const enrichedGlRows = glRows.map((acc: any) => {
+      let groupCode = acc.account_group_code;
+      if (!groupCode && accountGroups.length > 0) {
+        const numVal = parseInt(acc.account_number, 10);
+        if (!isNaN(numVal)) {
+          const matchedAg = accountGroups.find((g: any) => {
+            const fromNum = parseInt(g.from_account, 10);
+            const toNum = parseInt(g.to_account, 10);
+            return !isNaN(fromNum) && !isNaN(toNum) && numVal >= fromNum && numVal <= toNum;
+          });
+          if (matchedAg) {
+            groupCode = matchedAg.code;
+          }
+        }
+      }
+      return {
+        ...acc,
+        account_group_code: groupCode || ''
+      };
+    });
+
     return NextResponse.json({
-      glAccounts: glRows,
-      count: glRows.length,
+      glAccounts: enrichedGlRows,
+      count: enrichedGlRows.length,
       charts: coaRows,
       accountGroups,
       retainedEarnings,
@@ -239,10 +263,10 @@ export async function POST(req: NextRequest) {
       const coaId = (coaRes.rows[0] as any).id;
 
       const res = await db.execute(sql`
-        INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant)
-        VALUES (${coaId}, ${account_number}, ${name}, ${account_type || 'ASSET'}::gl_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false})
-        ON CONFLICT (coa_id, account_number) DO UPDATE SET name = ${name}, account_type = ${account_type || 'ASSET'}::gl_account_type, is_balance_sheet = ${is_balance_sheet || false}
-        RETURNING id, account_number, name
+        INSERT INTO fin_ledger_account (coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code)
+        VALUES (${coaId}, ${account_number}, ${name}, ${account_type || 'ASSET'}::gl_account_type, ${is_balance_sheet || false}, ${is_reconciliation || false}, ${is_tax_relevant || false}, ${account_category || null}, ${account_group_code || null})
+        ON CONFLICT (coa_id, account_number) DO UPDATE SET name = ${name}, account_type = ${account_type || 'ASSET'}::gl_account_type, is_balance_sheet = ${is_balance_sheet || false}, account_category = COALESCE(${account_category || null}, fin_ledger_account.account_category), account_group_code = COALESCE(${account_group_code || null}, fin_ledger_account.account_group_code), updated_at = NOW()
+        RETURNING id, account_number, name, account_type, account_category, account_group_code
       `);
       return NextResponse.json({ success: true, glAccount: res.rows[0], code: 'FGLC', message: `G/L Account ${account_number} created – FGLC (legacy FS00) legacy (migrating to FGLC)`, legalSafe: false });
     }
