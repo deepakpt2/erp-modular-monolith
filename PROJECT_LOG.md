@@ -1501,3 +1501,16 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source tree diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-03 IST: Clean Architecture Architecture Alignment & Recommendation to Reset Database Volume
+- **Direction & Clean Code Enforcement:**
+  - Received directive: *"we are in a development stage, do not add too many additional legacy codes now. if some thing break previous data, tell me we will start db from scratch with only standard data"*.
+  - Completely removed all complex on-the-fly DDL alterations and temporary column fallbacks from `src/app/api/number-ranges/route.ts`.
+  - The API route is now a clean, standard, pure implementation executing standard SELECT/UPDATE/INSERT statements against the unified enterprise schema.
+- **Why Starting DB from Scratch is Recommended:**
+  - The running PostgreSQL container volume holds tables created across earlier exploratory migrations with conflicting column sets (e.g. `core_number_range` missing `code`/`fiscal_year` or having legacy unique constraints on `code`).
+  - Running `docker compose down -v && docker compose up -d` drops the old volume; on startup, `autoMigrate` runs `drizzle-kit push --force` and seeds the clean industry baseline reference data (Currencies, Units of Measure, Fiscal Variants K4/V3, Document Types SA/KR/KZ, Field Status Groups, etc.) with 100% pure schema parity.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source tree diff.
+  - Pushed to GitHub repository `main`.
