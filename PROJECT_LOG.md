@@ -1554,3 +1554,22 @@ Once you confirm, I will:
   - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source tree diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-03 IST: UI Search Clear (✕) Button & Fiscal Year Variants Parity
+- **UI Search Enhancement:**
+  - Added dedicated clear buttons (`✕`) inside all search inputs (List mode search, Change mode search, and reference search) in `SingleCodePage`.
+  - Clicking `✕` instantly clears the search query and resets the selection/filter state.
+- **Fiscal Year Variants Configuration Parity (`OB29` / `FFYC`):**
+  - **Identified defect:** All four baseline fiscal year variants (`K4`, `V3`, `V6`, `V9`) were being initialized identically as calendar year (Jan–Dec).
+  - **Resolution:** Updated baseline seeder in `standardSystemDefaults.ts` with authentic standard configuration parameters:
+    1. **`K4` (Calendar Year):** Jan to Dec, `calendar_year: true`, `start_month: 1`, `end_month: 12`, `year_shift: 0`, 12 posting periods + 4 special periods.
+    2. **`V3` (April to March):** Apr to Mar (UK / India), `calendar_year: false`, `start_month: 4`, `end_month: 3`, `year_shift: -1`, 12 posting periods + 4 special periods.
+    3. **`V6` (July to June):** Jul to Jun (Australia / Egypt), `calendar_year: false`, `start_month: 7`, `end_month: 6`, `year_shift: -1`, 12 posting periods + 4 special periods.
+    4. **`V9` (October to September):** Oct to Sep (US Federal), `calendar_year: false`, `start_month: 10`, `end_month: 9`, `year_shift: -1`, 12 posting periods + 4 special periods.
+- **Resolved SQL Update Failure in Fiscal Calendars API:**
+  - In `src/app/api/fiscal-calendars/route.ts`, the `UPDATE` query was failing on PostgreSQL because parameters `$11` and `$12` (`from_date` and `to_date`) were being submitted as empty strings `""`, or `updated_at` column was being referenced without table support.
+  - Sanitized empty string values to `null` and streamlined query parameters.
+- **Verification:**
+  - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source diff.
+  - Pushed to GitHub repository `main`.

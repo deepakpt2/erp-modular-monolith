@@ -622,7 +622,19 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
             <div className="flex flex-col sm:flex-row gap-2 justify-between items-start sm:items-center">
               <h3 className={modern ? "font-semibold text-sm" : "font-bold text-xs uppercase"}>List – {filteredListItems.length} of {items.length}</h3>
               <div className="relative w-full sm:w-72">
-                <input value={listSearch} onChange={e => { setListSearch(e.target.value); setShowListSuggestions(true); }} onFocus={() => setShowListSuggestions(true)} onBlur={() => setTimeout(() => setShowListSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-2 py-1 text-xs font-mono bg-white text-black rounded-none min-h-[2.25rem] focus:outline-none"} />
+                <div className="relative flex items-center w-full">
+                  <input value={listSearch} onChange={e => { setListSearch(e.target.value); setShowListSuggestions(true); }} onFocus={() => setShowListSuggestions(true)} onBlur={() => setTimeout(() => setShowListSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg pl-3 pr-8 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black pl-2 pr-7 py-1 text-xs font-mono bg-white text-black rounded-none min-h-[2.25rem] focus:outline-none"} />
+                  {listSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setListSearch('')}
+                      className="absolute right-2.5 text-zinc-400 hover:text-zinc-700 text-xs font-bold p-1"
+                      title="Clear Search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
                 {showListSuggestions && listSuggestions.length > 0 && (
                   <div className={modern ? "absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-zinc-200 z-10 max-h-48 overflow-auto" : "absolute top-full mt-1 w-full bg-white border-2 border-black z-10 max-h-48 overflow-auto"}>
                     {listSuggestions.map((it: any, i: number) => (
@@ -779,7 +791,19 @@ export function SingleCodePage({ code, sapAlias, title, description, apiEndpoint
             <div className={modern ? "bg-white rounded-2xl border border-zinc-200 p-4 space-y-2 shadow-sm" : "border-2 border-black p-3 space-y-2 bg-white"}>
               <label className={modern ? "text-xs font-medium uppercase tracking-wider text-zinc-600 block" : "text-xs font-bold uppercase block"}>Search {title} to Change</label>
               <div className="relative">
-                <input value={changeSearch} onChange={e => { setChangeSearch(e.target.value); setShowChangeSuggestions(true); }} onFocus={() => setShowChangeSuggestions(true)} onBlur={() => setTimeout(() => setShowChangeSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black px-2 py-1.5 text-xs font-mono bg-white text-black rounded-none min-h-[2.25rem]"} />
+                <div className="relative flex items-center">
+                  <input value={changeSearch} onChange={e => { setChangeSearch(e.target.value); setShowChangeSuggestions(true); }} onFocus={() => setShowChangeSuggestions(true)} onBlur={() => setTimeout(() => setShowChangeSuggestions(false), 200)} placeholder={`Search ${code}...`} className={modern ? "w-full border border-zinc-200 rounded-lg pl-3 pr-8 py-2 text-sm leading-relaxed min-h-[2.5rem] focus:outline-none focus:ring-1 focus:ring-black focus:border-black bg-white" : "w-full border-2 border-black pl-2 pr-7 py-1.5 text-xs font-mono bg-white text-black rounded-none min-h-[2.25rem]"} />
+                  {changeSearch && (
+                    <button
+                      type="button"
+                      onClick={() => { setChangeSearch(''); setSelectedCode(''); }}
+                      className="absolute right-2.5 text-zinc-400 hover:text-zinc-700 text-xs font-bold p-1"
+                      title="Clear Search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
                 {showChangeSuggestions && filteredChangeItems.length > 0 && (
                   <div className={modern ? "absolute top-full mt-1 w-full bg-white rounded-lg shadow-lg border border-zinc-200 z-10 max-h-60 overflow-auto" : "absolute top-full mt-1 w-full bg-white border-2 border-black z-10 max-h-60 overflow-auto"}>
                     {filteredChangeItems.map((it: any, i: number) => (

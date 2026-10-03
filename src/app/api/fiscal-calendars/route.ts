@@ -203,9 +203,20 @@ export async function POST(req: NextRequest) {
     let res: any;
     if (existingCheck.rows.length > 0) {
       const existingId = (existingCheck.rows[0] as any).id;
+      // Ensure optional columns exist
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT NOW()`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS number_of_special_periods integer DEFAULT 4`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS start_month integer DEFAULT 1`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS end_month integer DEFAULT 12`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS year_shift integer DEFAULT 0`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS from_date varchar(10)`).catch(() => {});
+      await db.execute(sql`ALTER TABLE fin_fiscal_calendar ADD COLUMN IF NOT EXISTS to_date varchar(10)`).catch(() => {});
+
+      const safeFromDate = from_date && from_date.trim() !== '' ? from_date.trim() : null;
+      const safeToDate = to_date && to_date.trim() !== '' ? to_date.trim() : null;
+
       res = await db.execute(sql`
         UPDATE fin_fiscal_calendar SET 
-          tenant_id = COALESCE(${tenantId}, tenant_id),
           name = ${name},
           description = ${description || null},
           year_dependent = ${finalYearDep},
@@ -215,14 +226,16 @@ export async function POST(req: NextRequest) {
           start_month = ${finalStartMonth},
           end_month = ${finalEndMonth},
           year_shift = ${finalYearShift},
-          from_date = ${from_date || null},
-          to_date = ${to_date || null},
-          is_active = true,
-          updated_at = NOW()
+          from_date = ${safeFromDate},
+          to_date = ${safeToDate},
+          is_active = true
         WHERE id = ${existingId}
         RETURNING id, code, name
       `);
     } else {
+      const safeFromDate = from_date && from_date.trim() !== '' ? from_date.trim() : null;
+      const safeToDate = to_date && to_date.trim() !== '' ? to_date.trim() : null;
+
       res = await db.execute(sql`
         INSERT INTO fin_fiscal_calendar (
           tenant_id, code, name, description, year_dependent, calendar_year,
@@ -231,7 +244,7 @@ export async function POST(req: NextRequest) {
         ) VALUES (
           ${tenantId}, ${coCode}, ${name}, ${description || null}, ${finalYearDep}, ${finalCalYear},
           ${finalNumPeriods}, ${finalSpecialPeriods}, ${finalStartMonth}, ${finalEndMonth},
-          ${finalYearShift}, ${from_date || null}, ${to_date || null}, true
+          ${finalYearShift}, ${safeFromDate}, ${safeToDate}, true
         )
         RETURNING id, code, name
       `);
