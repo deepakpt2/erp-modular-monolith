@@ -257,8 +257,10 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, account_number, name, account_type, is_blocked, is_balance_sheet, account_category, account_group_code } = body;
+    const { id, account_number, name, account_type, is_blocked, is_balance_sheet, is_reconciliation, is_tax_relevant, account_category, account_group_code, description } = body;
     if (!id && !account_number) return NextResponse.json({ error: 'id or account_number required' }, { status: 400 });
+
+    const finalAccountGroup = account_group_code ? account_group_code.toString().trim().toUpperCase() : null;
 
     try {
       let res;
@@ -270,11 +272,13 @@ export async function PUT(req: NextRequest) {
             account_type = COALESCE(${account_type}::fin_ledger_account_type, account_type),
             is_blocked = COALESCE(${is_blocked}, is_blocked),
             is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+            is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
+            is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
             account_category = COALESCE(${account_category ?? null}, account_category),
-            account_group_code = COALESCE(${account_group_code ?? null}, account_group_code),
+            account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
             updated_at = NOW()
           WHERE id = ${id}
-          RETURNING id, account_number, name
+          RETURNING id, account_number, name, account_type, account_category, account_group_code
         `);
       } else {
         res = await db.execute(sql`
@@ -282,9 +286,14 @@ export async function PUT(req: NextRequest) {
             name = COALESCE(${name}, name),
             account_type = COALESCE(${account_type}::fin_ledger_account_type, account_type),
             is_blocked = COALESCE(${is_blocked}, is_blocked),
+            is_balance_sheet = COALESCE(${is_balance_sheet}, is_balance_sheet),
+            is_reconciliation = COALESCE(${is_reconciliation}, is_reconciliation),
+            is_tax_relevant = COALESCE(${is_tax_relevant}, is_tax_relevant),
+            account_category = COALESCE(${account_category ?? null}, account_category),
+            account_group_code = COALESCE(${finalAccountGroup}, account_group_code),
             updated_at = NOW()
           WHERE account_number = ${account_number}
-          RETURNING id, account_number, name
+          RETURNING id, account_number, name, account_type, account_category, account_group_code
         `);
       }
       if (res.rows.length === 0) throw new Error('Not found in fin_ledger_account');

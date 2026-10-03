@@ -456,6 +456,44 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
       });
     }
 
+    // Ensure fin_account_group table exists and seed standard account groups for CA-IN-01
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS fin_account_group (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        chart_id uuid REFERENCES fin_chart(id),
+        coa_id uuid,
+        code varchar(50) NOT NULL,
+        name varchar(200) NOT NULL,
+        from_account varchar(50) NOT NULL,
+        to_account varchar(50) NOT NULL,
+        account_type varchar(50) DEFAULT 'ASSET',
+        account_category varchar(50) DEFAULT 'BALANCE_SHEET',
+        description text,
+        created_at timestamp DEFAULT NOW(),
+        updated_at timestamp DEFAULT NOW(),
+        CONSTRAINT uq_fin_account_group UNIQUE (chart_id, code)
+      )
+    `).catch(()=>{});
+
+    const caChart = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'CA-IN-01' LIMIT 1`).catch(() => ({ rows: [] }));
+    if (caChart.rows.length > 0) {
+      const cId = (caChart.rows[0] as any).id;
+      const defaultGroups = [
+        { code: 'ASST', name: 'Asset Accounts', from: '100000', to: '199999', type: 'ASSET', cat: 'BALANCE_SHEET' },
+        { code: 'LIAB', name: 'Liability Accounts', from: '200000', to: '299999', type: 'LIABILITY', cat: 'BALANCE_SHEET' },
+        { code: 'EQTY', name: 'Equity / Capital Accounts', from: '300000', to: '399999', type: 'EQUITY', cat: 'BALANCE_SHEET' },
+        { code: 'REVN', name: 'Revenue / Sales Accounts', from: '400000', to: '499999', type: 'REVENUE', cat: 'OPERATING_EXP_INC' },
+        { code: 'EXPN', name: 'Expense Accounts', from: '500000', to: '599999', type: 'EXPENSE', cat: 'OPERATING_EXP_INC' }
+      ];
+      for (const g of defaultGroups) {
+        await db.execute(sql`
+          INSERT INTO fin_account_group (chart_id, coa_id, code, name, from_account, to_account, account_type, account_category)
+          VALUES (${cId}, ${cId}, ${g.code}, ${g.name}, ${g.from}, ${g.to}, ${g.type}, ${g.cat})
+          ON CONFLICT (chart_id, code) DO NOTHING
+        `).catch(()=>{});
+      }
+    }
+
     // Ensure fin_ledger_account table and required columns exist
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS fin_ledger_account (
@@ -479,33 +517,35 @@ export async function seedIndustryStandardBaseline(): Promise<void> {
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_blocked boolean DEFAULT false`).catch(()=>{});
     await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS is_tax_relevant boolean DEFAULT false`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_category varchar(50)`).catch(()=>{});
+    await db.execute(sql`ALTER TABLE fin_ledger_account ADD COLUMN IF NOT EXISTS account_group_code varchar(50)`).catch(()=>{});
 
     const chartRes = await db.execute(sql`SELECT id FROM fin_chart WHERE code = 'CA-IN-01' LIMIT 1`);
     if (chartRes.rows.length > 0) {
       const templateChartId = (chartRes.rows[0] as any).id;
       await db.execute(sql`
         INSERT INTO fin_ledger_account (
-          chart_id, coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active
+          chart_id, coa_id, account_number, name, account_type, is_balance_sheet, is_reconciliation, is_tax_relevant, is_active, account_category, account_group_code
         )
         VALUES
-          (${templateChartId}, ${templateChartId}, '100000', 'Main Operating Bank Account', 'ASSET', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '100010', 'Petty Cash Operating Fund', 'ASSET', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '130000', 'Raw Materials Inventory', 'ASSET', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '131000', 'Semi-Finished Goods Inventory', 'ASSET', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '132000', 'Finished Goods Inventory', 'ASSET', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '133000', 'Trading Goods Inventory', 'ASSET', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '140000', 'Trade Accounts Receivable', 'ASSET', true, true, false, true),
-          (${templateChartId}, ${templateChartId}, '160000', 'Trade Accounts Payable', 'LIABILITY', true, true, false, true),
-          (${templateChartId}, ${templateChartId}, '191100', 'GR/IR Interim Clearing Account', 'LIABILITY', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '210000', 'Input Tax Clearing (GST / VAT)', 'LIABILITY', true, false, true, true),
-          (${templateChartId}, ${templateChartId}, '215000', 'Output Tax Payable (GST / VAT)', 'LIABILITY', true, false, true, true),
-          (${templateChartId}, ${templateChartId}, '300000', 'Common Share Capital', 'EQUITY', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '390000', 'Retained Earnings Balance Account', 'EQUITY', true, false, false, true),
-          (${templateChartId}, ${templateChartId}, '400000', 'Domestic Sales Revenue', 'REVENUE', false, false, true, true),
-          (${templateChartId}, ${templateChartId}, '410000', 'Export Sales Revenue', 'REVENUE', false, false, false, true),
-          (${templateChartId}, ${templateChartId}, '500000', 'Cost of Goods Sold (COGS)', 'EXPENSE', false, false, false, true),
-          (${templateChartId}, ${templateChartId}, '510000', 'Purchase Price Variance (PPV)', 'EXPENSE', false, false, false, true),
-          (${templateChartId}, ${templateChartId}, '520000', 'Inventory Count Gain/Loss Variance', 'EXPENSE', false, false, false, true)
+          (${templateChartId}, ${templateChartId}, '100000', 'Main Operating Bank Account', 'ASSET', true, false, false, true, 'BALANCE_SHEET', 'ASST'),
+          (${templateChartId}, ${templateChartId}, '100010', 'Petty Cash Operating Fund', 'ASSET', true, false, false, true, 'BALANCE_SHEET', 'ASST'),
+          (${templateChartId}, ${templateChartId}, '130000', 'Raw Materials Inventory', 'ASSET', true, false, false, true, 'BALANCE_SHEET', 'ASST'),
+          (${templateChartId}, ${templateChartId}, '131000', 'Semi-Finished Goods Inventory', 'ASSET', true, false, false, true, 'BALANCE_SHEET', 'ASST'),
+          (${templateChartId}, ${templateChartId}, '132000', 'Finished Goods Inventory', 'ASSET', true, false, false, true, 'BALANCE_SHEET', 'ASST'),
+          (${templateChartId}, ${templateChartId}, '133000', 'Trading Goods Inventory', 'ASSET', true, false, false, true, 'BALANCE_SHEET', 'ASST'),
+          (${templateChartId}, ${templateChartId}, '140000', 'Trade Accounts Receivable', 'ASSET', true, true, false, true, 'RECONCILIATION', 'ASST'),
+          (${templateChartId}, ${templateChartId}, '160000', 'Trade Accounts Payable', 'LIABILITY', true, true, false, true, 'RECONCILIATION', 'LIAB'),
+          (${templateChartId}, ${templateChartId}, '191100', 'GR/IR Interim Clearing Account', 'LIABILITY', true, false, false, true, 'GR_IR_CLEARING', 'LIAB'),
+          (${templateChartId}, ${templateChartId}, '210000', 'Input Tax Clearing (GST / VAT)', 'LIABILITY', true, false, true, true, 'BALANCE_SHEET', 'LIAB'),
+          (${templateChartId}, ${templateChartId}, '215000', 'Output Tax Payable (GST / VAT)', 'LIABILITY', true, false, true, true, 'BALANCE_SHEET', 'LIAB'),
+          (${templateChartId}, ${templateChartId}, '300000', 'Common Share Capital', 'EQUITY', true, false, false, true, 'BALANCE_SHEET', 'EQTY'),
+          (${templateChartId}, ${templateChartId}, '390000', 'Retained Earnings Balance Account', 'EQUITY', true, false, false, true, 'RETAINED_EARNINGS', 'EQTY'),
+          (${templateChartId}, ${templateChartId}, '400000', 'Domestic Sales Revenue', 'REVENUE', false, false, true, true, 'OPERATING_EXP_INC', 'REVN'),
+          (${templateChartId}, ${templateChartId}, '410000', 'Export Sales Revenue', 'REVENUE', false, false, false, true, 'OPERATING_EXP_INC', 'REVN'),
+          (${templateChartId}, ${templateChartId}, '500000', 'Cost of Goods Sold (COGS)', 'EXPENSE', false, false, false, true, 'OPERATING_EXP_INC', 'EXPN'),
+          (${templateChartId}, ${templateChartId}, '510000', 'Purchase Price Variance (PPV)', 'EXPENSE', false, false, false, true, 'OPERATING_EXP_INC', 'EXPN'),
+          (${templateChartId}, ${templateChartId}, '520000', 'Inventory Count Gain/Loss Variance', 'EXPENSE', false, false, false, true, 'OPERATING_EXP_INC', 'EXPN')
         ON CONFLICT DO NOTHING
       `).catch(async () => {
         // Fallback for unique index on (chart_id, account_number)

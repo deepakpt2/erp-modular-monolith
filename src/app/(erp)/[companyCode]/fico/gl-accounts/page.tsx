@@ -26,7 +26,7 @@ export default function Page({ defaultMode, codeOverride, titleOverride }: { def
         is_reconciliation: 'false',
         is_blocked: 'false',
         is_tax_relevant: 'false',
-        account_group_code: 'G001',
+        account_group_code: 'ASST',
         description: '' 
       }}
       fields={[
