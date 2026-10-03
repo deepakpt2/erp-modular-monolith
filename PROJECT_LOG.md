@@ -1530,3 +1530,27 @@ Once you confirm, I will:
   - In this development stage, **never introduce complex backward-compatibility workarounds, defensive fallback tables, or runtime DDL hacks** to accommodate outdated development data.
   - If an enterprise requirement or bug fix requires a structural schema change (e.g. altering keys, dropping constraints, modifying column types/relationships) that would break existing test data, **always stop and ask the user for confirmation first via `ask_user`** before implementing.
   - The team will reset the database cleanly from scratch (`docker compose down -v`) with standard data whenever structural changes are approved, keeping the codebase lean, standard, and maintainable.
+
+### 2026-10-03 IST: Pure Definition Parity for Company Code (`ELEC` / `OX02`)
+- **Architectural Directive Enforced:**
+  - In standard enterprise systems, Company Code definition (`OX02` / `ELEC`) is a **pure definition transaction**. It captures intrinsic statutory entity attributes only:
+    1. **Company Code (`BUKRS`):** 4-character code (e.g. `1000`, `AM01`).
+    2. **Company Name (`BUTXT`):** Statutory legal name.
+    3. **Currency (`WAERS`):** Local statutory currency (e.g. `INR`, `USD`).
+    4. **Country (`LAND1`):** ISO country code.
+    5. **City (`ORT01`):** City of registration.
+    6. **Language (`SPRAS`):** Default system document language.
+    7. **Tax & Statutory Data:** Address, Postal Code, Tax ID/VAT, GSTIN, PAN, CIN.
+  - **Removed all assignment fields from the ELEC creation form:**
+    - `CHART_OF_ACCOUNTS_CODE` (assigned in `OB62` / `COAA`).
+    - `FISCAL_YEAR_VARIANT` (assigned in `OB37` / `FYVA`).
+    - `CREDIT_CONTROL_AREA` (assigned in `OB38` / `CCAA`).
+    - `POSTING_PERIOD_VARIANT` (assigned in `OBBP` / `PPVA`).
+    - `FIELD_STATUS_VARIANT` (assigned in `OBC5` / `FSVA`).
+  - Added direct quick links in the ELEC footer pointing directly to the standard assignment transactions (`OB62`, `OB37`, `OB38`, `OBBP`, `OBC5`, `OX16`).
+- **Backend API Update:**
+  - Updated `/api/legal-entities` to allow creating legal entities with intrinsic fields without requiring assignment parameters.
+- **Verification:**
+  - TypeScript compilation (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source tree diff.
+  - Pushed to GitHub repository `main`.

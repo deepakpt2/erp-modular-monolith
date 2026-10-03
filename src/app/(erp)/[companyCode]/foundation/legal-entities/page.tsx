@@ -1,46 +1,177 @@
 "use client";
+
 import { SingleCodePage } from '@/shared/ui/single-code-page';
-export default function LegalEntitiesPage({ defaultMode, codeOverride, titleOverride }: { defaultMode?: any; codeOverride?: string; titleOverride?: string } = {}) {
+
+export default function LegalEntitiesPage({
+  defaultMode,
+  codeOverride,
+  titleOverride
+}: {
+  defaultMode?: any;
+  codeOverride?: string;
+  titleOverride?: string;
+} = {}) {
   return (
     <SingleCodePage
       defaultMode={defaultMode}
       code={codeOverride || "ELEC"}
       sapAlias="OX02"
-      title={titleOverride || "Legal Entity"}
-      description="Define Legal Entity – statutory company code – needs chart_of_accounts_code CA-IN-01, fiscal_year_variant K4, field_status_variant FFSV-1000, posting_period_variant PPV-1000, credit_control_area CRED-1000 – per real guide – posting period variant controls FPPE (legacy OB52) open/close, fiscal calendar calculates FY/Period"
+      title={titleOverride || "Legal Entity – Company Code"}
+      description="Industry Standard Pure Definition (OX02 / ELEC): Define statutory Company Code with intrinsic attributes (Code, Name, Currency, Country, City, Language). In accordance with enterprise architectural standards, organizational assignments (Chart of Accounts, Fiscal Year Variant, Credit Control Area) are maintained exclusively in dedicated assignment transactions (e.g. OB62, OB37, OB38)."
       apiEndpoint="/api/legal-entities"
       initialForm={{
-        code: '', name: '', currency_code: 'INR', country_code: 'IN', country: 'IN', city: '',
-        address: '', street: '', postal_code: '', region: '', tax_id: '', gst_number: '', pan: '', cin: '',
-        phone: '', email: '', website: '', legal_form: '', registration_number: '', description: '',
-        tenant_code: 'TEN-100', fiscal_calendar_code: 'K4', fiscal_year_variant: 'K4', chart_of_accounts_code: 'CA-IN-01', field_status_variant: 'FFSV-1000', posting_period_variant: 'PPV-1000', posting_period_variant_code: 'PPV-1000', credit_control_area: 'CRED-1000', language: 'EN'
+        code: '',
+        name: '',
+        currency_code: 'INR',
+        country_code: 'IN',
+        city: '',
+        language: 'EN',
+        address: '',
+        street: '',
+        postal_code: '',
+        region: '',
+        tax_id: '',
+        gst_number: '',
+        pan: '',
+        cin: '',
+        description: ''
       }}
       fields={[
-        { key: 'code', label: 'LEGAL_ENTITY_CODE', required: true, placeholder: '', description: 'Unique legal entity code – e.g., 1000 per guide – company code in ERP – used by Facility, Cost Center' },
-        { key: 'name', label: 'LEGAL_ENTITY_NAME', required: true, placeholder: '', description: 'Legal name – e.g., FMCG India Pvt Ltd' },
-        { key: 'currency_code', label: 'CURRENCY_CODE', required: true, type: 'autocomplete', apiUrl: '/api/currencies', dataKey: 'currencies', codeField: 'code', placeholder: '', createUrl: '/fico/currencies', createCode: 'FCYC', description: 'Currency FK – INR' },
-        { key: 'country_code', label: 'COUNTRY_CODE', required: true, placeholder: '', description: 'Country – IN per guide' },
-        { key: 'chart_of_accounts_code', label: 'CHART_OF_ACCOUNTS_CODE', required: true, type: 'autocomplete', apiUrl: '/api/chart-of-accounts', dataKey: 'chartOfAccounts', codeField: 'code', placeholder: '', createUrl: '/fico/chart-of-accounts', createCode: 'FCOA', description: 'Chart of Accounts – CA-IN-01 per guide – must exist before ELEC – OB13' },
-        { key: 'fiscal_year_variant', label: 'FISCAL_YEAR_VARIANT', required: true, type: 'autocomplete', apiUrl: '/api/fiscal-calendars', dataKey: 'fiscalCalendars', codeField: 'code', placeholder: '', createUrl: '/fico/fiscal-calendars', createCode: 'FFYC', description: 'Fiscal Year Variant – K4 per guide – fiscal_year_variant K4 – calculates FY/Period' },
-        { key: 'field_status_variant', label: 'FIELD_STATUS_VARIANT', required: true, placeholder: '', description: 'Field Status Variant – FFSV-1000 per guide' },
-        { key: 'posting_period_variant', label: 'POSTING_PERIOD_VARIANT', required: true, type: 'autocomplete', apiUrl: '/api/posting-period-variants', dataKey: 'postingPeriodVariants', codeField: 'code', placeholder: '', createUrl: '/fico/posting-period-variants', createCode: 'FPPC', description: 'Posting Period Variant – PPV-1000 per guide – posting_period_variant PPV-1000' },
-        { key: 'credit_control_area', label: 'CREDIT_CONTROL_AREA', required: true, type: 'autocomplete', apiUrl: '/api/credit-policy-areas', dataKey: 'creditPolicyAreas', codeField: 'code', placeholder: '', createUrl: '/foundation/credit-policy-areas', createCode: 'FCPC', description: 'Credit Control Area – CRED-1000 per guide – credit_control_area CRED-1000 didnt create before FCOA (legacy OB13) – must exist – OB45' },
-        { key: 'language', label: 'LANGUAGE', required: true, placeholder: '', description: 'Language – EN per guide – FCOA (legacy OB13) language' },
-        { key: 'city', label: 'CITY', placeholder: '' },
-        { key: 'tax_id', label: 'TAX_ID', placeholder: '' },
-        { key: 'gst_number', label: 'GST_NUMBER', placeholder: '' },
-        { key: 'pan', label: 'PAN', placeholder: '' },
-        { key: 'description', label: 'DESCRIPTION', type: 'textarea', placeholder: '' },
+        {
+          key: 'code',
+          label: 'COMPANY_CODE',
+          required: true,
+          placeholder: 'e.g. 1000, AM01',
+          description: '4-character statutory Company Code (T001-BUKRS)'
+        },
+        {
+          key: 'name',
+          label: 'COMPANY_NAME',
+          required: true,
+          placeholder: 'e.g. Acme Consumer Products Ltd',
+          description: 'Official corporate statutory legal name (T001-BUTXT)'
+        },
+        {
+          key: 'currency_code',
+          label: 'CURRENCY',
+          required: true,
+          type: 'autocomplete',
+          apiUrl: '/api/currencies',
+          dataKey: 'currencies',
+          codeField: 'code',
+          placeholder: 'Select local currency (e.g. INR, USD, EUR)',
+          createUrl: '/fico/currencies',
+          createCode: 'FCYC',
+          description: 'Local statutory reporting currency (T001-WAERS)'
+        },
+        {
+          key: 'country_code',
+          label: 'COUNTRY',
+          required: true,
+          placeholder: 'e.g. IN, US, DE',
+          description: 'Country ISO key for statutory reporting (T001-LAND1)'
+        },
+        {
+          key: 'city',
+          label: 'CITY',
+          required: true,
+          placeholder: 'e.g. Mumbai, New York',
+          description: 'City of legal entity registration (T001-ORT01)'
+        },
+        {
+          key: 'language',
+          label: 'LANGUAGE',
+          required: true,
+          placeholder: 'e.g. EN, DE',
+          description: 'System language for company documents (T001-SPRAS)'
+        },
+        {
+          key: 'street',
+          label: 'STREET_ADDRESS',
+          placeholder: 'Registered office address',
+          description: 'Street address'
+        },
+        {
+          key: 'postal_code',
+          label: 'POSTAL_CODE',
+          placeholder: 'PIN / ZIP Code',
+          description: 'Postal / ZIP code'
+        },
+        {
+          key: 'region',
+          label: 'STATE_REGION',
+          placeholder: 'e.g. MH, CA, BY',
+          description: 'State / Region code'
+        },
+        {
+          key: 'tax_id',
+          label: 'TAX_ID_VAT',
+          placeholder: 'Corporate Tax / VAT ID',
+          description: 'Tax identification number'
+        },
+        {
+          key: 'gst_number',
+          label: 'GST_NUMBER',
+          placeholder: 'Goods & Services Tax Registration',
+          description: 'GSTIN (India)'
+        },
+        {
+          key: 'pan',
+          label: 'PAN',
+          placeholder: 'Permanent Account Number',
+          description: 'PAN (India)'
+        },
+        {
+          key: 'cin',
+          label: 'CIN',
+          placeholder: 'Corporate Identity Number',
+          description: 'Registration / CIN'
+        },
+        {
+          key: 'description',
+          label: 'DESCRIPTION',
+          type: 'textarea',
+          placeholder: 'Operational or business notes',
+          description: 'Explanatory notes'
+        }
       ]}
       relatedLinks={[
-        { code: 'OX16', label: 'Assign to Company Group (ECGA)', route: '/foundation/company-group-assignment', description: 'Assign Company Code to Company Group – OX16' },
-        { code: 'FCOA', label: 'Chart of Accounts CA-IN-01 – must exist before ELEC', route: '/fico/chart-of-accounts', description: 'Create CA-IN-01 with language EN before ELEC – OB13' },
-        { code: 'FFYC', label: 'Fiscal Year Variant K4', route: '/fico/fiscal-calendars', description: 'Create K4 before ELEC – fiscal_year_variant' },
-        { code: 'FFSV', label: 'Field Status Variant FFSV-1000', route: '/fico/field-status-variants', description: 'Create FFSV-1000 before ELEC' },
-        { code: 'FPPC', label: 'Posting Period Variant PPV-1000', route: '/fico/posting-period-variants', description: 'Create PPV-1000 before ELEC' },
-        { code: 'FCPC', label: 'Credit Control Area CRED-1000 – OB45', route: '/foundation/credit-policy-areas', description: 'Create CRED-1000 before FCOA (legacy OB13)/ELEC – credit_control_area didnt create before ob13' },
-        { code: 'FCYC', label: 'Currency – required', route: '/fico/currencies', description: 'Currency master OY03' },
-        { code: 'EFCC', label: 'Facility uses ELEC', route: '/foundation/facilities', description: 'Facility requires Legal Entity' },
+        {
+          code: 'OB62',
+          label: 'Assign Chart of Accounts (COAA)',
+          route: '/fico/chart-of-accounts-assignment',
+          description: 'Assign Company Code to Chart of Accounts – OB62'
+        },
+        {
+          code: 'OB37',
+          label: 'Assign Fiscal Year Variant (FYVA)',
+          route: '/fico/fiscal-year-variant-assignment',
+          description: 'Assign Company Code to Fiscal Year Variant – OB37'
+        },
+        {
+          code: 'OB38',
+          label: 'Assign Credit Control Area (CCAA)',
+          route: '/fico/credit-control-area-assignment',
+          description: 'Assign Company Code to Credit Control Area – OB38'
+        },
+        {
+          code: 'OBBP',
+          label: 'Assign Posting Period Variant (PPVA)',
+          route: '/fico/posting-period-variant-assignment',
+          description: 'Assign Company Code to Posting Period Variant – OBBP'
+        },
+        {
+          code: 'OBC5',
+          label: 'Assign Field Status Variant (FSVA)',
+          route: '/fico/field-status-variant-assignment',
+          description: 'Assign Company Code to Field Status Variant – OBC5'
+        },
+        {
+          code: 'OX16',
+          label: 'Assign Company to Group (ECGA)',
+          route: '/foundation/company-group-assignment',
+          description: 'Assign Company Code to Company Group – OX16'
+        }
       ]}
     />
   );

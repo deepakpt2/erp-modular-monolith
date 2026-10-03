@@ -64,11 +64,11 @@ export async function POST(req: NextRequest) {
       await db.execute(sql`ALTER TABLE org_legal_entity ADD COLUMN IF NOT EXISTS fiscal_calendar_code VARCHAR(20) DEFAULT 'K4'`);
     } catch {}
 
-    const finalFiscal = (fiscal_calendar_code || fiscal_year_variant || 'K4').toUpperCase();
-    const finalChart = (chart_of_accounts_code || 'CA-IN-01').toUpperCase();
-    const finalFieldStatus = (field_status_variant || 'FFSV-1000').toUpperCase();
-    const finalPostingVariant = (posting_period_variant || posting_period_variant_code || 'PPV-1000').toUpperCase();
-    const finalCredit = (credit_control_area || credit_policy_area_code || 'CRED-1000').toUpperCase();
+    const finalFiscal = fiscal_calendar_code || fiscal_year_variant ? (fiscal_calendar_code || fiscal_year_variant).toUpperCase() : null;
+    const finalChart = chart_of_accounts_code ? chart_of_accounts_code.toUpperCase() : null;
+    const finalFieldStatus = field_status_variant ? field_status_variant.toUpperCase() : null;
+    const finalPostingVariant = posting_period_variant || posting_period_variant_code ? (posting_period_variant || posting_period_variant_code).toUpperCase() : null;
+    const finalCredit = credit_control_area || credit_policy_area_code ? (credit_control_area || credit_policy_area_code).toUpperCase() : null;
     const finalCountry = (country_code || country || 'IN').toUpperCase();
     const finalLang = (language || 'EN').toUpperCase();
     const finalCurrency = (currency_code || 'INR').toUpperCase();
