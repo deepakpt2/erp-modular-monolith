@@ -44,6 +44,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const objectType = searchParams.get('object_type') || searchParams.get('objectType') || searchParams.get('type');
     const companyCode = searchParams.get('company_code') || searchParams.get('companyCode');
+    const plantCode = searchParams.get('plant_code') || searchParams.get('plantCode');
+    const controllingArea = searchParams.get('controlling_area_code') || searchParams.get('controllingArea');
     const fiscalYear = searchParams.get('fiscal_year') || searchParams.get('fiscalYear');
     const assignmentKey = searchParams.get('assignment_key') || searchParams.get('material_type') || searchParams.get('materialType') || searchParams.get('doc_type') || searchParams.get('company') || null;
     const materialType = searchParams.get('material_type') || searchParams.get('materialType');
@@ -188,16 +190,41 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Step 3: Fallback – no assignment found – use object_type only – default behavior
+      // Step 3: Fallback – hierarchical matching (Plant -> Company Code -> Controlling Area -> Global)
       let res;
-      if (companyCode && fiscalYear) {
+      if (plantCode) {
         res = await db.execute(sql`
           UPDATE core_number_range 
           SET current_number = current_number + 1, updated_at = NOW()
           WHERE object_type = ${upperType}::core_number_range_object_type 
-          AND (legal_entity_id IN (SELECT id FROM org_legal_entity WHERE code = ${companyCode} LIMIT 1) OR legal_entity_id IS NULL)
+          AND plant_code = ${plantCode.toUpperCase()}
+          AND (fiscal_year = ${fiscalYear || null} OR fiscal_year IS NULL)
+          ORDER BY fiscal_year DESC NULLS LAST
+          LIMIT 1
+          RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
+        `);
+      }
+
+      if ((!res || res.rows.length === 0) && companyCode && fiscalYear) {
+        res = await db.execute(sql`
+          UPDATE core_number_range 
+          SET current_number = current_number + 1, updated_at = NOW()
+          WHERE object_type = ${upperType}::core_number_range_object_type 
+          AND (company_code = ${companyCode.toUpperCase()} OR legal_entity_id IN (SELECT id FROM org_legal_entity WHERE code = ${companyCode} LIMIT 1) OR company_code IS NULL)
           AND (fiscal_year = ${fiscalYear} OR fiscal_year IS NULL)
-          ORDER BY fiscal_year DESC NULLS LAST, legal_entity_id DESC NULLS LAST
+          ORDER BY fiscal_year DESC NULLS LAST, company_code DESC NULLS LAST
+          LIMIT 1
+          RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
+        `);
+      }
+
+      if ((!res || res.rows.length === 0) && controllingArea) {
+        res = await db.execute(sql`
+          UPDATE core_number_range 
+          SET current_number = current_number + 1, updated_at = NOW()
+          WHERE object_type = ${upperType}::core_number_range_object_type 
+          AND controlling_area_code = ${controllingArea.toUpperCase()}
+          ORDER BY fiscal_year DESC NULLS LAST
           LIMIT 1
           RETURNING id, code, object_type, current_number, from_number, to_number, fiscal_year
         `);

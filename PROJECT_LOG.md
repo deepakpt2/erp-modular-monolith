@@ -1368,3 +1368,28 @@ Once you confirm, I will:
   - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
   - Zero vendor keywords in source tree diff.
   - Pushed to GitHub repository `main`.
+
+### 2026-10-02 IST: Enterprise Number Range Architecture Parity Across Modules
+- **Architectural Scope & Dedicated Forms Aligned with Standard Blueprints:**
+  - Standard implementation guides treat number range creation as hierarchical and module-specific:
+    1. **Financial Accounting (`FNRC` / `FBN1`):** Defined strictly at `(Company Code, Fiscal Year, Interval No)` level due to statutory annual accounting audits.
+    2. **Procurement / Purchasing (`PNRC` / `OMH6` / `OMH7`):** Defined at the **Global / Client-Wide** level (`PO`, `PR`, `RFQ`, `CONTRACT`). Purchasing organizations operate across multiple legal entities and do not force company code segregation on creation.
+    3. **Inventory Management & Goods Movement (`MNRC` / `OMCJ` / `OMBT`):** Defined at the **Plant** level for physical stock receipts (`GR`), issues (`GI`), and physical inventory.
+    4. **Sales & Distribution (`SNRC` / `VN01`):** Defined at the **Global / Client-Wide** level (`SO`, `DELIVERY`, `BILLING`) and assigned directly to sales document types (`VOV8`).
+- **Core Engine & Backend API Updates:**
+  - Updated `core_number_range` schema to support `scope_level` (`GLOBAL`, `COMPANY_CODE`, `PLANT`, `CONTROLLING_AREA`), `plant_code`, and `controlling_area_code`.
+  - Updated atomic number retrieval engine (`/api/number-ranges/next`) with hierarchical matching:
+    1. Explicit table assignment (`core_number_range_assignment`).
+    2. Plant-level interval match.
+    3. Company Code + Fiscal Year match.
+    4. Controlling Area match.
+    5. Global object type match.
+- **UI & Navigation:**
+  - Created `/mm/purchasing-number-ranges` (`PNRC` / `OMH6`).
+  - Created `/mm/material-doc-number-ranges` (`MNRC` / `OMCJ`).
+  - Created `/sd/sales-number-ranges` (`SNRC` / `VN01`).
+  - Added module routes, quick searches, command palette shortcuts (`PNRC`, `MNRC`, `SNRC`), and RBAC permissions.
+- **Verification:**
+  - TypeScript build check (`tsc --noEmit`) passes with 0 errors.
+  - Zero vendor keywords in source tree diff.
+  - Pushed to GitHub repository `main`.

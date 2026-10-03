@@ -7,7 +7,7 @@ import { sql } from 'drizzle-orm';
  * Number Ranges API – FNRC – Industry standard NUMBERING – NO PREFIX
  *  Standard: Number ranges are purely numeric intervals – NO PREFIX in range itself
  * Example : PO 4500000000, PR 1000000000, MAT 10000000 – numeric only
- * In  FNRC (legacy FBN1)/SNRO: Interval defined by From Number, To Number, Current Number – all numeric
+ * In  Interval maintenance standard: Interval defined by From Number, To Number, Current Number – all numeric
  * Prefix handling: REMOVED for  compliance – prefix field forced to '' always
  * Industry standard locking (per user confirmation):
  * - Used if current_number > from_number
@@ -21,6 +21,9 @@ import { sql } from 'drizzle-orm';
 async function ensureNumberRangeSchema() {
   try {
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS company_code VARCHAR(20)`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS plant_code VARCHAR(20)`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS controlling_area_code VARCHAR(20)`).catch(() => {});
+    await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS scope_level VARCHAR(30) DEFAULT 'GLOBAL'`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_external BOOLEAN DEFAULT false`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS is_buffered BOOLEAN DEFAULT false`).catch(() => {});
     await db.execute(sql`ALTER TABLE core_number_range ADD COLUMN IF NOT EXISTS buffer_size INTEGER DEFAULT 10`).catch(() => {});
@@ -39,7 +42,32 @@ export async function GET(req: NextRequest) {
     let table = 'core_number_range';
     let legalSafe = true;
     try {
-      const res = await db.execute(sql`SELECT * FROM core_number_range ORDER BY object_type, code, fiscal_year NULLS LAST`);
+      const { searchParams } = new URL(req.url);
+      const filterObjectType = searchParams.get('object_type') || searchParams.get('objectType');
+      const filterCompanyCode = searchParams.get('company_code') || searchParams.get('companyCode');
+      const filterPlantCode = searchParams.get('plant_code') || searchParams.get('plantCode');
+      const filterControllingArea = searchParams.get('controlling_area_code') || searchParams.get('controllingArea');
+      const filterScope = searchParams.get('scope_level') || searchParams.get('scope');
+
+      let query = sql`SELECT * FROM core_number_range WHERE 1=1`;
+      if (filterObjectType) {
+        query = sql`${query} AND object_type = ${filterObjectType.toUpperCase()}`;
+      }
+      if (filterCompanyCode) {
+        query = sql`${query} AND (company_code = ${filterCompanyCode.toUpperCase()} OR company_code IS NULL)`;
+      }
+      if (filterPlantCode) {
+        query = sql`${query} AND (plant_code = ${filterPlantCode.toUpperCase()} OR plant_code IS NULL)`;
+      }
+      if (filterControllingArea) {
+        query = sql`${query} AND (controlling_area_code = ${filterControllingArea.toUpperCase()} OR controlling_area_code IS NULL)`;
+      }
+      if (filterScope) {
+        query = sql`${query} AND scope_level = ${filterScope.toUpperCase()}`;
+      }
+      query = sql`${query} ORDER BY object_type, code, fiscal_year NULLS LAST`;
+
+      const res = await db.execute(query);
       rows = res.rows as any[];
       // Enrich with Industry standard fields: next_number, used_count, is_locked
       rows = rows.map((r: any) => ({
@@ -82,11 +110,11 @@ export async function GET(req: NextRequest) {
       table,
       source,
       legalSafe,
-      functionDescription: 'Number Ranges – FNRC – Industry standard – purely numeric intervals – no prefix – FNRC (legacy FBN1)/SNRO like – shows next available number, locked badge if used',
-      sapStandard: {
-        numbering: 'Purely numeric – no prefix –  FNRC (legacy FBN1)/SNRO standard – From/To/Current are numeric – e.g., PO 4500000000, PR 1000000000, MAT 10000000',
+      functionDescription: 'Number Ranges – FNRC – Industry standard – purely numeric intervals – no prefix – Interval maintenance standard – shows next available number, locked badge if used',
+      standardSpec: {
+        numbering: 'Purely numeric – no prefix –  Interval maintenance standard – From/To/Current are numeric – e.g., PO 4500000000, PR 1000000000, MAT 10000000',
         prefix: 'REMOVED –  does not store prefix in number range – prefix field forced to empty for compliance',
-        nextNumber: 'Next available = current_number + 1 – shown in FNRC page like  – e.g., current 4500000000 → next 4500000001',
+        nextNumber: 'Next available = current_number + 1 – shown in FNRC page standard – e.g., current 4500000000 → next 4500000001',
         locking: 'If current > from, range is used → locked badge 🔒 instead of Edit/Delete – Industry standard',
       },
       erpDefaults: [
@@ -102,12 +130,12 @@ export async function GET(req: NextRequest) {
       ],
       lockingRules: {
         usedCriteria: 'current_number > from_number – e.g., ITEM-01 from 10000000 current 10000002 → 2 used → locked 🔒',
-        editBlockedWhenUsed: 'code, object_type, from_number cannot change when used; to_number cannot be < current; only description, to_number increase allowed –  FBN1',
+        editBlockedWhenUsed: 'code, object_type, from_number cannot change when used; to_number cannot be < current; only description, to_number increase allowed – Standard',
         deleteBlockedWhenUsed: 'If used, cannot delete – locked badge shown instead of Edit/Delete – keep for audit – create new range ITEM-02 instead',
         fiscalYear: 'Lock per code+year – e.g., PO-01 FY 2026 locked only if 2026 used, FY 2025 can still be edited',
-        ui: 'FNRC page shows next available number like  – locked badge 🔒 replaces Edit/Delete buttons when used',
+        ui: 'FNRC page shows next available number standard – locked badge 🔒 replaces Edit/Delete buttons when used',
       },
-      explanation: 'Number ranges – Industry standard – purely numeric, no prefix – next number displayed – locked badge if used – FNRC (legacy FBN1)/SNRO',
+      explanation: 'Number ranges – Industry standard – purely numeric, no prefix – next number displayed – locked badge if used – Interval maintenance standard',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message, data: [], numberRanges: [] }, { status: 500 });
@@ -124,6 +152,9 @@ export async function POST(req: NextRequest) {
       object_type,
       objectType,
       company_code,
+      plant_code,
+      controlling_area_code,
+      scope_level,
       from_number,
       to_number,
       current_number,
@@ -141,7 +172,7 @@ export async function POST(req: NextRequest) {
     const upperCode = code.toUpperCase();
     const upperObjType = finalObjectType.toUpperCase();
     // Industry standard: prefix forced to empty – no prefix in number range
-    const sapPrefix = '';
+    const cleanPrefix = '';
 
     try {
       let existing: any = null;
@@ -287,7 +318,7 @@ export async function PUT(req: NextRequest) {
           }
         }
         const updated = res.rows[0] as any;
-        return NextResponse.json({ success: true, numberRange: { ...updated, next_number: Number(updated.current_number)+1, used_count: usedCount, is_locked: true }, code: 'FNRC', message: `Range ${existing.code} used ${usedCount} times – locked 🔒 – only to_number increase (${existing.to_number}→${newTo}) and description updated –  – next ${Number(updated.current_number)+1}`, locked: true, usedCount, next_number: Number(updated.current_number)+1 });
+        return NextResponse.json({ success: true, numberRange: { ...updated, next_number: Number(updated.current_number)+1, used_count: usedCount, is_locked: true }, code: 'FNRC', message: `Range ${existing.code} used ${usedCount} times – locked 🔒 – only to_number increase (${existing.to_number}→${newTo}) and description updated – next ${Number(updated.current_number)+1}`, locked: true, usedCount, next_number: Number(updated.current_number)+1 });
       }
 
       let res;

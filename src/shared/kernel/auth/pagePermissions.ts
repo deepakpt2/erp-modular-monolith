@@ -78,6 +78,9 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // ========== FICO – FI/CO – FS00/OBYC/OB52 – ACCOUNTANT/ADMIN only – sensitive ==========
   { code: 'FFYC', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Fiscal Calendar – OB29 – FFYC – GL_VIEW – SAP standard – fiscal year variant – ACCOUNTANT/ADMIN only' },
   { code: 'FEXC', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Exchange Rates – OB08 – FEXC – GL_VIEW – SAP standard – ACCOUNTANT/ADMIN only' },
+  { code: 'PNRC', permission: 'NUMBER_RANGE_MAINTAIN', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Purchasing Number Ranges – OMH6/OMH7 – Global Client-Wide' },
+  { code: 'MNRC', permission: 'NUMBER_RANGE_MAINTAIN', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'MM', description: 'Material Doc Number Ranges – OMCJ/OMBT – Plant Scoped' },
+  { code: 'SNRC', permission: 'NUMBER_RANGE_MAINTAIN', roles: ['ADMIN', 'OWNER', 'MANAGER'], module: 'SD', description: 'Sales Document Number Ranges – VN01 – Global Client-Wide' },
   { code: 'FNRC', permission: 'NUMBER_RANGE_MAINTAIN', roles: ['ADMIN', 'OWNER'], module: 'FICO', description: 'Number Ranges – FBN1/SNRO – FNRC – NUMBER_RANGE_MAINTAIN – SAP standard – ADMIN only – S_NUMBER – industry standard numeric only' },
   { code: 'FTGC', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Tax Groups – FTXP – FTGC – GL_VIEW – ACCOUNTANT/ADMIN only' },
   { code: 'FTXC', permission: 'GL_VIEW', roles: ['ACCOUNTANT', 'ADMIN', 'OWNER'], module: 'FICO', description: 'Tax Codes – FTXP – FTXC – GL_VIEW – ACCOUNTANT/ADMIN only – TAX' },
