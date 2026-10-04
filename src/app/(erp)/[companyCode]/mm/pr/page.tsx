@@ -13,8 +13,14 @@ interface PRLine {
   quantity: string;
   uom_code: string;
   estimated_price: string;
+  currency?: string;
   inventory_location_code: string;
   delivery_date: string;
+  account_assignment_category?: string; // 'U' (Unknown), 'K' (Cost Center), 'P' (Project), 'A' (Asset)
+  cost_center_code?: string;
+  gl_account_number?: string;
+  purchasing_group?: string;
+  requisitioner?: string;
   item_text: string;
 }
 
@@ -30,7 +36,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const [headerText, setHeaderText] = useState('');
   const [currencyCode, setCurrencyCode] = useState('INR');
   const [lines, setLines] = useState<PRLine[]>([
-    { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }
+    { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], account_assignment_category: '', cost_center_code: '', gl_account_number: '', purchasing_group: '', requisitioner: '', item_text: '' }
   ]);
   const [refPrNumber, setRefPrNumber] = useState<string>('');
   const [refQuery, setRefQuery] = useState('');
@@ -61,7 +67,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   function clearPrReference() {
     setRefPrNumber('');
     setRefQuery('');
-    setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+    setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], account_assignment_category: '', cost_center_code: '', gl_account_number: '', purchasing_group: '', requisitioner: '', item_text: '' }]);
     setHeaderText('');
   }
   const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
@@ -85,7 +91,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   },[companyCode]);
 
   function addLine(){
-    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], account_assignment_category: '', cost_center_code: '', gl_account_number: '', purchasing_group: '', requisitioner: '', item_text: '' }]);
   }
   function updateLine(idx:number, field:keyof PRLine, value:string){
     const newLines = [...lines];
@@ -126,6 +132,12 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
         inventory_location_code: l.inventory_location_code,
         sloc_id: l.inventory_location_code,
         delivery_date: l.delivery_date,
+        account_assignment: l.account_assignment_category || null,
+        account_assignment_category: l.account_assignment_category || null,
+        cost_center_code: l.cost_center_code || null,
+        gl_account: l.gl_account_number || null,
+        purchasing_group: l.purchasing_group || null,
+        requisitioner: l.requisitioner || null,
         item_text: l.item_text,
         line_number: (i+1)*10,
       })),
@@ -169,7 +181,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
               if(wf.instanceId) setMsg(prev=>prev + ` – Workflow started ${wf.instanceId.slice(0,8)} – ${wf.stepsCreated} tasks – SBWP inbox – PPRL (legacy ME54N) release`);
             }).catch(()=>{});
           }catch{}
-          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], account_assignment_category: '', cost_center_code: '', gl_account_number: '', purchasing_group: '', requisitioner: '', item_text: '' }]);
           setHeaderText('');
         },
         onBackgroundCreated: (newJobId:string)=>{
@@ -485,6 +497,22 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Delivery Date</label>
                       <input type="date" value={line.delivery_date} onChange={e=>updateLine(idx,'delivery_date',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Acct Assgt (K/A/P)</label>
+                      <input value={line.account_assignment_category || ''} onChange={e=>updateLine(idx,'account_assignment_category',e.target.value.toUpperCase())} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="K / A / P" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Cost Center</label>
+                      <input value={line.cost_center_code || ''} onChange={e=>updateLine(idx,'cost_center_code',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="e.g. CC01" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">G/L Account</label>
+                      <input value={line.gl_account_number || ''} onChange={e=>updateLine(idx,'gl_account_number',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="e.g. 5000" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Purch. Group</label>
+                      <input value={line.purchasing_group || ''} onChange={e=>updateLine(idx,'purchasing_group',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="e.g. 001" />
                     </div>
                     <div>
                       <label className="text-[10px] text-zinc-500 uppercase">Item Text</label>

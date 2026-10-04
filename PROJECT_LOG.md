@@ -1795,3 +1795,17 @@ Once you confirm, I will:
   - Replaced hardcoded default `'1000'` facility with dynamic resolution from `/api/assignments/plant-company-code` matching the current `companyCode`.
   - Cleared synthetic default storage location `'SL01'`, allowing user to select or enter the real storage locations defined in their enterprise setup (e.g. `RM01`, `FG01`).
 - Ensures downstream logistics (MM), manufacturing (PP), and sales (SD) forms run dynamically off whatever company code and plant are configured, with no hardcoded fallback assumptions.
+
+## Standardized Procurement Form (PR ME51N) with Full Industry Fields
+- Extended `src/app/(erp)/[companyCode]/mm/pr/page.tsx` line item schema and form fields with standard enterprise fields:
+  - Material Number (`MATNR`)
+  - Quantity & Unit of Measure (`MENGE`, `MEINS`)
+  - Estimated Valuation Price & Currency (`PREIS`, `WAERS`)
+  - Plant & Storage Location (`WERKS`, `LGORT`)
+  - Delivery Date (`EEIND`)
+  - Account Assignment Category (`KNTTP`, e.g. `K` Cost Center, `A` Asset, `P` Project)
+  - Cost Center (`KOSTL`)
+  - G/L Account (`SAKNR`)
+  - Purchasing Group (`EKGRP`)
+  - Short Text (`TXZ01`)
+- Transmits complete blueprint payload to `/api/pr` maintaining direct compatibility with implementation guides.
