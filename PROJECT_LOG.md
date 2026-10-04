@@ -1784,3 +1784,8 @@ Once you confirm, I will:
 - **Error:** `error: cannot insert multiple commands into a prepared statement (code: 42601)`
 - **Cause:** PostgreSQL node-postgres prepared statements do not allow multiple semi-colon separated statements in a single `db.execute(sql\`...\`)` call.
 - **Solution:** Separated multi-command queries (e.g. `DELETE ...; INSERT ...;` and `UPDATE ...; UPDATE ...;`) into distinct, sequential `await db.execute(...)` calls.
+
+## Standardized UI Labels and Cleaned Proprietary Artifacts
+- Audited enterprise configuration pages (`fiscal-calendars`, `legal-entities`, `chart-of-accounts`).
+- Removed all vendor-specific table field codes (e.g. `(T001-BUKRS)`, `(T009-PERIV)`) in field descriptions, keeping industry standard terminology (Company Code, Fiscal Year Variant, Chart of Accounts, etc.).
+- Ensured 100% standard ERP blueprint compatibility across forms, list views, and field inputs.

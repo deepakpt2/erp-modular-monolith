@@ -42,14 +42,14 @@ export default function LegalEntitiesPage({
           label: 'COMPANY_CODE',
           required: true,
           placeholder: 'e.g. 1000, AM01',
-          description: '4-character statutory Company Code (T001-BUKRS)'
+          description: '4-character statutory Company Code'
         },
         {
           key: 'name',
           label: 'COMPANY_NAME',
           required: true,
           placeholder: 'e.g. Acme Consumer Products Ltd',
-          description: 'Official corporate statutory legal name (T001-BUTXT)'
+          description: 'Official corporate statutory legal name'
         },
         {
           key: 'currency_code',
@@ -62,28 +62,28 @@ export default function LegalEntitiesPage({
           placeholder: 'Select local currency (e.g. INR, USD, EUR)',
           createUrl: '/fico/currencies',
           createCode: 'FCYC',
-          description: 'Local statutory reporting currency (T001-WAERS)'
+          description: 'Local statutory reporting currency'
         },
         {
           key: 'country_code',
           label: 'COUNTRY',
           required: true,
           placeholder: 'e.g. IN, US, DE',
-          description: 'Country ISO key for statutory reporting (T001-LAND1)'
+          description: 'Country ISO key for statutory reporting'
         },
         {
           key: 'city',
           label: 'CITY',
           required: true,
           placeholder: 'e.g. Mumbai, New York',
-          description: 'City of legal entity registration (T001-ORT01)'
+          description: 'City of legal entity registration'
         },
         {
           key: 'language',
           label: 'LANGUAGE',
           required: true,
           placeholder: 'e.g. EN, DE',
-          description: 'System language for company documents (T001-SPRAS)'
+          description: 'System language for company documents'
         },
         {
           key: 'street',
