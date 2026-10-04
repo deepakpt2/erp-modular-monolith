@@ -1821,3 +1821,11 @@ Once you confirm, I will:
   - Maintained authentic Manufacturing Order linkage across Material, Plant, Planned Quantity, Bill of Materials (BOM), Routing, and Work Center.
 - **All Submit Buttons**:
   - Enforced single standardized text `"Submit"` across all SingleCodePage forms.
+
+## Backend Query and DB Table Parity Verification
+- Verified Drizzle schema tables (`proc_purchase_requisition`, `proc_pr_line`, `proc_purchase_order`, `proc_po_line` in `procurementFoundationSchema.ts`):
+  - Standard enterprise columns (`account_assignment`, `cost_unit_id`, `ledger_account_id`, `purchasing_org`, `purchasing_group`, `delivery_completed`) already exist natively as first-class citizens.
+- Updated backend API routes:
+  - `POST /api/pr`: Dynamically resolves `cost_center_code` -> `cost_unit_id` and `gl_account` -> `ledger_account_id`, writing `account_assignment`, `cost_unit_id`, and `ledger_account_id` into `proc_pr_line`.
+  - `POST /api/po`: Dynamically resolves `cost_center_code` -> `cost_unit_id` and `gl_account` -> `ledger_account_id`, writing `account_assignment`, `cost_unit_id`, and `ledger_account_id` into `proc_po_line`, along with `purchasing_org` and `purchasing_group` at the header level.
+- No DDL alter hacks or fallback branches were introduced; tables and SQL inserts are 100% aligned with the clean scratch schema.

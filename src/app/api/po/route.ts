@@ -442,9 +442,35 @@ export async function POST(req: NextRequest) {
           // Version history – PO changes/version history – initial version 1 with change history
           const initialHistory = JSON.stringify([{ version: 1, action: 'CREATE', timestamp: new Date().toISOString(), user: 'system', changes: { quantity: qty, unit_price: unitPrice, over_tolerance: overTol, under_tolerance: underTol, tax_rate: taxRate } }]);
 
+          let costCenterId = line.cost_unit_id || line.cost_center_id || null;
+          if (!costCenterId && line.cost_center_code) {
+            try {
+              const ccRes = await db.execute(sql`SELECT id FROM org_cost_unit WHERE code = ${line.cost_center_code} LIMIT 1`);
+              if (ccRes.rows.length > 0) costCenterId = (ccRes.rows[0] as any).id;
+            } catch {}
+          }
+          let glAccountId = line.ledger_account_id || line.gl_account_id || null;
+          if (!glAccountId && line.gl_account) {
+            try {
+              const glRes = await db.execute(sql`SELECT id FROM fin_ledger_account WHERE account_number = ${line.gl_account} LIMIT 1`);
+              if (glRes.rows.length > 0) glAccountId = (glRes.rows[0] as any).id;
+            } catch {}
+          }
+
           await db.execute(sql`
-            INSERT INTO proc_po_line (po_id, line_number, item_id, material_id, quantity, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, tax_rule_id, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history)
-            VALUES (${poId}, ${line.line_number || i + 10}, ${itemId}, ${itemId}, ${qty}, ${line.uom_code || line.uom || 'PC'}, ${line.uom_code || line.uom || 'PC'}, ${unitPrice}, ${freight}, ${customs}, ${tax}, ${taxRuleIdResolved || null}, ${taxRate}, ${totalPerUnit}, ${facilityIdResolved}, ${facilityIdResolved}, ${invLocId || null}, ${invLocId || null}, ${line.item_text || null}, ${line.delivery_text || null}, ${line.is_landed_cost_relevant ?? true}, ${overTol}, ${underTol}, 1, ${initialHistory}::jsonb)
+            INSERT INTO proc_po_line (
+              po_id, line_number, item_id, material_id, quantity, uom_code, uom, unit_price, freight_per_unit, customs_per_unit, tax_per_unit, 
+              tax_rule_id, tax_rate, total_per_unit, facility_id, plant_id, inventory_location_id, sloc_id, 
+              account_assignment, cost_unit_id, ledger_account_id,
+              item_text, delivery_text, is_landed_cost_relevant, overdelivery_tolerance_percent, underdelivery_tolerance_percent, version, change_history
+            )
+            VALUES (
+              ${poId}, ${line.line_number || i + 10}, ${itemId}, ${itemId}, ${qty}, ${line.uom_code || line.uom || 'PC'}, ${line.uom_code || line.uom || 'PC'}, 
+              ${unitPrice}, ${freight}, ${customs}, ${tax}, ${taxRuleIdResolved || null}, ${taxRate}, ${totalPerUnit}, 
+              ${facilityIdResolved}, ${facilityIdResolved}, ${invLocId || null}, ${invLocId || null}, 
+              ${line.account_assignment || null}, ${costCenterId}, ${glAccountId},
+              ${line.item_text || null}, ${line.delivery_text || null}, ${line.is_landed_cost_relevant ?? true}, ${overTol}, ${underTol}, 1, ${initialHistory}::jsonb
+            )
           `);
 
           // Purchasing condition – basic purchase pricing – ME11 info record + conditions BASE/DISCOUNT/FREIGHT/CUSTOMS/TAX – proc_purchasing_condition
