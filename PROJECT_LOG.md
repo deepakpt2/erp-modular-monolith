@@ -1829,3 +1829,8 @@ Once you confirm, I will:
   - `POST /api/pr`: Dynamically resolves `cost_center_code` -> `cost_unit_id` and `gl_account` -> `ledger_account_id`, writing `account_assignment`, `cost_unit_id`, and `ledger_account_id` into `proc_pr_line`.
   - `POST /api/po`: Dynamically resolves `cost_center_code` -> `cost_unit_id` and `gl_account` -> `ledger_account_id`, writing `account_assignment`, `cost_unit_id`, and `ledger_account_id` into `proc_po_line`, along with `purchasing_org` and `purchasing_group` at the header level.
 - No DDL alter hacks or fallback branches were introduced; tables and SQL inserts are 100% aligned with the clean scratch schema.
+
+## Fix TypeScript Type Check Error in Purchase Order Form
+- **Error:** `error TS2339: Property 'account_assignment_category' does not exist on type 'POLine'` during Docker build (`npm run build`).
+- **Cause:** When adding Account Assignment inputs to the PO form, the `POLine` TypeScript interface was missing `account_assignment_category?: string`, `cost_center_code?: string`, and `gl_account_number?: string`.
+- **Solution:** Added these optional properties to `interface POLine` in `src/app/(erp)/[companyCode]/mm/po/page.tsx` so `keyof POLine` and line bindings type-check cleanly during the Next.js production build.

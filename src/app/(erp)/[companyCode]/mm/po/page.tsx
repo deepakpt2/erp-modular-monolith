@@ -19,6 +19,9 @@ interface POLine {
   overdelivery_tolerance_percent: string;
   underdelivery_tolerance_percent: string;
   inventory_location_code: string;
+  account_assignment_category?: string;
+  cost_center_code?: string;
+  gl_account_number?: string;
   item_text: string;
   delivery_text: string;
 }
