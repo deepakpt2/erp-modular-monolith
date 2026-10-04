@@ -29,7 +29,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [msg,setMsg]=useState('');
-  const [facilityCode, setFacilityCode] = useState('1000');
+  const [facilityCode, setFacilityCode] = useState('');
   const [legalEntityCode, setLegalEntityCode] = useState(companyCode);
   const [partnerNumber, setPartnerNumber] = useState('');
   const [prNumber, setPrNumber] = useState('');
@@ -40,7 +40,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const [paymentTermCode, setPaymentTermCode] = useState('NT30');
   const [incoterms, setIncoterms] = useState('EXW');
   const [lines, setLines] = useState<POLine[]>([
-    { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }
+    { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: '', item_text: '', delivery_text: '' }
   ]);
   const [refPoNumber, setRefPoNumber] = useState<string>('');
   const [refQuery, setRefQuery] = useState('');
@@ -81,7 +81,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   function clearPoReference() {
     setRefPoNumber('');
     setRefQuery('');
-    setLines([{ item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }]);
+    setLines([{ item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: '', item_text: '', delivery_text: '' }]);
     setHeaderText('');
   }
   const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
@@ -94,10 +94,18 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
     }catch(e){console.error(e);}
     setLoading(false);
   }
-  useEffect(()=>{load();},[companyCode]);
+  useEffect(()=>{
+    load();
+    fetch(`/api/assignments/plant-company-code`).then(r=>r.json()).then(res=>{
+      const matches = (res.data || []).filter((a: any)=>!companyCode || a.company_code?.toUpperCase() === companyCode?.toUpperCase());
+      if (matches.length > 0 && !facilityCode) {
+        setFacilityCode(matches[0].plant_code);
+      }
+    }).catch(()=>{});
+  },[companyCode]);
 
   function addLine(){
-    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }]);
+    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: '', item_text: '', delivery_text: '' }]);
   }
   function updateLine(idx:number, field:keyof POLine, value:string){
     const newLines = [...lines];
@@ -218,7 +226,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
               }).catch(()=>{});
             }catch{}
           }
-          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: 'SL01', item_text: '', delivery_text: '' }]);
+          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', unit_price: '100', freight_per_unit: '0', customs_per_unit: '0', tax_per_unit: '0', tax_code: 'GST18', overdelivery_tolerance_percent: '10', underdelivery_tolerance_percent: '10', inventory_location_code: '', item_text: '', delivery_text: '' }]);
           setHeaderText('');
           setPrNumber('');
         },

@@ -24,13 +24,13 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const [data,setData]=useState<any>(null);
   const [loading,setLoading]=useState(true);
   const [msg,setMsg]=useState('');
-  const [facilityCode, setFacilityCode] = useState('1000');
+  const [facilityCode, setFacilityCode] = useState('');
   const [legalEntityCode, setLegalEntityCode] = useState(companyCode);
   const [requiredDate, setRequiredDate] = useState(new Date().toISOString().split('T')[0]);
   const [headerText, setHeaderText] = useState('');
   const [currencyCode, setCurrencyCode] = useState('INR');
   const [lines, setLines] = useState<PRLine[]>([
-    { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }
+    { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }
   ]);
   const [refPrNumber, setRefPrNumber] = useState<string>('');
   const [refQuery, setRefQuery] = useState('');
@@ -61,7 +61,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   function clearPrReference() {
     setRefPrNumber('');
     setRefQuery('');
-    setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+    setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
     setHeaderText('');
   }
   const { elapsed, executeWithAutoPromote, JobPopupComponent } = useAutoPromoteJob();
@@ -74,10 +74,18 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
     }catch(e){console.error(e);}
     setLoading(false);
   }
-  useEffect(()=>{load();},[companyCode]);
+  useEffect(()=>{
+    load();
+    fetch(`/api/assignments/plant-company-code`).then(r=>r.json()).then(res=>{
+      const matches = (res.data || []).filter((a: any)=>!companyCode || a.company_code?.toUpperCase() === companyCode?.toUpperCase());
+      if (matches.length > 0 && !facilityCode) {
+        setFacilityCode(matches[0].plant_code);
+      }
+    }).catch(()=>{});
+  },[companyCode]);
 
   function addLine(){
-    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+    setLines([...lines, { item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
   }
   function updateLine(idx:number, field:keyof PRLine, value:string){
     const newLines = [...lines];
@@ -161,7 +169,7 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
               if(wf.instanceId) setMsg(prev=>prev + ` – Workflow started ${wf.instanceId.slice(0,8)} – ${wf.stepsCreated} tasks – SBWP inbox – PPRL (legacy ME54N) release`);
             }).catch(()=>{});
           }catch{}
-          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: 'SL01', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
+          setLines([{ item_number: '', quantity: '10', uom_code: 'PC', estimated_price: '100', inventory_location_code: '', delivery_date: new Date().toISOString().split('T')[0], item_text: '' }]);
           setHeaderText('');
         },
         onBackgroundCreated: (newJobId:string)=>{

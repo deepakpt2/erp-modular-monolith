@@ -1789,3 +1789,9 @@ Once you confirm, I will:
 - Audited enterprise configuration pages (`fiscal-calendars`, `legal-entities`, `chart-of-accounts`).
 - Removed all vendor-specific table field codes (e.g. `(T001-BUKRS)`, `(T009-PERIV)`) in field descriptions, keeping industry standard terminology (Company Code, Fiscal Year Variant, Chart of Accounts, etc.).
 - Ensured 100% standard ERP blueprint compatibility across forms, list views, and field inputs.
+
+## Remove Hardcoded Facility & Storage Locations in MM/PP/SD Forms
+- In `src/app/(erp)/[companyCode]/mm/po/page.tsx` and `src/app/(erp)/[companyCode]/mm/pr/page.tsx`:
+  - Replaced hardcoded default `'1000'` facility with dynamic resolution from `/api/assignments/plant-company-code` matching the current `companyCode`.
+  - Cleared synthetic default storage location `'SL01'`, allowing user to select or enter the real storage locations defined in their enterprise setup (e.g. `RM01`, `FG01`).
+- Ensures downstream logistics (MM), manufacturing (PP), and sales (SD) forms run dynamically off whatever company code and plant are configured, with no hardcoded fallback assumptions.
