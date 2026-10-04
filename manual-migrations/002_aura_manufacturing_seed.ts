@@ -231,10 +231,10 @@ export async function seedAuraManufacturing() {
   await db.execute(sql`DELETE FROM fin_posting_calendar_period WHERE posting_calendar_id = ${ppvId} AND from_period = 1 AND account_type = 'ALL'`);
   await db.execute(sql`
     INSERT INTO fin_posting_calendar_period (
-      posting_calendar_id, variant_code, account_type, from_period, from_year, to_period, to_year, is_open, description
+      posting_calendar_id, account_type, from_period, from_year, to_period, to_year, is_open, description
     )
     VALUES (
-      ${ppvId}, 'AM01', 'ALL', 1, 2026, 12, 2026, true, 'Open period 1/2026 to 12/2026 for AM01'
+      ${ppvId}, 'ALL', 1, 2026, 12, 2026, true, 'Open period 1/2026 to 12/2026 for AM01'
     )
   `);
 

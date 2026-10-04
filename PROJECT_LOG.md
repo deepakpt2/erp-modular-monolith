@@ -1834,3 +1834,8 @@ Once you confirm, I will:
 - **Error:** `error TS2339: Property 'account_assignment_category' does not exist on type 'POLine'` during Docker build (`npm run build`).
 - **Cause:** When adding Account Assignment inputs to the PO form, the `POLine` TypeScript interface was missing `account_assignment_category?: string`, `cost_center_code?: string`, and `gl_account_number?: string`.
 - **Solution:** Added these optional properties to `interface POLine` in `src/app/(erp)/[companyCode]/mm/po/page.tsx` so `keyof POLine` and line bindings type-check cleanly during the Next.js production build.
+
+## Standardize fin_posting_calendar_period Columns in 002_aura_manufacturing_seed.ts
+- **Error:** `error: column "variant_code" of relation "fin_posting_calendar_period" does not exist (code: 42703)`
+- **Cause:** In standard Drizzle schema `financialsFoundationSchema.ts`, `fin_posting_calendar_period` links via foreign key `posting_calendar_id REFERENCES fin_posting_calendar(id)`. It does not possess a redundant `variant_code` column.
+- **Solution:** Removed `variant_code` from the `INSERT INTO fin_posting_calendar_period` statement in `manual-migrations/002_aura_manufacturing_seed.ts`, cleanly matching the pure table schema.
