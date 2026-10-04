@@ -31,6 +31,8 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
   const [msg,setMsg]=useState('');
   const [facilityCode, setFacilityCode] = useState('');
   const [legalEntityCode, setLegalEntityCode] = useState(companyCode);
+  const [purchasingOrg, setPurchasingOrg] = useState('');
+  const [purchasingGroup, setPurchasingGroup] = useState('');
   const [partnerNumber, setPartnerNumber] = useState('');
   const [prNumber, setPrNumber] = useState('');
   const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().split('T')[0]);
@@ -102,6 +104,12 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
         setFacilityCode(matches[0].plant_code);
       }
     }).catch(()=>{});
+    fetch(`/api/assignments/purchasing-company-code`).then(r=>r.json()).then(res=>{
+      const matches = (res.data || []).filter((a: any)=>!companyCode || a.company_code?.toUpperCase() === companyCode?.toUpperCase());
+      if (matches.length > 0 && !purchasingOrg) {
+        setPurchasingOrg(matches[0].purchasing_org_code);
+      }
+    }).catch(()=>{});
   },[companyCode]);
 
   function addLine(){
@@ -165,6 +173,10 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
         under_tolerance: Number(l.underdelivery_tolerance_percent) || 10,
         inventory_location_code: l.inventory_location_code,
         sloc_id: l.inventory_location_code,
+        account_assignment: l.account_assignment_category || null,
+        account_assignment_category: l.account_assignment_category || null,
+        cost_center_code: l.cost_center_code || null,
+        gl_account: l.gl_account_number || null,
         item_text: l.item_text,
         delivery_text: l.delivery_text,
         line_number: (i+1)*10,
@@ -624,9 +636,24 @@ export default function Page({ defaultMode }: { defaultMode?: any } = {}){
                       <input value={line.underdelivery_tolerance_percent} onChange={e=>updateLine(idx,'underdelivery_tolerance_percent',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                     </div>
                     <div>
-                      <label className="text-[10px] text-zinc-500 uppercase">SLOC + Texts + Version History</label>
+                      <label className="text-[10px] text-zinc-500 uppercase">SLOC</label>
+                      <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px] uppercase" placeholder="e.g. RM01" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Acct Assgt (K/A/P)</label>
+                      <input value={line.account_assignment_category || ''} onChange={e=>updateLine(idx,'account_assignment_category',e.target.value.toUpperCase())} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="K / A / P" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Cost Center</label>
+                      <input value={line.cost_center_code || ''} onChange={e=>updateLine(idx,'cost_center_code',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="e.g. CC01" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">G/L Account</label>
+                      <input value={line.gl_account_number || ''} onChange={e=>updateLine(idx,'gl_account_number',e.target.value)} className="w-full border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="e.g. 5000" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-zinc-500 uppercase">Item Text</label>
                       <div className="flex gap-1">
-                        <input value={line.inventory_location_code} onChange={e=>updateLine(idx,'inventory_location_code',e.target.value.toUpperCase())} className="w-[60px] border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px] uppercase" placeholder="" />
                         <input value={line.item_text} onChange={e=>updateLine(idx,'item_text',e.target.value)} className="flex-1 border border-zinc-200 rounded-lg px-2 py-1 text-[12px] h-[28px]" placeholder="" />
                         <button onClick={()=>removeLine(idx)} className="px-2 py-1 rounded-lg border bg-red-50 text-xs">X</button>
                       </div>

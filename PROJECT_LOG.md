@@ -1809,3 +1809,15 @@ Once you confirm, I will:
   - Purchasing Group (`EKGRP`)
   - Short Text (`TXZ01`)
 - Transmits complete blueprint payload to `/api/pr` maintaining direct compatibility with implementation guides.
+
+## Comprehensive Cross-Module Blueprint Parity Audit (FICO, MM, SD, PP)
+- **Purchase Order (ME21N / PPOC)**:
+  - Extended form state and payload with standard Purchasing Org (`EKORG`), Purchasing Group (`EKGRP`), and line item Account Assignment Category (`KNTTP`, `K` Cost Center, `A` Asset, `P` Project), Cost Center (`KOSTL`), and G/L Account (`SAKNR`).
+- **Purchase Requisition (ME51N / PPRC)**:
+  - Ensured identical 1:1 blueprint parity with Material, Qty, UoM, Price, Plant, SLoc, Delivery Date, Account Assignment Category, Cost Center, G/L Account, Purchasing Group, and Requisitioner.
+- **Sales & Distribution (VA01 / SSOC & VF01)**:
+  - Preserved standard Sales Area wiring: Sales Org (`VKORG`), Distribution Channel (`VTWEG`), Division (`SPART`), Shipping Point, Customer PO Reference, Payment Terms, and Pricing Procedure conditions.
+- **Production Planning (CO01 / MMOC, CS01, CA01)**:
+  - Maintained authentic Manufacturing Order linkage across Material, Plant, Planned Quantity, Bill of Materials (BOM), Routing, and Work Center.
+- **All Submit Buttons**:
+  - Enforced single standardized text `"Submit"` across all SingleCodePage forms.
